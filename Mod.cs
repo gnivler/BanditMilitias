@@ -51,6 +51,31 @@ namespace Bandit_Militias
                 .Sum(troopRoster.GetTroopCount);
         }
 
+
+        // safety mechanism to clear any problematic map encounters
+        // I stumbled onto one caravan fighting a militia that had no troops and was stuck
+        // this is a hotfix until/if the root cause is found
+        [HarmonyPatch(typeof(MapEvent), "OnAfterLoad")]
+        public static class MapEventOnAfterLoadPatch
+        {
+            private static void Postfix(MapEvent __instance, MapEventSide[] ____sides, MapEvent.BattleTypes ____mapEventType)
+            {
+                if (____mapEventType != MapEvent.BattleTypes.FieldBattle)
+                {
+                    return;
+                }
+
+                if (____sides.Any(x => x.LeaderParty.Name.ToString() == "Bandit Militia"))
+                {
+                    if (____sides.Any(x => x.TroopCount == 0))
+                    {
+                        Log($"Removing bad Bandit Militia field battle with {____sides[0].LeaderParty.Name}, {____sides[1].LeaderParty.Name}");
+                        __instance.FinalizeEvent();
+                    }
+                }
+            }
+        }
+
         // set the variables used in the tick patch so they aren't calculated every frame
         // do it once per day because that's accurate enough
         // it will also reinitialize the militia leaders to the 1st highest tier unit it finds
@@ -72,9 +97,9 @@ namespace Bandit_Militias
                         {
                             var leader = party.Party.MemberRoster.Troops
                                 .OrderByDescending(y => y.Tier).First();
-                            Log($"new leader => {leader.Name}");
+                            Log($"{party.Name} new leader => {leader.Name}");
                             party.ChangePartyLeader(party.Party.MemberRoster.Troops
-                                    .OrderByDescending(y => y.Tier).First());
+                                .OrderByDescending(y => y.Tier).First());
                         }
                     }
 
@@ -97,30 +122,30 @@ namespace Bandit_Militias
 
             private static void Prefix()
             {
-                // culls any visible parties over 50 members - safety hotkey in case things go sideways
+                // safety hotkey in case things go sideways
                 try
                 {
                     if (Input.IsKeyDown(InputKey.LeftControl) || Input.IsKeyDown(InputKey.RightControl) &&
-                        Input.IsKeyDown(InputKey.LeftAlt) || Input.IsKeyDown(InputKey.RightAlt) &&
-                        Input.IsKeyPressed(InputKey.X))
+                        Input.IsKeyDown(InputKey.LeftAlt) || Input.IsKeyDown(InputKey.RightAlt))
                     {
-                        Log("Purge hotkey pressed");
-                        MobileParty.All.Where(x => x.IsVisible)
-                            .Where(IsValidBanditParty)
-                            .Where(x => x.MemberRoster.TotalManCount > 50)
-                            .Do(x => tempList.Add(x));
-                        tempList.Do(x => x.RemoveParty());
-                    }
-                    
-                    if (Input.IsKeyDown(InputKey.LeftControl) || Input.IsKeyDown(InputKey.RightControl) &&
-                        Input.IsKeyDown(InputKey.LeftAlt) || Input.IsKeyDown(InputKey.RightAlt) &&
-                        Input.IsKeyPressed(InputKey.Q))
-                    {
-                        Log("Nuke hotkey pressed");
-                        MobileParty.All
-                            .Where(x => x.Name.ToString() == "Bandit Militia")
-                            .Do(x=> tempList.Add(x));
-                        tempList.Do(x => x.RemoveParty());
+                        if (Input.IsKeyPressed(InputKey.X))
+                        {
+                            Log("Purge hotkey pressed");
+                            MobileParty.All.Where(x => x.IsVisible)
+                                .Where(IsValidBanditParty)
+                                .Where(x => x.MemberRoster.TotalManCount > 50)
+                                .Do(x => tempList.Add(x));
+                            tempList.Do(x => x.RemoveParty());
+                        }
+
+                        if (Input.IsKeyPressed(InputKey.Q))
+                        {
+                            Log("Nuke hotkey pressed");
+                            MobileParty.All
+                                .Where(x => x.Name.ToString() == "Bandit Militia")
+                                .Do(x => tempList.Add(x));
+                            tempList.Do(x => x.RemoveParty());
+                        }
                     }
 
                     // get rid of 0 troop parties... (purged in TickAi patch) 
