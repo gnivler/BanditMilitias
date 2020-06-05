@@ -1,4 +1,4 @@
-Mod temporarily (I hope) non-functional.  Please don't use the mod for now.  Next release will have code to unfuck the bad parties that seem to have cropped in.
+Mod temporarily (I hope) non-functional.  Please don't use the mod for now.  Next release will have code to unfuck the bad parties that seem to have cropped in.  Seems like an update caused problems.
 
 The idea was to deal with the hordes of small parties of bandits that run all over the place.  Not particularly complicated.
 
