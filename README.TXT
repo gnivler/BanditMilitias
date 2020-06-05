@@ -1,3 +1,5 @@
+Mod temporarily (I hope) non-functional.  Please don't use the mod for now.  Next release will have code to unfuck the bad parties that seem to have cropped in.
+
 The idea was to deal with the hordes of small parties of bandits that run all over the place.  Not particularly complicated.
 
 It's experimental since I haven't seen the long term impact or in other player's scenarios.
