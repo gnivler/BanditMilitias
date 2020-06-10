@@ -36,6 +36,10 @@
           <HintPath>..\packages\Lib.Harmony.2.0.1\lib\net472\0Harmony.dll</HintPath>
           <Private>True</Private>
         </Reference>
+        <Reference Include="Newtonsoft.Json, Version=12.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed">
+          <HintPath>packages\Newtonsoft.Json.12.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
+          <Private>True</Private>
+        </Reference>
         <Reference Include="SandBox, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
           <HintPath>..\..\..\SteamLibrary\steamapps\common\Mount &amp; Blade II Bannerlord\Modules\SandBox\bin\Win64_Shipping_Client\SandBox.dll</HintPath>
         </Reference>
