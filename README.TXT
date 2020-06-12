@@ -1,12 +1,10 @@
-Mod temporarily (I hope) non-functional.  Please don't use the mod for now.  Next release will have code to unfuck the bad parties that seem to have cropped in.  Seems like an update caused problems.
-
 The idea was to deal with the hordes of small parties of bandits that run all over the place.  Not particularly complicated.
 
 It's experimental since I haven't seen the long term impact or in other player's scenarios.
 
 Please back up your save game or make a new checkpoint save or whatever.  You're responsible for your game integrity.
 
-Note there are hotkeys at the bottom to heavily mitigate the risk of trying the mod.  You nuke inconveniently-created militias.
+Note there are hotkeys at the bottom to heavily mitigate the risk of trying the mod.  You nuke inconveniently-created militias.  Note these hotkeys are unfortunately not working quite right either.  WIP
 
 What to expect:
 
