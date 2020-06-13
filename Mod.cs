@@ -74,14 +74,15 @@ namespace Bandit_Militias
         private static float heroPartyStrength;
         private static float maxPartyStrength;
         private static double avgHeroPartyMaxSize;
+        private static int hoursPassed;
         private static readonly Random random = new Random();
         private static List<MobileParty> questParties = new List<MobileParty>();
         private static List<MobileParty> splitList = new List<MobileParty>();
         private static TroopRoster party1Roster = new TroopRoster();
         private static TroopRoster party2Roster = new TroopRoster();
         private static TroopRoster pris1Roster = new TroopRoster();
-
         private static TroopRoster pris2Roster = new TroopRoster();
+
         //private static CampaignBehaviorManager campaignBehaviorManager;
 
         // unused...
@@ -97,7 +98,14 @@ namespace Bandit_Militias
         // keeps updating the list of quest parties and they're omitted from mergers
         private static void MerchantNeedsHelpWithLootersIssueQuestHoursTickPartyPatch(object __instance)
         {
-            questParties = Traverse.Create(__instance).Field("_validPartiesList").GetValue<List<MobileParty>>();
+            try
+            {
+                questParties = Traverse.Create(__instance).Field("_validPartiesList").GetValue<List<MobileParty>>();
+            }
+            catch (Exception e)
+            {
+                Log(e);
+            }
         }
 
         private static void MerchantNeedsHelpWithLootersIssueQuestBehaviorMobilePartyDestroyedPostfix(MobileParty mobileParty)
@@ -125,19 +133,35 @@ namespace Bandit_Militias
         {
             private static void Postfix(List<MapEvent> ___mapEvents)
             {
-                foreach (var mapEvent in ___mapEvents.Where(x => x.EventType == MapEvent.BattleTypes.FieldBattle))
+                try
                 {
-                    if (mapEvent.AttackerSide.TroopCount == 0 ||
-                        mapEvent.DefenderSide.TroopCount == 0)
+                    foreach (var mapEvent in ___mapEvents.Where(x => x.EventType == MapEvent.BattleTypes.FieldBattle))
                     {
-                        Trace($"Removing bad field battle with {mapEvent.AttackerSide.LeaderParty.Name}, {mapEvent.DefenderSide.LeaderParty.Name}");
-                        mapEvent.FinalizeEvent();
-                    }
-                    else
-                    {
-                        Trace($"Leaving valid field battle with {mapEvent.AttackerSide.LeaderParty.Name}, {mapEvent.DefenderSide.LeaderParty.Name}");
+                        if (mapEvent.AttackerSide.TroopCount == 0 ||
+                            mapEvent.DefenderSide.TroopCount == 0)
+                        {
+                            Trace($"Removing bad field battle with {mapEvent.AttackerSide.LeaderParty.Name}, {mapEvent.DefenderSide.LeaderParty.Name}");
+                            mapEvent.FinalizeEvent();
+                        }
+                        else
+                        {
+                            Trace($"Leaving valid field battle with {mapEvent.AttackerSide.LeaderParty.Name}, {mapEvent.DefenderSide.LeaderParty.Name}");
+                        }
                     }
                 }
+                catch (Exception e)
+                {
+                    Log(e);
+                }
+            }
+        }
+
+        [HarmonyPatch(typeof(PartyUpgrader), "UpgradeReadyTroops", typeof(PartyBase))]
+        public static class PartyUpgraderUpgradeReadyTroopsPatch
+        {
+            private static bool Prefix(PartyBase party)
+            {
+                return party.Name.ToString() != "Bandit Militia";
             }
         }
 
@@ -148,7 +172,6 @@ namespace Bandit_Militias
             {
                 try
                 {
-                    Trace("Creating split parties");
                     Trace("Setting Militia leaders");
                     foreach (var party in MobileParty.All.Where(x => x.Name.ToString() == "Bandit Militia"))
                     {
@@ -159,7 +182,6 @@ namespace Bandit_Militias
                             party.ChangePartyLeader(leader);
                         }
                     }
-
 
                     // get rid of 0 troop parties
                     var parties = new List<MobileParty>();
@@ -182,7 +204,6 @@ namespace Bandit_Militias
             }
         }
 
-        private static int hoursPassed;
 
         // set the variables used in the tick patch so they aren't calculated every frame
         // do it once per day because that's accurate enough
@@ -199,6 +220,14 @@ namespace Bandit_Militias
                     if (!initialized ||
                         hoursPassed++ == 24)
                     {
+                        var tempList = new List<MobileParty>();
+                        foreach (var party in MobileParty.All.Where(x => x.Name.ToString() == "Bandit Militia"))
+                        {
+                            Log("DIE DIE DIE " + party);
+                            tempList.Add(party);
+                        }
+
+                        tempList.ForEach(DisbandPartyAction.ApplyDisband);
                         initialized = true;
                         hoursPassed = 0;
                         heroPartyStrength = MobileParty.MainParty.Party.TotalStrength;
@@ -218,9 +247,8 @@ namespace Bandit_Militias
         }
 
         // cleans up after parties are removed by MemberRoster.Reset()
-        //[HarmonyPatch(typeof(MapScreen), "TickCircles")]
         [HarmonyPatch(typeof(Campaign), "Tick")]
-        public static class MapScreenTickCirclesPatch
+        public static class CampaignTickPatch
         {
             private static readonly List<MobileParty> tempList = new List<MobileParty>();
 
@@ -237,7 +265,7 @@ namespace Bandit_Militias
                         Trace($"Campaign.Tick() Clearing {tempList.Count} empty parties");
                         tempList.Do(x =>
                         {
-                            Trace($"DisbandPartyAction.ApplyDisband({x})");
+                            //Trace($"DisbandPartyAction.ApplyDisband({x})");
                             DisbandPartyAction.ApplyDisband(x);
                         });
                     }
@@ -305,12 +333,14 @@ namespace Bandit_Militias
         [HarmonyPatch(typeof(MobileParty), "GetFleeBehavior")]
         public static class MobilePartyGetFleeBehaviorPatch
         {
-            private static void Postfix(ref AiBehavior fleeBehavior, MobileParty partyToFleeFrom)
+            private static bool Prefix(MobileParty __instance, ref AiBehavior fleeBehavior, MobileParty partyToFleeFrom)
             {
+                return !(partyToFleeFrom.IsBandit && __instance.IsBandit);
+
                 //Log($"partyToFleeFrom {partyToFleeFrom}, bandit? {partyToFleeFrom.IsBandit}");
                 if (partyToFleeFrom.IsBandit)
                 {
-                    Trace("Don't flee from bandits!");
+                    //Trace("Don't flee from bandits!");
                     fleeBehavior = AiBehavior.PatrolAroundPoint;
                 }
             }
@@ -361,20 +391,15 @@ namespace Bandit_Militias
                                 __instance.Party.TotalStrength > maxPartyStrength * strengthSplitFactor ||
                                 __instance.Party.MemberRoster.TotalManCount > avgHeroPartyMaxSize * sizeSplitFactor)
                             {
-                                Log($"Met some split criteria.  Splitting {__instance.Name} ({__instance.MemberRoster.TotalManCount} + {__instance.PrisonRoster.TotalManCount}p) (strength {__instance.Party.TotalStrength})");
+                                // these set globals
                                 SplitRosters(__instance);
                                 CreateNewMilitias(__instance);
+                                // prep this instance for removal
                                 __instance.MemberRoster.Reset();
-                                Log("Party fully split up");
+                                Log($"Split {__instance.Name} ({__instance.MemberRoster.TotalManCount} + {__instance.PrisonRoster.TotalManCount}p) (strength {__instance.Party.TotalStrength})");
                                 return;
                             }
                         }
-                    }
-
-                    if (__instance.DefaultBehavior == AiBehavior.FleeToPoint)
-                    {
-                        Trace("Fleeing, abort");
-                        return;
                     }
 
                     if (__instance.Party.Leader == null &&
@@ -386,6 +411,12 @@ namespace Bandit_Militias
                                 .OrderByDescending(x => x.Tier).First());
                     }
 
+                    if (__instance.DefaultBehavior == AiBehavior.FleeToPoint)
+                    {
+                        Trace("Fleeing, abort");
+                        return;
+                    }
+
                     var pos = __instance.Position2D;
                     var targetParty = MobileParty.FindPartiesAroundPosition(pos, searchRadius)
                         .FirstOrDefault(x => x != __instance &&
@@ -394,6 +425,7 @@ namespace Bandit_Militias
 
                     if (targetParty == null)
                     {
+                        Trace("targetParty == null");
                         return;
                     }
 
@@ -523,28 +555,35 @@ namespace Bandit_Militias
 
             private static void CreateNewMilitias(MobileParty original)
             {
-                var mobileParty1 = new MobileParty();
-                mobileParty1.InitializeMobileParty(
-                    new TextObject("Bandit Militia"),
-                    party1Roster,
-                    pris1Roster,
-                    original.Position2D,
-                    2f);
+                try
+                {
+                    var mobileParty1 = new MobileParty();
+                    mobileParty1.InitializeMobileParty(
+                        new TextObject("Bandit Militia"),
+                        party1Roster,
+                        pris1Roster,
+                        original.Position2D,
+                        2f);
 
-                var mobileParty2 = new MobileParty();
-                mobileParty2.InitializeMobileParty(
-                    new TextObject("Bandit Militia"),
-                    party2Roster,
-                    pris2Roster,
-                    original.Position2D,
-                    2f);
+                    var mobileParty2 = new MobileParty();
+                    mobileParty2.InitializeMobileParty(
+                        new TextObject("Bandit Militia"),
+                        party2Roster,
+                        pris2Roster,
+                        original.Position2D,
+                        2f);
 
-                party1Roster.Clear();
-                party2Roster.Clear();
-                pris1Roster.Clear();
-                pris2Roster.Clear();
-                Log($"CreateNewMilitias party 1 {mobileParty1.Name} ({mobileParty1.MemberRoster.TotalManCount} + {mobileParty1.PrisonRoster.TotalManCount}p)");
-                Log($"CreateNewMilitias party 2 {mobileParty2.Name} ({mobileParty2.MemberRoster.TotalManCount} + {mobileParty2.PrisonRoster.TotalManCount}p)");
+                    party1Roster.Clear();
+                    party2Roster.Clear();
+                    pris1Roster.Clear();
+                    pris2Roster.Clear();
+                    Log($"CreateNewMilitias party 1 {mobileParty1.Name} ({mobileParty1.MemberRoster.TotalManCount} + {mobileParty1.PrisonRoster.TotalManCount}p)");
+                    Log($"CreateNewMilitias party 2 {mobileParty2.Name} ({mobileParty2.MemberRoster.TotalManCount} + {mobileParty2.PrisonRoster.TotalManCount}p)");
+                }
+                catch (Exception e)
+                {
+                    Log(e);
+                }
             }
         }
     }
