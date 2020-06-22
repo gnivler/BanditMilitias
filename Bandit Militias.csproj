@@ -13,7 +13,7 @@
         <FileAlignment>512</FileAlignment>
     </PropertyGroup>
     <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-        <PlatformTarget>AnyCPU</PlatformTarget>
+        <PlatformTarget>x64</PlatformTarget>
         <DebugSymbols>true</DebugSymbols>
         <DebugType>full</DebugType>
         <Optimize>false</Optimize>
@@ -33,8 +33,7 @@
     </PropertyGroup>
     <ItemGroup>
         <Reference Include="0Harmony, Version=2.0.1.0, Culture=neutral, PublicKeyToken=null">
-          <HintPath>..\packages\Lib.Harmony.2.0.1\lib\net472\0Harmony.dll</HintPath>
-          <Private>True</Private>
+          <HintPath>..\..\BannerlordRefs\0Harmony.dll</HintPath>
         </Reference>
         <Reference Include="SandBox, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
           <HintPath>..\..\..\SteamLibrary\steamapps\common\Mount &amp; Blade II Bannerlord\Modules\SandBox\bin\Win64_Shipping_Client\SandBox.dll</HintPath>
@@ -188,8 +187,10 @@
     </ItemGroup>
     <ItemGroup>
         <Compile Include="Helper.cs" />
+        <Compile Include="Militias\Patches.cs" />
+        <Compile Include="Misc\Patches.cs" />
         <Compile Include="Mod.cs" />
-        <Compile Include="Patches.cs" />
+        <Compile Include="Prisoners\Patches.cs" />
         <Compile Include="Properties\AssemblyInfo.cs" />
     </ItemGroup>
     <ItemGroup>
@@ -202,7 +203,8 @@
     </ItemGroup>
     <PropertyGroup>
         <PostBuildEvent>
-            xcopy "N:\Repos\Bandit Militias\obj\Release\Bandit Militias.dll" "N:\SteamLibrary\steamapps\common\Mount &amp; Blade II Bannerlord\Modules\Bandit Militias\bin\Win64_Shipping_Client\" /Y
+            xcopy "N:\Repos\Bandit Militias\obj\Debug\Bandit Militias.dll" "N:\SteamLibrary\steamapps\common\Mount &amp; Blade II Bannerlord\Modules\Bandit Militias\bin\Win64_Shipping_Client\" /Y
+            xcopy "N:\Repos\Bandit Militias\obj\Debug\Bandit Militias.pdb" "N:\SteamLibrary\steamapps\common\Mount &amp; Blade II Bannerlord\Modules\Bandit Militias\bin\Win64_Shipping_Client\" /Y
             xcopy "N:\Repos\Bandit Militias\SubModule.xml" "N:\SteamLibrary\steamapps\common\Mount &amp; Blade II Bannerlord\Modules\Bandit Militias\" /Y
         </PostBuildEvent>
     </PropertyGroup>

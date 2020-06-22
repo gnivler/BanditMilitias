@@ -8,8 +8,8 @@ using TaleWorlds.Core;
 using TaleWorlds.InputSystem;
 using TaleWorlds.Localization;
 using TaleWorlds.MountAndBlade;
-using static Bandit_Militias.Patches;
 using static Bandit_Militias.Helper.Globals;
+using Patches = Bandit_Militias.Misc.Patches;
 
 // ReSharper disable ClassNeverInstantiated.Global  
 // ReSharper disable UnusedMember.Local  
@@ -39,7 +39,7 @@ namespace Bandit_Militias
             {
                 Trace("Nuke all hotkey pressed");
                 tempList.Clear();
-                tempList = MobileParty.All.Where(x => x.Name.ToString() == "Bandit Militia").ToList();
+                tempList = MobileParty.All.Where(x => x.Name.ToString() == "Bandit Militia" && x.CurrentSettlement == null).ToList();
                 InformationManager.AddQuickInformation(new TextObject($"Nuking all {tempList.Count} Bandit Militia parties"));
                 tempList.Do(x =>
                 {
@@ -63,23 +63,22 @@ namespace Bandit_Militias
         {
             try
             {
-                //SkipIntroPatch();
                 // this patch tracks "Help with Bandits" quest so those units don't merge
                 // the patches maintain Helper.Globals.questParties
+                // note this is volatile and thus imperfect
                 var internalClass = AccessTools.Inner(typeof(MerchantNeedsHelpWithLootersIssueQuestBehavior),
                     "MerchantNeedsHelpWithLootersIssueQuest");
-                var hourlyTickParty = AccessTools.Method(internalClass, "HourlyTickParty");
-                var mobilePartyDestroyed = AccessTools.Method(internalClass, "MobilePartyDestroyed");
+                var original = AccessTools.Method(internalClass, "HourlyTickParty");
                 var hourlyTickPartyPostfix = AccessTools.Method(typeof(Patches),
-                    nameof(HoursTickPartyPatch));
-                var mobilePartyDestroyedPostfix = AccessTools.Method(typeof(Patches),
-                    nameof(MobilePartyDestroyedPostfix));
-                Log($"Referencing internal class {internalClass}");
+                    nameof(Patches.HoursTickPartyPatch));
+                Log($"Patching {original}");
+                harmony.Patch(original, null, new HarmonyMethod(hourlyTickPartyPostfix));
 
-                Log($"Patching {hourlyTickParty.FullDescription()}");
-                harmony.Patch(hourlyTickParty, null, new HarmonyMethod(hourlyTickPartyPostfix));
-                Log($"Patching {mobilePartyDestroyed.FullDescription()}");
-                harmony.Patch(mobilePartyDestroyed, null, new HarmonyMethod(mobilePartyDestroyedPostfix));
+                original = AccessTools.Method(internalClass, "MobilePartyDestroyed");
+                var mobilePartyDestroyedPostfix = AccessTools.Method(typeof(Patches),
+                    nameof(Patches.MobilePartyDestroyedPostfix));
+                Log($"Patching {original}");
+                harmony.Patch(original, null, new HarmonyMethod(mobilePartyDestroyedPostfix));
             }
             catch (Exception ex)
             {
