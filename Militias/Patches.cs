@@ -1,11 +1,11 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using HarmonyLib;
 using SandBox.CampaignBehaviors.Towns;
 using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.SandBox.Issues;
-using TaleWorlds.Core;
-using TaleWorlds.Localization;
 using TaleWorlds.ObjectSystem;
 using static Bandit_Militias.Helper;
 using static Bandit_Militias.Mod;
@@ -28,24 +28,25 @@ namespace Bandit_Militias.Militias
                 if (settlement.OwnerClan == null)
                 {
                     Log("Fixing bad settlement: " + settlement.Name);
-                    settlement.OwnerClan = Clan.BanditFactions.ToList()[Rng.Next(1, Clan.BanditFactions.Count())];
+                    settlement.OwnerClan = Clan.BanditFactions.ToList()[Rng.Next(1, 5)];
                 }
             }
         }
 
-        // fixing vanilla?
+        // swapped (copied) two very similar methods in assemblies, one was throwing one wasn't
         [HarmonyPatch(typeof(NearbyBanditBaseIssueBehavior), "FindSuitableHideout")]
         public static class NearbyBanditBaseIssueBehaviorFindSuitableHideoutPatch
         {
-            private const float num = float.MaxValue;
+            private const float floatMaxValue = float.MaxValue;
 
             // taken from CapturedByBountyHuntersIssue because this class' version throws
-            private static bool Prefix(Hero issueOwner, Settlement __result)
+            private static bool Prefix(Hero issueOwner, ref Settlement __result)
             {
                 foreach (var settlement in Settlement.FindAll(x => x.Hideout != null))
                 {
-                    if (Campaign.Current.Models.MapDistanceModel.GetDistance(
-                        issueOwner.GetMapPoint(), settlement, (55f < num) ? 55f : num, out var num2) && num2 < num)
+                    if (Campaign.Current.Models.MapDistanceModel.GetDistance(issueOwner.GetMapPoint(),
+                            settlement, 55f, out var num2) &&
+                        num2 < floatMaxValue)
                     {
                         __result = settlement;
                     }
@@ -109,20 +110,18 @@ namespace Bandit_Militias.Militias
                         return;
                     }
 
-                    // first clause prevents it from running for the 'other' party in a merge
-                    // also prevent a militia compromised of more than 50% calvary because ouch
-                    Traverse.Create(__instance).Property("TargetParty").SetValue(targetParty.MobileParty);
-                    if (__instance.TargetParty?.MoveTargetParty == __instance)
-                    {
-                        return;
-                    }
-
-                    // don't rejoin with a split hero BUG BUG BUG
+                    // BUG you shouldn't get here, something is spawning wrong
                     if (targetParty.LeaderHero != null && targetParty.MemberRoster.TotalManCount == 1)
                     {
+                        Log(new string('*', 100));
+                        Traverse.Create(typeof(KillCharacterAction))
+                            .Method("MakeDead", targetParty.LeaderHero).GetValue();
+                        MBObjectManager.Instance.UnregisterObject(targetParty.LeaderHero);
                         return;
                     }
 
+                    // check MoveTarget to save cycles?  TODO
+                    
                     // conditions check
                     var militiaStrength = targetParty.TotalStrength + __instance.Party.TotalStrength;
                     var militiaCavalryCount = GetMountedTroopHeadcount(__instance.MemberRoster) +
@@ -132,11 +131,17 @@ namespace Bandit_Militias.Militias
                         militiaTotalCount < AvgHeroPartyMaxSize &&
                         militiaCavalryCount < militiaTotalCount / 2)
                     {
-                        Trace($"{__instance} is suitable for merge");
+                        Trace($"{targetParty} is suitable for merge");
                         var distance = targetParty.Position2D.Distance(__instance.Position2D);
                         // the FindAll is returning pretty fast, small sample average was 600 ticks
-                        var closeHideOuts = Settlement.FindAll(x => x.IsHideout())
-                            .Where(x => targetParty.Position2D.Distance(x.Position2D) < MinDistanceFromHideout).ToList();
+                        // cache the result for performance over accuracy
+                        // BUG possibly if the hideout disappeared in the instants between checks?
+                        // does it matter much if they are moving around?
+                        var closeHideOuts = new List<Settlement>();
+                        closeHideOuts = closeHideOuts.Count == 0
+                            ? Settlement.FindAll(x => x.IsHideout())
+                                .Where(x => targetParty.Position2D.Distance(x.Position2D) < MinDistanceFromHideout).ToList()
+                            : closeHideOuts;
                         // avoid using bandits near hideouts
                         if (closeHideOuts.Any())
                         {
@@ -144,52 +149,24 @@ namespace Bandit_Militias.Militias
                             return;
                         }
 
+                        Trace($"Found a target for {__instance}, {__instance.MemberRoster.Count} troops: {targetParty}, troops {targetParty.MemberRoster.Count}");
                         if (distance <= MergeDistance)
                         {
                             // create a new party merged from the two
-                            var mobileParty = MBObjectManager.Instance.CreateObject<MobileParty>("Bandit_Militia");
-                            mobileParty.HomeSettlement = Settlement.FindFirst(x => x.IsHideout());
-                            MergeParties(__instance, targetParty, mobileParty);
-
-                            // figure out whether to replace hero with target party's higher level hero
-                            var banditHero = __instance.LeaderHero ??
-                                             targetParty.LeaderHero ??
-                                             HeroCreator.CreateHeroAtOccupation(Occupation.Outlaw);
-                            Clan existingClan = null;
-                            if (__instance.LeaderHero != null &&
-                                targetParty.LeaderHero != null)
+                            var rosters = MergeRosters(__instance, targetParty);
+                            var militia = new Militia(__instance.Position2D, rosters[0], rosters[1]);
+                            LogMilitiaFormed(militia.MobileParty);
+                            // testing mode
+                            if (testingMode)
                             {
-                                banditHero = SelectBanditHero(__instance, targetParty, mobileParty, out existingClan);
+                                militia.MobileParty.Position2D = Hero.MainHero.PartyBelongedTo.Position2D;
                             }
-
-                            __instance.RemoveParty();
-                            targetParty.MobileParty.RemoveParty();
-
-                            // add some reward money, it doesn't all go to loot
-                            banditHero.ChangeHeroGold(Rng.Next(minGoldGift, maxGoldGift + 1));
-                            // TODO add a few free level-ups for troops?
-                            // skip 0 - Looters.  They fuck stuff up;  infighting, bandits taking each other prisoner and ransoming   
-                            mobileParty.MemberRoster.AddToCounts(banditHero.CharacterObject, 1, true);
-                            // setting the owner affiliates the party with a kingdom for some reason, need to then set HomeSettlement
-                            mobileParty.Party.Owner = banditHero;
-                            mobileParty.ChangePartyLeader(banditHero.CharacterObject);
-                            Traverse.Create(mobileParty.LeaderHero.Clan).Method("RemoveHero", mobileParty.LeaderHero);
-                            // set the faction BACK to a bandit faction and remove it from the clan's false registry of it
-                            banditHero.Clan = existingClan ?? Clan.BanditFactions.ToList()[Rng.Next(1, 5)];
-                            Traverse.Create(banditHero.Clan).Method("RemoveHero", banditHero);
-                            // home has to be set to a hideout to make party aggressive (see PartyBase.MapFaction)
-                            var hideout = Settlement.FindAll(x => x.IsHideout() &&
-                                                                  x.MapFaction != CampaignData.NeutralFaction).GetRandomElement();
-                            Traverse.Create(banditHero).Property("HomeSettlement").SetValue(hideout);
-
-                            LogMilitiaFormed(mobileParty);
-                            banditHero.Name = new TextObject("Bandit Militia");
-                            mobileParty.Party.Visuals.SetMapIconAsDirty();
+                            militia.MobileParty.Party.Visuals.SetMapIconAsDirty();
+                            Trash(__instance);
+                            Trash(targetParty.MobileParty);
                         }
-                        // don't move to the other party if they are already moving to us
-                        else if (targetParty.MobileParty?.TargetParty?.MoveTargetParty != __instance)
+                        else
                         {
-                            Traverse.Create(__instance).Property("MoveTargetParty").SetValue(targetParty.MobileParty);
                             __instance.SetMoveGoToPoint(targetParty.Position2D);
                         }
                     }

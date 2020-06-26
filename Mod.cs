@@ -1,15 +1,19 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using HarmonyLib;
 using TaleWorlds.CampaignSystem;
-using TaleWorlds.CampaignSystem.SandBox.Issues;
+using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.Core;
 using TaleWorlds.InputSystem;
 using TaleWorlds.Localization;
 using TaleWorlds.MountAndBlade;
+using TaleWorlds.ObjectSystem;
+using static Bandit_Militias.Helper;
 using static Bandit_Militias.Helper.Globals;
-using Patches = Bandit_Militias.Misc.Patches;
+
+// ReSharper disable ConditionIsAlwaysTrueOrFalse
 
 // ReSharper disable ClassNeverInstantiated.Global  
 // ReSharper disable UnusedMember.Local  
@@ -32,20 +36,99 @@ namespace Bandit_Militias
 
         protected override void OnApplicationTick(float dt)
         {
-            // safety hotkey in case things go sideways
             if ((Input.IsKeyDown(InputKey.LeftControl) || Input.IsKeyDown(InputKey.RightControl)) &&
                 (Input.IsKeyDown(InputKey.LeftAlt) || Input.IsKeyDown(InputKey.RightAlt)) &&
                 Input.IsKeyPressed(InputKey.N))
             {
-                Trace("Nuke all hotkey pressed");
-                tempList.Clear();
-                tempList = MobileParty.All.Where(x => x.Name.ToString() == "Bandit Militia" && x.CurrentSettlement == null).ToList();
-                InformationManager.AddQuickInformation(new TextObject($"Nuking all {tempList.Count} Bandit Militia parties"));
-                tempList.Do(x =>
+                try
                 {
-                    Trace($"  Nuking {x.Name}");
-                    x.RemoveParty();
-                });
+                    Log("Clearing mod data.");
+                    InformationManager.AddQuickInformation(new TextObject("BANDIT MILITIAS CLEARED"));
+                    TempList.Clear();
+                    TempList = MobileParty.All.Where(x => x.Name.Equals("Bandit Militia")).ToList();
+                    Log($"Clearing {TempList.Count} Bandit Militia parties.");
+                    foreach (var mobileParty in TempList)
+                    {
+                        Trash(mobileParty);
+                    }
+
+                    var heroes = new List<Hero>();
+                    foreach (var hero in Hero.All)
+                    {
+                        if (hero.Name.Equals("Bandit Militia"))
+                        {
+                            heroes.Add(hero);
+                        }
+                    }
+
+                    foreach (var hero in heroes)
+                    {
+                        Traverse.Create(typeof(KillCharacterAction))
+                            .Method("MakeDead", hero).GetValue();
+                        MBObjectManager.Instance.UnregisterObject(hero);
+                    }
+
+                    KillNullPartyHeroes();
+
+                    var hasLogged = false;
+                    var badIssues = Campaign.Current.IssueManager.Issues
+                        .Where(x => Clan.BanditFactions.Contains(x.Key.MapFaction)).ToList();
+
+                    // ReSharper disable once ConditionIsAlwaysTrueOrFalse
+                    if (!hasLogged)
+                    {
+                        // ReSharper disable once RedundantAssignment
+                        hasLogged = true;
+                        Log($"Clearing {badIssues.Count} bad-issue heroes.");
+                        foreach (var issue in badIssues)
+                        {
+                            Traverse.Create(typeof(KillCharacterAction))
+                                .Method("MakeDead", issue.Key).GetValue();
+                            MBObjectManager.Instance.UnregisterObject(issue.Value);
+                        }
+                    }
+
+                    var badSettlements = Settlement.All
+                        .Where(x => x.IsHideout() && x.OwnerClan == null).ToList();
+                    hasLogged = false;
+
+                    if (!hasLogged)
+                    {
+                        hasLogged = true;
+                        Log($"Clearing {badSettlements.Count} bad settlements.");
+                        foreach (var settlement in badSettlements)
+                        {
+                            settlement.OwnerClan = Clan.BanditFactions.ToList()[Rng.Next(1, 5)];
+                        }
+                    }
+
+                    FinalizeBadMapEvents();
+                }
+                catch (Exception ex)
+                {
+                    Log(ex);
+                }
+            }
+
+            // lobotomize AI
+            if ((Input.IsKeyDown(InputKey.LeftControl) || Input.IsKeyDown(InputKey.RightControl)) &&
+                (Input.IsKeyDown(InputKey.LeftAlt) || Input.IsKeyDown(InputKey.RightAlt)) &&
+                Input.IsKeyPressed(InputKey.L))
+            {
+                try
+                {
+                    foreach (var party in MobileParty.All.Where(x => Clan.BanditFactions.Contains(x.Party?.Owner?.Clan)))
+                    {
+                        Log("Lobotomizing " + party);
+                        Traverse.Create(party).Property("DefaultBehavior").SetValue(AiBehavior.None);
+                        Traverse.Create(party).Property("ShortTermBehavior").SetValue(AiBehavior.None);
+                        party.RecalculateShortTermAi();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log(ex);
+                }
             }
         }
 
@@ -63,22 +146,6 @@ namespace Bandit_Militias
         {
             try
             {
-                // this patch tracks "Help with Bandits" quest so those units don't merge
-                // the patches maintain Helper.Globals.questParties
-                // note this is volatile and thus imperfect
-                var internalClass = AccessTools.Inner(typeof(MerchantNeedsHelpWithLootersIssueQuestBehavior),
-                    "MerchantNeedsHelpWithLootersIssueQuest");
-                var original = AccessTools.Method(internalClass, "HourlyTickParty");
-                var hourlyTickPartyPostfix = AccessTools.Method(typeof(Patches),
-                    nameof(Patches.HoursTickPartyPatch));
-                Log($"Patching {original}");
-                harmony.Patch(original, null, new HarmonyMethod(hourlyTickPartyPostfix));
-
-                original = AccessTools.Method(internalClass, "MobilePartyDestroyed");
-                var mobilePartyDestroyedPostfix = AccessTools.Method(typeof(Patches),
-                    nameof(Patches.MobilePartyDestroyedPostfix));
-                Log($"Patching {original}");
-                harmony.Patch(original, null, new HarmonyMethod(mobilePartyDestroyedPostfix));
             }
             catch (Exception ex)
             {

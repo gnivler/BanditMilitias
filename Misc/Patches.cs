@@ -4,13 +4,12 @@ using System.Linq;
 using HarmonyLib;
 using SandBox.View.Map;
 using TaleWorlds.CampaignSystem;
-using TaleWorlds.CampaignSystem.SandBox.CampaignBehaviors;
 using TaleWorlds.Core;
-using TaleWorlds.Localization;
+using TaleWorlds.Library;
 using TaleWorlds.ObjectSystem;
 using static Bandit_Militias.Helper.Globals;
 using static Bandit_Militias.Mod;
-using Debug = TaleWorlds.Library.Debug;
+using static Bandit_Militias.Helper;
 
 // ReSharper disable UnusedMember.Local   
 // ReSharper disable RedundantAssignment  
@@ -18,7 +17,7 @@ using Debug = TaleWorlds.Library.Debug;
 
 namespace Bandit_Militias.Misc
 {
-    public static class Patches
+    public class Patches
     {
         [HarmonyPatch(typeof(Campaign), "OnInitialize")]
         public static class CampaignOnInitializePatch
@@ -37,6 +36,11 @@ namespace Bandit_Militias.Misc
                             Log("Fixing null HomeSettlement (destroyed hideout)");
                             x.HomeSettlement = Game.Current.ObjectManager.GetObjectTypeList<Settlement>().Where(y => y.IsHideout()).GetRandomElement();
                         });
+                    foreach (var militia in militias.Where(x => x.LeaderHero == null))
+                    {
+                        Log("Removing hero-less militia");
+                        militia.RemoveParty();
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -54,60 +58,12 @@ namespace Bandit_Militias.Misc
                 try
                 {
                     Log("MapScreen.OnInitialize");
-                    Helper.CalcMergeCriteria();
-                    Trace("Setting Militia leaders");
-                    foreach (var party in MobileParty.All.Where(x => Helper.IsValidParty(x) &&
-                                                                     x.Name.ToString() == "Bandit Militia"))
-                    {
-                        var hero = party.MemberRoster.GetCharacterAtIndex(0);
-                        party.MemberRoster.AddToCounts(hero, 1, true);
-                        party.ChangePartyLeader(party.MemberRoster.GetCharacterAtIndex(0));
-                        if (party.LeaderHero.Clan == null)
-                        {
-                            Log("Fixing clan");
-                            party.LeaderHero.Clan = Clan.BanditFactions.ToList()[Rng.Next(1, Clan.BanditFactions.Count())];
-                        }
-
-                        //var aTopTierTroop = party.Party.MemberRoster.Troops
-                        //    .OrderByDescending(y => y.Tier).FirstOrDefault();
-                        //if (aTopTierTroop != null)
-                        //{
-                        //    party.ChangePartyLeader(aTopTierTroop);
-                        //}
-                    }
+                    CalcMergeCriteria();
                 }
                 catch (Exception ex)
                 {
                     Log(ex);
                 }
-            }
-        }
-
-        // keeps updating the list of quest parties and they're omitted from mergers
-        internal static void HoursTickPartyPatch(object __instance)
-        {
-            try
-            {
-                QuestParties = Traverse.Create(__instance).Field("_validPartiesList").GetValue<List<MobileParty>>();
-            }
-            catch (Exception ex)
-            {
-                Log(ex);
-            }
-        }
-
-        internal static void MobilePartyDestroyedPostfix(MobileParty mobileParty)
-        {
-            try
-            {
-                if (QuestParties.Contains(mobileParty))
-                {
-                    QuestParties.Remove(mobileParty);
-                }
-            }
-            catch (Exception ex)
-            {
-                Log(ex);
             }
         }
 
@@ -120,6 +76,7 @@ namespace Bandit_Militias.Misc
                 if (__exception is ArgumentNullException)
                 {
                     Log("Bandit Militias suppressing exception in Patches.cs MBObjectManagerUnregisterObjectPatch");
+                    Log(__exception);
                     Debug.Print("Bandit Militias suppressing exception in Patches.cs MBObjectManagerUnregisterObjectPatch");
                     Debug.Print(__exception.ToString());
                     return null;
@@ -130,49 +87,51 @@ namespace Bandit_Militias.Misc
         }
 
         // BUG more vanilla patching
-        [HarmonyPatch(typeof(BanditsCampaignBehavior), "OnSettlementEntered")]
-        public static class BanditsCampaignBehaviorOnSettlementEnteredPatch
-        {
-            private static bool Prefix(ref MobileParty mobileParty, Hero hero)
-            {
-                if (mobileParty == null)
-                {
-                    Trace("Fixing vanilla call with null MobileParty at BanditsCampaignBehavior.OnSettlementEntered");
-                    if (hero == null)
-                    {
-                        Trace("Hero is also null");
-                        return false;
-                    }
+        //[HarmonyPatch(typeof(BanditsCampaignBehavior), "OnSettlementEntered")]
+        //public static class BanditsCampaignBehaviorOnSettlementEnteredPatch
+        //{
+        //    private static bool Prefix(ref MobileParty mobileParty, Hero hero)
+        //    {
+        //        if (mobileParty == null)
+        //        {
+        //            Trace("Fixing vanilla call with null MobileParty at BanditsCampaignBehavior.OnSettlementEntered");
+        //            if (hero == null)
+        //            {
+        //                Trace("Hero is also null");
+        //                return false;
+        //            }
+        //
+        //            var parties = hero.OwnedParties?.ToList();
+        //            if (parties == null ||
+        //                parties.Count == 0)
+        //            {
+        //                Trace("Unable to fix call with null MobileParty at BanditsCampaignBehavior.OnSettlementEntered");
+        //                return false;
+        //            }
+        //
+        //            mobileParty = parties[0]?.MobileParty;
+        //            Trace($"New party: {mobileParty}");
+        //            if (mobileParty == null)
+        //            {
+        //                // some shit still falls through this far
+        //                Trace("Fall-through");
+        //                return false;
+        //            }
+        //        }
+        //
+        //        return true;
+        //    }
+        //}
 
-                    var parties = hero.OwnedParties?.ToList();
-                    if (parties == null ||
-                        parties.Count == 0)
-                    {
-                        Trace("No parties available...");
-                        return false;
-                    }
-
-                    mobileParty = parties[0]?.MobileParty;
-                    Trace($"New party: {mobileParty}");
-                    if (mobileParty == null)
-                    {
-                        // some shit still falls through this far
-                        return false;
-                    }
-                }
-
-                return true;
-            }
-        }
-
-        [HarmonyPatch(typeof(MapEventManager), MethodType.Constructor, typeof(Game))]
+        [HarmonyPatch(typeof(MapEventManager), "OnAfterLoad")]
         public static class MapEventManagerCtorPatch
         {
-            private static void Postfix(MapEventManager __instance)
+            private static void Postfix(List<MapEvent> ___mapEvents)
             {
                 try
                 {
-                    Helper.Globals.MapEventManager = __instance;
+                    MapEvents = ___mapEvents;
+                    FinalizeBadMapEvents();
                 }
                 catch (Exception ex)
                 {
@@ -181,46 +140,60 @@ namespace Bandit_Militias.Misc
             }
         }
 
-        // BUG (seeing leftovers being cleaned up, in 1.4.2b)
-        [HarmonyPatch(typeof(MapEventManager), "OnAfterLoad")]
-        public static class MapEventManagerOnAfterLoadPatch
-        {
-            private static void Postfix(List<MapEvent> ___mapEvents)
-            {
-                try
-                {
-                    Helper.FinalizeBadMapEvents(___mapEvents);
-                }
-                catch (Exception e)
-                {
-                    Log(e);
-                }
-            }
-        }
-
-        // pretty sure this doesn't work.  WIP, have seen bandits fleeing
-        // not even militia, just looters fighting looters.  v1.4.2b
-        //[HarmonyPatch(typeof(MobileParty), "GetFleeBehavior")]
-        //public static class MobilePartyGetFleeBehaviorPatch
+        // prevents vanilla NRE from parties without Owner trying to pay for upgrades... 
+        //[HarmonyPatch(typeof(PartyUpgrader), "UpgradeReadyTroops", typeof(PartyBase))]
+        //public static class PartyUpgraderUpgradeReadyTroopsPatch
         //{
-        //    private static bool Prefix(MobileParty __instance, MobileParty partyToFleeFrom)
+        //    private static bool Prefix(PartyBase party)
         //    {
-        //        if (__instance.CurrentSettlement != null ||
-        //            partyToFleeFrom.CurrentSettlement != null)
+        //        if (party.MobileParty == null)
         //        {
+        //            Trace("party.MobileParty == null");
         //            return false;
         //        }
         //
-        //        if (__instance.IsBandit && partyToFleeFrom.IsBandit)
+        //        if (party.Owner == null)
         //        {
-        //            Log($"Not fleeing from {partyToFleeFrom.Name} for {__instance.Name}");
-        //            Log($"this fucked up party {__instance.Name} claims to be a bandit, its clan is: {__instance.LeaderHero.Clan}");
+        //            Trace("party.Owner == null, that throws vanilla in 1.4.2b, Prefix false");
         //            return false;
         //        }
         //
         //        return true;
         //    }
         //}
+
+        [HarmonyPatch(typeof(FactionManager), "IsAtWarAgainstFaction")]
+        public static class FactionManagerIsAtWarAgainstFactionPatch
+        {
+            // 1.4.2b vanilla code not optimized and checks against own faction
+            private static bool Prefix(IFaction faction1, IFaction faction2, ref bool __result)
+            {
+                if (faction1 == faction2)
+                {
+                    __result = false;
+                    return false;
+                }
+
+                return true;
+            }
+        }
+
+        [HarmonyPatch(typeof(FactionManager), "IsAlliedWithFaction")]
+        public static class FactionManagerIsAlliedWithFactionPatch
+        {
+            // 1.4.2b vanilla code not optimized and checks against own faction  
+            private static bool Prefix(IFaction faction1, IFaction faction2, ref bool __result)
+            {
+                if (faction1 == faction2)
+                {
+                    __result = true;
+                    return false;
+                }
+
+                return true;
+            }
+        }
+
 
         [HarmonyPatch(typeof(Campaign), "HourlyTick")]
         public static class CampaignHourlyTickPatch
@@ -229,23 +202,24 @@ namespace Bandit_Militias.Misc
 
             private static void Postfix()
             {
-                tempList.Clear();
+                TempList.Clear();
                 foreach (var mobileParty in MobileParty.All
                     .Where(x => x.MemberRoster.TotalManCount == 0))
                 {
-                    tempList.Add(mobileParty);
+                    TempList.Add(mobileParty);
                 }
 
-                PurgeList($"CampaignHourlyTickPatch Clearing {tempList.Count} empty parties");
+                // this was apparently only necessary when the merge distance was smaller than the split min radius
+                // in InitializeMobileParty
+                PurgeList($"CampaignHourlyTickPatch Clearing {TempList.Count} empty parties");
                 try
                 {
-                    // BUG weird neutral bandits??  - caused by merging bandits in combat?
                     foreach (var mobileParty in MobileParty.All
                         .Where(x => x.Name.Equals("Bandit Militia") &&
                                     x.MapFaction == CampaignData.NeutralFaction))
                     {
                         Log("This bandit shouldn't exist " + mobileParty + " size " + mobileParty.MemberRoster.TotalManCount);
-                        tempList.Add(mobileParty);
+                        TempList.Add(mobileParty);
                     }
                 }
                 catch (Exception ex)
@@ -253,90 +227,23 @@ namespace Bandit_Militias.Misc
                     Log(ex);
                 }
 
-                PurgeList($"CampaignHourlyTickPatch Clearing {tempList.Count} weird neutral parties");
-                var mapEvents = Traverse.Create(Helper.Globals.MapEventManager).Field("mapEvents").GetValue<List<MapEvent>>();
-                Helper.FinalizeBadMapEvents(mapEvents);
-                PurgeList($"CampaignHourlyTickPatch Clearing {tempList.Count} bad map events");
+                PurgeList($"CampaignHourlyTickPatch Clearing {TempList.Count} weird neutral parties");
+                FinalizeBadMapEvents();
+                PurgeList($"CampaignHourlyTickPatch Clearing {TempList.Count} bad map events");
 
                 if (hoursPassed == 23)
                 {
-                    Helper.CalcMergeCriteria();
+                    CalcMergeCriteria();
                     hoursPassed = 0;
                 }
 
                 hoursPassed++;
-
-                void PurgeList(string message)
-                {
-                    if (tempList.Count > 0)
-                    {
-                        Log(message);
-                        foreach (var mobileParty in tempList)
-                        {
-                            mobileParty.RemoveParty();
-                            mobileParty.Party.Visuals.SetMapIconAsDirty();
-                        }
-
-                        tempList.Clear();
-                    }
-                }
-            }
-        }
-
-        // makes the hero's name appear in conversation
-        [HarmonyPatch(typeof(ConversationManager), "AddConversationAgent", typeof(IAgent))]
-        public static class ConversationManagerAddConversationAgentPatch
-        {
-            private static void Prefix(ref IAgent agent)
-            {
-                try
-                {
-                    if (agent.Character.Name.Equals("Bandit Militia"))
-                    {
-                        var character = (CharacterObject) agent.Character;
-                        character.HeroObject.RenameHeroBackIfNeeded();
-                        LastConversationName = character.Name.ToString();
-                        var rename = new TextObject($"{character.HeroObject.FirstName} - Bandit Militia");
-                        agent.Character.Name = rename;
-                        Log("Renamed to " + rename);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Log(ex);
-                }
-            }
-        }
-
-        [HarmonyPatch(typeof(ConversationManager), "EndConversation")]
-        public static class ConversationManagerEndConversationPatch
-        {
-            private static void Prefix(List<IAgent> ____conversationAgents)
-            {
-                try
-                {
-                    Trace($"____conversationAgents {____conversationAgents}");
-                    foreach (var agent in ____conversationAgents)
-                    {
-                        if (agent.Character.Name.ToString().EndsWith("- Bandit Militia"))
-                        {
-                            var character = (CharacterObject) agent.Character;
-                            character.HeroObject.RenameHeroBackIfNeeded();
-                            agent.Character.Name = new TextObject(LastConversationName);
-                            character.HeroObject.PartyBelongedTo.Name = new TextObject("Bandit Militia");
-                            Log("Renamed back to " + LastConversationName);
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Log(ex);
-                }
             }
         }
 
         // just disperse small militias
-        [HarmonyPatch(typeof(MapEventSide), "HandleMapEventEndForParty")]
+        // bug changed method to HandleMapEventEnd, lightly tested
+        [HarmonyPatch(typeof(MapEventSide), "HandleMapEventEnd")]
         public static class MapEventSideHandleMapEventEndForPartyPatch
         {
             private static void Postfix(MapEventSide __instance)
@@ -349,8 +256,7 @@ namespace Bandit_Militias.Misc
                             partyBase.MemberRoster.TotalManCount.IsBetween(0, 10))
                         {
                             Trace("Dispersing militia of " + partyBase.MemberRoster.TotalManCount);
-                            partyBase.MobileParty.RemoveParty();
-                            partyBase.Visuals.SetMapIconAsDirty();
+                            Trash(partyBase.MobileParty);
                         }
                     }
                 }

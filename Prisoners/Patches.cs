@@ -27,7 +27,7 @@ namespace Bandit_Militias.Prisoners
         public static class DefaultLogsCampaignBehaviorOnPrisonerTakenPath
         {
             // skip the original method to silence logs
-            private static bool Prefix(PartyBase party, Hero hero) => !hero.Name.ToString().EndsWith("- Bandit Militia");
+            private static bool Prefix(Hero hero) => !hero.Name.ToString().EndsWith("- Bandit Militia");
         }
 
         // skips over the capture option, killing the bandit hero
@@ -55,7 +55,13 @@ namespace Bandit_Militias.Prisoners
                                 var hero = Hero.All.First(x => capturedHero.Character.StringId == x.StringId);
                                 AccessTools.Method(typeof(KillCharacterAction), "ApplyInternal")
                                     .Invoke(null, AccessTools.all, null,
-                                        new object[] {hero, Hero.MainHero, KillCharacterAction.KillCharacterActionDetail.DiedInBattle, true}, CultureInfo.InvariantCulture);
+                                        new object[]
+                                        {
+                                            hero,
+                                            Hero.MainHero,
+                                            KillCharacterAction.KillCharacterActionDetail.DiedInBattle,
+                                            true
+                                        }, CultureInfo.InvariantCulture);
                                 ____mapEventState = PlayerEncounterState.FreeHeroes;
                             }
                         }
@@ -69,30 +75,34 @@ namespace Bandit_Militias.Prisoners
         }
 
         // blocks AI battles from taking Militia hero prisoners
+        // need to replace the original since it only looks for one hero
         [HarmonyPatch(typeof(MapEventSide), "CaptureWoundedHeroes")]
         public static class MapEventCaptureWoundedHeroesPatch
         {
             private static bool Prefix(PartyBase defeatedParty)
             {
-                return !defeatedParty.Name.Equals("Bandit Militia");
-            }
-        }
+                try
+                {
+                    if (defeatedParty.Name.Equals("Bandit Militia"))
+                    {
+                        for (var i = 0; i < defeatedParty.MemberRoster.Count; i++)
+                        {
+                            var troop = defeatedParty.MemberRoster.GetElementCopyAtIndex(i);
+                            if (troop.Character.IsHero)
+                            {
+                                defeatedParty.MemberRoster.AddToCountsAtIndex(i, -1, 0, 0, false);
+                            }
+                        }
         
-        [HarmonyPatch(typeof(MapEventSide), "CaptureRegularTroops")]
-        public static class MapEventCaptureRegularTroopsPatch
-        {
-            private static bool Prefix(PartyBase defeatedParty)
-            {
-                return !defeatedParty.Name.Equals("Bandit Militia");
-            }
-        }
+                        return false;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Mod.Log(ex);
+                }
         
-        [HarmonyPatch(typeof(MapEventSide), "CaptureWoundedTroops")]
-        public static class MapEventCaptureWoundedTroopsPatch
-        {
-            private static bool Prefix(PartyBase defeatedParty)
-            {
-                return !defeatedParty.Name.Equals("Bandit Militia");
+                return true;
             }
         }
     }

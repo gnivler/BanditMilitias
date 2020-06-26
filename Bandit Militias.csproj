@@ -35,6 +35,15 @@
         <Reference Include="0Harmony, Version=2.0.1.0, Culture=neutral, PublicKeyToken=null">
           <HintPath>..\..\BannerlordRefs\0Harmony.dll</HintPath>
         </Reference>
+        <Reference Include="AutoMapper, Version=9.0.0.0, Culture=neutral, PublicKeyToken=be96cd2c38ef1005">
+          <HintPath>packages\AutoMapper.9.0.0\lib\net461\AutoMapper.dll</HintPath>
+          <Private>True</Private>
+        </Reference>
+        <Reference Include="Microsoft.CSharp" />
+        <Reference Include="Newtonsoft.Json, Version=12.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed">
+          <HintPath>packages\Newtonsoft.Json.12.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
+          <Private>True</Private>
+        </Reference>
         <Reference Include="SandBox, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
           <HintPath>..\..\..\SteamLibrary\steamapps\common\Mount &amp; Blade II Bannerlord\Modules\SandBox\bin\Win64_Shipping_Client\SandBox.dll</HintPath>
         </Reference>
@@ -187,6 +196,7 @@
     </ItemGroup>
     <ItemGroup>
         <Compile Include="Helper.cs" />
+        <Compile Include="Militia.cs" />
         <Compile Include="Militias\Patches.cs" />
         <Compile Include="Misc\Patches.cs" />
         <Compile Include="Mod.cs" />
