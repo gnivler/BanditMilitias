@@ -6,7 +6,6 @@ using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.Core;
 using TaleWorlds.ObjectSystem;
-using static Bandit_Militias.Mod;
 using static Bandit_Militias.Helper.Globals;
 
 // ReSharper disable InconsistentNaming
@@ -18,7 +17,8 @@ namespace Bandit_Militias
         public static class Globals
         {
             // dev
-            internal static bool testingMode = false;
+            internal static readonly bool testingMode = false;
+            internal static LogLevel logging = LogLevel.Debug;
 
             // how far to look
             internal const float SearchRadius = 25;
@@ -47,7 +47,7 @@ namespace Bandit_Militias
             internal static List<MapEvent> MapEvents;
 
             // collections
-            internal static List<MobileParty> TempList = new List<MobileParty>();
+            internal static readonly List<MobileParty> TempList = new List<MobileParty>();
         }
 
         internal static int GetMountedTroopHeadcount(TroopRoster troopRoster)
@@ -66,7 +66,7 @@ namespace Bandit_Militias
             AvgHeroPartyMaxSize = Math.Round(MobileParty.All
                 .Where(x => x.LeaderHero != null && !x.IsBandit).Select(x => x.Party.PartySizeLimit).Average());
             AvgHeroPartyMaxSize *= maxPartySizeFactor;
-            Trace($"Daily calculations => size: {AvgHeroPartyMaxSize:0} strength: {MaxPartyStrength:0}");
+            Log($"Daily calculations => size: {AvgHeroPartyMaxSize:0} strength: {MaxPartyStrength:0}", LogLevel.Debug);
         }
 
         internal static void TrySplitUpParty(MobileParty __instance)
@@ -111,27 +111,26 @@ namespace Bandit_Militias
         {
             try
             {
-                Trace($"Processing troops: {original.MemberRoster.Count} types, {original.MemberRoster.TotalManCount} in total");
+                Log($"Processing troops: {original.MemberRoster.Count} types, {original.MemberRoster.TotalManCount} in total", LogLevel.Debug);
                 foreach (var rosterElement in original.MemberRoster)
                 {
                     SplitRosters(troops1, troops2, rosterElement);
                 }
 
-                Trace("party1.TotalManCount " + troops1.TotalManCount);
-                Trace("party2.TotalManCount " + troops2.TotalManCount);
-
+                Log("party1.TotalManCount " + troops1.TotalManCount, LogLevel.Debug);
+                Log("party2.TotalManCount " + troops2.TotalManCount, LogLevel.Debug);
                 if (original.PrisonRoster.TotalManCount > 0)
                 {
                     // gross copy paste
-                    Trace($"Processing prisoners: {original.PrisonRoster.Count} types, {original.PrisonRoster.TotalManCount} in total");
+                    Log($"Processing prisoners: {original.PrisonRoster.Count} types, {original.PrisonRoster.TotalManCount} in total", LogLevel.Debug);
                     foreach (var rosterElement in original.PrisonRoster)
                     {
                         SplitRosters(prisoners1, prisoners2, rosterElement);
                     }
                 }
 
-                Trace("prisoners1.TotalManCount " + prisoners1.TotalManCount);
-                Trace("prisoners2.TotalManCount " + prisoners2.TotalManCount);
+                Log("prisoners1.TotalManCount " + prisoners1.TotalManCount, LogLevel.Debug);
+                Log("prisoners2.TotalManCount " + prisoners2.TotalManCount, LogLevel.Debug);
 
                 foreach (var item in original.ItemRoster)
                 {
@@ -146,7 +145,7 @@ namespace Bandit_Militias
             }
             catch (Exception ex)
             {
-                Log(ex);
+                Log(ex, LogLevel.Error);
             }
         }
 
@@ -175,16 +174,16 @@ namespace Bandit_Militias
                 var militia2 = new Militia(original.Position2D, party2, prisoners2);
                 Traverse.Create(militia1.MobileParty.Party).Property("ItemRoster").SetValue(inventory1);
                 Traverse.Create(militia2.MobileParty.Party).Property("ItemRoster").SetValue(inventory2);
-                Log($"{militia1.MobileParty.MapFaction.Name} <<< Split >>> {militia2.MobileParty.MapFaction.Name}");
+                Log($"{militia1.MobileParty.MapFaction.Name} <<< Split >>> {militia2.MobileParty.MapFaction.Name}", LogLevel.Info);
                 LogMilitiaFormed(militia1.MobileParty.Party.MobileParty);
                 LogMilitiaFormed(militia2.MobileParty.Party.MobileParty);
                 militia1.MobileParty.Party.Visuals.SetMapIconAsDirty();
                 militia2.MobileParty.Party.Visuals.SetMapIconAsDirty();
                 Trash(original);
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                Log(e);
+                Log(ex, LogLevel.Error);
             }
         }
 
@@ -250,7 +249,7 @@ namespace Bandit_Militias
                 if (!hasLogged)
                 {
                     hasLogged = true;
-                    Log($"Clearing {heroes.Count} null-party heroes.");
+                    Log($"Clearing {heroes.Count} null-party heroes.", LogLevel.Debug);
                 }
 
                 Traverse.Create(typeof(KillCharacterAction))
@@ -264,7 +263,7 @@ namespace Bandit_Militias
         {
             if (MapEvents.Count == 0)
             {
-                Trace("No map events to finalize");
+                Log("No map events to finalize", LogLevel.Debug);
                 return;
             }
 
@@ -273,12 +272,12 @@ namespace Bandit_Militias
                 if (mapEvent.AttackerSide.TroopCount == 0 ||
                     mapEvent.DefenderSide.TroopCount == 0)
                 {
-                    Log($"Removing bad field battle with {mapEvent.AttackerSide.LeaderParty.Name}, {mapEvent.DefenderSide.LeaderParty.Name}");
+                    Log($"Removing bad field battle with {mapEvent.AttackerSide.LeaderParty.Name}, {mapEvent.DefenderSide.LeaderParty.Name}", LogLevel.Info);
                     mapEvent.FinalizeEvent();
                 }
                 else
                 {
-                    Trace($"Leaving valid field battle with {mapEvent.AttackerSide.LeaderParty.Name}, {mapEvent.DefenderSide.LeaderParty.Name}");
+                    Log($"Leaving valid field battle with {mapEvent.AttackerSide.LeaderParty.Name}, {mapEvent.DefenderSide.LeaderParty.Name}", LogLevel.Info);
                 }
             }
         }
@@ -287,7 +286,7 @@ namespace Bandit_Militias
         {
             if (TempList.Count > 0)
             {
-                Log(message);
+                Log(message, LogLevel.Debug);
                 foreach (var mobileParty in TempList)
                 {
                     mobileParty.RemoveParty();
@@ -306,12 +305,7 @@ namespace Bandit_Militias
             var banditString = $"{mobileParty.Name} forms led by {mobileParty.LeaderHero}";
             var troopString = $"{mobileParty.Party.NumberOfAllMembers} troop" + (mobileParty.Party.NumberOfAllMembers > 1 ? "s" : "");
             var strengthString = $"{Math.Round(mobileParty.Party.TotalStrength)} strength";
-            Log($"{banditString,-55} | {troopString,12} | {strengthString,12} |");
-        }
-
-        internal static bool IsBetween(this int original, int min, int max)
-        {
-            return original <= max && original >= min;
+            Log($"{banditString,-55} | {troopString,12} | {strengthString,12} |", LogLevel.Info);
         }
 
         private static bool IsTooBusyToMerge(this MobileParty mobileParty)
@@ -338,6 +332,14 @@ namespace Bandit_Militias
 
             mobileParty.RemoveParty();
             MBObjectManager.Instance.UnregisterObject(mobileParty);
+        }
+        
+        internal static void Log(object input, LogLevel logLevel)
+        {
+            if (logging >= logLevel)
+            {
+                FileLog.Log($"[Bandit Militias] {input ?? "null"}");
+            }
         }
     }
 }

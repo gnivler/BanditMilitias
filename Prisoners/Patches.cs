@@ -6,6 +6,7 @@ using HarmonyLib;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.SandBox.CampaignBehaviors;
+using static Bandit_Militias.Helper;
 
 // ReSharper disable UnusedMember.Local   
 // ReSharper disable RedundantAssignment  
@@ -69,7 +70,7 @@ namespace Bandit_Militias.Prisoners
                 }
                 catch (Exception ex)
                 {
-                    Mod.Log(ex);
+                    Log(ex , LogLevel.Error);
                 }
             }
         }
@@ -99,7 +100,7 @@ namespace Bandit_Militias.Prisoners
                 }
                 catch (Exception ex)
                 {
-                    Mod.Log(ex);
+                    Log(ex, LogLevel.Error);
                 }
         
                 return true;

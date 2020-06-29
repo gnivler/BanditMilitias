@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using HarmonyLib;
@@ -13,14 +12,21 @@ using TaleWorlds.ObjectSystem;
 using static Bandit_Militias.Helper;
 using static Bandit_Militias.Helper.Globals;
 
-// ReSharper disable ConditionIsAlwaysTrueOrFalse
-
+// ReSharper disable ConditionIsAlwaysTrueOrFalse  
 // ReSharper disable ClassNeverInstantiated.Global  
 // ReSharper disable UnusedMember.Local  
 // ReSharper disable InconsistentNaming
 
 namespace Bandit_Militias
 {
+    public enum LogLevel
+    {
+        Debug,
+        Error,
+        Info,
+        Disabled
+    }
+
     public class Mod : MBSubModuleBase
     {
         private static readonly Harmony harmony = new Harmony("ca.gnivler.bannerlord.BanditMilitias");
@@ -28,7 +34,7 @@ namespace Bandit_Militias
         protected override void OnSubModuleLoad()
         {
             //Harmony.DEBUG = true;
-            Log("Startup " + DateTime.Now.ToShortTimeString());
+            Log("Startup " + DateTime.Now.ToShortTimeString(), LogLevel.Info);
             RunManualPatches();
             harmony.PatchAll(Assembly.GetExecutingAssembly());
             //Harmony.DEBUG = false; 
@@ -42,26 +48,9 @@ namespace Bandit_Militias
             {
                 try
                 {
-                    Log("Clearing mod data.");
+                    Log("Clearing mod data.", LogLevel.Info);
                     InformationManager.AddQuickInformation(new TextObject("BANDIT MILITIAS CLEARED"));
-                    TempList.Clear();
-                    TempList = MobileParty.All.Where(x => x.Name.Equals("Bandit Militia")).ToList();
-                    Log($"Clearing {TempList.Count} Bandit Militia parties.");
-                    foreach (var mobileParty in TempList)
-                    {
-                        Trash(mobileParty);
-                    }
-
-                    var heroes = new List<Hero>();
-                    foreach (var hero in Hero.All)
-                    {
-                        if (hero.Name.Equals("Bandit Militia"))
-                        {
-                            heroes.Add(hero);
-                        }
-                    }
-
-                    foreach (var hero in heroes)
+                    foreach (var hero in TempList)
                     {
                         Traverse.Create(typeof(KillCharacterAction))
                             .Method("MakeDead", hero).GetValue();
@@ -79,7 +68,7 @@ namespace Bandit_Militias
                     {
                         // ReSharper disable once RedundantAssignment
                         hasLogged = true;
-                        Log($"Clearing {badIssues.Count} bad-issue heroes.");
+                        Log($"Clearing {badIssues.Count} bad-issue heroes.", LogLevel.Info);
                         foreach (var issue in badIssues)
                         {
                             Traverse.Create(typeof(KillCharacterAction))
@@ -91,55 +80,63 @@ namespace Bandit_Militias
                     var badSettlements = Settlement.All
                         .Where(x => x.IsHideout() && x.OwnerClan == null).ToList();
                     hasLogged = false;
-
                     if (!hasLogged)
                     {
                         hasLogged = true;
-                        Log($"Clearing {badSettlements.Count} bad settlements.");
+                        Log($"Clearing {badSettlements.Count} bad settlements.", LogLevel.Info);
                         foreach (var settlement in badSettlements)
                         {
                             settlement.OwnerClan = Clan.BanditFactions.ToList()[Rng.Next(1, 5)];
                         }
                     }
 
+
                     FinalizeBadMapEvents();
                 }
                 catch (Exception ex)
                 {
-                    Log(ex);
+                    Log(ex, LogLevel.Error);
                 }
             }
+
+            //if ((Input.IsKeyDown(InputKey.LeftControl) || Input.IsKeyDown(InputKey.RightControl)) &&
+            //    (Input.IsKeyDown(InputKey.LeftAlt) || Input.IsKeyDown(InputKey.RightAlt)) &&
+            //    Input.IsKeyPressed(InputKey.F))
+            //{
+            //    try
+            //    {
+            //        foreach (var hero in MobileParty.All.Where(x => x.Name.Equals("Bandit Militia") && x.LeaderHero == null).Select(x => x.LeaderHero))
+            //        {
+            //            Log("Fixing party without a hero", LogLevel.Debug);
+            //            Militia.FindHeroMilitia(hero).Configure();
+            //        }
+            //    }
+            //    catch (Exception ex)
+            //    {
+            //        Log(ex, LogLevel.Error);
+            //    }
+            //}
 
             // lobotomize AI
-            if ((Input.IsKeyDown(InputKey.LeftControl) || Input.IsKeyDown(InputKey.RightControl)) &&
-                (Input.IsKeyDown(InputKey.LeftAlt) || Input.IsKeyDown(InputKey.RightAlt)) &&
-                Input.IsKeyPressed(InputKey.L))
-            {
-                try
-                {
-                    foreach (var party in MobileParty.All.Where(x => Clan.BanditFactions.Contains(x.Party?.Owner?.Clan)))
-                    {
-                        Log("Lobotomizing " + party);
-                        Traverse.Create(party).Property("DefaultBehavior").SetValue(AiBehavior.None);
-                        Traverse.Create(party).Property("ShortTermBehavior").SetValue(AiBehavior.None);
-                        party.RecalculateShortTermAi();
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Log(ex);
-                }
-            }
-        }
-
-        internal static void Log(object input)
-        {
-            //FileLog.Log($"[Bandit Militias] {input ?? "null"}");
-        }
-
-        internal static void Trace(object input)
-        {
-            //FileLog.Log($"[Bandit Militias] {input ?? "null"}");
+            //if ((Input.IsKeyDown(InputKey.LeftControl) || Input.IsKeyDown(InputKey.RightControl)) &&
+            //    (Input.IsKeyDown(InputKey.LeftAlt) || Input.IsKeyDown(InputKey.RightAlt)) &&
+            //    Input.IsKeyPressed(InputKey.L))
+            //{
+            //    try
+            //    {
+            //        foreach (var party in MobileParty.All.Where(x => Clan.BanditFactions.Contains(x.Party?.Owner?.Clan)))
+            //        {
+            //            Log("Lobotomizing " + party, LogLevel.Debug);
+            //            Traverse.Create(party).Property("DefaultBehavior").SetValue(AiBehavior.None);
+            //            Traverse.Create(party).Property("ShortTermBehavior").SetValue(AiBehavior.None);
+            //            party.RecalculateShortTermAi();
+            //        }
+            //    }
+            //    catch (Exception ex)
+            //    {
+            //        Log(ex, LogLevel.Error);
+            //    }
+            //}
         }
 
         private static void RunManualPatches()
@@ -149,7 +146,7 @@ namespace Bandit_Militias
             }
             catch (Exception ex)
             {
-                Log(ex);
+                Log(ex, LogLevel.Error);
             }
         }
     }

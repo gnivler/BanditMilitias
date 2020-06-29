@@ -8,9 +8,9 @@ using TaleWorlds.Core;
 using TaleWorlds.Library;
 using TaleWorlds.ObjectSystem;
 using static Bandit_Militias.Helper.Globals;
-using static Bandit_Militias.Mod;
 using static Bandit_Militias.Helper;
 
+// ReSharper disable UnusedType.Global  
 // ReSharper disable UnusedMember.Local   
 // ReSharper disable RedundantAssignment  
 // ReSharper disable InconsistentNaming
@@ -26,25 +26,25 @@ namespace Bandit_Militias.Misc
             {
                 try
                 {
-                    Log("Campaign.OnInitialize");
+                    Log("Campaign.OnInitialize", LogLevel.Debug);
                     var militias = MobileParty.All.Where(x => x != null && x.Name.Equals("Bandit Militia")).ToList();
-                    Log($"Militias: {militias.Count()}");
-                    Log($"Homeless: {militias.Count(x => x.HomeSettlement == null)}");
+                    Log($"Militias: {militias.Count}", LogLevel.Info);
+                    Log($"Homeless: {militias.Count(x => x.HomeSettlement == null)}", LogLevel.Info);
                     militias.Where(x => x.HomeSettlement == null)
                         .Do(x =>
                         {
-                            Log("Fixing null HomeSettlement (destroyed hideout)");
+                            Log("Fixing null HomeSettlement (destroyed hideout)", LogLevel.Info);
                             x.HomeSettlement = Game.Current.ObjectManager.GetObjectTypeList<Settlement>().Where(y => y.IsHideout()).GetRandomElement();
                         });
                     foreach (var militia in militias.Where(x => x.LeaderHero == null))
                     {
-                        Log("Removing hero-less militia");
+                        Log("Removing hero-less militia", LogLevel.Info);
                         militia.RemoveParty();
                     }
                 }
                 catch (Exception ex)
                 {
-                    Log(ex);
+                    Log(ex, LogLevel.Error);
                 }
             }
         }
@@ -57,12 +57,12 @@ namespace Bandit_Militias.Misc
             {
                 try
                 {
-                    Log("MapScreen.OnInitialize");
+                    Log("MapScreen.OnInitialize", LogLevel.Debug);
                     CalcMergeCriteria();
                 }
                 catch (Exception ex)
                 {
-                    Log(ex);
+                    Log(ex, LogLevel.Error);
                 }
             }
         }
@@ -75,8 +75,8 @@ namespace Bandit_Militias.Misc
             {
                 if (__exception is ArgumentNullException)
                 {
-                    Log("Bandit Militias suppressing exception in Patches.cs MBObjectManagerUnregisterObjectPatch");
-                    Log(__exception);
+                    Log("Bandit Militias suppressing exception in Patches.cs MBObjectManagerUnregisterObjectPatch", LogLevel.Debug);
+                    Log(__exception, LogLevel.Debug);
                     Debug.Print("Bandit Militias suppressing exception in Patches.cs MBObjectManagerUnregisterObjectPatch");
                     Debug.Print(__exception.ToString());
                     return null;
@@ -135,7 +135,7 @@ namespace Bandit_Militias.Misc
                 }
                 catch (Exception ex)
                 {
-                    Log(ex);
+                    Log(ex, LogLevel.Error);
                 }
             }
         }
@@ -218,13 +218,13 @@ namespace Bandit_Militias.Misc
                         .Where(x => x.Name.Equals("Bandit Militia") &&
                                     x.MapFaction == CampaignData.NeutralFaction))
                     {
-                        Log("This bandit shouldn't exist " + mobileParty + " size " + mobileParty.MemberRoster.TotalManCount);
+                        Log("This bandit shouldn't exist " + mobileParty + " size " + mobileParty.MemberRoster.TotalManCount, LogLevel.Debug);
                         TempList.Add(mobileParty);
                     }
                 }
                 catch (Exception ex)
                 {
-                    Log(ex);
+                    Log(ex, LogLevel.Error);
                 }
 
                 PurgeList($"CampaignHourlyTickPatch Clearing {TempList.Count} weird neutral parties");
@@ -243,26 +243,34 @@ namespace Bandit_Militias.Misc
 
         // just disperse small militias
         // bug changed method to HandleMapEventEnd, lightly tested
-        [HarmonyPatch(typeof(MapEventSide), "HandleMapEventEnd")]
+        [HarmonyPatch(typeof(MapEventSide), "HandleMapEventEndForParty")]
         public static class MapEventSideHandleMapEventEndForPartyPatch
         {
-            private static void Postfix(MapEventSide __instance)
+            private static void Postfix(PartyBase party)
             {
                 try
                 {
-                    foreach (var partyBase in __instance.Parties.Where(x => x.LeaderHero != null))
+                    if (party.Name.Equals("Bandit Militia"))
                     {
-                        if (partyBase.LeaderHero.Name.Equals("Bandit Militia") &&
-                            partyBase.MemberRoster.TotalManCount.IsBetween(0, 10))
+                        if (party.MemberRoster.TotalHealthyCount < 20)
                         {
-                            Trace("Dispersing militia of " + partyBase.MemberRoster.TotalManCount);
-                            Trash(partyBase.MobileParty);
+                            Log("Dispersing militia of " + party.MemberRoster.TotalManCount, LogLevel.Debug);
+                            Trash(party.MobileParty);
+                        }
+                        else if (party.LeaderHero == null)
+                        {
+                            var militias = Militia.All.Where(x => x.MobileParty == party.MobileParty);
+                            foreach (var militia in militias)
+                            {
+                                Log("Reconfiguring", LogLevel.Debug);
+                                militia.Configure();
+                            }
                         }
                     }
                 }
                 catch (Exception ex)
                 {
-                    Log(ex);
+                    Log(ex, LogLevel.Error);
                 }
             }
         }

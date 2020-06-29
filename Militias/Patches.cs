@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using HarmonyLib;
 using SandBox.CampaignBehaviors.Towns;
@@ -8,9 +9,9 @@ using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.SandBox.Issues;
 using TaleWorlds.ObjectSystem;
 using static Bandit_Militias.Helper;
-using static Bandit_Militias.Mod;
 using static Bandit_Militias.Helper.Globals;
 
+// ReSharper disable UnusedType.Global   
 // ReSharper disable UnusedMember.Local   
 // ReSharper disable RedundantAssignment  
 // ReSharper disable InconsistentNaming
@@ -27,7 +28,7 @@ namespace Bandit_Militias.Militias
             {
                 if (settlement.OwnerClan == null)
                 {
-                    Log("Fixing bad settlement: " + settlement.Name);
+                    Log("Fixing bad settlement: " + settlement.Name, LogLevel.Debug);
                     settlement.OwnerClan = Clan.BanditFactions.ToList()[Rng.Next(1, 5)];
                 }
             }
@@ -56,6 +57,23 @@ namespace Bandit_Militias.Militias
             }
         }
 
+        [HarmonyPatch(typeof(PartyUpgrader), "UpgradeReadyTroops")]
+        public class PartyUpgraderUpgradeReadyTroopsPatch
+        {
+            private static bool Prefix(PartyBase party)
+            {
+                if (party.Name.Equals("Bandit Militia") &&
+                    party.LeaderHero == null)
+                {
+                    Log("Invalid hero, can't train - aborting", LogLevel.Debug);
+                    return false;
+                }
+
+
+                return true;
+            }
+        }
+
         [HarmonyPatch(typeof(MobileParty), "DailyTick")]
         public static class MobilePartyDailyTickPatch
         {
@@ -73,7 +91,7 @@ namespace Bandit_Militias.Militias
                 }
                 catch (Exception ex)
                 {
-                    Log(ex);
+                    Log(ex, LogLevel.Error);
                 }
             }
         }
@@ -105,15 +123,16 @@ namespace Bandit_Militias.Militias
                     if (__instance.ShortTermBehavior == AiBehavior.FleeToPoint ||
                         __instance.DefaultBehavior == AiBehavior.FleeToPoint)
                     {
-                        Trace(__instance.ShortTermBehavior);
-                        Trace(__instance.DefaultBehavior);
+                        Log(__instance.ShortTermBehavior, LogLevel.Debug);
+                        Log(__instance.DefaultBehavior, LogLevel.Debug);
                         return;
                     }
 
                     // BUG you shouldn't get here, something is spawning wrong
                     if (targetParty.LeaderHero != null && targetParty.MemberRoster.TotalManCount == 1)
                     {
-                        Log(new string('*', 100));
+                        Log("BUG you shouldn't get here, something is spawning wrong, stacktrace:", LogLevel.Error);
+                        Log(new StackTrace(), LogLevel.Error);
                         Traverse.Create(typeof(KillCharacterAction))
                             .Method("MakeDead", targetParty.LeaderHero).GetValue();
                         MBObjectManager.Instance.UnregisterObject(targetParty.LeaderHero);
@@ -121,7 +140,7 @@ namespace Bandit_Militias.Militias
                     }
 
                     // check MoveTarget to save cycles?  TODO
-                    
+
                     // conditions check
                     var militiaStrength = targetParty.TotalStrength + __instance.Party.TotalStrength;
                     var militiaCavalryCount = GetMountedTroopHeadcount(__instance.MemberRoster) +
@@ -131,7 +150,7 @@ namespace Bandit_Militias.Militias
                         militiaTotalCount < AvgHeroPartyMaxSize &&
                         militiaCavalryCount < militiaTotalCount / 2)
                     {
-                        Trace($"{targetParty} is suitable for merge");
+                        Log($"{targetParty} is suitable for merge", LogLevel.Debug);
                         var distance = targetParty.Position2D.Distance(__instance.Position2D);
                         // the FindAll is returning pretty fast, small sample average was 600 ticks
                         // cache the result for performance over accuracy
@@ -149,7 +168,7 @@ namespace Bandit_Militias.Militias
                             return;
                         }
 
-                        Trace($"Found a target for {__instance}, {__instance.MemberRoster.Count} troops: {targetParty}, troops {targetParty.MemberRoster.Count}");
+                        Log($"Found a target for {__instance}, {__instance.MemberRoster.Count} troops: {targetParty}, troops {targetParty.MemberRoster.Count}", LogLevel.Debug);
                         if (distance <= MergeDistance)
                         {
                             // create a new party merged from the two
@@ -161,6 +180,7 @@ namespace Bandit_Militias.Militias
                             {
                                 militia.MobileParty.Position2D = Hero.MainHero.PartyBelongedTo.Position2D;
                             }
+
                             militia.MobileParty.Party.Visuals.SetMapIconAsDirty();
                             Trash(__instance);
                             Trash(targetParty.MobileParty);
@@ -173,7 +193,7 @@ namespace Bandit_Militias.Militias
                 }
                 catch (Exception ex)
                 {
-                    Log(ex);
+                    Log(ex, LogLevel.Error);
                 }
             }
         }
