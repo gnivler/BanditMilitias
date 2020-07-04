@@ -5,6 +5,7 @@ using HarmonyLib;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.Core;
+using TaleWorlds.Library;
 using TaleWorlds.ObjectSystem;
 using static Bandit_Militias.Helper.Globals;
 
@@ -17,8 +18,8 @@ namespace Bandit_Militias
         public static class Globals
         {
             // dev
-            internal static readonly bool testingMode = false;
-            internal static LogLevel logging = LogLevel.Debug;
+            internal static bool testingMode;
+            internal static LogLevel logging = LogLevel.Disabled;
 
             // how far to look
             internal const float SearchRadius = 25;
@@ -33,40 +34,38 @@ namespace Bandit_Militias
             internal const float RandomSplitChance = 0.25f;
 
             // adjusts size and strengths
-            internal const float minPartyStrengthFactor = 0.6f;
-            internal const float maxPartyStrengthFactor = 0.8f;
-            internal const float maxPartySizeFactor = 0.8f;
+            internal const float PartyStrengthFactor = 0.8f;
+            internal const float MaxPartySizeFactor = 0.8f;
 
             // holders for criteria
             internal static float HeroPartyStrength;
             internal static float MaxPartyStrength;
-            internal static double AvgHeroPartyMaxSize;
+            internal static double MaxPartySize;
 
             // misc
             internal static readonly Random Rng = new Random();
             internal static List<MapEvent> MapEvents;
-
-            // collections
-            internal static readonly List<MobileParty> TempList = new List<MobileParty>();
         }
 
-        internal static int GetMountedTroopHeadcount(TroopRoster troopRoster)
+        internal static int NumMountedTroops(TroopRoster troopRoster)
         {
             return troopRoster.Troops.Where(x => x.IsMounted)
                 .Sum(troopRoster.GetTroopCount);
         }
+
+        private static float Variance => MBRandom.RandomFloatRanged(0.5f, 1.5f);
 
         internal static void CalcMergeCriteria()
         {
             HeroPartyStrength = MobileParty.All.Where(x => x.LeaderHero != null && !x.Name.Equals("Bandit Militia"))
                 .Select(x => x.Party.TotalStrength).Average();
             // reduce strength
-            MaxPartyStrength = HeroPartyStrength * MBRandom.RandomFloatRanged(minPartyStrengthFactor, maxPartyStrengthFactor);
+            MaxPartyStrength = HeroPartyStrength * PartyStrengthFactor * Variance;
             // maximum size grows over time as clans level up
-            AvgHeroPartyMaxSize = Math.Round(MobileParty.All
+            MaxPartySize = Math.Round(MobileParty.All
                 .Where(x => x.LeaderHero != null && !x.IsBandit).Select(x => x.Party.PartySizeLimit).Average());
-            AvgHeroPartyMaxSize *= maxPartySizeFactor;
-            Log($"Daily calculations => size: {AvgHeroPartyMaxSize:0} strength: {MaxPartyStrength:0}", LogLevel.Debug);
+            MaxPartySize *= MaxPartySizeFactor * Variance;
+            Mod.Log($"Daily calculations => size: {MaxPartySize:0} strength: {MaxPartyStrength:0}", LogLevel.Debug);
         }
 
         internal static void TrySplitUpParty(MobileParty __instance)
@@ -90,8 +89,8 @@ namespace Bandit_Militias
             if (__instance.MemberRoster.TotalManCount == 0 ||
                 roll > RandomSplitChance ||
                 !__instance.Name.Equals("Bandit Militia") ||
-                __instance.Party.TotalStrength <= MaxPartyStrength * StrengthSplitFactor ||
-                __instance.Party.MemberRoster.TotalManCount <= AvgHeroPartyMaxSize * SizeSplitFactor)
+                __instance.Party.TotalStrength <= MaxPartyStrength * StrengthSplitFactor * Variance ||
+                __instance.Party.MemberRoster.TotalManCount <= MaxPartySize * SizeSplitFactor * Variance)
             {
                 return;
             }
@@ -111,26 +110,20 @@ namespace Bandit_Militias
         {
             try
             {
-                Log($"Processing troops: {original.MemberRoster.Count} types, {original.MemberRoster.TotalManCount} in total", LogLevel.Debug);
+                Mod.Log($"Processing troops: {original.MemberRoster.Count} types, {original.MemberRoster.TotalManCount} in total", LogLevel.Debug);
                 foreach (var rosterElement in original.MemberRoster)
                 {
                     SplitRosters(troops1, troops2, rosterElement);
                 }
 
-                Log("party1.TotalManCount " + troops1.TotalManCount, LogLevel.Debug);
-                Log("party2.TotalManCount " + troops2.TotalManCount, LogLevel.Debug);
                 if (original.PrisonRoster.TotalManCount > 0)
                 {
-                    // gross copy paste
-                    Log($"Processing prisoners: {original.PrisonRoster.Count} types, {original.PrisonRoster.TotalManCount} in total", LogLevel.Debug);
+                    Mod.Log($"Processing prisoners: {original.PrisonRoster.Count} types, {original.PrisonRoster.TotalManCount} in total", LogLevel.Debug);
                     foreach (var rosterElement in original.PrisonRoster)
                     {
                         SplitRosters(prisoners1, prisoners2, rosterElement);
                     }
                 }
-
-                Log("prisoners1.TotalManCount " + prisoners1.TotalManCount, LogLevel.Debug);
-                Log("prisoners2.TotalManCount " + prisoners2.TotalManCount, LogLevel.Debug);
 
                 foreach (var item in original.ItemRoster)
                 {
@@ -139,29 +132,25 @@ namespace Bandit_Militias
                     var remainder = item.Amount % 2;
                     if (half > 2)
                     {
-                        inventory2.AddToCounts(item.EquipmentElement, Math.Min(1, item.Amount / 2 + remainder));
+                        inventory2.AddToCounts(item.EquipmentElement, half + remainder);
                     }
                 }
             }
             catch (Exception ex)
             {
-                Log(ex, LogLevel.Error);
+                Mod.Log(ex, LogLevel.Error);
             }
         }
 
         private static void SplitRosters(TroopRoster troops1, TroopRoster troops2, TroopRosterElement rosterElement)
         {
-            //var hero = militia.MobileParty.MemberRoster.GetCharacterAtIndex(0);
-            //militia.MobileParty.MemberRoster.RemoveTroop(hero);
-
-
             var half = Math.Max(1, rosterElement.Number / 2);
             troops1.AddToCounts(rosterElement.Character, half);
             var remainder = rosterElement.Number % 2;
             // 1-3 will have a half of 1.  4 would be 2, and worth adding to second roster
             if (half > 2)
             {
-                troops2.AddToCounts(rosterElement.Character, Math.Max(1, rosterElement.Number / 2 + remainder));
+                troops2.AddToCounts(rosterElement.Character, Math.Max(1, half + remainder));
             }
         }
 
@@ -174,22 +163,21 @@ namespace Bandit_Militias
                 var militia2 = new Militia(original.Position2D, party2, prisoners2);
                 Traverse.Create(militia1.MobileParty.Party).Property("ItemRoster").SetValue(inventory1);
                 Traverse.Create(militia2.MobileParty.Party).Property("ItemRoster").SetValue(inventory2);
-                Log($"{militia1.MobileParty.MapFaction.Name} <<< Split >>> {militia2.MobileParty.MapFaction.Name}", LogLevel.Info);
-                LogMilitiaFormed(militia1.MobileParty.Party.MobileParty);
-                LogMilitiaFormed(militia2.MobileParty.Party.MobileParty);
+                Mod.Log($"{militia1.MobileParty.MapFaction.Name} <<< Split >>> {militia2.MobileParty.MapFaction.Name}", LogLevel.Info);
                 militia1.MobileParty.Party.Visuals.SetMapIconAsDirty();
                 militia2.MobileParty.Party.Visuals.SetMapIconAsDirty();
                 Trash(original);
             }
             catch (Exception ex)
             {
-                Log(ex, LogLevel.Error);
+                Mod.Log(ex, LogLevel.Error);
             }
         }
 
         internal static bool IsValidParty(MobileParty __instance)
         {
             if (!__instance.Party.IsMobile ||
+                __instance.CurrentSettlement != null ||
                 __instance.Party.MemberRoster.TotalManCount == 0 ||
                 __instance.IsCurrentlyUsedByAQuest ||
                 __instance.IsTooBusyToMerge())
@@ -238,6 +226,7 @@ namespace Bandit_Militias
         }
 
         // TODO hopefully figure out where this shit is coming from
+        // I think now it might be because defeated parties
         // seems to occur more often with lots of adjacent merges like in testing mode
         internal static void KillNullPartyHeroes()
         {
@@ -249,12 +238,16 @@ namespace Bandit_Militias
                 if (!hasLogged)
                 {
                     hasLogged = true;
-                    Log($"Clearing {heroes.Count} null-party heroes.", LogLevel.Debug);
+                    Mod.Log($"Clearing {heroes.Count} null-party heroes.", LogLevel.Debug);
                 }
 
-                Traverse.Create(typeof(KillCharacterAction))
-                    .Method("MakeDead", hero).GetValue();
-                MBObjectManager.Instance.UnregisterObject(hero);
+                hero.KillHero();
+            }
+
+            var homelessHeroes = Hero.All.Where(x => x.HomeSettlement == null);
+            foreach (var hero in homelessHeroes)
+            {
+                Traverse.Create(hero).Property("HomeSettlement").SetValue(hero.BornSettlement);
             }
         }
 
@@ -263,7 +256,6 @@ namespace Bandit_Militias
         {
             if (MapEvents.Count == 0)
             {
-                Log("No map events to finalize", LogLevel.Debug);
                 return;
             }
 
@@ -272,40 +264,70 @@ namespace Bandit_Militias
                 if (mapEvent.AttackerSide.TroopCount == 0 ||
                     mapEvent.DefenderSide.TroopCount == 0)
                 {
-                    Log($"Removing bad field battle with {mapEvent.AttackerSide.LeaderParty.Name}, {mapEvent.DefenderSide.LeaderParty.Name}", LogLevel.Info);
+                    Mod.Log($"Removing bad field battle with {mapEvent.AttackerSide.LeaderParty.Name}, {mapEvent.DefenderSide.LeaderParty.Name}", LogLevel.Info);
                     mapEvent.FinalizeEvent();
+                }
+            }
+        }
+
+        internal static void PurgeNullRefDescriptionIssues(bool logOnlyMode = false)
+        {
+            var purgeList = new List<Hero>();
+            foreach (var issue in Campaign.Current.IssueManager.Issues)
+            {
+                try
+                {
+                    var _ = issue.Value.Description;
+                }
+                catch (Exception ex)
+                {
+                    if (ex is NullReferenceException)
+                    {
+                        purgeList.Add(issue.Key);
+                    }
+                }
+            }
+
+            foreach (var heroKey in purgeList)
+            {
+                if (logOnlyMode)
+                {
+                    Mod.Log(heroKey.Issue, LogLevel.Debug);
                 }
                 else
                 {
-                    Log($"Leaving valid field battle with {mapEvent.AttackerSide.LeaderParty.Name}, {mapEvent.DefenderSide.LeaderParty.Name}", LogLevel.Info);
+                    var issues = Traverse.Create(Campaign.Current.IssueManager)
+                        .Field("_issues").GetValue<Dictionary<Hero, IssueBase>>();
+                    Mod.Log($"Removing {heroKey} from IssueBase._issues as the Description is throwing NRE", LogLevel.Debug);
+                    Debug.PrintError("Bandit Militias is removing {heroKey} from IssueBase._issues as the Description is throwing NRE");
+                    issues.Remove(heroKey);
                 }
             }
         }
 
-        internal static void PurgeList(string message)
+        internal static void PurgeList(string logMessage, List<MobileParty> mobileParties)
         {
-            if (TempList.Count > 0)
+            if (mobileParties.Count > 0)
             {
-                Log(message, LogLevel.Debug);
-                foreach (var mobileParty in TempList)
+                Mod.Log(logMessage, LogLevel.Debug);
+                foreach (var mobileParty in mobileParties)
                 {
                     mobileParty.RemoveParty();
                     mobileParty.Party.Visuals.SetMapIconAsDirty();
-                    Traverse.Create(typeof(KillCharacterAction))
-                        .Method("MakeDead", mobileParty.LeaderHero).GetValue();
-                    MBObjectManager.Instance.UnregisterObject(mobileParty.LeaderHero);
+                    mobileParty.LeaderHero.KillHero();
                 }
-
-                TempList.Clear();
             }
+
+            mobileParties.Clear();
         }
 
+
+        // todo move to Militia
         internal static void LogMilitiaFormed(MobileParty mobileParty)
         {
-            var banditString = $"{mobileParty.Name} forms led by {mobileParty.LeaderHero}";
             var troopString = $"{mobileParty.Party.NumberOfAllMembers} troop" + (mobileParty.Party.NumberOfAllMembers > 1 ? "s" : "");
             var strengthString = $"{Math.Round(mobileParty.Party.TotalStrength)} strength";
-            Log($"{banditString,-55} | {troopString,12} | {strengthString,12} |", LogLevel.Info);
+            Mod.Log($"{"New Bandit Militia",-40} | {troopString,10} | {strengthString,10} |", LogLevel.Info);
         }
 
         private static bool IsTooBusyToMerge(this MobileParty mobileParty)
@@ -326,20 +348,26 @@ namespace Bandit_Militias
         {
             if (mobileParty.LeaderHero != null)
             {
-                Traverse.Create(typeof(KillCharacterAction)).Method("MakeDead", mobileParty.LeaderHero).GetValue();
-                MBObjectManager.Instance.UnregisterObject(mobileParty.LeaderHero);
+                Militia.FindMilitiaByParty(mobileParty)?.Remove();
+                mobileParty.LeaderHero.KillHero();
             }
 
             mobileParty.RemoveParty();
             MBObjectManager.Instance.UnregisterObject(mobileParty);
         }
-        
-        internal static void Log(object input, LogLevel logLevel)
+
+        internal static Exception SuppressingFinalizer() => null;
+
+        internal static void KillHero(this Hero hero)
         {
-            if (logging >= logLevel)
-            {
-                FileLog.Log($"[Bandit Militias] {input ?? "null"}");
-            }
+            Traverse.Create(typeof(KillCharacterAction))
+                .Method("MakeDead", hero).GetValue();
+            MBObjectManager.Instance.UnregisterObject(hero);
+        }
+
+        internal static bool IsAlone(this MobileParty mobileParty)
+        {
+            return MobileParty.FindPartiesAroundPosition(mobileParty.Position2D, MergeDistance, x=> x.IsBandit).Count(IsValidParty) == 2;
         }
     }
 }

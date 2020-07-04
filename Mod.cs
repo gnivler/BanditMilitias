@@ -2,13 +2,13 @@
 using System.Linq;
 using System.Reflection;
 using HarmonyLib;
+using SandBox.Quests.QuestBehaviors;
 using TaleWorlds.CampaignSystem;
-using TaleWorlds.CampaignSystem.Actions;
+using TaleWorlds.CampaignSystem.SandBox.Issues;
 using TaleWorlds.Core;
 using TaleWorlds.InputSystem;
 using TaleWorlds.Localization;
 using TaleWorlds.MountAndBlade;
-using TaleWorlds.ObjectSystem;
 using static Bandit_Militias.Helper;
 using static Bandit_Militias.Helper.Globals;
 
@@ -21,21 +21,29 @@ namespace Bandit_Militias
 {
     public enum LogLevel
     {
-        Debug,
-        Error,
+        Disabled,
         Info,
-        Disabled
+        Error,
+        Debug
     }
 
     public class Mod : MBSubModuleBase
     {
         private static readonly Harmony harmony = new Harmony("ca.gnivler.bannerlord.BanditMilitias");
 
+        internal static void Log(object input, LogLevel logLevel)
+        {
+            if (logging >= logLevel)
+            {
+                FileLog.Log($"[Bandit Militias] {input ?? "null"}");
+            }
+        }
+
         protected override void OnSubModuleLoad()
         {
             //Harmony.DEBUG = true;
             Log("Startup " + DateTime.Now.ToShortTimeString(), LogLevel.Info);
-            RunManualPatches();
+            //RunManualPatches();
             harmony.PatchAll(Assembly.GetExecutingAssembly());
             //Harmony.DEBUG = false; 
         }
@@ -44,54 +52,69 @@ namespace Bandit_Militias
         {
             if ((Input.IsKeyDown(InputKey.LeftControl) || Input.IsKeyDown(InputKey.RightControl)) &&
                 (Input.IsKeyDown(InputKey.LeftAlt) || Input.IsKeyDown(InputKey.RightAlt)) &&
+                (Input.IsKeyDown(InputKey.LeftShift) || Input.IsKeyDown(InputKey.RightShift)) &&
+                Input.IsKeyPressed(InputKey.F12))
+            {
+                testingMode = !testingMode;
+            }
+
+            if ((Input.IsKeyDown(InputKey.LeftControl) || Input.IsKeyDown(InputKey.RightControl)) &&
+                (Input.IsKeyDown(InputKey.LeftAlt) || Input.IsKeyDown(InputKey.RightAlt)) &&
                 Input.IsKeyPressed(InputKey.N))
             {
                 try
                 {
                     Log("Clearing mod data.", LogLevel.Info);
                     InformationManager.AddQuickInformation(new TextObject("BANDIT MILITIAS CLEARED"));
-                    foreach (var hero in TempList)
+                    var tempList = MobileParty.All
+                        .Where(x => x.Name.Equals("Bandit Militia")).ToList();
+                    var hasLogged = false;
+                    foreach (var mobileParty in tempList)
                     {
-                        Traverse.Create(typeof(KillCharacterAction))
-                            .Method("MakeDead", hero).GetValue();
-                        MBObjectManager.Instance.UnregisterObject(hero);
+                        if (!hasLogged)
+                        {
+                            Log($"Clearing {tempList.Count} Bandit Militias", LogLevel.Info);
+                            hasLogged = true;
+                        }
+                        Trash(mobileParty);
                     }
 
                     KillNullPartyHeroes();
 
-                    var hasLogged = false;
                     var badIssues = Campaign.Current.IssueManager.Issues
                         .Where(x => Clan.BanditFactions.Contains(x.Key.MapFaction)).ToList();
-
-                    // ReSharper disable once ConditionIsAlwaysTrueOrFalse
-                    if (!hasLogged)
+                    hasLogged = false;
+                    foreach (var issue in badIssues)
                     {
-                        // ReSharper disable once RedundantAssignment
-                        hasLogged = true;
-                        Log($"Clearing {badIssues.Count} bad-issue heroes.", LogLevel.Info);
-                        foreach (var issue in badIssues)
+                        if (!hasLogged)
                         {
-                            Traverse.Create(typeof(KillCharacterAction))
-                                .Method("MakeDead", issue.Key).GetValue();
-                            MBObjectManager.Instance.UnregisterObject(issue.Value);
+                            hasLogged = true;
+                            Log($"Clearing {badIssues.Count} bad-issue heroes.", LogLevel.Info);
                         }
+
+                        issue.Key.KillHero();
                     }
 
                     var badSettlements = Settlement.All
                         .Where(x => x.IsHideout() && x.OwnerClan == null).ToList();
+                    
                     hasLogged = false;
-                    if (!hasLogged)
+                    foreach (var settlement in badSettlements)
                     {
-                        hasLogged = true;
-                        Log($"Clearing {badSettlements.Count} bad settlements.", LogLevel.Info);
-                        foreach (var settlement in badSettlements)
+                        if (!hasLogged)
                         {
-                            settlement.OwnerClan = Clan.BanditFactions.ToList()[Rng.Next(1, 5)];
+                            hasLogged = true;
+                            Log($"Clearing {badSettlements.Count} bad settlements.", LogLevel.Info);
                         }
+
+                        settlement.OwnerClan = Clan.BanditFactions.ToList()[Rng.Next(1, 5)];
                     }
 
 
                     FinalizeBadMapEvents();
+                    PurgeNullRefDescriptionIssues(true);
+
+                    Militia.All.Clear();
                 }
                 catch (Exception ex)
                 {
@@ -143,6 +166,34 @@ namespace Bandit_Militias
         {
             try
             {
+                var type = AccessTools.Inner(typeof(HeadmanNeedsGrainIssueBehavior), "HeadmanNeedsGrainIssue");
+                var original = AccessTools.Method(type, "get_IssueQuestSolutionExplanationByIssueGiver");
+                var finalizer = AccessTools.Method(typeof(Helper), nameof(SuppressingFinalizer));
+                harmony.Patch(original, null, null, null, new HarmonyMethod(finalizer));
+
+                type = AccessTools.Inner(typeof(ExtortionByDesertersIssueBehavior), "ExtortionByDesertersIssue");
+                original = AccessTools.Method(type, "get_IssueBriefByIssueGiver");
+                harmony.Patch(original, null, null, null, new HarmonyMethod(finalizer));
+
+                type = AccessTools.Inner(typeof(RivalGangMovingInIssueBehavior), "RivalGangMovingInIssue");
+                original = AccessTools.Method(type, "get_IssueQuestSolutionExplanationByIssueGiver");
+                harmony.Patch(original, null, null, null, new HarmonyMethod(finalizer));
+
+                type = AccessTools.Inner(typeof(HeadmanNeedsToDeliverAHerdIssueBehavior), "HeadmanNeedsToDeliverAHerdIssue");
+                original = AccessTools.Method(type, "get_HerdTypeToDeliver");
+                harmony.Patch(original, null, null, null, new HarmonyMethod(finalizer));
+
+                original = AccessTools.Method(type, "get_AnimalCountToDeliver");
+                harmony.Patch(original, null, null, null, new HarmonyMethod(finalizer));
+
+                original = AccessTools.Method(type, "get_IssueBriefByIssueGiver");
+                harmony.Patch(original, null, null, null, new HarmonyMethod(finalizer));
+
+                original = AccessTools.Method(type, "get_IssueQuestSolutionAcceptByPlayer");
+                harmony.Patch(original, null, null, null, new HarmonyMethod(finalizer));
+
+                original = AccessTools.Method(type, "get_IssueAlternativeSolutionAcceptByPlayer");
+                harmony.Patch(original, null, null, null, new HarmonyMethod(finalizer));
             }
             catch (Exception ex)
             {

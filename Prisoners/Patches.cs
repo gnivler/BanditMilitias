@@ -1,12 +1,9 @@
 using System;
-using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using HarmonyLib;
 using TaleWorlds.CampaignSystem;
-using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.SandBox.CampaignBehaviors;
-using static Bandit_Militias.Helper;
+using TaleWorlds.Core;
 
 // ReSharper disable UnusedMember.Local   
 // ReSharper disable RedundantAssignment  
@@ -31,53 +28,78 @@ namespace Bandit_Militias.Prisoners
             private static bool Prefix(Hero hero) => !hero.Name.ToString().EndsWith("- Bandit Militia");
         }
 
-        // skips over the capture option, killing the bandit hero
-        [HarmonyPatch(typeof(PlayerEncounter), "DoPlayerVictory")]
+        // this is copied from DoCaptureHeroes
+        // kill all the heroes so they don't get captured
+        // skips Capture by setting PlayerEncounterState.FreeHeroes 
+        //[HarmonyPatch(typeof(PlayerEncounter), "DoPlayerVictory")]
         public static class PlayerEncounterDoPlayerVictoryPatch
         {
-            private static void Postfix(
-                PartyBase ____encounteredParty,
-                ref PlayerEncounterState ____mapEventState,
-                List<TroopRosterElement> ____capturedHeroes,
-                MapEvent ____mapEvent)
+            private static void Postfix(PartyBase ____encounteredParty, ref PlayerEncounterState ____mapEventState)
             {
+                var encounteredParty = ____encounteredParty;
+                var mapEventState = ____mapEventState;
+
                 try
                 {
-                    if (____capturedHeroes == null)
+                    if (encounteredParty.Name.Equals("Bandit Militia"))
                     {
-                        if (____encounteredParty.Name.Equals("Bandit Militia"))
+                        var capturedHeroes = PartyBase.MainParty.PrisonRoster.RemoveIf(x => x.Character.IsHero).ToList();
+                        foreach (var hero in capturedHeroes)
                         {
-                            var partyBase = ____mapEvent.GetPartyReceivingLootShare(PartyBase.MainParty);
-                            ____capturedHeroes = partyBase.PrisonRoster.RemoveIf(lordElement => lordElement.Character.IsHero).ToList();
-                            if (____capturedHeroes.Count > 0)
-                            {
-                                var capturedHero = ____capturedHeroes[____capturedHeroes.Count - 1];
-                                ____capturedHeroes.RemoveRange(____capturedHeroes.Count - 1, 1);
-                                var hero = Hero.All.First(x => capturedHero.Character.StringId == x.StringId);
-                                AccessTools.Method(typeof(KillCharacterAction), "ApplyInternal")
-                                    .Invoke(null, AccessTools.all, null,
-                                        new object[]
-                                        {
-                                            hero,
-                                            Hero.MainHero,
-                                            KillCharacterAction.KillCharacterActionDetail.DiedInBattle,
-                                            true
-                                        }, CultureInfo.InvariantCulture);
-                                ____mapEventState = PlayerEncounterState.FreeHeroes;
-                            }
+                            hero.Character.HeroObject.KillHero();
                         }
+
+                        mapEventState = PlayerEncounterState.FreeHeroes;
                     }
                 }
                 catch (Exception ex)
                 {
-                    Log(ex , LogLevel.Error);
+                    Mod.Log(ex, LogLevel.Error);
                 }
+            }
+        }
+
+        [HarmonyPatch(typeof(MapEvent), "LootDefeatedParties")]
+        public class MapEventFinishBattlePatch
+        {
+            private static void Prefix(MapEvent __instance)
+            {
+                var loser = GetLosingSide(__instance);
+                if (loser.LeaderParty.Name.Equals("Bandit Militia"))
+                {
+                    //var capturedHeroes = new List<TroopRosterElement>();
+                    foreach (var party in loser.Parties)
+                    {
+                        foreach (var hero in party.MemberRoster.RemoveIf(x => x.Character.IsHero).ToList())
+                        {
+                            Mod.Log("Culling militia hero", LogLevel.Debug);
+                            hero.Character.HeroObject.KillHero();
+                        }
+                        //capturedHeroes.AddRange(party.MemberRoster.RemoveIf(x => x.Character.IsHero));
+                    }
+                    //
+                    //for (var i = 0; i < capturedHeroes.Count; i++)
+                    //{
+                    //    capturedHeroes[i].Character.HeroObject.KillHero();
+                    //}
+                }
+            }
+
+            private static MapEventSide GetLosingSide(MapEvent mapEvent)
+            {
+                if (mapEvent.BattleState != BattleState.AttackerVictory)
+                {
+                    return mapEvent.AttackerSide;
+                }
+
+                return mapEvent.DefenderSide;
             }
         }
 
         // blocks AI battles from taking Militia hero prisoners
         // need to replace the original since it only looks for one hero
-        [HarmonyPatch(typeof(MapEventSide), "CaptureWoundedHeroes")]
+        // TODO maybe double check this
+        //[HarmonyPatch(typeof(MapEventSide), "CaptureWoundedHeroes")]
         public static class MapEventCaptureWoundedHeroesPatch
         {
             private static bool Prefix(PartyBase defeatedParty)
@@ -86,23 +108,21 @@ namespace Bandit_Militias.Prisoners
                 {
                     if (defeatedParty.Name.Equals("Bandit Militia"))
                     {
-                        for (var i = 0; i < defeatedParty.MemberRoster.Count; i++)
+                        var capturedHeroes = defeatedParty.MemberRoster.RemoveIf(x => x.Character.IsHero).ToList();
+                        foreach (var hero in capturedHeroes)
                         {
-                            var troop = defeatedParty.MemberRoster.GetElementCopyAtIndex(i);
-                            if (troop.Character.IsHero)
-                            {
-                                defeatedParty.MemberRoster.AddToCountsAtIndex(i, -1, 0, 0, false);
-                            }
+                            Mod.Log("Culling militia hero", LogLevel.Debug);
+                            hero.Character.HeroObject.KillHero();
                         }
-        
+
                         return false;
                     }
                 }
                 catch (Exception ex)
                 {
-                    Log(ex, LogLevel.Error);
+                    Mod.Log(ex, LogLevel.Error);
                 }
-        
+
                 return true;
             }
         }

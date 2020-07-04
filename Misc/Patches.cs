@@ -4,6 +4,7 @@ using System.Linq;
 using HarmonyLib;
 using SandBox.View.Map;
 using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.SandBox.CampaignBehaviors;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
 using TaleWorlds.ObjectSystem;
@@ -26,25 +27,35 @@ namespace Bandit_Militias.Misc
             {
                 try
                 {
-                    Log("Campaign.OnInitialize", LogLevel.Debug);
+                    Mod.Log("Campaign.OnInitialize", LogLevel.Debug);
                     var militias = MobileParty.All.Where(x => x != null && x.Name.Equals("Bandit Militia")).ToList();
-                    Log($"Militias: {militias.Count}", LogLevel.Info);
-                    Log($"Homeless: {militias.Count(x => x.HomeSettlement == null)}", LogLevel.Info);
+                    Mod.Log($"Militias: {militias.Count}", LogLevel.Info);
+                    Mod.Log($"Homeless: {militias.Count(x => x.HomeSettlement == null)}", LogLevel.Info);
                     militias.Where(x => x.HomeSettlement == null)
                         .Do(x =>
                         {
-                            Log("Fixing null HomeSettlement (destroyed hideout)", LogLevel.Info);
+                            Mod.Log("Fixing null HomeSettlement (destroyed hideout)", LogLevel.Info);
                             x.HomeSettlement = Game.Current.ObjectManager.GetObjectTypeList<Settlement>().Where(y => y.IsHideout()).GetRandomElement();
                         });
                     foreach (var militia in militias.Where(x => x.LeaderHero == null))
                     {
-                        Log("Removing hero-less militia", LogLevel.Info);
+                        Mod.Log("Removing hero-less militia", LogLevel.Info);
                         militia.RemoveParty();
+                    }
+
+
+                    foreach (var m in Militia.All)
+                    {
+                        if (m.MobileParty == null)
+                        {
+                            Mod.Log("Trashing", LogLevel.Debug);
+                            Trash(m.MobileParty);
+                        }
                     }
                 }
                 catch (Exception ex)
                 {
-                    Log(ex, LogLevel.Error);
+                    Mod.Log(ex, LogLevel.Error);
                 }
             }
         }
@@ -57,12 +68,12 @@ namespace Bandit_Militias.Misc
             {
                 try
                 {
-                    Log("MapScreen.OnInitialize", LogLevel.Debug);
+                    Mod.Log("MapScreen.OnInitialize", LogLevel.Debug);
                     CalcMergeCriteria();
                 }
                 catch (Exception ex)
                 {
-                    Log(ex, LogLevel.Error);
+                    Mod.Log(ex, LogLevel.Error);
                 }
             }
         }
@@ -75,8 +86,8 @@ namespace Bandit_Militias.Misc
             {
                 if (__exception is ArgumentNullException)
                 {
-                    Log("Bandit Militias suppressing exception in Patches.cs MBObjectManagerUnregisterObjectPatch", LogLevel.Debug);
-                    Log(__exception, LogLevel.Debug);
+                    Mod.Log("Bandit Militias suppressing exception in Patches.cs MBObjectManagerUnregisterObjectPatch", LogLevel.Debug);
+                    Mod.Log(__exception, LogLevel.Debug);
                     Debug.Print("Bandit Militias suppressing exception in Patches.cs MBObjectManagerUnregisterObjectPatch");
                     Debug.Print(__exception.ToString());
                     return null;
@@ -135,7 +146,7 @@ namespace Bandit_Militias.Misc
                 }
                 catch (Exception ex)
                 {
-                    Log(ex, LogLevel.Error);
+                    Mod.Log(ex, LogLevel.Error);
                 }
             }
         }
@@ -202,34 +213,35 @@ namespace Bandit_Militias.Misc
 
             private static void Postfix()
             {
-                TempList.Clear();
+                var tempList = new List<MobileParty>();
                 foreach (var mobileParty in MobileParty.All
                     .Where(x => x.MemberRoster.TotalManCount == 0))
                 {
-                    TempList.Add(mobileParty);
+                    tempList.Add(mobileParty);
                 }
 
                 // this was apparently only necessary when the merge distance was smaller than the split min radius
                 // in InitializeMobileParty
-                PurgeList($"CampaignHourlyTickPatch Clearing {TempList.Count} empty parties");
+                // TODO probably remove
+                PurgeList($"CampaignHourlyTickPatch Clearing {tempList.Count} empty parties", tempList);
                 try
                 {
                     foreach (var mobileParty in MobileParty.All
                         .Where(x => x.Name.Equals("Bandit Militia") &&
                                     x.MapFaction == CampaignData.NeutralFaction))
                     {
-                        Log("This bandit shouldn't exist " + mobileParty + " size " + mobileParty.MemberRoster.TotalManCount, LogLevel.Debug);
-                        TempList.Add(mobileParty);
+                        Mod.Log("This bandit shouldn't exist " + mobileParty + " size " + mobileParty.MemberRoster.TotalManCount, LogLevel.Debug);
+                        tempList.Add(mobileParty);
                     }
                 }
                 catch (Exception ex)
                 {
-                    Log(ex, LogLevel.Error);
+                    Mod.Log(ex, LogLevel.Error);
                 }
 
-                PurgeList($"CampaignHourlyTickPatch Clearing {TempList.Count} weird neutral parties");
-                FinalizeBadMapEvents();
-                PurgeList($"CampaignHourlyTickPatch Clearing {TempList.Count} bad map events");
+                PurgeList($"CampaignHourlyTickPatch Clearing {tempList.Count} weird neutral parties", tempList);
+                // bug: I don't think this is needed anymore, so I commented it
+                //FinalizeBadMapEvents();
 
                 if (hoursPassed == 23)
                 {
@@ -237,40 +249,86 @@ namespace Bandit_Militias.Misc
                     hoursPassed = 0;
                 }
 
+                //PurgeNullRefDescriptionIssues();
                 hoursPassed++;
             }
         }
 
         // just disperse small militias
-        // bug changed method to HandleMapEventEnd, lightly tested
         [HarmonyPatch(typeof(MapEventSide), "HandleMapEventEndForParty")]
         public static class MapEventSideHandleMapEventEndForPartyPatch
         {
-            private static void Postfix(PartyBase party)
+            private static void Postfix(MapEventSide __instance, PartyBase party)
             {
                 try
                 {
-                    if (party.Name.Equals("Bandit Militia"))
+                    if (!party.Name.Equals("Bandit Militia"))
                     {
-                        if (party.MemberRoster.TotalHealthyCount < 20)
+                        return;
+                    }
+
+                    if (party.MemberRoster.TotalHealthyCount < 20 &&
+                        party.MemberRoster.TotalHealthyCount > 0 &&
+                        party.PrisonRoster.Count < 20 &&
+                        __instance.Casualties > party.MemberRoster.Count / 2)
+                    {
+                        Mod.Log($"Dispersing militia of {party.MemberRoster.TotalHealthyCount}+{party.MemberRoster.TotalWounded}w+{party.PrisonRoster.Count}p", LogLevel.Debug);
+                        Trash(party.MobileParty);
+                    }
+                    else if (party.MemberRoster.Count >= 20 &&
+                             party.LeaderHero == null)
+                    {
+                        var militias = Militia.All.Where(x => x.MobileParty == party.MobileParty);
+                        foreach (var militia in militias)
                         {
-                            Log("Dispersing militia of " + party.MemberRoster.TotalManCount, LogLevel.Debug);
-                            Trash(party.MobileParty);
-                        }
-                        else if (party.LeaderHero == null)
-                        {
-                            var militias = Militia.All.Where(x => x.MobileParty == party.MobileParty);
-                            foreach (var militia in militias)
-                            {
-                                Log("Reconfiguring", LogLevel.Debug);
-                                militia.Configure();
-                            }
+                            Mod.Log("Reconfiguring", LogLevel.Debug);
+                            militia.Configure();
                         }
                     }
                 }
                 catch (Exception ex)
                 {
-                    Log(ex, LogLevel.Error);
+                    Mod.Log(ex, LogLevel.Error);
+                }
+            }
+        }
+
+        // vanilla patch, doesn't check MobileParty for null
+        // this happens when Clan governor's change and get teleported into a settlement without a party
+        [HarmonyPatch(typeof(BanditsCampaignBehavior), "CheckForSpawningBanditBoss")]
+        public class BanditsCampaignBehaviorCheckForSpawningBanditBossPatch
+        {
+            private static bool Prefix(BanditsCampaignBehavior __instance, Settlement settlement, MobileParty mobileParty)
+            {
+                if (mobileParty == null ||
+                    !settlement.IsHideout() ||
+                    !mobileParty.IsBandit ||
+                    !settlement.Hideout.IsInfested ||
+                    settlement.Parties.Any(x => x.IsBanditBossParty) ||
+                    settlement.Parties.Count(x => x.IsBandit) !=
+                    Campaign.Current.Models.BanditDensityModel.NumberOfMinimumBanditPartiesInAHideoutToInfestIt)
+                {
+                    return false;
+                }
+
+                Traverse.Create(__instance).Method("AddBossParty", settlement, mobileParty).GetValue();
+                return false;
+            }
+        }
+
+        // for whatever reason I'm seeing apparently-vanilla data causing NREs
+        [HarmonyPatch(typeof(IssueManager), "InitializeForSavedGame")]
+        public class IssueManagerInitializeForSavedGamePatch
+        {
+            private static void Prefix()
+            {
+                try
+                {
+                    PurgeNullRefDescriptionIssues();
+                }
+                catch (Exception ex)
+                {
+                    Mod.Log(ex, LogLevel.Error);
                 }
             }
         }
