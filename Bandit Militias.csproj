@@ -209,7 +209,7 @@
            xcopy "N:\Repos\Bandit Militias\obj\Debug\Bandit Militias.dll" "N:\SteamLibrary\steamapps\common\Mount &amp; Blade II Bannerlord\Modules\Bandit Militias\bin\Win64_Shipping_Client\" /Y
             xcopy "N:\Repos\Bandit Militias\obj\Debug\Bandit Militias.pdb" "N:\SteamLibrary\steamapps\common\Mount &amp; Blade II Bannerlord\Modules\Bandit Militias\bin\Win64_Shipping_Client\" /Y
             xcopy "N:\Repos\Bandit Militias\SubModule.xml" "N:\SteamLibrary\steamapps\common\Mount &amp; Blade II Bannerlord\Modules\Bandit Militias\" /Y
-        </PostBuildEvent>     -->
+        </PostBuildEvent>     -->                                                      
     </PropertyGroup>
 
     <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
