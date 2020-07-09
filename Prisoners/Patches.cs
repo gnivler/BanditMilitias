@@ -1,10 +1,11 @@
-using System;
 using System.Linq;
 using HarmonyLib;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.SandBox.CampaignBehaviors;
 using TaleWorlds.Core;
 
+// ReSharper disable UnusedMember.Global 
+// ReSharper disable UnusedType.Global 
 // ReSharper disable UnusedMember.Local   
 // ReSharper disable RedundantAssignment  
 // ReSharper disable InconsistentNaming
@@ -28,37 +29,6 @@ namespace Bandit_Militias.Prisoners
             private static bool Prefix(Hero hero) => !hero.Name.ToString().EndsWith("- Bandit Militia");
         }
 
-        // this is copied from DoCaptureHeroes
-        // kill all the heroes so they don't get captured
-        // skips Capture by setting PlayerEncounterState.FreeHeroes 
-        //[HarmonyPatch(typeof(PlayerEncounter), "DoPlayerVictory")]
-        public static class PlayerEncounterDoPlayerVictoryPatch
-        {
-            private static void Postfix(PartyBase ____encounteredParty, ref PlayerEncounterState ____mapEventState)
-            {
-                var encounteredParty = ____encounteredParty;
-                var mapEventState = ____mapEventState;
-
-                try
-                {
-                    if (encounteredParty.Name.Equals("Bandit Militia"))
-                    {
-                        var capturedHeroes = PartyBase.MainParty.PrisonRoster.RemoveIf(x => x.Character.IsHero).ToList();
-                        foreach (var hero in capturedHeroes)
-                        {
-                            hero.Character.HeroObject.KillHero();
-                        }
-
-                        mapEventState = PlayerEncounterState.FreeHeroes;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Mod.Log(ex, LogLevel.Error);
-                }
-            }
-        }
-
         [HarmonyPatch(typeof(MapEvent), "LootDefeatedParties")]
         public class MapEventFinishBattlePatch
         {
@@ -75,13 +45,7 @@ namespace Bandit_Militias.Prisoners
                             Mod.Log("Culling militia hero", LogLevel.Debug);
                             hero.Character.HeroObject.KillHero();
                         }
-                        //capturedHeroes.AddRange(party.MemberRoster.RemoveIf(x => x.Character.IsHero));
                     }
-                    //
-                    //for (var i = 0; i < capturedHeroes.Count; i++)
-                    //{
-                    //    capturedHeroes[i].Character.HeroObject.KillHero();
-                    //}
                 }
             }
 
@@ -93,37 +57,6 @@ namespace Bandit_Militias.Prisoners
                 }
 
                 return mapEvent.DefenderSide;
-            }
-        }
-
-        // blocks AI battles from taking Militia hero prisoners
-        // need to replace the original since it only looks for one hero
-        // TODO maybe double check this
-        //[HarmonyPatch(typeof(MapEventSide), "CaptureWoundedHeroes")]
-        public static class MapEventCaptureWoundedHeroesPatch
-        {
-            private static bool Prefix(PartyBase defeatedParty)
-            {
-                try
-                {
-                    if (defeatedParty.Name.Equals("Bandit Militia"))
-                    {
-                        var capturedHeroes = defeatedParty.MemberRoster.RemoveIf(x => x.Character.IsHero).ToList();
-                        foreach (var hero in capturedHeroes)
-                        {
-                            Mod.Log("Culling militia hero", LogLevel.Debug);
-                            hero.Character.HeroObject.KillHero();
-                        }
-
-                        return false;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Mod.Log(ex, LogLevel.Error);
-                }
-
-                return true;
             }
         }
     }

@@ -58,8 +58,7 @@ namespace Bandit_Militias
                         x => x.IsHideout() &&
                              x.MapFaction != CampaignData.NeutralFaction)
                     .GetRandomElement() ?? Settlement.GetFirst;
-                // home has to be set to a hideout to make party aggressive (see PartyBase.MapFaction)
-                 
+                // home has to be set to a hideout to make party aggressive (see PartyBase.MapFaction) 
                 Traverse.Create(hero).Property("HomeSettlement").SetValue(hideout);
 
                 // todo refactor for posse
@@ -96,7 +95,7 @@ namespace Bandit_Militias
                     break;
                 }
 
-                Mod.Log("*", LogLevel.Debug);
+                Mod.Log("while (true) at BuildHeroWithBattleEquipment", LogLevel.Debug);
                 hero.KillHero();
             }
         }
@@ -104,8 +103,7 @@ namespace Bandit_Militias
         private IFaction MostPrevalentFaction(MobileParty mobileParty)
         {
             var map = new Dictionary<CultureObject, int>();
-            var troopTypes =
-                mobileParty.MemberRoster.Select(x => x.Character).ToList();
+            var troopTypes = mobileParty.MemberRoster.Select(x => x.Character).ToList();
             foreach (var clan in Clan.BanditFactions)
             {
                 for (var i = 0; i < troopTypes.Count && troopTypes[i].Culture == clan.Culture; i++)
@@ -131,11 +129,6 @@ namespace Bandit_Militias
         public static Militia FindMilitiaByParty(MobileParty mobileParty)
         {
             return All.FirstOrDefault(x => x.MobileParty == mobileParty);
-        }
-
-        public static Militia FindMilitiaByHero(Hero hero)
-        {
-            return All.FirstOrDefault(x => x.hero == hero);
         }
 
         public void Remove()

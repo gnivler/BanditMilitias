@@ -1,7 +1,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using HarmonyLib;
 using Helpers;
@@ -9,10 +8,10 @@ using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.SandBox.CampaignBehaviors;
 using TaleWorlds.Core;
+using TaleWorlds.Library;
 using TaleWorlds.Localization;
 using TaleWorlds.ObjectSystem;
 using static Bandit_Militias.Helper.Globals;
-using Debug = TaleWorlds.Library.Debug;
 
 // ReSharper disable InconsistentNaming
 
@@ -255,7 +254,7 @@ namespace Bandit_Militias
             }
         }
 
-        public static AccessTools.FieldRef<IssueManager, Dictionary<Hero, IssueBase>> issuesRef =
+        private static readonly AccessTools.FieldRef<IssueManager, Dictionary<Hero, IssueBase>> issuesRef =
             AccessTools.FieldRefAccess<IssueManager, Dictionary<Hero, IssueBase>>("_issues");
 
         internal static void PurgeNullRefDescriptionIssues(bool logOnlyMode = false)
@@ -289,7 +288,7 @@ namespace Bandit_Militias
             }
         }
 
-        internal static void PurgeList(string logMessage, List<MobileParty> mobileParties)
+        private static void PurgeList(string logMessage, List<MobileParty> mobileParties)
         {
             if (mobileParties.Count > 0)
             {
@@ -337,8 +336,6 @@ namespace Bandit_Militias
 
             mobileParty.RemoveParty();
         }
-
-        internal static Stopwatch timer3 = new Stopwatch();
 
         // 0-2 milliseconds
         internal static void KillHero(this Hero hero)
@@ -405,7 +402,6 @@ namespace Bandit_Militias
 
         private static void FlushBadBehaviors()
         {
-            bool hasLogged;
             var behaviors = (IDictionary) Traverse.Create(
                     Campaign.Current.CampaignBehaviorManager.GetBehavior<DynamicBodyCampaignBehavior>())
                 .Field("_heroBehaviorsDictionary").GetValue();
@@ -418,7 +414,7 @@ namespace Bandit_Militias
                 }
             }
 
-            hasLogged = false;
+            var hasLogged = false;
             foreach (var hero in heroes)
             {
                 if (!hasLogged)
@@ -459,10 +455,9 @@ namespace Bandit_Militias
 
         private static void FlushBadIssues()
         {
-            bool hasLogged;
             var badIssues = Campaign.Current.IssueManager.Issues
                 .Where(x => Clan.BanditFactions.Contains(x.Key.MapFaction)).ToList();
-            hasLogged = false;
+            var hasLogged = false;
             foreach (var issue in badIssues)
             {
                 if (!hasLogged)
@@ -477,11 +472,10 @@ namespace Bandit_Militias
 
         private static void FixBadSettlements()
         {
-            bool hasLogged;
             var badSettlements = Settlement.All
                 .Where(x => x.IsHideout() && x.OwnerClan == null).ToList();
 
-            hasLogged = false;
+            var hasLogged = false;
             foreach (var settlement in badSettlements)
             {
                 if (!hasLogged)
@@ -498,17 +492,16 @@ namespace Bandit_Militias
         {
             try
             {
-                bool hasLogged;
                 var badHeroes = Hero.All.Where(
                     x => !x.IsNotable && x.PartyBelongedTo == null && x.CurrentSettlement != null &&
                          x.MapFaction == CampaignData.NeutralFaction && x.EncyclopediaLink.Contains("CharacterObject")).ToList();
-                hasLogged = false;
+                var hasLogged = false;
                 foreach (var hero in badHeroes)
                 {
                     if (!hasLogged)
                     {
                         hasLogged = true;
-                        Mod.Log($"Clearing {badHeroes.Count()} bad heroes.", LogLevel.Debug);
+                        Mod.Log($"Clearing {badHeroes.Count} bad heroes.", LogLevel.Debug);
                     }
 
                     if (Hero.All.Contains(hero))
@@ -524,17 +517,16 @@ namespace Bandit_Militias
         }
 
         // todo FieldRef
-        private static readonly AccessTools.FieldRef<Settlement, List<Hero>> heroesWithoutPartyRef =
-            AccessTools.FieldRefAccess<Settlement, List<Hero>>("_heroesWithoutParty");
+        //private static readonly AccessTools.FieldRef<Settlement, List<Hero>> heroesWithoutPartyRef =
+        //    AccessTools.FieldRefAccess<Settlement, List<Hero>>("_heroesWithoutParty");
 
         private static void FlushBadCharacterObjects()
         {
-            bool hasLogged;
             var badChars = CharacterObject.All.Where(
                 x => x.Name == null || x.Occupation == Occupation.NotAssigned ||
                      x.Occupation == Occupation.Outlaw && x.HeroObject?.CurrentSettlement != null).ToList();
 
-            hasLogged = false;
+            var hasLogged = false;
             foreach (var badChar in badChars)
             {
                 if (!hasLogged)
@@ -572,7 +564,7 @@ namespace Bandit_Militias
             PurgeList($"CampaignHourlyTickPatch Clearing {tempList.Count} weird neutral parties", tempList);
         }
 
-        private static List<MobileParty> FlushEmptyMilitiaParties()
+        private static void FlushEmptyMilitiaParties()
         {
             var tempList = new List<MobileParty>();
             foreach (var mobileParty in MobileParty.All
@@ -582,9 +574,8 @@ namespace Bandit_Militias
             }
 
             PurgeList($"CampaignHourlyTickPatch Clearing {tempList.Count} empty parties", tempList);
-            return tempList;
         }
-        
+
         internal static Equipment MurderLordsForEquipment(Hero hero, bool randomizeWornEquipment)
         {
             int i = default;
@@ -604,7 +595,7 @@ namespace Bandit_Militias
             {
                 return equipment[0];
             }
-            
+
             var gear = new Equipment();
             for (var j = 0; j < 12; j++)
             {

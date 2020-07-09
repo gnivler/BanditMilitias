@@ -1,12 +1,11 @@
 ﻿using System;
-using System.Linq;
 using System.Reflection;
 using HarmonyLib;
-using TaleWorlds.CampaignSystem;
 using TaleWorlds.InputSystem;
 using TaleWorlds.MountAndBlade;
 using static Bandit_Militias.Helper;
 using static Bandit_Militias.Helper.Globals;
+using Patches = Bandit_Militias.Misc.Patches;
 
 // ReSharper disable ConditionIsAlwaysTrueOrFalse  
 // ReSharper disable ClassNeverInstantiated.Global  
@@ -65,53 +64,7 @@ namespace Bandit_Militias
                     Log(ex, LogLevel.Error);
                 }
             }
-
-
-            if ((Input.IsKeyDown(InputKey.LeftControl) || Input.IsKeyDown(InputKey.RightControl)) &&
-                (Input.IsKeyDown(InputKey.LeftAlt) || Input.IsKeyDown(InputKey.RightAlt)) &&
-                Input.IsKeyPressed(InputKey.K))
-            {
-                try
-                {
-                    var parties = MobileParty.FindPartiesAroundPosition(
-                            MobileParty.MainParty.Position2D, 1f)
-                        .Where(x => x != MobileParty.MainParty && !x.Name.ToString().StartsWith("Militia") && !x.Name.ToString().StartsWith("Garrison"));
-                    var foo = parties;
-                    foreach (var p in parties)
-                    {
-                        p.RemoveParty();
-                        p.Party.Visuals.SetMapIconAsDirty();
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Log(ex, LogLevel.Error);
-                }
-            }
-
-
-            // lobotomize AI
-            //if ((Input.IsKeyDown(InputKey.LeftControl) || Input.IsKeyDown(InputKey.RightControl)) &&
-            //    (Input.IsKeyDown(InputKey.LeftAlt) || Input.IsKeyDown(InputKey.RightAlt)) &&
-            //    Input.IsKeyPressed(InputKey.L))
-            //{
-            //    try
-            //    {
-            //        foreach (var party in MobileParty.All.Where(x => Clan.BanditFactions.Contains(x.Party?.Owner?.Clan)))
-            //        {
-            //            Log("Lobotomizing " + party, LogLevel.Debug);
-            //            Traverse.Create(party).Property("DefaultBehavior").SetValue(AiBehavior.None);
-            //            Traverse.Create(party).Property("ShortTermBehavior").SetValue(AiBehavior.None);
-            //            party.RecalculateShortTermAi();
-            //        }
-            //    }
-            //    catch (Exception ex)
-            //    {
-            //        Log(ex, LogLevel.Error);
-            //    }
-            //}
         }
-
 
         private static void RunManualPatches()
         {
@@ -119,7 +72,7 @@ namespace Bandit_Militias
             {
                 var original = AccessTools.TypeByName("LordNeedsGarrisonTroopsIssue").GetMethod("IssueStayAliveConditions");
                 Log(original, LogLevel.Debug);
-                var prefix = AccessTools.Method(typeof(Misc.Patches), nameof(Misc.Patches.IssueStayAliveConditionsPrefix));
+                var prefix = AccessTools.Method(typeof(Patches), nameof(Patches.IssueStayAliveConditionsPrefix));
                 Log($"Patching {original}", LogLevel.Debug);
                 harmony.Patch(original, new HarmonyMethod(prefix));
             }

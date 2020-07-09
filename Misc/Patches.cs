@@ -37,7 +37,7 @@ namespace Bandit_Militias.Misc
                     
                     // have to manually patch due to static class initialization
                     var original = AccessTools.Method(typeof(CampaignUIHelper), "GetCharacterCode");
-                    var prefix = AccessTools.Method(typeof(Misc.Patches), nameof(Misc.Patches.GetCharacterCodePrefix));
+                    var prefix = AccessTools.Method(typeof(Patches), nameof(GetCharacterCodePrefix));
                     Mod.Log($"Patching {original}", LogLevel.Debug);
                     Mod.harmony.Patch(original, new HarmonyMethod(prefix));
                 }

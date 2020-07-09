@@ -110,10 +110,12 @@ namespace Bandit_Militias.Militias
                     // prevents snowballing
                     // bug doesn't even fire
                     if (__instance.ShortTermBehavior == AiBehavior.FleeToPoint ||
-                        __instance.DefaultBehavior == AiBehavior.FleeToPoint)
+                        __instance.DefaultBehavior == AiBehavior.FleeToPoint ||
+                        targetParty.MobileParty.ShortTermBehavior == AiBehavior.FleeToPoint ||
+                        targetParty.MobileParty.DefaultBehavior == AiBehavior.FleeToPoint)
                     {
-                        Mod.Log(__instance.ShortTermBehavior, LogLevel.Debug);
-                        Mod.Log(__instance.DefaultBehavior, LogLevel.Debug);
+                        Mod.Log("Anti-snowball", LogLevel.Debug);
+
                         return;
                     }
 

@@ -6,13 +6,11 @@ using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.CharacterDevelopment.Managers;
 using TaleWorlds.Core;
 
+// ReSharper disable ClassNeverInstantiated.Global
+
 namespace Bandit_Militias
 {
-// Decompiled with JetBrains decompiler
-// Type: TaleWorlds.CampaignSystem.PartyUpgrader
-// Assembly: TaleWorlds.CampaignSystem, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null
-
-    // copied due to serious fuckery with MapFaction and CommunityPatch's valiant fix thereof
+    // copied due to serious fuckery with MapFaction
     public class PartyUpgraderCopy
     {
         public static void UpgradeReadyTroopsCopy(PartyBase party)
