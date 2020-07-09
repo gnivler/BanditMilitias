@@ -35,9 +35,6 @@
         <Reference Include="0Harmony, Version=2.0.1.0, Culture=neutral, PublicKeyToken=null">
           <HintPath>..\..\BannerlordRefs\0Harmony.dll</HintPath>
         </Reference>
-        <Reference Include="CommunityPatch, Version=0.1.0.0, Culture=neutral, PublicKeyToken=null">
-          <HintPath>..\..\SteamLibrary\steamapps\common\Mount &amp; Blade II Bannerlord\Modules\CommunityPatch\bin\Win64_Shipping_Client\CommunityPatch.dll</HintPath>
-        </Reference>
         <Reference Include="Microsoft.CSharp" />
         <Reference Include="SandBox, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
           <HintPath>..\..\SteamLibrary\steamapps\common\Mount &amp; Blade II Bannerlord\Modules\SandBox\bin\Win64_Shipping_Client\SandBox.dll</HintPath>
@@ -208,11 +205,11 @@
       <Content Include="SubModule.xml" />
     </ItemGroup>
     <PropertyGroup>
-      <PostBuildEvent>
+       <!-- <PostBuildEvent>
            xcopy "N:\Repos\Bandit Militias\obj\Debug\Bandit Militias.dll" "N:\SteamLibrary\steamapps\common\Mount &amp; Blade II Bannerlord\Modules\Bandit Militias\bin\Win64_Shipping_Client\" /Y
             xcopy "N:\Repos\Bandit Militias\obj\Debug\Bandit Militias.pdb" "N:\SteamLibrary\steamapps\common\Mount &amp; Blade II Bannerlord\Modules\Bandit Militias\bin\Win64_Shipping_Client\" /Y
             xcopy "N:\Repos\Bandit Militias\SubModule.xml" "N:\SteamLibrary\steamapps\common\Mount &amp; Blade II Bannerlord\Modules\Bandit Militias\" /Y
-        </PostBuildEvent>    
+        </PostBuildEvent>     -->                                                      
     </PropertyGroup>
 
     <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
