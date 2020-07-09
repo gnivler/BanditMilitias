@@ -29,7 +29,7 @@ namespace Bandit_Militias
 
         internal static void Log(object input, LogLevel logLevel)
         {
-            //if (logging >= logLevel)
+            if (logging >= logLevel)
             {
                 FileLog.Log($"[Bandit Militias] {input ?? "null"}");
             }
