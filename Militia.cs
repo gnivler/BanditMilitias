@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using HarmonyLib;
-using Helpers;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
@@ -52,14 +51,15 @@ namespace Bandit_Militias
                 }
 
                 BuildHeroWithBattleEquipment();
-                MurderLordsForEquipment();
+                MurderLordsForEquipment(hero, true);
                 var mostPrevalent = MostPrevalentFaction(MobileParty) ?? Clan.BanditFactions.First().MapFaction;
                 SetupHero(mostPrevalent);
                 var hideout = Settlement.FindAll(
                         x => x.IsHideout() &&
                              x.MapFaction != CampaignData.NeutralFaction)
-                    .GetRandomElement();
+                    .GetRandomElement() ?? Settlement.GetFirst;
                 // home has to be set to a hideout to make party aggressive (see PartyBase.MapFaction)
+                 
                 Traverse.Create(hero).Property("HomeSettlement").SetValue(hideout);
 
                 // todo refactor for posse
@@ -84,32 +84,6 @@ namespace Bandit_Militias
             hero.SetPerkValue(disciplinarian, true);
             hero.Name = Name;
             hero.Gold = Convert.ToInt32(MobileParty.Party.CalculateStrength() * 500);
-        }
-
-        private void MurderLordsForEquipment()
-        {
-            int i = default;
-            var equipment = new Equipment[3];
-            while (i < 3)
-            {
-                var sacrificialLamb = HeroCreator.CreateHeroAtOccupation(Occupation.Lord);
-                if (sacrificialLamb?.BattleEquipment?.Horse != null)
-                {
-                    equipment[i++] = sacrificialLamb.BattleEquipment;
-                }
-
-                sacrificialLamb.KillHero();
-            }
-
-            var gear = new Equipment();
-            for (var j = 0; j < 12; j++)
-            {
-                gear[j] = equipment[Rng.Next(0, 3)][j];
-            }
-
-            // get rid of any mount
-            gear[10] = new EquipmentElement();
-            EquipmentHelper.AssignHeroEquipmentFromEquipment(hero, gear);
         }
 
         private void BuildHeroWithBattleEquipment()

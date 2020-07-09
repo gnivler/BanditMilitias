@@ -4,13 +4,15 @@ using System.Linq;
 using HarmonyLib;
 using SandBox.View.Map;
 using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.SandBox.CampaignBehaviors;
-using TaleWorlds.Core;
+using TaleWorlds.CampaignSystem.ViewModelCollection;
 using TaleWorlds.Library;
 using TaleWorlds.ObjectSystem;
 using static Bandit_Militias.Helper.Globals;
 using static Bandit_Militias.Helper;
 
+// ReSharper disable UnusedMember.Global 
 // ReSharper disable UnusedType.Global  
 // ReSharper disable UnusedMember.Local   
 // ReSharper disable RedundantAssignment  
@@ -20,56 +22,24 @@ namespace Bandit_Militias.Misc
 {
     public class Patches
     {
-        [HarmonyPatch(typeof(Campaign), "OnInitialize")]
+        [HarmonyPatch(typeof(MapScreen), "OnInitialize")]
         public static class CampaignOnInitializePatch
         {
             private static void Postfix()
             {
                 try
                 {
-                    Mod.Log("Campaign.OnInitialize", LogLevel.Debug);
+                    Mod.Log("MapScreen.OnInitialize", LogLevel.Debug);
                     var militias = MobileParty.All.Where(x => x != null && x.Name.Equals("Bandit Militia")).ToList();
                     Mod.Log($"Militias: {militias.Count}", LogLevel.Info);
-                    Mod.Log($"Homeless: {militias.Count(x => x.HomeSettlement == null)}", LogLevel.Info);
-                    militias.Where(x => x.HomeSettlement == null)
-                        .Do(x =>
-                        {
-                            Mod.Log("Fixing null HomeSettlement (destroyed hideout)", LogLevel.Info);
-                            x.HomeSettlement = Game.Current.ObjectManager.GetObjectTypeList<Settlement>().Where(y => y.IsHideout()).GetRandomElement();
-                        });
-                    foreach (var militia in militias.Where(x => x.LeaderHero == null))
-                    {
-                        Mod.Log("Removing hero-less militia", LogLevel.Info);
-                        militia.RemoveParty();
-                    }
-
-
-                    foreach (var m in Militia.All)
-                    {
-                        if (m.MobileParty == null)
-                        {
-                            Mod.Log("Trashing", LogLevel.Debug);
-                            Trash(m.MobileParty);
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Mod.Log(ex, LogLevel.Error);
-                }
-            }
-        }
-
-        // init section.  NRE without setting leaders again here for whatever reason
-        [HarmonyPatch(typeof(MapScreen), "OnInitialize")]
-        public static class MapScreenOnInitializePatch
-        {
-            private static void Postfix()
-            {
-                try
-                {
-                    Mod.Log("MapScreen.OnInitialize", LogLevel.Debug);
+                    Flush();
                     CalcMergeCriteria();
+                    
+                    // have to manually patch due to static class initialization
+                    var original = AccessTools.Method(typeof(CampaignUIHelper), "GetCharacterCode");
+                    var prefix = AccessTools.Method(typeof(Misc.Patches), nameof(Misc.Patches.GetCharacterCodePrefix));
+                    Mod.Log($"Patching {original}", LogLevel.Debug);
+                    Mod.harmony.Patch(original, new HarmonyMethod(prefix));
                 }
                 catch (Exception ex)
                 {
@@ -78,6 +48,21 @@ namespace Bandit_Militias.Misc
             }
         }
 
+        private static void GetCharacterCodePrefix(ref CharacterObject character)
+        {
+            if (character.Equipment == null)
+            {
+                Traverse.Create(character?.HeroObject).Property("BattleEquipment")
+                    .SetValue(MurderLordsForEquipment(null, false));
+            }
+
+            if (character.CivilianEquipments == null)
+            {
+                Traverse.Create(character?.HeroObject).Property("CivilianEquipment")
+                    .SetValue(MurderLordsForEquipment(null, false));
+            } 
+        }
+        
         // BUG some parties were throwing when exiting post-battle loot menu 1.4.2b
         [HarmonyPatch(typeof(MBObjectManager), "UnregisterObject")]
         public static class MBObjectManagerUnregisterObjectPatch
@@ -97,43 +82,6 @@ namespace Bandit_Militias.Misc
             }
         }
 
-        // BUG more vanilla patching
-        //[HarmonyPatch(typeof(BanditsCampaignBehavior), "OnSettlementEntered")]
-        //public static class BanditsCampaignBehaviorOnSettlementEnteredPatch
-        //{
-        //    private static bool Prefix(ref MobileParty mobileParty, Hero hero)
-        //    {
-        //        if (mobileParty == null)
-        //        {
-        //            Trace("Fixing vanilla call with null MobileParty at BanditsCampaignBehavior.OnSettlementEntered");
-        //            if (hero == null)
-        //            {
-        //                Trace("Hero is also null");
-        //                return false;
-        //            }
-        //
-        //            var parties = hero.OwnedParties?.ToList();
-        //            if (parties == null ||
-        //                parties.Count == 0)
-        //            {
-        //                Trace("Unable to fix call with null MobileParty at BanditsCampaignBehavior.OnSettlementEntered");
-        //                return false;
-        //            }
-        //
-        //            mobileParty = parties[0]?.MobileParty;
-        //            Trace($"New party: {mobileParty}");
-        //            if (mobileParty == null)
-        //            {
-        //                // some shit still falls through this far
-        //                Trace("Fall-through");
-        //                return false;
-        //            }
-        //        }
-        //
-        //        return true;
-        //    }
-        //}
-
         [HarmonyPatch(typeof(MapEventManager), "OnAfterLoad")]
         public static class MapEventManagerCtorPatch
         {
@@ -150,28 +98,6 @@ namespace Bandit_Militias.Misc
                 }
             }
         }
-
-        // prevents vanilla NRE from parties without Owner trying to pay for upgrades... 
-        //[HarmonyPatch(typeof(PartyUpgrader), "UpgradeReadyTroops", typeof(PartyBase))]
-        //public static class PartyUpgraderUpgradeReadyTroopsPatch
-        //{
-        //    private static bool Prefix(PartyBase party)
-        //    {
-        //        if (party.MobileParty == null)
-        //        {
-        //            Trace("party.MobileParty == null");
-        //            return false;
-        //        }
-        //
-        //        if (party.Owner == null)
-        //        {
-        //            Trace("party.Owner == null, that throws vanilla in 1.4.2b, Prefix false");
-        //            return false;
-        //        }
-        //
-        //        return true;
-        //    }
-        //}
 
         [HarmonyPatch(typeof(FactionManager), "IsAtWarAgainstFaction")]
         public static class FactionManagerIsAtWarAgainstFactionPatch
@@ -205,7 +131,6 @@ namespace Bandit_Militias.Misc
             }
         }
 
-
         [HarmonyPatch(typeof(Campaign), "HourlyTick")]
         public static class CampaignHourlyTickPatch
         {
@@ -213,43 +138,13 @@ namespace Bandit_Militias.Misc
 
             private static void Postfix()
             {
-                var tempList = new List<MobileParty>();
-                foreach (var mobileParty in MobileParty.All
-                    .Where(x => x.MemberRoster.TotalManCount == 0))
-                {
-                    tempList.Add(mobileParty);
-                }
-
-                // this was apparently only necessary when the merge distance was smaller than the split min radius
-                // in InitializeMobileParty
-                // TODO probably remove
-                PurgeList($"CampaignHourlyTickPatch Clearing {tempList.Count} empty parties", tempList);
-                try
-                {
-                    foreach (var mobileParty in MobileParty.All
-                        .Where(x => x.Name.Equals("Bandit Militia") &&
-                                    x.MapFaction == CampaignData.NeutralFaction))
-                    {
-                        Mod.Log("This bandit shouldn't exist " + mobileParty + " size " + mobileParty.MemberRoster.TotalManCount, LogLevel.Debug);
-                        tempList.Add(mobileParty);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Mod.Log(ex, LogLevel.Error);
-                }
-
-                PurgeList($"CampaignHourlyTickPatch Clearing {tempList.Count} weird neutral parties", tempList);
-                // bug: I don't think this is needed anymore, so I commented it
-                //FinalizeBadMapEvents();
-
+                HourlyFlush();
                 if (hoursPassed == 23)
                 {
                     CalcMergeCriteria();
                     hoursPassed = 0;
                 }
 
-                //PurgeNullRefDescriptionIssues();
                 hoursPassed++;
             }
         }
@@ -330,6 +225,98 @@ namespace Bandit_Militias.Misc
                 {
                     Mod.Log(ex, LogLevel.Error);
                 }
+            }
+        }
+
+        internal static void IssueStayAliveConditionsPrefix(object __instance, ref Settlement ____settlement)
+        {
+            if (____settlement == null)
+            {
+                var stringId = (string) __instance.GetType().GetField("_settlementStringID", AccessTools.all)?.GetValue(__instance);
+                ____settlement = Settlement.Find(stringId) ?? Settlement.FindFirst(x => x.StringId == stringId) ?? Settlement.GetFirst;
+                Mod.Log(____settlement, LogLevel.Debug);
+            }
+        }
+
+
+        [HarmonyPatch(typeof(HeroCreator), "CreateRelativeNotableHero")]
+        public class HeroCreatorCreateRelativeNotableHero
+        {
+            private static bool Prefix(Hero relative) => relative.CharacterObject?.Occupation != Occupation.Outlaw;
+        }
+
+        //[HarmonyPatch(typeof(EnterSettlementAction), "ApplyInternal")]
+        //public class EnterSettlementActionApplyInternalPatch
+        //{
+        //    private static bool Prefix(Hero hero) => hero != null;
+        //}
+        //
+        [HarmonyPatch(typeof(UrbanCharactersCampaignBehavior), "ChangeDeadNotable")]
+        public class UrbanCharactersCampaignBehaviorChangeDeadNotablePatch
+        {
+            private static bool Prefix(Hero deadNotable, Hero newNotable) => deadNotable == null && newNotable == null;
+        }
+
+        //
+        //[HarmonyPatch(typeof(CommonArea), "CalculateIdealNumberOfTroops")]
+        //public class CommonAreaCalculateIdealNumberOfTroopsPatch
+        //{
+        //    private static bool Prefix(CommonArea __instance) => __instance.Owner != null;
+        //}
+        //
+        //[HarmonyPatch(typeof(CommonArea), "AddTroopsToCommonArea")]
+        //public class CommonAreaAddTroopsToCommonAreaPatch
+        //{
+        //    private static bool Prefix(CommonArea __instance) => __instance.InsideParty != null;
+        //}
+        //
+        //[HarmonyPatch(typeof(CommonArea), "PlaceInitialTradeGoods")]
+        //public class CommonAreaPlaceInitialTradeGoodsPatch
+        //{
+        //    private static bool Prefix(CommonArea __instance) => __instance.InsideParty != null;
+        //}
+        //
+        //[HarmonyPatch(typeof(DefaultPartyHealingModel), "GetDailyHealingForRegulars")]
+        //public class DefaultPartyHealingModelGetDailyHealingForRegularsPatch
+        //{
+        //    private static bool Prefix(MobileParty party) => party.CurrentSettlement != null;
+        //}
+        //
+        //[HarmonyPatch(typeof(DefaultPartyHealingModel), "GetDailyHealingHpForHeroes")]
+        //public class DefaultPartyHealingModelGetDailyHealingHpForHeroesPatch
+        //{
+        //    private static bool Prefix(MobileParty party) => party.CurrentSettlement != null;
+        //}
+        //
+        //[HarmonyPatch(typeof(BoardGameCampaignBehavior), "OnHeroKilled")]
+        //public class BoardGameCampaignBehaviorOnHeroKilledPatch
+        //{
+        //    private static bool Prefix(object ____heroAndBoardGameTimeDictionary) => ____heroAndBoardGameTimeDictionary != null;
+        //}
+        //
+        //[HarmonyPatch(typeof(DynamicBodyCampaignBehavior), "OnAfterDailyTick")]
+        //public class DynamicBodyCampaignBehaviorOnAfterDailyTickPatch
+        //{
+        //    private static Exception Finalizer()
+        //    {
+        //        Mod.Log("Suppressing exception DynamicBodyCampaignBehaviorOnAfterDailyTickPatch", LogLevel.Debug);
+        //        Debug.Print("Bandit Militias is suppressing an exception at DynamicBodyCampaignBehaviorOnAfterDailyTickPatch");
+        //        return null;
+        //    }
+        //}
+        //
+        //[HarmonyPatch(typeof(PartyUpgrader), "UpgradeReadyTroops")]
+        //public class MapEventManagerUpgradeReadyTroopsPatch
+        //{
+        //    private static bool Prefix(PartyBase party) => party.Owner != null;
+        //}
+        //
+        [HarmonyPatch(typeof(DestroyPartyAction), "ApplyInternal")]
+        public class DestroyPartyActionApplyInternalPatch
+        {
+            private static Exception Finalizer()
+            {
+                return null;
             }
         }
     }

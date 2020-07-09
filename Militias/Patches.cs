@@ -10,8 +10,7 @@ using TaleWorlds.Library;
 using static Bandit_Militias.Helper;
 using static Bandit_Militias.Helper.Globals;
 
-// ReSharper disable UnusedMember.Global
-
+// ReSharper disable UnusedMember.Global 
 // ReSharper disable UnusedType.Global   
 // ReSharper disable UnusedMember.Local   
 // ReSharper disable RedundantAssignment  
@@ -72,6 +71,7 @@ namespace Bandit_Militias.Militias
 
                     // check daily each bandit party against the size factor and a random chance to split up
                     TrySplitUpParty(__instance);
+                    PurgeNullRefDescriptionIssues();
                 }
                 catch (Exception ex)
                 {
