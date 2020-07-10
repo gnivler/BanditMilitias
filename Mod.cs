@@ -1,6 +1,8 @@
 ﻿using System;
+using System.IO;
 using System.Reflection;
 using HarmonyLib;
+using Newtonsoft.Json;
 using TaleWorlds.InputSystem;
 using TaleWorlds.MountAndBlade;
 using static Bandit_Militias.Helper;
@@ -25,20 +27,46 @@ namespace Bandit_Militias
     public class Mod : MBSubModuleBase
     {
         internal static readonly Harmony harmony = new Harmony("ca.gnivler.bannerlord.BanditMilitias");
+        internal static readonly string modDirectory = new FileInfo(@"..\..\Modules\Bandit Militias\").DirectoryName;
 
         internal static void Log(object input, LogLevel logLevel)
         {
             if (logging >= logLevel)
             {
-                FileLog.Log($"[Bandit Militias] {input ?? "null"}");
+                using (var sw = new StreamWriter(Path.Combine(modDirectory, "mod.log")))
+                {
+                    sw.WriteLine($"[{DateTime.Now:G}] {input ?? "null"}");
+                }
             }
         }
 
         protected override void OnSubModuleLoad()
         {
             Log($"Startup {DateTime.Now.ToShortTimeString()}", LogLevel.Info);
+            ReadConfig();
             RunManualPatches();
             harmony.PatchAll(Assembly.GetExecutingAssembly());
+        }
+
+        private static void ReadConfig()
+        {
+            try
+            {
+                var fileName = Path.Combine(modDirectory, "mod_config.json");
+                if (File.Exists(fileName))
+                {
+                    Helper.Globals.Settings = JsonConvert.DeserializeObject<Settings>(File.ReadAllText(fileName));
+                }
+                else
+                {
+                    Log($"Configuration file expected at {fileName} but not found, using default settings", LogLevel.Error);
+                    Helper.Globals.Settings = new Settings();
+                }
+            }
+            catch (Exception ex)
+            {
+                Log(ex, LogLevel.Error);
+            }
         }
 
         protected override void OnApplicationTick(float dt)

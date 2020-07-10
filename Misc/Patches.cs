@@ -32,11 +32,11 @@ namespace Bandit_Militias.Misc
                     Mod.Log("MapScreen.OnInitialize", LogLevel.Debug);
                     var militias = MobileParty.All.Where(x => x != null && x.Name.Equals("Bandit Militia")).ToList();
                     Mod.Log($"Militias: {militias.Count}", LogLevel.Info);
-                    ReInjectCharacterObjectData();
                     Flush();
                     CalcMergeCriteria();
 
                     // have to manually patch due to static class initialization
+                    // todo check if needed
                     var original = AccessTools.Method(typeof(CampaignUIHelper), "GetCharacterCode");
                     var prefix = AccessTools.Method(typeof(Patches), nameof(GetCharacterCodePrefix));
                     Mod.Log($"Patching {original}", LogLevel.Debug);
@@ -64,7 +64,7 @@ namespace Bandit_Militias.Misc
             }
         }
 
-        // BUG some parties were throwing when exiting post-battle loot menu 1.4.2b
+        // todo check if needed
         [HarmonyPatch(typeof(MBObjectManager), "UnregisterObject")]
         public static class MBObjectManagerUnregisterObjectPatch
         {
@@ -189,6 +189,7 @@ namespace Bandit_Militias.Misc
             }
         }
 
+        // todo check if needed
         // vanilla patch, doesn't check MobileParty for null
         // this happens when Clan governor's change and get teleported into a settlement without a party
         [HarmonyPatch(typeof(BanditsCampaignBehavior), "CheckForSpawningBanditBoss")]
@@ -211,7 +212,8 @@ namespace Bandit_Militias.Misc
                 return false;
             }
         }
-
+        
+        // todo check if needed
         // for whatever reason I'm seeing apparently-vanilla data causing NREs
         [HarmonyPatch(typeof(IssueManager), "InitializeForSavedGame")]
         public class IssueManagerInitializeForSavedGamePatch
@@ -229,6 +231,7 @@ namespace Bandit_Militias.Misc
             }
         }
 
+        // todo check if needed
         internal static void IssueStayAliveConditionsPrefix(object __instance, ref Settlement ____settlement)
         {
             if (____settlement == null)
@@ -240,6 +243,7 @@ namespace Bandit_Militias.Misc
         }
 
 
+        // todo check if needed
         [HarmonyPatch(typeof(HeroCreator), "CreateRelativeNotableHero")]
         public class HeroCreatorCreateRelativeNotableHero
         {
@@ -252,7 +256,8 @@ namespace Bandit_Militias.Misc
         //    private static bool Prefix(Hero hero) => hero != null;
         //}
         //
-        
+
+        // todo check if needed
         [HarmonyPatch(typeof(UrbanCharactersCampaignBehavior), "ChangeDeadNotable")]
         public class UrbanCharactersCampaignBehaviorChangeDeadNotablePatch
         {
@@ -313,7 +318,8 @@ namespace Bandit_Militias.Misc
         //    private static bool Prefix(PartyBase party) => party.Owner != null;
         //}
         //
-        
+
+        // todo check if needed
         [HarmonyPatch(typeof(DestroyPartyAction), "ApplyInternal")]
         public class DestroyPartyActionApplyInternalPatch
         {
