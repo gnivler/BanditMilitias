@@ -32,9 +32,10 @@ namespace Bandit_Militias.Misc
                     Mod.Log("MapScreen.OnInitialize", LogLevel.Debug);
                     var militias = MobileParty.All.Where(x => x != null && x.Name.Equals("Bandit Militia")).ToList();
                     Mod.Log($"Militias: {militias.Count}", LogLevel.Info);
+                    ReInjectCharacterObjectData();
                     Flush();
                     CalcMergeCriteria();
-                    
+
                     // have to manually patch due to static class initialization
                     var original = AccessTools.Method(typeof(CampaignUIHelper), "GetCharacterCode");
                     var prefix = AccessTools.Method(typeof(Patches), nameof(GetCharacterCodePrefix));
@@ -60,9 +61,9 @@ namespace Bandit_Militias.Misc
             {
                 Traverse.Create(character?.HeroObject).Property("CivilianEquipment")
                     .SetValue(MurderLordsForEquipment(null, false));
-            } 
+            }
         }
-        
+
         // BUG some parties were throwing when exiting post-battle loot menu 1.4.2b
         [HarmonyPatch(typeof(MBObjectManager), "UnregisterObject")]
         public static class MBObjectManagerUnregisterObjectPatch
@@ -251,6 +252,7 @@ namespace Bandit_Militias.Misc
         //    private static bool Prefix(Hero hero) => hero != null;
         //}
         //
+        
         [HarmonyPatch(typeof(UrbanCharactersCampaignBehavior), "ChangeDeadNotable")]
         public class UrbanCharactersCampaignBehaviorChangeDeadNotablePatch
         {
@@ -311,6 +313,7 @@ namespace Bandit_Militias.Misc
         //    private static bool Prefix(PartyBase party) => party.Owner != null;
         //}
         //
+        
         [HarmonyPatch(typeof(DestroyPartyAction), "ApplyInternal")]
         public class DestroyPartyActionApplyInternalPatch
         {
@@ -319,5 +322,69 @@ namespace Bandit_Militias.Misc
                 return null;
             }
         }
+
+        // needed when missing templates
+        //[HarmonyPatch(typeof(TournamentFightMissionController), "GetTeamWeaponEquipmentList")]
+        //public class TournamentFightMissionControllerGetTeamWeaponEquipmentListPatch
+        //{
+        //    private static Exception Finalizer(Exception __exception, ref List<Equipment> __result)
+        //    {
+        //        //__result.Clear();
+        //        //while (__result.Count < 10)
+        //        //{
+        //        //    Mod.Log($"while (__result.Count < 10) at TournamentFightMissionControllerGetTeamWeaponEquipmentListPatch", LogLevel.Debug);
+        //        //    __result.Add(Hero.MainHero.BattleEquipment);
+        //        //}
+        //        //
+        //        return null;
+        //    }
+        //}
+
+        // needed when missing templates
+        //[HarmonyPatch(typeof(TournamentFightMissionController), "PrepareForMatch")]
+        //public class TournamentFightMissionControllerPrepareForMatchPatch
+        //{
+        //    private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        //    {
+        //        var codes = instructions.ToList();
+        //        var target = codes.FindIndex(x => x.opcode == OpCodes.Stloc_0);
+        //        target++;
+        //        var helper = AccessTools.Method(typeof(TournamentFightMissionControllerPrepareForMatchPatch), nameof(Helper));
+        //
+        //
+        //        var stack = new List<CodeInstruction>
+        //        {
+        //            new CodeInstruction(OpCodes.Ldloc_0),
+        //            new CodeInstruction(OpCodes.Call, helper),
+        //            new CodeInstruction(OpCodes.Stloc_0)
+        //        };
+        //        codes.InsertRange(target, stack);
+        //        codes.Do(x => FileLog.Log($"{x.opcode,-15}{x.operand}"));
+        //        return codes.AsEnumerable();
+        //    }
+        //
+        //    private static List<Equipment> Helper(List<Equipment> equipment)
+        //    {
+        //        var gear = new List<Equipment>();
+        //        if (equipment == null || equipment.Count == 0)
+        //        {
+        //            while (gear.Count < 10)
+        //            {
+        //                gear.Add(MurderLordsForEquipment(null, true));
+        //                Mod.Log("MurderLordsForEquipment", LogLevel.Debug);
+        //            }
+        //
+        //            return gear;
+        //        }
+        //
+        //        return equipment;
+        //    }
+        //}
+        //
+        //internal static void ObjectTypeRecordPostfix(object __instance)
+        //{
+        //    
+        //    Mod.Log(__instance, LogLevel.Debug);
+        //}
     }
 }
