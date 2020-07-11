@@ -191,6 +191,7 @@
         </Reference>
     </ItemGroup>
     <ItemGroup>
+        <Compile Include="HeroCreatorCopy.cs" />
         <Compile Include="PartyUpgraderCopy.cs" />
         <Compile Include="Helper.cs" />
         <Compile Include="Militia.cs" />

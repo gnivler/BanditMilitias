@@ -54,13 +54,13 @@ namespace Bandit_Militias.Misc
             if (character.Equipment == null)
             {
                 Traverse.Create(character?.HeroObject).Property("BattleEquipment")
-                    .SetValue(MurderLordsForEquipment(null, false));
+                    .SetValue(CreateEquipment(false));
             }
 
             if (character.CivilianEquipments == null)
             {
                 Traverse.Create(character?.HeroObject).Property("CivilianEquipment")
-                    .SetValue(MurderLordsForEquipment(null, false));
+                    .SetValue(CreateEquipment(false));
             }
         }
 

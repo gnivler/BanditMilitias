@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using HarmonyLib;
+using Helpers;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
@@ -12,7 +13,8 @@ using static Bandit_Militias.Helper;
 
 namespace Bandit_Militias
 {
-    public class Militia
+    internal class Militia
+
     {
         private static readonly TextObject Name = new TextObject("Bandit Militia");
         public static readonly HashSet<Militia> All = new HashSet<Militia>();
@@ -50,8 +52,9 @@ namespace Bandit_Militias
                     return;
                 }
 
-                BuildHeroWithBattleEquipment();
-                MurderLordsForEquipment(hero, true);
+                hero = GetHeroWithBattleEquipment();
+                MBObjectManager.Instance.RegisterObject(hero);
+                EquipmentHelper.AssignHeroEquipmentFromEquipment(hero, CreateEquipment(true));
                 var mostPrevalent = MostPrevalentFaction(MobileParty) ?? Clan.BanditFactions.First().MapFaction;
                 SetupHero(mostPrevalent);
                 var hideout = Settlement.FindAll(
@@ -85,22 +88,23 @@ namespace Bandit_Militias
             hero.Gold = Convert.ToInt32(MobileParty.Party.CalculateStrength() * 500);
         }
 
-        private void BuildHeroWithBattleEquipment()
+        private Hero GetHeroWithBattleEquipment()
         {
             while (true)
             {
-                hero = HeroCreator.CreateHeroAtOccupation(Occupation.Outlaw);
+                hero = HeroCreatorCopy.CreateUnregisteredHero(Occupation.Outlaw);
                 if (hero.BattleEquipment != null)
                 {
                     break;
                 }
 
-                Mod.Log("while (true) at BuildHeroWithBattleEquipment", LogLevel.Debug);
                 hero.KillHero();
             }
+
+            return hero;
         }
 
-        private IFaction MostPrevalentFaction(MobileParty mobileParty)
+        private static IFaction MostPrevalentFaction(MobileParty mobileParty)
         {
             var map = new Dictionary<CultureObject, int>();
             var troopTypes = mobileParty.MemberRoster.Select(x => x.Character).ToList();

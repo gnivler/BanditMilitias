@@ -33,7 +33,7 @@ namespace Bandit_Militias
         {
             if (logging >= logLevel)
             {
-                using (var sw = new StreamWriter(Path.Combine(modDirectory, "mod.log")))
+                using (var sw = new StreamWriter(Path.Combine(modDirectory, "mod.log"), true))
                 {
                     sw.WriteLine($"[{DateTime.Now:G}] {input ?? "null"}");
                 }

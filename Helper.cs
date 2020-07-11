@@ -1,11 +1,8 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
-using System.Reflection;
 using HarmonyLib;
-using Helpers;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.SandBox.CampaignBehaviors;
@@ -25,7 +22,7 @@ namespace Bandit_Militias
         {
             // dev
             internal static bool testingMode;
-            internal static LogLevel logging = LogLevel.Disabled;
+            internal static LogLevel logging = LogLevel.Debug;
 
             // how far to look
             internal const float SearchRadius = 25;
@@ -247,9 +244,8 @@ namespace Bandit_Militias
             foreach (var mapEvent in MapEvents.Where(x => x.EventType == MapEvent.BattleTypes.FieldBattle))
             {
                 // bug added IsFinished, does it work?  I don't want it to clear parties that the game would be dealing with
-                if (mapEvent.AttackerSide.TroopCount == 0 ||
-                    mapEvent.DefenderSide.TroopCount == 0 &&
-                    mapEvent.IsFinished)
+                if ((mapEvent.AttackerSide.TroopCount == 0 || mapEvent.DefenderSide.TroopCount == 0) &&
+                    (mapEvent.AttackerSide.LeaderParty.Name.Equals("Bandit Militia") || mapEvent.DefenderSide.LeaderParty.Name.Equals("Bandit Militia")))
                 {
                     Mod.Log($"Removing bad field battle with {mapEvent.AttackerSide.LeaderParty.Name}, {mapEvent.DefenderSide.LeaderParty.Name}", LogLevel.Info);
                     mapEvent.FinalizeEvent();
@@ -588,43 +584,26 @@ namespace Bandit_Militias
             PurgeList($"CampaignHourlyTickPatch Clearing {tempList.Count} empty parties", tempList);
         }
 
-        internal static Equipment MurderLordsForEquipment(Hero hero, bool randomizeWornEquipment)
+        internal static Equipment CreateEquipment(bool randomizeWornEquipment)
         {
             try
             {
-                int i = default;
-                var equipment = new Equipment[3];
-                while (i < 3)
-                {
-                    var sacrificialLamb = HeroCreator.CreateHeroAtOccupation(Occupation.Lord);
-                    if (sacrificialLamb?.BattleEquipment?.Horse != null)
-                    {
-                        equipment[i++] = sacrificialLamb.BattleEquipment;
-                    }
-
-                    sacrificialLamb.KillHero();
-                }
-
+                var equipment = CharacterObject.Templates.Where(
+                    x => x.StringId.Contains("lord") && x.FirstBattleEquipment != null);
                 if (!randomizeWornEquipment)
                 {
-                    return equipment[0];
+                    return equipment.FirstOrDefault()?.FirstBattleEquipment;
                 }
 
                 var gear = new Equipment();
                 for (var j = 0; j < 12; j++)
                 {
-                    gear[j] = equipment[Rng.Next(0, 3)][j];
+                    gear[j] = equipment.GetRandomElement().FirstBattleEquipment[j];
                 }
-
 
                 // get rid of any mount
-                gear[10] = new EquipmentElement();
-                if (hero != null)
-                {
-                    EquipmentHelper.AssignHeroEquipmentFromEquipment(hero, gear);
-                }
-
-                return gear.Clone();
+                //gear[10] = new EquipmentElement();
+                return gear;
             }
             catch (Exception ex)
             {
