@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.Linq;
 using HarmonyLib;
 using Helpers;
@@ -17,15 +16,9 @@ namespace Bandit_Militias
             Settlement forcedHomeSettlement = null)
         {
             var settlement = forcedHomeSettlement ?? SettlementHelper.GetRandomTown();
-            var source = new List<CharacterObject>();
             var culture = settlement.Culture;
-            foreach (var characterObject in CharacterObject.Templates.Where(x => x.Occupation == neededOccupation))
-            {
-                if (characterObject.Culture == culture)
-                {
-                    source.Add(characterObject);
-                }
-            }
+            var source = CharacterObject.Templates.Where(x =>
+                x.Occupation == neededOccupation).Where(characterObject => characterObject.Culture == culture).ToList();
 
             var num1 = 0;
             foreach (var characterObject in source)
@@ -86,6 +79,7 @@ namespace Bandit_Militias
                 Traverse.Create(typeof(HeroCreator)).Method("AddRandomVarianceToTraits", specialHero).GetValue();
             }
 
+            // notably, I have removed the call to register the hero...
             return specialHero;
         }
     }

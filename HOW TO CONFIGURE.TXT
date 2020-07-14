@@ -1,0 +1,14 @@
+Note the syntax must be exactly right.  Use a site like https://jsonlint.com/ to verify accuracy.
+
+
+
+  "CanTrain": true,                can be true or false, case insensitive.  False means they will never train.  True means they will train as XP and gold permits.
+  "XPGift": "NORMAL",              can be LOW, NORMAL, HARD, HARDER, in CAPS.  Low grants NO XP on merges, while HARDER grants enough XP to significantly upgrade their troops.  No effect if CanTrade is false.                                         
+  "GoldReward": "NORMAL",          can be LOW, NORMAL, RICH, RICHER, in CAPS.  This scales with the strength of the party, regardless.
+  "MinPartySize": 20,              integer.  Parties with fewer than this number of healthy troops will be dispersed, if defeated. 
+  "MaxPartySize": 300,             integer lower than 2147483648.
+  "RandomSplitChance": 0.25,       the daily probability a viable militia will split.
+  "StrengthSplitFactor": 0.8,      militias will start randomly checking for split once they reach this threshold.           values over 1 skew the difficult harder
+  "SizeSplitFactor": 0.8,          militias will start randomly checking for split once they reach this threshold.           values over 1 skew the difficult harder
+  "PartyStrengthFactor": 0.8,      weakens the militias by scaling both strength and power to be less than the hero.         values over 1 skew the difficult harder
+  "MaxPartySizeFactor": 0.8        weakens the militias by scaling both strength and power to be less than the hero.         values over 1 skew the difficult harder

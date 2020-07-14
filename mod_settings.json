@@ -1,0 +1,12 @@
+{
+  "CanTrain": true,
+  "XpGift": "NORMAL",
+  "GoldReward": "NORMAL",
+  "MinPartySize": 20,
+  "MaxPartySize": 300,
+  "RandomSplitChance": 0.25,
+  "StrengthSplitFactor": 0.8,
+  "SizeSplitFactor": 0.8,
+  "PartyStrengthFactor": 0.8,
+  "MaxPartySizeFactor": 0.8
+}

@@ -1,13 +1,12 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using HarmonyLib;
 using TaleWorlds.CampaignSystem;
-using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.SandBox.CampaignBehaviors;
 using TaleWorlds.Core;
-using TaleWorlds.Library;
 using TaleWorlds.Localization;
 using TaleWorlds.ObjectSystem;
 using static Bandit_Militias.Helper.Globals;
@@ -22,7 +21,6 @@ namespace Bandit_Militias
         {
             // dev
             internal static bool testingMode;
-            internal static LogLevel logging = LogLevel.Debug;
 
             // how far to look
             internal const float SearchRadius = 25;
@@ -31,31 +29,36 @@ namespace Bandit_Militias
             internal const float MergeDistance = 3.5f;
             internal const float MinDistanceFromHideout = 15;
 
-            // thresholds for splitting
-            internal const float StrengthSplitFactor = 0.8f;
-            internal const float SizeSplitFactor = 0.8f;
-            internal const float RandomSplitChance = 0.25f;
-
-            // adjusts size and strengths
-            internal const float PartyStrengthFactor = 0.8f;
-            internal const float MaxPartySizeFactor = 0.8f;
-
             // holders for criteria
-            internal static float HeroPartyStrength;
-            internal static float MaxPartyStrength;
-            internal static double MaxPartySize;
+            internal static float CalculatedHeroPartyStrength;
+            internal static float CalculatedMaxPartyStrength;
+            internal static double CalculatedMaxPartySize;
 
             // misc
             internal static readonly Random Rng = new Random();
-            internal static List<MapEvent> MapEvents;
+
+            //internal static List<MapEvent> MapEvents;
             internal static Settings Settings;
+
+            internal static readonly Dictionary<string, int> DifficultyXpMap = new Dictionary<string, int>
+            {
+                {"LOW", 0},
+                {"NORMAL", 300},
+                {"HARD", 600},
+                {"HARDER", 900},
+            };
+
+            internal static readonly Dictionary<string, int> GoldMap = new Dictionary<string, int>
+            {
+                {"LOW", 250},
+                {"NORMAL", 500},
+                {"RICH", 900},
+                {"RICHER", 2000},
+            };
         }
 
-        internal static int NumMountedTroops(TroopRoster troopRoster)
-        {
-            return troopRoster.Troops.Where(x => x.IsMounted)
-                .Sum(troopRoster.GetTroopCount);
-        }
+        internal static int NumMountedTroops(TroopRoster troopRoster) => troopRoster.Troops
+            .Where(x => x.IsMounted).Sum(troopRoster.GetTroopCount);
 
         private static float Variance => MBRandom.RandomFloatRanged(0.5f, 1.5f);
 
@@ -66,14 +69,14 @@ namespace Bandit_Militias
                 x => x.LeaderHero != null && !x.Name.Equals("Bandit Militia")).ToList();
             if (parties.Any())
             {
-                HeroPartyStrength = parties.Select(x => x.Party.TotalStrength).Average();
+                CalculatedHeroPartyStrength = parties.Select(x => x.Party.TotalStrength).Average();
                 // reduce strength
-                MaxPartyStrength = HeroPartyStrength * PartyStrengthFactor * Variance;
+                CalculatedMaxPartyStrength = CalculatedHeroPartyStrength * Globals.Settings.PartyStrengthFactor * Variance;
                 // maximum size grows over time as clans level up
-                MaxPartySize = Math.Round(MobileParty.All
+                CalculatedMaxPartySize = Math.Round(MobileParty.All
                     .Where(x => x.LeaderHero != null && !x.IsBandit).Select(x => x.Party.PartySizeLimit).Average());
-                MaxPartySize *= MaxPartySizeFactor * Variance;
-                Mod.Log($"Daily calculations => size: {MaxPartySize:0} strength: {MaxPartyStrength:0}", LogLevel.Debug);
+                CalculatedMaxPartySize *= Globals.Settings.MaxPartySizeFactor * Variance;
+                Mod.Log($"Daily calculations => size: {CalculatedMaxPartySize:0} strength: {CalculatedMaxPartyStrength:0}", LogLevel.Debug);
             }
         }
 
@@ -96,10 +99,10 @@ namespace Bandit_Militias
 
             var roll = Rng.NextDouble();
             if (__instance.MemberRoster.TotalManCount == 0 ||
-                roll > RandomSplitChance ||
+                roll > Globals.Settings.RandomSplitChance ||
                 !__instance.Name.Equals("Bandit Militia") ||
-                __instance.Party.TotalStrength <= MaxPartyStrength * StrengthSplitFactor * Variance ||
-                __instance.Party.MemberRoster.TotalManCount <= MaxPartySize * SizeSplitFactor * Variance)
+                __instance.Party.TotalStrength <= CalculatedMaxPartyStrength * Globals.Settings.StrengthSplitFactor * Variance ||
+                __instance.Party.MemberRoster.TotalManCount <= CalculatedMaxPartySize * Globals.Settings.SizeSplitFactor * Variance)
             {
                 return;
             }
@@ -172,7 +175,7 @@ namespace Bandit_Militias
                 var militia2 = new Militia(original.Position2D, party2, prisoners2);
                 Traverse.Create(militia1.MobileParty.Party).Property("ItemRoster").SetValue(inventory1);
                 Traverse.Create(militia2.MobileParty.Party).Property("ItemRoster").SetValue(inventory2);
-                Mod.Log($"{militia1.MobileParty.MapFaction.Name} <<< Split >>> {militia2.MobileParty.MapFaction.Name}", LogLevel.Info);
+                Mod.Log($"{militia1.MobileParty.MapFaction.Name} <<< Split >>> {militia2.MobileParty.MapFaction.Name}", LogLevel.Debug);
                 militia1.MobileParty.Party.Visuals.SetMapIconAsDirty();
                 militia2.MobileParty.Party.Visuals.SetMapIconAsDirty();
                 Trash(original);
@@ -234,59 +237,6 @@ namespace Bandit_Militias
             };
         }
 
-        internal static void FinalizeBadMapEvents()
-        {
-            if (MapEvents == null || MapEvents.Count == 0)
-            {
-                return;
-            }
-
-            foreach (var mapEvent in MapEvents.Where(x => x.EventType == MapEvent.BattleTypes.FieldBattle))
-            {
-                // bug added IsFinished, does it work?  I don't want it to clear parties that the game would be dealing with
-                if ((mapEvent.AttackerSide.TroopCount == 0 || mapEvent.DefenderSide.TroopCount == 0) &&
-                    (mapEvent.AttackerSide.LeaderParty.Name.Equals("Bandit Militia") || mapEvent.DefenderSide.LeaderParty.Name.Equals("Bandit Militia")))
-                {
-                    Mod.Log($"Removing bad field battle with {mapEvent.AttackerSide.LeaderParty.Name}, {mapEvent.DefenderSide.LeaderParty.Name}", LogLevel.Info);
-                    mapEvent.FinalizeEvent();
-                }
-            }
-        }
-
-        private static readonly AccessTools.FieldRef<IssueManager, Dictionary<Hero, IssueBase>> issuesRef =
-            AccessTools.FieldRefAccess<IssueManager, Dictionary<Hero, IssueBase>>("_issues");
-
-        internal static void PurgeNullRefDescriptionIssues(bool logOnlyMode = false)
-        {
-            var purgeList = new List<Hero>();
-            foreach (var issue in Campaign.Current.IssueManager.Issues)
-            {
-                try
-                {
-                    var _ = issue.Value.Description;
-                }
-                catch (NullReferenceException)
-                {
-                    purgeList.Add(issue.Key);
-                }
-            }
-
-            foreach (var heroKey in purgeList)
-            {
-                if (logOnlyMode)
-                {
-                    Mod.Log(heroKey.Issue, LogLevel.Debug);
-                }
-                else
-                {
-                    var issues = issuesRef(Campaign.Current.IssueManager);
-                    Mod.Log($"Removing {heroKey} from IssueBase._issues as the Description is throwing NRE", LogLevel.Debug);
-                    Debug.PrintError("Bandit Militias is removing {heroKey} from IssueBase._issues as the Description is throwing NRE");
-                    issues.Remove(heroKey);
-                }
-            }
-        }
-
         private static void PurgeList(string logMessage, List<MobileParty> mobileParties)
         {
             if (mobileParties.Count > 0)
@@ -294,21 +244,9 @@ namespace Bandit_Militias
                 Mod.Log(logMessage, LogLevel.Debug);
                 foreach (var mobileParty in mobileParties)
                 {
-                    mobileParty.RemoveParty();
-                    mobileParty.LeaderHero?.KillHero();
-                    mobileParty.Party.Visuals.SetMapIconAsDirty();
+                    Trash(mobileParty);
                 }
             }
-
-            mobileParties.Clear();
-        }
-
-        // todo move to Militia
-        internal static void LogMilitiaFormed(MobileParty mobileParty)
-        {
-            var troopString = $"{mobileParty.Party.NumberOfAllMembers} troop" + (mobileParty.Party.NumberOfAllMembers > 1 ? "s" : "");
-            var strengthString = $"{Math.Round(mobileParty.Party.TotalStrength)} strength";
-            Mod.Log($"{"New Bandit Militia",-40} | {troopString,10} | {strengthString,10} |", LogLevel.Info);
         }
 
         private static bool IsTooBusyToMerge(this MobileParty mobileParty)
@@ -336,19 +274,24 @@ namespace Bandit_Militias
             mobileParty.RemoveParty();
         }
 
-        // 0-2 milliseconds
         internal static void KillHero(this Hero hero)
         {
             try
             {
-                hero.ChangeState(Hero.CharacterStates.Dead);
+                if (hero == null)
+                {
+                    FileLog.Log(new StackTrace().ToString());
+                    return;
+                }
+
+                hero.ChangeState(Hero.CharacterStates.NotSpawned);
                 hero.HeroDeveloper.ClearUnspentPoints();
-                AccessTools.Method(typeof(CampaignEventDispatcher), "OnHeroKilled")
-                    .Invoke(CampaignEventDispatcher.Instance, new object[] {hero, hero, KillCharacterAction.KillCharacterActionDetail.None, false});
+                //AccessTools.Method(typeof(CampaignEventDispatcher), "OnHeroKilled")
+                //    .Invoke(CampaignEventDispatcher.Instance, new object[] {hero, hero, KillCharacterAction.KillCharacterActionDetail.None, false});
                 Traverse.Create(hero.CurrentSettlement).Field("_heroesWithoutParty").Method("Remove", hero).GetValue();
                 Traverse.Create(hero.Clan).Field("_heroes").Method("Remove", hero).GetValue();
-                MBObjectManager.Instance.UnregisterObject(hero.CharacterObject);
                 MBObjectManager.Instance.UnregisterObject(hero);
+                MBObjectManager.Instance.UnregisterObject(hero.CharacterObject);
             }
             catch (Exception ex)
             {
@@ -356,12 +299,18 @@ namespace Bandit_Militias
             }
         }
 
-        internal static bool IsAlone(this MobileParty mobileParty) => MobileParty.FindPartiesAroundPosition(
-            mobileParty.Position2D, MergeDistance, x => x.IsBandit).Count(IsValidParty) == 2;
+        internal static bool IsAlone(this MobileParty mobileParty)
+        {
+            var timer = new Stopwatch();
+            timer.Restart();
+            var result = MobileParty.FindPartiesAroundPosition(
+                mobileParty.Position2D, MergeDistance, x => x.IsBandit).Count(IsValidParty) == 2;
+            return result;
+        }
 
         internal static void Nuke()
         {
-            Mod.Log("Clearing mod data.", LogLevel.Info);
+            Mod.Log("Clearing mod data.", LogLevel.Warning);
             InformationManager.AddQuickInformation(new TextObject("BANDIT MILITIAS CLEARED"));
             FlushBanditMilitias();
             Flush();
@@ -370,14 +319,13 @@ namespace Bandit_Militias
         private static void FlushBanditMilitias()
         {
             Militia.All.Clear();
-            var tempList = MobileParty.All
-                .Where(x => x.Name.Equals("Bandit Militia")).ToList();
+            var tempList = MobileParty.All.Where(x => x.Name.Equals("Bandit Militia")).ToList();
             var hasLogged = false;
             foreach (var mobileParty in tempList)
             {
                 if (!hasLogged)
                 {
-                    Mod.Log($"Clearing {tempList.Count} Bandit Militias", LogLevel.Info);
+                    Mod.Log($"Clearing {tempList.Count} Bandit Militias", LogLevel.Warning);
                     hasLogged = true;
                 }
 
@@ -387,16 +335,11 @@ namespace Bandit_Militias
 
         internal static void Flush()
         {
-            FixHomelessHeroes();
-            FixBadSettlements();
             FlushNullPartyHeroes();
             FlushEmptyMilitiaParties();
             FlushNeutralBanditParties();
-            FlushBadIssues();
-            FlushBadHeroes();
             FlushBadCharacterObjects();
             FlushBadBehaviors();
-            FinalizeBadMapEvents();
         }
 
         private static void FlushBadBehaviors()
@@ -419,113 +362,40 @@ namespace Bandit_Militias
                 if (!hasLogged)
                 {
                     hasLogged = true;
-                    Mod.Log($"Clearing {heroes.Count} hero behaviors without heroes.", LogLevel.Debug);
+                    Mod.Log($"Clearing {heroes.Count} hero behaviors without heroes.", LogLevel.Warning);
                 }
 
                 behaviors.Remove(hero);
             }
         }
 
+        // todo Patch Hero.Encyclopedia link et al to not have data
         private static void FlushNullPartyHeroes()
         {
-            var heroes = Hero.All.Where(
-                x => Clan.BanditFactions.Contains(x.MapFaction) && x.PartyBelongedTo == null).ToList();
+            var heroes = Hero.All.Where(x =>
+                x.Name.ToString() == "Bandit Militia" && x.PartyBelongedTo == null).ToList();
             var hasLogged = false;
-            foreach (var hero in heroes)
+            for (var i = 0; i < heroes.Count; i++)
             {
+                var hero = heroes[i];
                 if (!hasLogged)
                 {
                     hasLogged = true;
-                    Mod.Log($"Clearing {heroes.Count} null-party heroes.", LogLevel.Debug);
+                    Mod.Log($"Killing {heroes.Count} null-party heroes.", LogLevel.Warning);
                 }
 
+                Mod.Log("Killing " + hero, LogLevel.Debug);
                 hero.KillHero();
             }
         }
 
-        private static void FixHomelessHeroes()
-        {
-            var homelessHeroes = Hero.All.Where(x => x.HomeSettlement == null);
-            foreach (var hero in homelessHeroes)
-            {
-                Traverse.Create(hero).Property("HomeSettlement").SetValue(hero.BornSettlement);
-            }
-        }
-
-        private static void FlushBadIssues()
-        {
-            var badIssues = Campaign.Current.IssueManager.Issues
-                .Where(x => Clan.BanditFactions.Contains(x.Key.MapFaction)).ToList();
-            var hasLogged = false;
-            foreach (var issue in badIssues)
-            {
-                if (!hasLogged)
-                {
-                    hasLogged = true;
-                    Mod.Log($"Clearing {badIssues.Count} bad-issue heroes.", LogLevel.Info);
-                }
-
-                issue.Key.KillHero();
-            }
-        }
-
-        private static void FixBadSettlements()
-        {
-            var badSettlements = Settlement.All
-                .Where(x => x.IsHideout() && x.OwnerClan == null).ToList();
-
-            var hasLogged = false;
-            foreach (var settlement in badSettlements)
-            {
-                if (!hasLogged)
-                {
-                    hasLogged = true;
-                    Mod.Log($"Clearing {badSettlements.Count} bad settlements.", LogLevel.Info);
-                }
-
-                settlement.OwnerClan = Clan.BanditFactions.ToList()[Rng.Next(1, 5)];
-            }
-        }
-
-        private static void FlushBadHeroes()
-        {
-            try
-            {
-                var badHeroes = Hero.All.Where(
-                    x => !x.IsNotable && x.PartyBelongedTo == null && x.CurrentSettlement != null &&
-                         x.MapFaction == CampaignData.NeutralFaction && x.EncyclopediaLink.Contains("CharacterObject")).ToList();
-                var hasLogged = false;
-                foreach (var hero in badHeroes)
-                {
-                    if (!hasLogged)
-                    {
-                        hasLogged = true;
-                        Mod.Log($"Clearing {badHeroes.Count} bad heroes.", LogLevel.Debug);
-                    }
-
-                    if (Hero.All.Contains(hero))
-                    {
-                        hero.KillHero();
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Mod.Log(ex, LogLevel.Error);
-            }
-        }
-
-        // todo FieldRef
-        //private static readonly AccessTools.FieldRef<Settlement, List<Hero>> heroesWithoutPartyRef =
-        //    AccessTools.FieldRefAccess<Settlement, List<Hero>>("_heroesWithoutParty");
-
         private static void FlushBadCharacterObjects()
         {
-            var badChars = CharacterObject.All.Where(
-                    x => x.Name == null ||
-                         x.Occupation == Occupation.NotAssigned ||
-                         x.Occupation == Occupation.Outlaw &&
-                         x.HeroObject?.CurrentSettlement != null)
+            var badChars = CharacterObject.All.Where(x => x.HeroObject == null)
+                .Where(x => x.Name == null ||
+                            x.Occupation == Occupation.NotAssigned ||
+                            x.Occupation == Occupation.Outlaw &&
+                            x.HeroObject?.CurrentSettlement != null)
                 .Where(x => !x.StringId.Contains("template") &&
                             !x.StringId.Contains("char_creation") &&
                             !x.StringId.Contains("equipment") &&
@@ -540,32 +410,25 @@ namespace Bandit_Militias
                 if (!hasLogged)
                 {
                     hasLogged = true;
-                    Mod.Log($"Clearing {badChars.Count()} bad characters.", LogLevel.Debug);
+                    Mod.Log($"Unregistering {badChars.Count} bad characters.", LogLevel.Warning);
                 }
 
-                Traverse.Create(badChar?.HeroObject?.CurrentSettlement).Field("_heroesWithoutParty").Method("Remove", badChar?.HeroObject).GetValue();
+                Mod.Log(badChar, LogLevel.Warning);
+                Traverse.Create(badChar?.HeroObject?.CurrentSettlement)
+                    .Field("_heroesWithoutParty").Method("Remove", badChar?.HeroObject).GetValue();
                 MBObjectManager.Instance.UnregisterObject(badChar);
+                CharacterObject.All.Contains(badChar);
             }
-        }
-
-        internal static void HourlyFlush()
-        {
-            FlushEmptyMilitiaParties();
-            FlushNeutralBanditParties();
-            FlushBadIssues();
-            FlushBadHeroes();
-            // todo may not be needed anymore
-            FinalizeBadMapEvents();
         }
 
         private static void FlushNeutralBanditParties()
         {
             var tempList = new List<MobileParty>();
-            foreach (var mobileParty in MobileParty.All
-                .Where(x => x.Name.Equals("Bandit Militia") &&
-                            x.MapFaction == CampaignData.NeutralFaction))
+            foreach (var mobileParty in MobileParty.All.Where(x =>
+                x.Name.Equals("Bandit Militia") &&
+                x.MapFaction == CampaignData.NeutralFaction))
             {
-                Mod.Log("This bandit shouldn't exist " + mobileParty + " size " + mobileParty.MemberRoster.TotalManCount, LogLevel.Debug);
+                Mod.Log("This bandit shouldn't exist " + mobileParty + " size " + mobileParty.MemberRoster.TotalManCount, LogLevel.Warning);
                 tempList.Add(mobileParty);
             }
 
@@ -592,7 +455,7 @@ namespace Bandit_Militias
                     x => x.StringId.Contains("lord") && x.FirstBattleEquipment != null);
                 if (!randomizeWornEquipment)
                 {
-                    return equipment.FirstOrDefault()?.FirstBattleEquipment;
+                    return equipment.GetRandomElement()?.FirstBattleEquipment;
                 }
 
                 var gear = new Equipment();
@@ -602,7 +465,8 @@ namespace Bandit_Militias
                 }
 
                 // get rid of any mount
-                //gear[10] = new EquipmentElement();
+                gear[10] = new EquipmentElement();
+                gear[11] = new EquipmentElement();
                 return gear;
             }
             catch (Exception ex)

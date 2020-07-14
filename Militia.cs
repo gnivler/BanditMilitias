@@ -20,6 +20,7 @@ namespace Bandit_Militias
         public static readonly HashSet<Militia> All = new HashSet<Militia>();
         public readonly MobileParty MobileParty;
         private Hero hero;
+        internal List<Settlement> NearbyHideouts = new List<Settlement>();
 
         public Militia(Vec2 position, TroopRoster party, TroopRoster prisoners)
         {
@@ -47,12 +48,12 @@ namespace Bandit_Militias
             {
                 if (MobileParty.MemberRoster.Count == 0)
                 {
-                    Mod.Log("Trying to configure militia with no troops, trashing", LogLevel.Debug);
+                    Mod.Log("Trying to configure militia with no troops, trashing", LogLevel.Warning);
                     Trash(MobileParty);
                     return;
                 }
 
-                hero = GetHeroWithBattleEquipment();
+                hero = HeroCreatorCopy.CreateUnregisteredHero(Occupation.Outlaw);
                 MBObjectManager.Instance.RegisterObject(hero);
                 EquipmentHelper.AssignHeroEquipmentFromEquipment(hero, CreateEquipment(true));
                 var mostPrevalent = MostPrevalentFaction(MobileParty) ?? Clan.BanditFactions.First().MapFaction;
@@ -66,7 +67,27 @@ namespace Bandit_Militias
 
                 // todo refactor for posse
                 var index = Rng.Next(1, MobileParty.MemberRoster.Count);
-                MobileParty.MemberRoster.AddXpToTroopAtIndex(300, index);
+                int iterations = default;
+                switch (Globals.Settings.XpGift)
+                {
+                    case "LOW":
+                        break;
+                    case "NORMAL":
+                        iterations = 1;
+                        break;
+                    case "HARD":
+                        iterations = 2;
+                        break;
+                    case "HARDEST":
+                        iterations = 4;
+                        break;
+                }
+
+                for (var i = 0; i < iterations; i++)
+                {
+                    MobileParty.MemberRoster.AddXpToTroopAtIndex(DifficultyXpMap[Globals.Settings.XpGift], index);
+                }
+
                 PartyUpgraderCopy.UpgradeReadyTroopsCopy(MobileParty.Party);
             }
             catch (Exception ex)
@@ -78,30 +99,17 @@ namespace Bandit_Militias
         private void SetupHero(IFaction mostPrevalent)
         {
             MobileParty.Party.Owner = hero;
-            hero.Clan = Clan.BanditFactions.FirstOrDefault(x => x == mostPrevalent);
-            MobileParty.MemberRoster.AddToCounts(hero.CharacterObject, 1, false, 0, 0, true, 0);
-            var leadership = SkillObject.All.First(x => x.Name.ToString() == "Leadership");
-            hero.SetSkillValue(leadership, 125);
-            var disciplinarian = PerkObject.All.First(x => x.Name.ToString() == "Disciplinarian");
-            hero.SetPerkValue(disciplinarian, true);
             hero.Name = Name;
-            hero.Gold = Convert.ToInt32(MobileParty.Party.CalculateStrength() * 500);
-        }
-
-        private Hero GetHeroWithBattleEquipment()
-        {
-            while (true)
+            hero.Gold = Convert.ToInt32(MobileParty.Party.CalculateStrength() * GoldMap[Globals.Settings.GoldReward]);
+            if (Globals.Settings.CanTrain)
             {
-                hero = HeroCreatorCopy.CreateUnregisteredHero(Occupation.Outlaw);
-                if (hero.BattleEquipment != null)
-                {
-                    break;
-                }
-
-                hero.KillHero();
+                hero.Clan = Clan.BanditFactions.FirstOrDefault(x => x == mostPrevalent);
+                MobileParty.MemberRoster.AddToCounts(hero.CharacterObject, 1, false, 0, 0, true, 0);
+                var leadership = SkillObject.All.First(x => x.Name.ToString() == "Leadership");
+                hero.SetSkillValue(leadership, 125);
+                var disciplinarian = PerkObject.All.First(x => x.Name.ToString() == "Disciplinarian");
+                hero.SetPerkValue(disciplinarian, true);
             }
-
-            return hero;
         }
 
         private static IFaction MostPrevalentFaction(MobileParty mobileParty)
@@ -138,6 +146,13 @@ namespace Bandit_Militias
         public void Remove()
         {
             All.Remove(this);
+        }
+
+        private static void LogMilitiaFormed(MobileParty mobileParty)
+        {
+            var troopString = $"{mobileParty.Party.NumberOfAllMembers} troop" + (mobileParty.Party.NumberOfAllMembers > 1 ? "s" : "");
+            var strengthString = $"{Math.Round(mobileParty.Party.TotalStrength)} strength";
+            Mod.Log($"{"New Bandit Militia",-40} | {troopString,10} | {strengthString,10} |", LogLevel.Debug);
         }
     }
 }

@@ -24,15 +24,15 @@ namespace Bandit_Militias
                 party.Name.Equals("Bandit Militia") &&
                 party.LeaderHero == null)
             {
-                Mod.Log("null LeaderHero at UpgradeReadyTroopsCopy", LogLevel.Debug);
+                Mod.Log("null LeaderHero at UpgradeReadyTroopsCopy", LogLevel.Warning);
                 var militia = Militia.All.FirstOrDefault(x => x.MobileParty.Party == party);
                 if (militia == null)
                 {
-                    Mod.Log("No militia for this party either", LogLevel.Debug);
+                    Mod.Log("No militia for this party either", LogLevel.Warning);
                 }
                 else
                 {
-                    Mod.Log("Adding hero back to militia", LogLevel.Debug);
+                    Mod.Log("Adding hero back to militia", LogLevel.Warning);
                     militia.Configure();
                 }
             }

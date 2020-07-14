@@ -7,7 +7,6 @@ using TaleWorlds.InputSystem;
 using TaleWorlds.MountAndBlade;
 using static Bandit_Militias.Helper;
 using static Bandit_Militias.Helper.Globals;
-using Patches = Bandit_Militias.Misc.Patches;
 
 // ReSharper disable ConditionIsAlwaysTrueOrFalse  
 // ReSharper disable ClassNeverInstantiated.Global  
@@ -19,15 +18,16 @@ namespace Bandit_Militias
     public enum LogLevel
     {
         Disabled,
-        Info,
+        Warning,
         Error,
         Debug
     }
 
     public class Mod : MBSubModuleBase
     {
-        internal static readonly Harmony harmony = new Harmony("ca.gnivler.bannerlord.BanditMilitias");
-        internal static readonly string modDirectory = new FileInfo(@"..\..\Modules\Bandit Militias\").DirectoryName;
+        private static LogLevel logging = LogLevel.Disabled;
+        private static readonly Harmony harmony = new Harmony("ca.gnivler.bannerlord.BanditMilitias");
+        private static readonly string modDirectory = new FileInfo(@"..\..\Modules\Bandit Militias\").DirectoryName;
 
         internal static void Log(object input, LogLevel logLevel)
         {
@@ -42,8 +42,19 @@ namespace Bandit_Militias
 
         protected override void OnSubModuleLoad()
         {
-            Log($"Startup {DateTime.Now.ToShortTimeString()}", LogLevel.Info);
-            ReadConfig();
+            Log($"Startup {DateTime.Now.ToShortTimeString()}", LogLevel.Warning);
+            try
+            {
+                Globals.Settings = JsonConvert.DeserializeObject<Settings>(File.ReadAllText(Path.Combine(modDirectory, "mod_settings.json")));
+                Log(Globals.Settings.XpGift + " " + DifficultyXpMap[Globals.Settings.XpGift], LogLevel.Warning);
+                Log(Globals.Settings.GoldReward + " " + GoldMap[Globals.Settings.GoldReward], LogLevel.Warning);
+            }
+            catch (Exception ex)
+            {
+                Log(ex, LogLevel.Error);
+                Helper.Globals.Settings = new Settings();
+            }
+
             RunManualPatches();
             harmony.PatchAll(Assembly.GetExecutingAssembly());
         }
@@ -98,11 +109,6 @@ namespace Bandit_Militias
         {
             try
             {
-                var original = AccessTools.TypeByName("LordNeedsGarrisonTroopsIssue").GetMethod("IssueStayAliveConditions");
-                Log(original, LogLevel.Debug);
-                var prefix = AccessTools.Method(typeof(Patches), nameof(Patches.IssueStayAliveConditionsPrefix));
-                Log($"Patching {original}", LogLevel.Debug);
-                harmony.Patch(original, new HarmonyMethod(prefix));
             }
             catch (Exception ex)
             {

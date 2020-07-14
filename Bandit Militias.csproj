@@ -207,7 +207,8 @@
     </ItemGroup>
     <ItemGroup>
       <Content Include="LICENSE" />
-      <Content Include="README.TXT" />
+      <Content Include="mod_settings.json" />
+      <Content Include="HOW TO CONFIGURE.TXT" />
       <Content Include="SubModule.xml" />
     </ItemGroup>
     <PropertyGroup>

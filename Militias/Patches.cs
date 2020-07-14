@@ -1,8 +1,6 @@
-using System;
 using System.Diagnostics;
 using System.Linq;
 using HarmonyLib;
-using SandBox.CampaignBehaviors.Towns;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.SandBox.Issues;
 using TaleWorlds.Core;
@@ -20,20 +18,6 @@ namespace Bandit_Militias.Militias
 {
     public class Patches
     {
-        // fixing vanilla?
-        [HarmonyPatch(typeof(IssuesCampaignBehavior), "OnSettlementEntered")]
-        public static class IssuesCampaignBehaviorOnSettlementEnteredPatch
-        {
-            private static void Prefix(ref Settlement settlement)
-            {
-                if (settlement.OwnerClan == null)
-                {
-                    Mod.Log("Fixing bad settlement: " + settlement.Name, LogLevel.Debug);
-                    settlement.OwnerClan = Clan.BanditFactions.ToList()[Rng.Next(1, 5)];
-                }
-            }
-        }
-
         // swapped (copied) two very similar methods in assemblies, one was throwing one wasn't
         [HarmonyPatch(typeof(NearbyBanditBaseIssueBehavior), "FindSuitableHideout")]
         public static class NearbyBanditBaseIssueBehaviorFindSuitableHideoutPatch
@@ -62,120 +46,108 @@ namespace Bandit_Militias.Militias
         {
             private static void Postfix(MobileParty __instance)
             {
-                try
+                if (!IsValidParty(__instance))
                 {
-                    if (!IsValidParty(__instance))
+                    return;
+                }
+
+                // check daily each bandit party against the size factor and a random chance to split up
+                TrySplitUpParty(__instance);
+            }
+        }
+
+        // where militias try to find each other and merge
+        [HarmonyPatch(typeof(MobileParty), "HourlyTick")]
+        public static class MobilePartyHourlyTickPatch
+        {
+            // private static readonly List<Settlement> hideouts = Settlement.FindAll(x => x.IsHideout()).ToList();
+            private static readonly Stopwatch timer = new Stopwatch();
+
+            private static void Postfix(MobileParty __instance)
+            {
+                timer.Restart();
+                if (!IsValidParty(__instance))
+                {
+                    return;
+                }
+
+                var targetParty = MobileParty.FindPartiesAroundPosition(__instance.Position2D, SearchRadius,
+                    x => x != __instance && x.IsBandit && IsValidParty(x)).FirstOrDefault()?.Party;
+
+                // "nobody" is a valid answer
+                if (targetParty == null)
+                {
+                    return;
+                }
+
+                // conditions check.  separated for speed
+                var roster = new TroopRoster
+                {
+                    __instance.MemberRoster,
+                    targetParty.MemberRoster
+                };
+                var militiaTotalCount = roster.TotalManCount;
+                if (militiaTotalCount > Helper.Globals.Settings.MaxPartySize ||
+                    militiaTotalCount > CalculatedMaxPartySize ||
+                    __instance.Party.TotalStrength > CalculatedMaxPartyStrength ||
+                    NumMountedTroops(roster) > roster.TotalManCount / 2)
+                {
+                    return;
+                }
+
+                var isAlone = targetParty.MobileParty.IsAlone();
+                var distance = Campaign.Current.Models.MapDistanceModel.GetDistance(targetParty.MobileParty, __instance);
+                if (distance <= MergeDistance && isAlone)
+                {
+                    if (Settlement.FindSettlementsAroundPosition(__instance.Position2D, MinDistanceFromHideout,
+                        x => x.IsHideout()) != null)
                     {
                         return;
                     }
 
-                    // check daily each bandit party against the size factor and a random chance to split up
-                    TrySplitUpParty(__instance);
-                    PurgeNullRefDescriptionIssues();
+                    // create a new party merged from the two
+                    var rosters = MergeRosters(__instance, targetParty);
+                    var militia = new Militia(__instance.Position2D, rosters[0], rosters[1]);
+
+                    // teleport new militias near the player
+                    if (testingMode)
+                    {
+                        militia.MobileParty.Position2D = Hero.MainHero.PartyBelongedTo.Position2D +
+                                                         new Vec2(MBRandom.RandomFloatRanged(-3f, 3f), MBRandom.RandomFloatRanged(-3f, 3));
+                    }
+
+                    militia.MobileParty.Party.Visuals.SetMapIconAsDirty();
+                    Trash(__instance);
+                    Trash(targetParty.MobileParty);
+                    Mod.Log("merged " + timer.ElapsedTicks, LogLevel.Debug);
                 }
-                catch (Exception ex)
+                else if (isAlone)
                 {
-                    Mod.Log(ex, LogLevel.Error);
+                    Mod.Log($"{__instance} Seeking target {targetParty.MobileParty}", LogLevel.Debug);
+                    __instance.SetMoveGoToPoint(targetParty.Position2D);
+                }
+                else
+                {
+                    Mod.Log("too far or not alone " + timer.ElapsedTicks, LogLevel.Debug);
                 }
             }
         }
 
-        [HarmonyPatch(typeof(MobileParty), "HourlyTick")]
-        public static class MobilePartyHourlyTickPatch
+        // the game has no way of actually fully removing heroes so we tack this on...
+        // and it doesn't match anything so yeah it's useless
+        // trying to find the source of these heroes appearing that have no party associated
+        [HarmonyPatch(typeof(MobileParty), "RemoveParty")]
+        public class MobilePartyRemovePartyPatch
         {
             private static void Postfix(MobileParty __instance)
             {
-                try
+                if (__instance.Name.Equals("Bandit Militia"))
                 {
-                    if (!IsValidParty(__instance))
+                    if (__instance.LeaderHero != null)
                     {
-                        return;
+                        Mod.Log("Removing Bandit Militia hero at MobileParty.RemoveParty", LogLevel.Debug);
+                        __instance.LeaderHero?.KillHero();
                     }
-
-                    var targetParty = MobileParty.FindPartiesAroundPosition(
-                            __instance.Position2D,
-                            SearchRadius,
-                            x => x != __instance &&
-                                 x.IsBandit &&
-                                 IsValidParty(x)
-                        )
-                        .FirstOrDefault()?.Party;
-
-                    // "nobody" is a valid answer
-                    if (targetParty == null)
-                    {
-                        return;
-                    }
-
-                    // prevents snowballing
-                    // bug doesn't even fire
-                    if (__instance.ShortTermBehavior == AiBehavior.FleeToPoint ||
-                        __instance.DefaultBehavior == AiBehavior.FleeToPoint ||
-                        targetParty.MobileParty.ShortTermBehavior == AiBehavior.FleeToPoint ||
-                        targetParty.MobileParty.DefaultBehavior == AiBehavior.FleeToPoint)
-                    {
-                        Mod.Log("Anti-snowball", LogLevel.Debug);
-
-                        return;
-                    }
-
-                    // you shouldn't get here, something is spawning wrong
-                    if (targetParty.LeaderHero != null && targetParty.MemberRoster.TotalManCount == 1)
-                    {
-                        Mod.Log("BUG you shouldn't get here, something is spawning wrong, stacktrace:", LogLevel.Error);
-                        FileLog.Log(new StackTrace().ToString());
-                        targetParty.LeaderHero.KillHero();
-                        return;
-                    }
-
-                    // conditions check
-                    var militiaStrength = targetParty.TotalStrength + __instance.Party.TotalStrength;
-                    var militiaCavalryCount = NumMountedTroops(__instance.MemberRoster) + NumMountedTroops(targetParty.MemberRoster);
-                    var militiaTotalCount = __instance.MemberRoster.TotalManCount + targetParty.MemberRoster.TotalManCount;
-                    if (militiaStrength < MaxPartyStrength &&
-                        militiaTotalCount < MaxPartySize &&
-                        militiaCavalryCount < militiaTotalCount / 2)
-                    {
-                        var distance = Campaign.Current.Models.MapDistanceModel.GetDistance(targetParty.MobileParty, __instance);
-                        var closeHideOuts = Settlement.FindAll(
-                            x => x.IsHideout() &&
-                                 Campaign.Current.Models.MapDistanceModel.GetDistance(targetParty.MobileParty, x) < MinDistanceFromHideout).ToList();
-
-                        // avoid using bandits near hideouts
-                        if (closeHideOuts.Any())
-                        {
-                            return;
-                        }
-
-                        if (distance <= MergeDistance &&
-                            targetParty.MobileParty.IsAlone() &&
-                            __instance.IsAlone())
-                        {
-                            // create a new party merged from the two
-                            var rosters = MergeRosters(__instance, targetParty);
-                            var militia = new Militia(__instance.Position2D, rosters[0], rosters[1]);
-
-                            // teleport new militias near the player
-                            if (testingMode)
-                            {
-                                militia.MobileParty.Position2D = Hero.MainHero.PartyBelongedTo.Position2D +
-                                                                 new Vec2(MBRandom.RandomFloatRanged(-3f, 3f), MBRandom.RandomFloatRanged(-3f, 3));
-                            }
-
-                            militia.MobileParty.Party.Visuals.SetMapIconAsDirty();
-                            Trash(__instance);
-                            Trash(targetParty.MobileParty);
-                        }
-                        else if (targetParty.MobileParty.IsAlone())
-                        {
-                            Mod.Log($"{__instance} Seeking target {targetParty.MobileParty}", LogLevel.Debug);
-                            __instance.SetMoveGoToPoint(targetParty.Position2D);
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Mod.Log(ex, LogLevel.Error);
                 }
             }
         }
