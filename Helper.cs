@@ -301,8 +301,6 @@ namespace Bandit_Militias
 
         internal static bool IsAlone(this MobileParty mobileParty)
         {
-            var timer = new Stopwatch();
-            timer.Restart();
             var result = MobileParty.FindPartiesAroundPosition(
                 mobileParty.Position2D, MergeDistance, x => x.IsBandit).Count(IsValidParty) == 2;
             return result;

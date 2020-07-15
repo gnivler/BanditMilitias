@@ -49,8 +49,6 @@ namespace Bandit_Militias.Prisoners
                     {
                         Mod.Log("Killing militia hero at LootDefeatedParties", LogLevel.Debug);
                         heroes[i].Character.HeroObject.KillHero();
-
-                        Mod.Log(Hero.All.Contains(heroes[i].Character.HeroObject), LogLevel.Debug);
                     }
                 }
             }

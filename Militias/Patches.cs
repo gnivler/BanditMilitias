@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Linq;
 using HarmonyLib;
 using TaleWorlds.CampaignSystem;
@@ -60,23 +59,31 @@ namespace Bandit_Militias.Militias
         [HarmonyPatch(typeof(MobileParty), "HourlyTick")]
         public static class MobilePartyHourlyTickPatch
         {
-            // private static readonly List<Settlement> hideouts = Settlement.FindAll(x => x.IsHideout()).ToList();
-            private static readonly Stopwatch timer = new Stopwatch();
-
             private static void Postfix(MobileParty __instance)
             {
-                timer.Restart();
                 if (!IsValidParty(__instance))
                 {
                     return;
                 }
 
-                var targetParty = MobileParty.FindPartiesAroundPosition(__instance.Position2D, SearchRadius,
-                    x => x != __instance && x.IsBandit && IsValidParty(x)).FirstOrDefault()?.Party;
+                var targetParty = MobileParty.FindPartiesAroundPosition(__instance.Position2D, MergeDistance * 1.25f,
+                    x => x != __instance && x.IsBandit && IsValidParty(x)).GetRandomElement()?.Party;
 
                 // "nobody" is a valid answer
                 if (targetParty == null)
                 {
+                    return;
+                }
+
+                if (!targetParty.MobileParty.IsAlone())
+                {
+                    return;
+                }
+
+                if (Campaign.Current.Models.MapDistanceModel.GetDistance(targetParty.MobileParty, __instance) > MergeDistance)
+                {
+                    Mod.Log($"{__instance} Seeking target {targetParty.MobileParty}", LogLevel.Debug);
+                    __instance.SetMoveGoToPoint(targetParty.Position2D);
                     return;
                 }
 
@@ -95,41 +102,25 @@ namespace Bandit_Militias.Militias
                     return;
                 }
 
-                var isAlone = targetParty.MobileParty.IsAlone();
-                var distance = Campaign.Current.Models.MapDistanceModel.GetDistance(targetParty.MobileParty, __instance);
-                if (distance <= MergeDistance && isAlone)
+                if (Settlement.FindSettlementsAroundPosition(__instance.Position2D, MinDistanceFromHideout, x => x.IsHideout()).Any())
                 {
-                    if (Settlement.FindSettlementsAroundPosition(__instance.Position2D, MinDistanceFromHideout,
-                        x => x.IsHideout()) != null)
-                    {
-                        return;
-                    }
-
-                    // create a new party merged from the two
-                    var rosters = MergeRosters(__instance, targetParty);
-                    var militia = new Militia(__instance.Position2D, rosters[0], rosters[1]);
-
-                    // teleport new militias near the player
-                    if (testingMode)
-                    {
-                        militia.MobileParty.Position2D = Hero.MainHero.PartyBelongedTo.Position2D +
-                                                         new Vec2(MBRandom.RandomFloatRanged(-3f, 3f), MBRandom.RandomFloatRanged(-3f, 3));
-                    }
-
-                    militia.MobileParty.Party.Visuals.SetMapIconAsDirty();
-                    Trash(__instance);
-                    Trash(targetParty.MobileParty);
-                    Mod.Log("merged " + timer.ElapsedTicks, LogLevel.Debug);
+                    return;
                 }
-                else if (isAlone)
+
+                // create a new party merged from the two
+                var rosters = MergeRosters(__instance, targetParty);
+                var militia = new Militia(__instance.Position2D, rosters[0], rosters[1]);
+
+                // teleport new militias near the player
+                if (testingMode)
                 {
-                    Mod.Log($"{__instance} Seeking target {targetParty.MobileParty}", LogLevel.Debug);
-                    __instance.SetMoveGoToPoint(targetParty.Position2D);
+                    militia.MobileParty.Position2D = Hero.MainHero.PartyBelongedTo.Position2D +
+                                                     new Vec2(MBRandom.RandomFloatRanged(-3f, 3f), MBRandom.RandomFloatRanged(-3f, 3));
                 }
-                else
-                {
-                    Mod.Log("too far or not alone " + timer.ElapsedTicks, LogLevel.Debug);
-                }
+
+                militia.MobileParty.Party.Visuals.SetMapIconAsDirty();
+                Trash(__instance);
+                Trash(targetParty.MobileParty);
             }
         }
 

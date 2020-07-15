@@ -3,6 +3,7 @@ using HarmonyLib;
 using SandBox.View.Map;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
+using TaleWorlds.CampaignSystem.SandBox.CampaignBehaviors;
 using TaleWorlds.CampaignSystem.SandBox.CampaignBehaviors.VillageBehaviors;
 using static Bandit_Militias.Helper;
 
@@ -151,6 +152,12 @@ namespace Bandit_Militias.Misc
                     }
                 }
             }
+        }
+
+        [HarmonyPatch(typeof(BanditsCampaignBehavior), "CheckForSpawningBanditBoss")]
+        public class BanditsCampaignBehaviorCheckForSpawningBanditBossPatch
+        {
+            private static bool Prefix(MobileParty mobileParty) => mobileParty != null;
         }
     }
 }
