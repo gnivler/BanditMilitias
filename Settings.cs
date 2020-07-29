@@ -7,6 +7,7 @@ namespace Bandit_Militias
     public class Settings
     {
         public bool CanTrain = true;
+        public bool RandomBanners = true;
         public string XpGift = "NORMAL";
         public string GoldReward = "NORMAL";
         public int MaxPartySize = 300;
