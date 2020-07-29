@@ -328,6 +328,20 @@ namespace Bandit_Militias.Helpers
             FlushNeutralBanditParties();
             FlushBadCharacterObjects();
             FlushBadBehaviors();
+            FlushMapEvents();
+        }
+
+        private static void FlushMapEvents()
+        {
+            var mapEvents = Traverse.Create(Campaign.Current.MapEventManager).Field("mapEvents").GetValue<List<MapEvent>>();
+            for (var index = 0; index < mapEvents.Count; index++)
+            {
+                var mapEvent = mapEvents[index];
+                if (mapEvent.InvolvedParties.Any(x => x.Name.Equals("Bandit Militia")))
+                {
+                    mapEvent.FinalizeEvent();
+                }
+            }
         }
 
         private static void FlushHideoutsOfMilitias()

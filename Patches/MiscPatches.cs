@@ -1,10 +1,14 @@
-using System.Diagnostics;
+using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
+using System.Reflection.Emit;
 using HarmonyLib;
 using SandBox.View.Map;
 using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.SandBox.CampaignBehaviors;
+using TaleWorlds.Library;
 using static Bandit_Militias.Helpers.Helper;
-using Debug = TaleWorlds.Library.Debug;
 
 // ReSharper disable UnusedMember.Global 
 // ReSharper disable UnusedType.Global  
@@ -47,7 +51,8 @@ namespace Bandit_Militias.Patches
             private static void Postfix() => CalcMergeCriteria();
         }
 
-        // not sure what was causing this (necessity).... came and went on its own
+        // 0 member parties will form if this is happening
+        // was only happening with debugger attached because that makes sense
         [HarmonyPatch(typeof(MobileParty), "FillPartyStacks")]
         public class MobilePartyFillPartyStacksPatch
         {
@@ -55,7 +60,6 @@ namespace Bandit_Militias.Patches
             {
                 if (pt == null)
                 {
-                    Mod.Log(new StackTrace());
                     Mod.Log("BROKEN");
                     Debug.PrintError("Bandit Militias is broken please notify @gnivler via Nexus");
                     return false;
@@ -93,57 +97,61 @@ namespace Bandit_Militias.Patches
             }
         }
 
-        // prevents militias from being attached to quests
-        // todo still necessary with new patch CanBeEffectedByProperties?
-        //[HarmonyPatch(typeof(DynamicBodyCampaignBehavior), "OnAfterDailyTick")]
-        //public class DynamicBodyCampaignBehaviorOnAfterDailyTickPatch
+        // prevents militias from being added to DynamicBodyCampaignBehavior._heroBehaviorsDictionary
+        // checked 1.4.3b
+        [HarmonyPatch(typeof(DynamicBodyCampaignBehavior), "OnAfterDailyTick")]
+        public class DynamicBodyCampaignBehaviorOnAfterDailyTickPatch
+        {
+            private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator ilg)
+            {
+                var label = ilg.DefineLabel();
+                var codes = instructions.ToList();
+                var insertAt = codes.FindIndex(x => x.opcode.Equals(OpCodes.Stloc_2));
+                insertAt++;
+                var moveNext = AccessTools.Method(typeof(IEnumerator), nameof(IEnumerator.MoveNext));
+                var jumpIndex = codes.FindIndex(x =>
+                    x.opcode == OpCodes.Callvirt && (MethodInfo) x.operand == moveNext);
+                jumpIndex--;
+                codes[jumpIndex].labels.Add(label);
+                var helperMi = AccessTools.Method(
+                    typeof(DynamicBodyCampaignBehaviorOnAfterDailyTickPatch), nameof(helper));
+                var stack = new List<CodeInstruction>
+                {
+                    // copy the Hero on top of the stack then feed it to the helper for a bool then branch
+                    new CodeInstruction(OpCodes.Ldloc_2),
+                    new CodeInstruction(OpCodes.Call, helperMi),
+                    new CodeInstruction(OpCodes.Brfalse, label)
+                };
+                codes.InsertRange(insertAt, stack);
+                return codes.AsEnumerable();
+            }
+
+            private static int helper(Hero hero)
+            {
+                // ReSharper disable once PossibleNullReferenceException
+                return hero.Name.Equals("Bandit Militia") ? 1 : 0;
+            }
+        }
+
+        // prevents militias from being added to DynamicBodyCampaignBehavior._heroBehaviorsDictionary 
+        [HarmonyPatch(typeof(DynamicBodyCampaignBehavior), "CanBeEffectedByProperties")]
+        public class DynamicBodyCampaignBehaviorCanBeEffectedByPropertiesPatch
+        {
+            private static void Postfix(Hero hero, ref bool __result)
+            {
+                if (hero.Name.Equals("Bandit Militia"))
+                {
+                    Mod.Log("DynamicBodyCampaignBehaviorCanBeEffectedByPropertiesPatch");
+                    __result = false;
+                }
+            }
+        }
+
+        // 1.4.3b is throwing when militias are nuked and the game is reloaded with militia MapEvents
+        //[HarmonyPatch(typeof(MapEvent), "RemoveInvolvedPartyInternal")]
+        //public class MapEventRemoveInvolvedPartyInternalPatch
         //{
-        //    private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator ilg)
-        //    {
-        //        var label = ilg.DefineLabel();
-        //        var codes = instructions.ToList();
-        //        var insertAt = codes.FindIndex(x => x.opcode.Equals(OpCodes.Stloc_2));
-        //        insertAt++;
-        //        var moveNext = AccessTools.Method(typeof(IEnumerator), nameof(IEnumerator.MoveNext));
-        //        var jumpIndex = codes.FindIndex(x =>
-        //            x.opcode == OpCodes.Callvirt && (MethodInfo) x.operand == moveNext);
-        //        jumpIndex--;
-        //        codes[jumpIndex].labels.Add(label);
-        //        var helperMi = AccessTools.Method(
-        //            typeof(DynamicBodyCampaignBehaviorOnAfterDailyTickPatch), nameof(helper));
-        //        var stack = new List<CodeInstruction>
-        //        {
-        //            // copy the Hero on top of the stack then feed it to the helper for a bool then branch
-        //            new CodeInstruction(OpCodes.Ldloc_2),
-        //            new CodeInstruction(OpCodes.Call, helperMi),
-        //            new CodeInstruction(OpCodes.Brfalse, label)
-        //        };
-        //
-        //        codes.InsertRange(insertAt, stack);
-        //        return codes.AsEnumerable();
-        //    }
-        //
-        //    private static int helper(Hero hero)
-        //    {
-        //        // ReSharper disable once PossibleNullReferenceException
-        //        return hero.Name.Equals("Bandit Militia") ? 1 : 0;
-        //    }
-        //}
-        //
-        //// prevent militias from being added to CampaignBehaviors (eliminating need for flush)
-        //[HarmonyPatch(typeof(DynamicBodyCampaignBehavior), "CanBeEffectedByProperties")]
-        //public class DynamicBodyCampaignBehaviorCanBeEffectedByPropertiesPatch
-        //{
-        //    private static bool Prefix(Hero hero)
-        //    {
-        //        if (hero.Name.Equals("Bandit Militia"))
-        //        {
-        //            Mod.Log("DynamicBodyCampaignBehaviorCanBeEffectedByPropertiesPatch");
-        //            return false;
-        //        }
-        //
-        //        return true;
-        //    }
-        //}
+        //    private static bool Prefix(PartyBase party) => party.Visuals != null;
+        //} 
     }
 }
