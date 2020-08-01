@@ -5,6 +5,7 @@ using HarmonyLib;
 using Newtonsoft.Json;
 using TaleWorlds.Core;
 using TaleWorlds.InputSystem;
+using TaleWorlds.Library;
 using TaleWorlds.Localization;
 using TaleWorlds.MountAndBlade;
 using static Bandit_Militias.Helpers.Helper;
@@ -28,7 +29,8 @@ namespace Bandit_Militias
 
     public class Mod : MBSubModuleBase
     {
-        private const LogLevel logging = LogLevel.Debug;
+        // ReSharper disable once ConvertToConstant.Local
+        private static readonly LogLevel logging = LogLevel.Debug;
         private static readonly Harmony harmony = new Harmony("ca.gnivler.bannerlord.BanditMilitias");
         private static readonly string modDirectory = new FileInfo(@"..\..\Modules\Bandit Militias\").DirectoryName;
 
@@ -36,6 +38,7 @@ namespace Bandit_Militias
         {
             if (logging >= logLevel)
             {
+                FileLog.Log($"[Bandit Militias] {input ?? "null"}");
                 using (var sw = new StreamWriter(Path.Combine(modDirectory, "mod.log"), true))
                 {
                     sw.WriteLine($"[{DateTime.Now:G}] {input ?? "null"}");
@@ -49,6 +52,7 @@ namespace Bandit_Militias
             try
             {
                 Globals.Settings = JsonConvert.DeserializeObject<Settings>(File.ReadAllText(Path.Combine(modDirectory, "mod_settings.json")));
+                Globals.Settings.CooldownHours = MathF.Clamp(Globals.Settings.CooldownHours, 1, float.MaxValue);
                 Log(Globals.Settings.XpGift + " " + DifficultyXpMap[Globals.Settings.XpGift]);
                 Log(Globals.Settings.GoldReward + " " + GoldMap[Globals.Settings.GoldReward]);
             }

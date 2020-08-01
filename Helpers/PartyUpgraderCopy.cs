@@ -9,12 +9,14 @@ using TaleWorlds.Core;
 
 namespace Bandit_Militias.Helpers
 {
-    // copied due to serious fuckery with MapFaction
+    // copied from 1.4.2b because of MapFaction problems
+    // maybe no longer needed in 1.4.3b
     public class PartyUpgraderCopy
     {
         public static void UpgradeReadyTroopsCopy(PartyBase party)
         {
-            if (!party.Name.Equals("Bandit Militia"))
+            if (party.MobileParty != null &&
+                !party.MobileParty.StringId.StartsWith("Bandit_Militia"))
             {
                 return;
             }

@@ -7,6 +7,7 @@ using HarmonyLib;
 using SandBox.View.Map;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.SandBox.CampaignBehaviors;
+using TaleWorlds.Core;
 using TaleWorlds.Library;
 using static Bandit_Militias.Helpers.Helper;
 
@@ -30,7 +31,7 @@ namespace Bandit_Militias.Patches
                 Globals.Hideouts = Settlement.FindAll(x =>
                     x.IsHideout() && x.MapFaction != CampaignData.NeutralFaction).ToList();
                 var militias = MobileParty.All.Where(x =>
-                    x != null && x.Name.Equals("Bandit Militia")).ToList();
+                    x != null && x.StringId.StartsWith("Bandit_Militia")).ToList();
                 foreach (var militia in militias)
                 {
                     Globals.Militias.Add(new Militia(militia));
@@ -129,7 +130,7 @@ namespace Bandit_Militias.Patches
             private static int helper(Hero hero)
             {
                 // ReSharper disable once PossibleNullReferenceException
-                return hero.Name.Equals("Bandit Militia") ? 1 : 0;
+                return hero.StringId.StartsWith("Bandit_Militia") ? 1 : 0;
             }
         }
 
@@ -139,7 +140,7 @@ namespace Bandit_Militias.Patches
         {
             private static void Postfix(Hero hero, ref bool __result)
             {
-                if (hero.Name.Equals("Bandit Militia"))
+                if (hero.StringId.StartsWith("Bandit_Militia"))
                 {
                     Mod.Log("DynamicBodyCampaignBehaviorCanBeEffectedByPropertiesPatch");
                     __result = false;
@@ -153,5 +154,27 @@ namespace Bandit_Militias.Patches
         //{
         //    private static bool Prefix(PartyBase party) => party.Visuals != null;
         //} 
+
+        // 1.4.3b will crash on load at TaleWorlds.CampaignSystem.PlayerEncounter.DoWait()
+        // because MapEvent.PlayerMapEvent is saved as null for whatever reason
+        // best solution so far is to avoid the problem with a kludge
+        // myriad other corrective attempts left the game unplayable (can't encounter anything)
+        [HarmonyPatch(typeof(MBSaveLoad), "SaveGame")]
+        public class MDSaveLoadSaveGamePatch
+        {
+            private static void Prefix()
+            {
+                var mapEvent = Traverse.Create(PlayerEncounter.Current).Field("_mapEvent").GetValue<MapEvent>();
+                if (mapEvent != null &&
+                    mapEvent.InvolvedParties.Any(x =>
+                        x.MobileParty != null &&
+                        x.MobileParty.StringId.StartsWith("Bandit_Militia")))
+                {
+                    mapEvent = null;
+                    PlayerEncounter.Finish();
+                    Campaign.Current.TimeControlMode = CampaignTimeControlMode.Stop;
+                }
+            }
+        }
     }
 }

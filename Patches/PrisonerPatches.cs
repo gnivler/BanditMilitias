@@ -15,11 +15,13 @@ namespace Bandit_Militias.Patches
 {
     public class PrisonerPatches
     {
-        // prevent prisoners.  it might screw up distribution of heroes among participants, low benefit improvement
         [HarmonyPatch(typeof(TakePrisonerAction), "Apply")]
         public class TakePrisonerActionApplyPatch
         {
-            private static bool Prefix(Hero prisonerCharacter) => !prisonerCharacter.Name.Equals("Bandit Militia");
+            private static bool Prefix(Hero prisonerCharacter)
+            {
+                return !prisonerCharacter.NeverBecomePrisoner;
+            }
         }
 
         [HarmonyPatch(typeof(MapEvent), "LootDefeatedParties")]
@@ -30,7 +32,8 @@ namespace Bandit_Militias.Patches
                 var loser = __instance.BattleState != BattleState.AttackerVictory
                     ? __instance.AttackerSide
                     : __instance.DefenderSide;
-                if (!loser.LeaderParty.Name.Equals("Bandit Militia"))
+                if (loser.LeaderParty.MobileParty != null &&
+                    !loser.LeaderParty.MobileParty.StringId.StartsWith("Bandit_Militia"))
                 {
                     return;
                 }

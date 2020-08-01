@@ -8,6 +8,7 @@ namespace Bandit_Militias
     {
         public bool CanTrain = true;
         public bool RandomBanners = true;
+        public float CooldownHours = 24;
         public string XpGift = "NORMAL";
         public string GoldReward = "NORMAL";
         public int MaxPartySize = 300;

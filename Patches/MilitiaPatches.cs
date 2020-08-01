@@ -1,11 +1,14 @@
 using System.Diagnostics;
 using System.Linq;
+using Bandit_Militias.Helpers;
 using HarmonyLib;
 using SandBox.View.Map;
+using SandBox.ViewModelCollection.Nameplate;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
+using TaleWorlds.CampaignSystem.GameMenus;
+using TaleWorlds.CampaignSystem.ViewModelCollection;
 using TaleWorlds.Core;
-using TaleWorlds.Library;
 using static Bandit_Militias.Helpers.Helper;
 using static Bandit_Militias.Helpers.Helper.Globals;
 
@@ -19,35 +22,12 @@ namespace Bandit_Militias.Patches
 {
     public class MilitiaPatches
     {
-        // swapped (copied) two very similar methods in assemblies, one was throwing one wasn't
-       //[HarmonyPatch(typeof(NearbyBanditBaseIssueBehavior), "FindSuitableHideout")]
-       //public static class NearbyBanditBaseIssueBehaviorFindSuitableHideoutPatch
-       //{
-       //    private const float floatMaxValue = float.MaxValue;
-
-       //    // taken from CapturedByBountyHuntersIssue because this class' version throws
-       //    private static bool Prefix(Hero issueOwner, ref Settlement __result)
-       //    {
-       //        foreach (var settlement in Settlement.FindAll(x => x.Hideout != null))
-       //        {
-       //            if (Campaign.Current.Models.MapDistanceModel.GetDistance(issueOwner.GetMapPoint(),
-       //                    settlement, 55f, out var num2) &&
-       //                num2 < floatMaxValue)
-       //            {
-       //                __result = settlement;
-       //            }
-       //        }
-
-       //        return false;
-       //    }
-       //}
-
         [HarmonyPatch(typeof(PartyVisual), "AddCharacterToPartyIcon")]
         public class PartyVisualAddCharacterToPartyIconPatch
         {
             private static void Prefix(CharacterObject characterObject, ref string bannerKey)
             {
-                if (characterObject.Name.Equals("Bandit Militia"))
+                if (characterObject.StringId.StartsWith("Bandit_Militia"))
                 {
                     bannerKey = Militia.FindMilitiaByParty(characterObject.HeroObject.PartyBelongedTo).Banner.Serialize();
                 }
@@ -60,9 +40,25 @@ namespace Bandit_Militias.Patches
             private static void Postfix(PartyBase __instance, ref Banner __result)
             {
                 if (Globals.Settings.RandomBanners &&
-                    __instance.Name.Equals("Bandit Militia"))
+                    __instance.MobileParty != null &&
+                    __instance.MobileParty.StringId.StartsWith("Bandit_Militia"))
                 {
-                    __result = Militia.FindMilitiaByParty(__instance.MobileParty)?.Banner ?? __result;
+                    __result = Militia.FindMilitiaByParty(__instance.MobileParty)?.Banner;
+                }
+            }
+        }
+
+        [HarmonyPatch(typeof(PartyGroupAgentOrigin), "Banner", MethodType.Getter)]
+        public class PartyGroupAgentOriginBannerGetterPatch
+        {
+            private static void Postfix(IAgentOriginBase __instance, ref Banner __result)
+            {
+                var party = (PartyBase) __instance.BattleCombatant;
+                if (Globals.Settings.RandomBanners &&
+                    party.MobileParty != null &&
+                    party.MobileParty.StringId.StartsWith("Bandit_Militia"))
+                {
+                    __result = Militia.FindMilitiaByParty(party.MobileParty)?.Banner;
                 }
             }
         }
@@ -86,7 +82,7 @@ namespace Bandit_Militias.Patches
         [HarmonyPatch(typeof(MobileParty), "HourlyTick")]
         public static class MobilePartyHourlyTickPatch
         {
-            private static Stopwatch t = new Stopwatch();
+            private static readonly Stopwatch t = new Stopwatch();
 
             private static void Postfix(MobileParty __instance)
             {
@@ -96,11 +92,25 @@ namespace Bandit_Militias.Patches
                     return;
                 }
 
+                var lastMergedOrSplitDate = Militia.FindMilitiaByParty(__instance)?.LastMergedOrSplitDate;
+                if (lastMergedOrSplitDate != null &&
+                    CampaignTime.Now < lastMergedOrSplitDate + CampaignTime.Hours(Helper.Globals.Settings.CooldownHours))
+                {
+                    return;
+                }
+
                 var targetParty = MobileParty.FindPartiesAroundPosition(__instance.Position2D, MergeDistance * 1.33f,
                     x => x != __instance && x.IsBandit && IsValidParty(x)).GetRandomElement()?.Party;
 
                 // "nobody" is a valid answer
                 if (targetParty == null)
+                {
+                    return;
+                }
+
+                var targetLastMergedOrSplitDate = Militia.FindMilitiaByParty(targetParty.MobileParty)?.LastMergedOrSplitDate;
+                if (targetLastMergedOrSplitDate != null &&
+                    CampaignTime.Now < targetLastMergedOrSplitDate + CampaignTime.Hours(Helper.Globals.Settings.CooldownHours))
                 {
                     return;
                 }
@@ -137,12 +147,11 @@ namespace Bandit_Militias.Patches
 
                 // create a new party merged from the two
                 var rosters = MergeRosters(__instance, targetParty);
-                var militia = new Militia(__instance.Position2D, rosters[0], rosters[1]);
+                var militia = new Militia(__instance, rosters[0], rosters[1]);
                 // teleport new militias near the player
                 if (testingMode)
                 {
-                    militia.MobileParty.Position2D = Hero.MainHero.PartyBelongedTo.Position2D +
-                                                     new Vec2(MBRandom.RandomFloatRanged(-3f, 3f), MBRandom.RandomFloatRanged(-3f, 3));
+                    militia.MobileParty.Position2D = Hero.MainHero.PartyBelongedTo.Position2D;
                 }
 
                 militia.MobileParty.Party.Visuals.SetMapIconAsDirty();
@@ -157,7 +166,7 @@ namespace Bandit_Militias.Patches
         {
             private static bool Prefix(MobileParty mobileParty, Settlement settlement)
             {
-                if (mobileParty.Name.Equals("Bandit Militia"))
+                if (mobileParty.StringId.StartsWith("Bandit_Militia"))
                 {
                     Mod.Log($"Preventing {mobileParty} from entering {settlement}");
                     mobileParty.SetMovePatrolAroundSettlement(settlement);
@@ -165,6 +174,77 @@ namespace Bandit_Militias.Patches
                 }
 
                 return true;
+            }
+        }
+
+        // changes the name on the campaign map (hot path)
+        [HarmonyPatch(typeof(PartyNameplateVM), "RefreshDynamicProperties")]
+        public class PartyNameplateVMRefreshDynamicPropertiesPatch
+        {
+            private static void Postfix(PartyNameplateVM __instance, bool forceUpdate, ref string ____fullNameBind)
+            {
+                // Leader is null after a battle, crashes after-action
+                if (__instance.Party.StringId.StartsWith("Bandit_Militia") &&
+                    __instance.Party.Leader != null)
+                {
+                    var heroName = __instance.Party.LeaderHero?.FirstName.ToString();
+                    ____fullNameBind = $"{Possess(heroName)} Bandit Militia";
+
+                    //if (Traverse.Create(__instance).Field<bool>("_isPartyBannerDirty").Value||
+                    //    forceUpdate)
+                    {
+                        var banner = Militia.FindMilitiaByParty(__instance.Party).Banner;
+                        __instance.PartyBanner = new ImageIdentifierVM(banner);
+                    }
+                }
+            }
+        }
+
+        // whilst blocking conversations this will likely never be needed, but it works
+        [HarmonyPatch(typeof(MissionConversationVM), "ConversedHeroBanner", MethodType.Getter)]
+        public class MissionConversationVMConversedHeroBannerPatch
+        {
+            private static void Postfix(CharacterObject ____currentDialogCharacter, ref ImageIdentifierVM __result)
+            {
+                if (____currentDialogCharacter?.HeroObject?.PartyBelongedTo != null &&
+                    ____currentDialogCharacter.HeroObject.PartyBelongedTo.StringId.StartsWith("Bandit_Militia"))
+                {
+                    var banner = Militia.FindMilitiaByParty(____currentDialogCharacter.HeroObject.PartyBelongedTo).Banner;
+                    __result = new ImageIdentifierVM(banner);
+                }
+            }
+        }
+
+        // blocks conversations with militias
+        [HarmonyPatch(typeof(PlayerEncounter), "DoMeetingInternal")]
+        public class MissionConversationVMCtorPatch
+        {
+            private static bool Prefix(PartyBase ____encounteredParty)
+            {
+                if (____encounteredParty.MobileParty.StringId.StartsWith("Bandit_Militia"))
+                {
+                    GameMenu.SwitchToMenu("encounter");
+                    return false;
+                }
+
+                return true;
+            }
+        }
+
+        // 1.4.3b vanilla issue?  have to replace the WeaponData in some cases
+        [HarmonyPatch(typeof(PartyVisual), "WieldMeleeWeapon")]
+        public class PartyVisualWieldMeleeWeaponPatch
+        {
+            private static void Prefix(PartyBase party)
+            {
+                for (int index = 0; index < 5; ++index)
+                {
+                    if (party?.Leader?.Equipment[index].Item != null && party.Leader.Equipment[index].Item.PrimaryWeapon == null)
+                    {
+                        party.Leader.Equipment[index] = new EquipmentElement(ItemObject.All.First(x =>
+                            x.StringId == party.Leader.Equipment[index].Item.StringId));
+                    }
+                }
             }
         }
     }

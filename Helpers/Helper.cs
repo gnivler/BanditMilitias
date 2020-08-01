@@ -65,7 +65,7 @@ namespace Bandit_Militias.Helpers
         {
             // first campaign init hasn't populated this apparently
             var parties = MobileParty.All.Where(
-                x => x.LeaderHero != null && !x.Name.Equals("Bandit Militia")).ToList();
+                x => x.LeaderHero != null && !x.StringId.StartsWith("Bandit_Militia")).ToList();
             if (parties.Any())
             {
                 CalculatedHeroPartyStrength = parties.Select(x => x.Party.TotalStrength).Average();
@@ -81,7 +81,7 @@ namespace Bandit_Militias.Helpers
 
         internal static void TrySplitParty(MobileParty __instance)
         {
-            if (!__instance.Name.Equals("Bandit Militia") ||
+            if (!__instance.StringId.StartsWith("Bandit_Militia") ||
                 __instance.Party.MemberRoster.TotalManCount < 50 ||
                 __instance.IsTooBusyToMerge())
             {
@@ -91,7 +91,7 @@ namespace Bandit_Militias.Helpers
             var roll = Rng.NextDouble();
             if (__instance.MemberRoster.TotalManCount == 0 ||
                 roll > Globals.Settings.RandomSplitChance ||
-                !__instance.Name.Equals("Bandit Militia") ||
+                !__instance.StringId.StartsWith("Bandit_Militia") ||
                 __instance.Party.TotalStrength <= CalculatedMaxPartyStrength * Globals.Settings.StrengthSplitFactor * Variance ||
                 __instance.Party.MemberRoster.TotalManCount <= CalculatedMaxPartySize * Globals.Settings.SizeSplitFactor * Variance)
             {
@@ -155,11 +155,11 @@ namespace Bandit_Militias.Helpers
         {
             try
             {
-                var militia1 = new Militia(original.Position2D, party1, prisoners1);
+                var militia1 = new Militia(original, party1, prisoners1);
                 // send one militia off so it doesn't merge again right away
                 var hideout = Settlement.FindSettlementsAroundPosition(original.Position2D, 50f).First();
                 militia1.MobileParty.SetMovePatrolAroundSettlement(hideout);
-                var militia2 = new Militia(original.Position2D, party2, prisoners2);
+                var militia2 = new Militia(original, party2, prisoners2);
                 Mod.Log($"{militia1.MobileParty.MapFaction.Name} <<< Split >>> {militia2.MobileParty.MapFaction.Name}");
                 Traverse.Create(militia1.MobileParty.Party).Property("ItemRoster").SetValue(inventory1);
                 Traverse.Create(militia2.MobileParty.Party).Property("ItemRoster").SetValue(inventory2);
@@ -299,7 +299,7 @@ namespace Bandit_Militias.Helpers
         private static void FlushBanditMilitias()
         {
             Militias.Clear();
-            var tempList = MobileParty.All.Where(x => x.Name.Equals("Bandit Militia")).ToList();
+            var tempList = MobileParty.All.Where(x => x.StringId.StartsWith("Bandit_Militia")).ToList();
             var hasLogged = false;
             foreach (var mobileParty in tempList)
             {
@@ -337,7 +337,9 @@ namespace Bandit_Militias.Helpers
             for (var index = 0; index < mapEvents.Count; index++)
             {
                 var mapEvent = mapEvents[index];
-                if (mapEvent.InvolvedParties.Any(x => x.Name.Equals("Bandit Militia")))
+                if (mapEvent.InvolvedParties.Any(x =>
+                    x.MobileParty != null &&
+                    x.MobileParty.StringId.StartsWith("Bandit_Militia")))
                 {
                     mapEvent.FinalizeEvent();
                 }
@@ -351,7 +353,7 @@ namespace Bandit_Militias.Helpers
                 for (var index = 0; index < hideout.Parties.Count; index++)
                 {
                     var party = hideout.Parties[index];
-                    if (party.Name.Equals("Bandit Militia"))
+                    if (party.StringId.StartsWith("Bandit_Militia"))
                     {
                         LeaveSettlementAction.ApplyForParty(party);
                         party.SetMovePatrolAroundSettlement(hideout);
@@ -373,7 +375,7 @@ namespace Bandit_Militias.Helpers
                     heroes.Add((Hero) hero);
                 }
             }
-            
+
             var hasLogged = false;
             foreach (var hero in heroes)
             {
@@ -382,7 +384,7 @@ namespace Bandit_Militias.Helpers
                     hasLogged = true;
                     Mod.Log($"Clearing {heroes.Count} hero behaviors without heroes.", LogLevel.Info);
                 }
-            
+
                 behaviors.Remove(hero);
             }
         }
@@ -409,17 +411,20 @@ namespace Bandit_Militias.Helpers
         private static void FlushBadCharacterObjects()
         {
             var badChars = CharacterObject.All.Where(x => x.HeroObject == null)
-                .Where(x => x.Name == null ||
-                            x.Occupation == Occupation.NotAssigned ||
-                            x.Occupation == Occupation.Outlaw &&
-                            x.HeroObject?.CurrentSettlement != null)
-                .Where(x => !x.StringId.Contains("template") &&
-                            !x.StringId.Contains("char_creation") &&
-                            !x.StringId.Contains("equipment") &&
-                            !x.StringId.Contains("for_perf") &&
-                            !x.StringId.Contains("dummy") &&
-                            !x.StringId.Contains("npc_") &&
-                            !x.StringId.Contains("unarmed_ai")).ToList();
+                .Where(x =>
+                    x.Name == null ||
+                    x.Occupation == Occupation.NotAssigned ||
+                    x.Occupation == Occupation.Outlaw &&
+                    x.HeroObject?.CurrentSettlement != null)
+                .Where(x =>
+                    !x.StringId.Contains("template") &&
+                    !x.StringId.Contains("char_creation") &&
+                    !x.StringId.Contains("equipment") &&
+                    !x.StringId.Contains("for_perf") &&
+                    !x.StringId.Contains("dummy") &&
+                    !x.StringId.Contains("npc_") &&
+                    !x.StringId.Contains("unarmed_ai"))
+                .ToList();
 
             var hasLogged = false;
             foreach (var badChar in badChars)
@@ -442,7 +447,7 @@ namespace Bandit_Militias.Helpers
         {
             var tempList = new List<MobileParty>();
             foreach (var mobileParty in MobileParty.All.Where(x =>
-                x.Name.Equals("Bandit Militia") &&
+                x.StringId.StartsWith("Bandit_Militia") &&
                 x.MapFaction == CampaignData.NeutralFaction))
             {
                 Mod.Log("This bandit shouldn't exist " + mobileParty + " size " + mobileParty.MemberRoster.TotalManCount, LogLevel.Info);
@@ -456,7 +461,7 @@ namespace Bandit_Militias.Helpers
         {
             var tempList = new List<MobileParty>();
             foreach (var mobileParty in MobileParty.All
-                .Where(x => x.MemberRoster.TotalManCount == 0 && x.Name.Equals("Bandit Militia")))
+                .Where(x => x.MemberRoster.TotalManCount == 0 && x.StringId.StartsWith("Bandit_Militia")))
             {
                 tempList.Add(mobileParty);
             }
@@ -495,6 +500,12 @@ namespace Bandit_Militias.Helpers
         {
             return mobileParty.MoveTargetParty != null &&
                    mobileParty.MoveTargetParty == other;
+        }
+
+        internal static string Possess(string input)
+        {
+            var lastChar = input[input.Length - 1];
+            return $"{input}{(lastChar == 's' ? "'" : "'s")}";
         }
     }
 }
