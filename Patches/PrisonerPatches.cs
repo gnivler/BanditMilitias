@@ -1,4 +1,5 @@
 using System.Linq;
+using Bandit_Militias.Helpers;
 using HarmonyLib;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
@@ -10,23 +11,17 @@ using TaleWorlds.Core;
 // ReSharper disable RedundantAssignment  
 // ReSharper disable InconsistentNaming
 
-namespace Bandit_Militias.Prisoners
+namespace Bandit_Militias.Patches
 {
-    public class Patches
+    public class PrisonerPatches
     {
-        // prevent message about (about to die) hero getting captured
-        //[HarmonyPatch(typeof(DefaultLogsCampaignBehavior), "OnPrisonerTaken")]
-        //public static class DefaultLogsCampaignBehaviorOnPrisonerTakenPath
-        //{
-        //    // skip the original method to silence logs
-        //    private static bool Prefix(Hero hero) => !hero.Name.Equals("Bandit Militia");
-        //}
-
-        // prevent prisoners.  it might screw up distribution of heroes among participants, low benefit improvement
         [HarmonyPatch(typeof(TakePrisonerAction), "Apply")]
         public class TakePrisonerActionApplyPatch
         {
-            private static bool Prefix(Hero prisonerCharacter) => !prisonerCharacter.Name.Equals("Bandit Militia");
+            private static bool Prefix(Hero prisonerCharacter)
+            {
+                return !prisonerCharacter.NeverBecomePrisoner;
+            }
         }
 
         [HarmonyPatch(typeof(MapEvent), "LootDefeatedParties")]
@@ -37,7 +32,8 @@ namespace Bandit_Militias.Prisoners
                 var loser = __instance.BattleState != BattleState.AttackerVictory
                     ? __instance.AttackerSide
                     : __instance.DefenderSide;
-                if (!loser.LeaderParty.Name.Equals("Bandit Militia"))
+                if (loser.LeaderParty.MobileParty != null &&
+                    !loser.LeaderParty.MobileParty.StringId.StartsWith("Bandit_Militia"))
                 {
                     return;
                 }
@@ -47,7 +43,7 @@ namespace Bandit_Militias.Prisoners
                     var heroes = party.MemberRoster.RemoveIf(x => x.Character.IsHero).ToList();
                     for (var i = 0; i < heroes.Count; i++)
                     {
-                        Mod.Log("Killing militia hero at LootDefeatedParties", LogLevel.Debug);
+                        Mod.Log("Killing militia hero at LootDefeatedParties");
                         heroes[i].Character.HeroObject.KillHero();
                     }
                 }

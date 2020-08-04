@@ -33,7 +33,7 @@
     </PropertyGroup>
     <ItemGroup>
         <Reference Include="0Harmony, Version=2.0.1.0, Culture=neutral, PublicKeyToken=null">
-          <HintPath>..\..\BannerlordRefs\0Harmony.dll</HintPath>
+          <HintPath>..\..\SteamLibrary\steamapps\common\Mount &amp; Blade II Bannerlord\bin\Win64_Shipping_Client\0Harmony.dll</HintPath>
         </Reference>
         <Reference Include="Microsoft.CSharp" />
         <Reference Include="Newtonsoft.Json, Version=11.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed">
@@ -191,14 +191,14 @@
         </Reference>
     </ItemGroup>
     <ItemGroup>
-        <Compile Include="HeroCreatorCopy.cs" />
-        <Compile Include="PartyUpgraderCopy.cs" />
-        <Compile Include="Helper.cs" />
+        <Compile Include="Helpers\Helper.cs" />
+        <Compile Include="Helpers\HeroCreatorCopy.cs" />
+        <Compile Include="Helpers\PartyUpgraderCopy.cs" />
         <Compile Include="Militia.cs" />
-        <Compile Include="Militias\Patches.cs" />
-        <Compile Include="Misc\Patches.cs" />
         <Compile Include="Mod.cs" />
-        <Compile Include="Prisoners\Patches.cs" />
+        <Compile Include="Patches\MilitiaPatches.cs" />
+        <Compile Include="Patches\MiscPatches.cs" />
+        <Compile Include="Patches\PrisonerPatches.cs" />
         <Compile Include="Properties\AssemblyInfo.cs" />
         <Compile Include="Settings.cs" />
     </ItemGroup>

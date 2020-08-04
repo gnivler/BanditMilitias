@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.CharacterDevelopment.Managers;
@@ -8,33 +7,18 @@ using TaleWorlds.Core;
 
 // ReSharper disable ClassNeverInstantiated.Global
 
-namespace Bandit_Militias
+namespace Bandit_Militias.Helpers
 {
-    // copied due to serious fuckery with MapFaction
+    // copied from 1.4.2b because of MapFaction problems
+    // maybe no longer needed in 1.4.3b
     public class PartyUpgraderCopy
     {
         public static void UpgradeReadyTroopsCopy(PartyBase party)
         {
-            if (!party.Name.Equals("Bandit Militia"))
+            if (party.MobileParty != null &&
+                !party.MobileParty.StringId.StartsWith("Bandit_Militia"))
             {
                 return;
-            }
-
-            if (party.MemberRoster.Count > 0 &&
-                party.Name.Equals("Bandit Militia") &&
-                party.LeaderHero == null)
-            {
-                Mod.Log("null LeaderHero at UpgradeReadyTroopsCopy", LogLevel.Warning);
-                var militia = Militia.All.FirstOrDefault(x => x.MobileParty.Party == party);
-                if (militia == null)
-                {
-                    Mod.Log("No militia for this party either", LogLevel.Warning);
-                }
-                else
-                {
-                    Mod.Log("Adding hero back to militia", LogLevel.Warning);
-                    militia.Configure();
-                }
             }
 
             var memberRoster = party.MemberRoster;

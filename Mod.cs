@@ -3,10 +3,13 @@ using System.IO;
 using System.Reflection;
 using HarmonyLib;
 using Newtonsoft.Json;
+using TaleWorlds.Core;
 using TaleWorlds.InputSystem;
+using TaleWorlds.Library;
+using TaleWorlds.Localization;
 using TaleWorlds.MountAndBlade;
-using static Bandit_Militias.Helper;
-using static Bandit_Militias.Helper.Globals;
+using static Bandit_Militias.Helpers.Helper;
+using static Bandit_Militias.Helpers.Helper.Globals;
 
 // ReSharper disable ConditionIsAlwaysTrueOrFalse  
 // ReSharper disable ClassNeverInstantiated.Global  
@@ -15,24 +18,27 @@ using static Bandit_Militias.Helper.Globals;
 
 namespace Bandit_Militias
 {
+    // ReSharper disable once UnusedMember.Global
     public enum LogLevel
     {
         Disabled,
-        Warning,
+        Info,
         Error,
         Debug
     }
 
     public class Mod : MBSubModuleBase
     {
-        private static LogLevel logging = LogLevel.Disabled;
+        // ReSharper disable once ConvertToConstant.Local
+        private static readonly LogLevel logging = LogLevel.Debug;
         private static readonly Harmony harmony = new Harmony("ca.gnivler.bannerlord.BanditMilitias");
         private static readonly string modDirectory = new FileInfo(@"..\..\Modules\Bandit Militias\").DirectoryName;
 
-        internal static void Log(object input, LogLevel logLevel)
+        internal static void Log(object input, LogLevel logLevel = LogLevel.Debug)
         {
             if (logging >= logLevel)
             {
+                FileLog.Log($"[Bandit Militias] {input ?? "null"}");
                 using (var sw = new StreamWriter(Path.Combine(modDirectory, "mod.log"), true))
                 {
                     sw.WriteLine($"[{DateTime.Now:G}] {input ?? "null"}");
@@ -42,17 +48,18 @@ namespace Bandit_Militias
 
         protected override void OnSubModuleLoad()
         {
-            Log($"Startup {DateTime.Now.ToShortTimeString()}", LogLevel.Warning);
+            Log($"Startup {DateTime.Now.ToShortTimeString()}", LogLevel.Info);
             try
             {
                 Globals.Settings = JsonConvert.DeserializeObject<Settings>(File.ReadAllText(Path.Combine(modDirectory, "mod_settings.json")));
-                Log(Globals.Settings.XpGift + " " + DifficultyXpMap[Globals.Settings.XpGift], LogLevel.Warning);
-                Log(Globals.Settings.GoldReward + " " + GoldMap[Globals.Settings.GoldReward], LogLevel.Warning);
+                Globals.Settings.CooldownHours = MathF.Clamp(Globals.Settings.CooldownHours, 1, float.MaxValue);
+                Log(Globals.Settings.XpGift + " " + DifficultyXpMap[Globals.Settings.XpGift]);
+                Log(Globals.Settings.GoldReward + " " + GoldMap[Globals.Settings.GoldReward]);
             }
             catch (Exception ex)
             {
                 Log(ex, LogLevel.Error);
-                Helper.Globals.Settings = new Settings();
+                Globals.Settings = new Settings();
             }
 
             RunManualPatches();
@@ -66,12 +73,12 @@ namespace Bandit_Militias
                 var fileName = Path.Combine(modDirectory, "mod_config.json");
                 if (File.Exists(fileName))
                 {
-                    Helper.Globals.Settings = JsonConvert.DeserializeObject<Settings>(File.ReadAllText(fileName));
+                    Globals.Settings = JsonConvert.DeserializeObject<Settings>(File.ReadAllText(fileName));
                 }
                 else
                 {
                     Log($"Configuration file expected at {fileName} but not found, using default settings", LogLevel.Error);
-                    Helper.Globals.Settings = new Settings();
+                    Globals.Settings = new Settings();
                 }
             }
             catch (Exception ex)
@@ -88,6 +95,7 @@ namespace Bandit_Militias
                 Input.IsKeyPressed(InputKey.F11))
             {
                 testingMode = !testingMode;
+                InformationManager.AddQuickInformation(new TextObject("Testing mode: " + testingMode));
             }
 
             if ((Input.IsKeyDown(InputKey.LeftControl) || Input.IsKeyDown(InputKey.RightControl)) &&
