@@ -112,7 +112,7 @@ namespace Bandit_Militias.Helpers
             TroopRoster prisoners1, TroopRoster prisoners2, ItemRoster inventory1, ItemRoster inventory2)
         {
             Mod.Log($"Processing troops: {original.MemberRoster.Count} types, {original.MemberRoster.TotalManCount} in total");
-            foreach (var rosterElement in original.MemberRoster)
+            foreach (var rosterElement in original.MemberRoster.Where(x => x.Character.HeroObject == null))
             {
                 SplitRosters(troops1, troops2, rosterElement);
             }
@@ -156,9 +156,6 @@ namespace Bandit_Militias.Helpers
             try
             {
                 var militia1 = new Militia(original, party1, prisoners1);
-                // send one militia off so it doesn't merge again right away
-                var hideout = Settlement.FindSettlementsAroundPosition(original.Position2D, 50f).First();
-                militia1.MobileParty.SetMovePatrolAroundSettlement(hideout);
                 var militia2 = new Militia(original, party2, prisoners2);
                 Mod.Log($"{militia1.MobileParty.MapFaction.Name} <<< Split >>> {militia2.MobileParty.MapFaction.Name}");
                 Traverse.Create(militia1.MobileParty.Party).Property("ItemRoster").SetValue(inventory1);
@@ -315,7 +312,7 @@ namespace Bandit_Militias.Helpers
 
         internal static void ReHome()
         {
-            var tempList = Militias.Where(x => x.Hero.HomeSettlement == null).Select(x => x.Hero).ToList();
+            var tempList = Militias.Where(x => x?.Hero.HomeSettlement == null).Select(x => x.Hero).ToList();
             Mod.Log($"Fixing {tempList.Count} null HomeSettlement heroes");
             tempList.Do(x => Traverse.Create(x).Field("_homeSettlement").SetValue(Hideouts.GetRandomElement()));
         }
@@ -504,6 +501,13 @@ namespace Bandit_Militias.Helpers
 
         internal static string Possess(string input)
         {
+            // game tries to redraw the PartyNamePlateVM after combat with multiple militias
+            // and crashes because __instance.Party.LeaderHero?.FirstName.ToString() is null
+            if (input == null)
+            {
+                return null;
+            }
+
             var lastChar = input[input.Length - 1];
             return $"{input}{(lastChar == 's' ? "'" : "'s")}";
         }

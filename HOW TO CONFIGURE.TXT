@@ -1,7 +1,7 @@
 Note the syntax must be exactly right.  Use a site like https://jsonlint.com/ to verify accuracy.
 
 
-  "CanTrain": true,                can be true or false, case insensitive.  False means they will never train.  True means they will train as XP and gold permits.
+  "CanTrain": true,                can be true or false, case insensitive.  False means they will never train.  True means they will train as XP and gold permit.
   "XPGift": "NORMAL",              can be LOW, NORMAL, HARD, HARDER, in CAPS.  Low grants NO XP on merges, while HARDER grants enough XP to significantly upgrade their troops.  No effect if CanTrain is false.                                         
   "CooldownHours": 24,             militias can't merge or split again before this much game time passes (minimum 1).
   "GoldReward": "NORMAL",          can be LOW, NORMAL, RICH, RICHER, in CAPS.  This scales with the strength of the party, regardless.

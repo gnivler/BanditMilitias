@@ -7,6 +7,7 @@ using SandBox.ViewModelCollection.Nameplate;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.GameMenus;
+using TaleWorlds.CampaignSystem.SandBox.CampaignBehaviors;
 using TaleWorlds.CampaignSystem.ViewModelCollection;
 using TaleWorlds.Core;
 using static Bandit_Militias.Helpers.Helper;
@@ -22,18 +23,23 @@ namespace Bandit_Militias.Patches
 {
     public class MilitiaPatches
     {
+        // changes the flag
         [HarmonyPatch(typeof(PartyVisual), "AddCharacterToPartyIcon")]
         public class PartyVisualAddCharacterToPartyIconPatch
         {
             private static void Prefix(CharacterObject characterObject, ref string bannerKey)
             {
-                if (characterObject.StringId.StartsWith("Bandit_Militia"))
+                if (Globals.Settings.RandomBanners &&
+                    characterObject.HeroObject?.PartyBelongedTo != null &&
+                    characterObject.HeroObject.PartyBelongedTo.StringId.StartsWith("Bandit_Militia"))
                 {
                     bannerKey = Militia.FindMilitiaByParty(characterObject.HeroObject.PartyBelongedTo).Banner.Serialize();
+                    Mod.Log("!!Flag " + bannerKey);
                 }
             }
         }
 
+        // changes the little shield icon under the party
         [HarmonyPatch(typeof(PartyBase), "Banner", MethodType.Getter)]
         public class PartyBaseBannerPatch
         {
@@ -44,10 +50,12 @@ namespace Bandit_Militias.Patches
                     __instance.MobileParty.StringId.StartsWith("Bandit_Militia"))
                 {
                     __result = Militia.FindMilitiaByParty(__instance.MobileParty)?.Banner;
+                    Mod.Log("!!Icon " + __result.Serialize());
                 }
             }
         }
 
+        // changes the shields in combat
         [HarmonyPatch(typeof(PartyGroupAgentOrigin), "Banner", MethodType.Getter)]
         public class PartyGroupAgentOriginBannerGetterPatch
         {
@@ -115,9 +123,7 @@ namespace Bandit_Militias.Patches
                     return;
                 }
 
-                // ignore units which are close together
-                if (targetParty.Position2D.Distance(__instance.Position2D) < MergeDistance / 2 ||
-                    Campaign.Current.Models.MapDistanceModel.GetDistance(targetParty.MobileParty, __instance) > MergeDistance)
+                if (Campaign.Current.Models.MapDistanceModel.GetDistance(targetParty.MobileParty, __instance) > MergeDistance)
                 {
                     if (!IsMovingToBandit(targetParty.MobileParty, __instance) &&
                         !IsMovingToBandit(__instance, targetParty.MobileParty))
@@ -130,12 +136,11 @@ namespace Bandit_Militias.Patches
                     return;
                 }
 
-                var troopCount = __instance.MemberRoster.Count + targetParty.MemberRoster.Count;
-                var militiaTotalCount = troopCount;
+                var militiaTotalCount = __instance.MemberRoster.TotalManCount + targetParty.MemberRoster.TotalManCount;
                 if (militiaTotalCount > Globals.Settings.MaxPartySize ||
                     militiaTotalCount > CalculatedMaxPartySize ||
                     __instance.Party.TotalStrength > CalculatedMaxPartyStrength ||
-                    NumMountedTroops(__instance.MemberRoster) + NumMountedTroops(targetParty.MemberRoster) > troopCount / 2)
+                    NumMountedTroops(__instance.MemberRoster) + NumMountedTroops(targetParty.MemberRoster) > militiaTotalCount / 2)
                 {
                     return;
                 }
@@ -181,7 +186,7 @@ namespace Bandit_Militias.Patches
         [HarmonyPatch(typeof(PartyNameplateVM), "RefreshDynamicProperties")]
         public class PartyNameplateVMRefreshDynamicPropertiesPatch
         {
-            private static void Postfix(PartyNameplateVM __instance, bool forceUpdate, ref string ____fullNameBind)
+            private static void Postfix(PartyNameplateVM __instance, ref string ____fullNameBind)
             {
                 // Leader is null after a battle, crashes after-action
                 if (__instance.Party.StringId.StartsWith("Bandit_Militia") &&
@@ -189,13 +194,6 @@ namespace Bandit_Militias.Patches
                 {
                     var heroName = __instance.Party.LeaderHero?.FirstName.ToString();
                     ____fullNameBind = $"{Possess(heroName)} Bandit Militia";
-
-                    //if (Traverse.Create(__instance).Field<bool>("_isPartyBannerDirty").Value||
-                    //    forceUpdate)
-                    {
-                        var banner = Militia.FindMilitiaByParty(__instance.Party).Banner;
-                        __instance.PartyBanner = new ImageIdentifierVM(banner);
-                    }
                 }
             }
         }
@@ -244,6 +242,22 @@ namespace Bandit_Militias.Patches
                         party.Leader.Equipment[index] = new EquipmentElement(ItemObject.All.First(x =>
                             x.StringId == party.Leader.Equipment[index].Item.StringId));
                     }
+                }
+            }
+        }
+
+
+        // prevents militias from being added to DynamicBodyCampaignBehavior._heroBehaviorsDictionary 
+        [HarmonyPatch(typeof(DynamicBodyCampaignBehavior), "CanBeEffectedByProperties")]
+        public class DynamicBodyCampaignBehaviorCanBeEffectedByPropertiesPatch
+        {
+            private static void Postfix(Hero hero, ref bool __result)
+            {
+                if (hero.PartyBelongedTo != null &&
+                    hero.PartyBelongedTo.StringId.StartsWith("Bandit_Militia"))
+                {
+                    Mod.Log("DynamicBodyCampaignBehaviorCanBeEffectedByPropertiesPatch");
+                    __result = false;
                 }
             }
         }

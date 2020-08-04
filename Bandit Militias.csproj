@@ -32,8 +32,8 @@
         <WarningLevel>4</WarningLevel>
     </PropertyGroup>
     <ItemGroup>
-        <Reference Include="0Harmony, Version=2.0.2.0, Culture=neutral, PublicKeyToken=null">
-          <HintPath>..\..\BannerlordRefs\0Harmony.dll</HintPath>
+        <Reference Include="0Harmony, Version=2.0.1.0, Culture=neutral, PublicKeyToken=null">
+          <HintPath>..\..\SteamLibrary\steamapps\common\Mount &amp; Blade II Bannerlord\bin\Win64_Shipping_Client\0Harmony.dll</HintPath>
         </Reference>
         <Reference Include="Microsoft.CSharp" />
         <Reference Include="Newtonsoft.Json, Version=11.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed">
