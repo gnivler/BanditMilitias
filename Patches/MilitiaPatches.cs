@@ -6,9 +6,7 @@ using SandBox.View.Map;
 using SandBox.ViewModelCollection.Nameplate;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
-using TaleWorlds.CampaignSystem.GameMenus;
 using TaleWorlds.CampaignSystem.SandBox.CampaignBehaviors;
-using TaleWorlds.CampaignSystem.ViewModelCollection;
 using TaleWorlds.Core;
 using static Bandit_Militias.Helpers.Helper;
 using static Bandit_Militias.Helpers.Helper.Globals;
@@ -156,7 +154,8 @@ namespace Bandit_Militias.Patches
                 // teleport new militias near the player
                 if (testingMode)
                 {
-                    militia.MobileParty.Position2D = Hero.MainHero.PartyBelongedTo.Position2D;
+                    var party = Hero.MainHero.PartyBelongedTo ?? Hero.MainHero.PartyBelongedToAsPrisoner.MobileParty;
+                    militia.MobileParty.Position2D = party.Position2D;
                 }
 
                 militia.MobileParty.Party.Visuals.SetMapIconAsDirty();
@@ -198,54 +197,24 @@ namespace Bandit_Militias.Patches
             }
         }
 
-        // whilst blocking conversations this will likely never be needed, but it works
-        [HarmonyPatch(typeof(MissionConversationVM), "ConversedHeroBanner", MethodType.Getter)]
-        public class MissionConversationVMConversedHeroBannerPatch
-        {
-            private static void Postfix(CharacterObject ____currentDialogCharacter, ref ImageIdentifierVM __result)
-            {
-                if (____currentDialogCharacter?.HeroObject?.PartyBelongedTo != null &&
-                    ____currentDialogCharacter.HeroObject.PartyBelongedTo.StringId.StartsWith("Bandit_Militia"))
-                {
-                    var banner = Militia.FindMilitiaByParty(____currentDialogCharacter.HeroObject.PartyBelongedTo).Banner;
-                    __result = new ImageIdentifierVM(banner);
-                }
-            }
-        }
-
-        // blocks conversations with militias
-        [HarmonyPatch(typeof(PlayerEncounter), "DoMeetingInternal")]
-        public class MissionConversationVMCtorPatch
-        {
-            private static bool Prefix(PartyBase ____encounteredParty)
-            {
-                if (____encounteredParty.MobileParty.StringId.StartsWith("Bandit_Militia"))
-                {
-                    GameMenu.SwitchToMenu("encounter");
-                    return false;
-                }
-
-                return true;
-            }
-        }
-
-        // 1.4.3b vanilla issue?  have to replace the WeaponData in some cases
+        // 1.4.3b vanilla issue?  have to replace the WeaponComponentData in some cases
+        // this causes naked militias when 'fixed' in this manner
         [HarmonyPatch(typeof(PartyVisual), "WieldMeleeWeapon")]
         public class PartyVisualWieldMeleeWeaponPatch
         {
             private static void Prefix(PartyBase party)
             {
-                for (int index = 0; index < 5; ++index)
+                // todo remove after a version or two... maybe solved it by changing/fixing CreateEquipment()
+                for (var i = 0; i < 5; ++i)
                 {
-                    if (party?.Leader?.Equipment[index].Item != null && party.Leader.Equipment[index].Item.PrimaryWeapon == null)
+                    if (party?.Leader?.Equipment[i].Item != null && party.Leader.Equipment[i].Item.PrimaryWeapon == null)
                     {
-                        party.Leader.Equipment[index] = new EquipmentElement(ItemObject.All.First(x =>
-                            x.StringId == party.Leader.Equipment[index].Item.StringId));
+                        party.Leader.Equipment[i] = new EquipmentElement(ItemObject.All.First(x =>
+                            x.StringId == party.Leader.Equipment[i].Item.StringId));
                     }
                 }
             }
         }
-
 
         // prevents militias from being added to DynamicBodyCampaignBehavior._heroBehaviorsDictionary 
         [HarmonyPatch(typeof(DynamicBodyCampaignBehavior), "CanBeEffectedByProperties")]

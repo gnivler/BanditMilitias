@@ -33,7 +33,8 @@ namespace Bandit_Militias.Patches
                     ? __instance.AttackerSide
                     : __instance.DefenderSide;
                 if (loser.LeaderParty.MobileParty != null &&
-                    !loser.LeaderParty.MobileParty.StringId.StartsWith("Bandit_Militia"))
+                    !loser.LeaderParty.MobileParty.StringId.StartsWith("Bandit_Militia") ||
+                    loser.LeaderParty.MobileParty == null)
                 {
                     return;
                 }
@@ -43,7 +44,7 @@ namespace Bandit_Militias.Patches
                     var heroes = party.MemberRoster.RemoveIf(x => x.Character.IsHero).ToList();
                     for (var i = 0; i < heroes.Count; i++)
                     {
-                        Mod.Log("Killing militia hero at LootDefeatedParties");
+                        Mod.Log($"Killing {heroes[i]} at LootDefeatedParties");
                         heroes[i].Character.HeroObject.KillHero();
                     }
                 }

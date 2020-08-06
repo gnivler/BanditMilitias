@@ -10,6 +10,7 @@ using TaleWorlds.CampaignSystem.SandBox.CampaignBehaviors;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
 using static Bandit_Militias.Helpers.Helper;
+using static Bandit_Militias.Helpers.Helper.Globals;
 
 // ReSharper disable UnusedMember.Global 
 // ReSharper disable UnusedType.Global  
@@ -27,17 +28,26 @@ namespace Bandit_Militias.Patches
             private static void Postfix()
             {
                 Mod.Log("MapScreen.OnInitialize");
-                Globals.Militias.Clear();
-                Globals.Hideouts = Settlement.FindAll(x =>
+                Militias.Clear();
+                Hideouts = Settlement.FindAll(x =>
                     x.IsHideout() && x.MapFaction != CampaignData.NeutralFaction).ToList();
                 var militias = MobileParty.All.Where(x =>
                     x != null && x.StringId.StartsWith("Bandit_Militia")).ToList();
-                foreach (var militia in militias)
+                for (var i = 0; i < militias.Count; i++)
                 {
-                    Globals.Militias.Add(new Militia(militia));
+                    var militia = militias[i];
+                    if (militia.LeaderHero == null)
+                    {
+                        Mod.Log("Leaderless militia found and removed.");
+                        Trash(militia);
+                    }
+                    else
+                    {
+                        Militias.Add(new Militia(militia));
+                    }
                 }
 
-                Mod.Log($"Militias: {militias.Count} (registered {Globals.Militias.Count})");
+                Mod.Log($"Militias: {militias.Count} (registered {Militias.Count})");
                 Flush();
                 // 1.4.3b is dropping the militia settlements at some point, I haven't figured out where
                 // this will cause a crash at map load if the mod isn't installed but has militias
@@ -77,12 +87,9 @@ namespace Bandit_Militias.Patches
         {
             private static void Postfix(MapEventSide __instance, PartyBase party)
             {
-                if (party.Name.ToString() != "Bandit Militia")
-                {
-                    return;
-                }
-
-                if (party.PrisonRoster.Contains(Hero.MainHero.CharacterObject))
+                if (party.MobileParty == null ||
+                    !party.MobileParty.StringId.StartsWith("Bandit_Militia") ||
+                    party.PrisonRoster.Contains(Hero.MainHero.CharacterObject))
                 {
                     return;
                 }
@@ -130,21 +137,13 @@ namespace Bandit_Militias.Patches
             private static int helper(Hero hero)
             {
                 // ReSharper disable once PossibleNullReferenceException
-                return hero.StringId.StartsWith("Bandit_Militia") ? 1 : 0;
-            }
-        }
-
-        // prevents militias from being added to DynamicBodyCampaignBehavior._heroBehaviorsDictionary 
-        [HarmonyPatch(typeof(DynamicBodyCampaignBehavior), "CanBeEffectedByProperties")]
-        public class DynamicBodyCampaignBehaviorCanBeEffectedByPropertiesPatch
-        {
-            private static void Postfix(Hero hero, ref bool __result)
-            {
-                if (hero.StringId.StartsWith("Bandit_Militia"))
+                if (hero.PartyBelongedTo != null &&
+                    hero.PartyBelongedTo.ToString().StartsWith("Bandit_Militia"))
                 {
-                    Mod.Log("DynamicBodyCampaignBehaviorCanBeEffectedByPropertiesPatch");
-                    __result = false;
+                    return 1;
                 }
+
+                return 0;
             }
         }
 

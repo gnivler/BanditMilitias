@@ -68,7 +68,7 @@ namespace Bandit_Militias
                 MobileParty.Party.Owner = Hero;
                 MobileParty.Name = new TextObject($"{Possess(Hero.FirstName.ToString())} Bandit Militia");
                 MBObjectManager.Instance.RegisterObject(Hero);
-                EquipmentHelper.AssignHeroEquipmentFromEquipment(Hero, CreateEquipment(true));
+                EquipmentHelper.AssignHeroEquipmentFromEquipment(Hero, CreateEquipment());
                 var mostPrevalent = (Clan) MostPrevalentFaction(MobileParty) ?? Clan.BanditFactions.First();
                 SetupHero(mostPrevalent);
                 var hideout = Hideouts.GetRandomElement();
