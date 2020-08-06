@@ -28,6 +28,11 @@ namespace Bandit_Militias.Patches
             private static void Postfix()
             {
                 Mod.Log("MapScreen.OnInitialize");
+                LordEquipment = CharacterObject.Templates.Where(x =>
+                        x.StringId.Contains("lord") &&
+                        x.FirstBattleEquipment != null)
+                    .Select(x => x.FirstBattleEquipment)
+                    .ToList();
                 Militias.Clear();
                 Hideouts = Settlement.FindAll(x =>
                     x.IsHideout() && x.MapFaction != CampaignData.NeutralFaction).ToList();
