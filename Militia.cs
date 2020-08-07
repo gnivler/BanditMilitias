@@ -18,7 +18,7 @@ namespace Bandit_Militias
     {
         //private static readonly TextObject Name = new TextObject("Bandit Militia");
         public MobileParty MobileParty;
-        internal Banner Banner;
+        internal readonly Banner Banner;
         internal Hero Hero;
         private static readonly PerkObject Disciplinarian = PerkObject.All.First(x => x.Name.ToString() == "Disciplinarian");
         private static readonly SkillObject Leadership = SkillObject.All.First(x => x.Name.ToString() == "Leadership");
@@ -159,7 +159,7 @@ namespace Bandit_Militias
         {
             var troopString = $"{mobileParty.Party.NumberOfAllMembers} troop" + (mobileParty.Party.NumberOfAllMembers > 1 ? "s" : "");
             var strengthString = $"{Math.Round(mobileParty.Party.TotalStrength)} strength";
-            Mod.Log($"{"New Bandit Militia",-40} | {troopString,10} | {strengthString,10} |");
+            Mod.Log($"{$"New Bandit Militia led by {mobileParty.LeaderHero.Name}",-40} | {troopString,10} | {strengthString,10} |");
         }
     }
 }

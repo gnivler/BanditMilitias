@@ -6,6 +6,7 @@ using SandBox.View.Map;
 using SandBox.ViewModelCollection.Nameplate;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
+using TaleWorlds.CampaignSystem.GameMenus;
 using TaleWorlds.CampaignSystem.SandBox.CampaignBehaviors;
 using TaleWorlds.Core;
 using static Bandit_Militias.Helpers.Helper;
@@ -32,7 +33,6 @@ namespace Bandit_Militias.Patches
                     characterObject.HeroObject.PartyBelongedTo.StringId.StartsWith("Bandit_Militia"))
                 {
                     bannerKey = Militia.FindMilitiaByParty(characterObject.HeroObject.PartyBelongedTo).Banner.Serialize();
-                    Mod.Log("!!Flag " + bannerKey);
                 }
             }
         }
@@ -48,7 +48,6 @@ namespace Bandit_Militias.Patches
                     __instance.MobileParty.StringId.StartsWith("Bandit_Militia"))
                 {
                     __result = Militia.FindMilitiaByParty(__instance.MobileParty)?.Banner;
-                    Mod.Log("!!Icon " + __result.Serialize());
                 }
             }
         }
@@ -197,6 +196,22 @@ namespace Bandit_Militias.Patches
             }
         }
 
+        // blocks conversations with militias
+        [HarmonyPatch(typeof(PlayerEncounter), "DoMeetingInternal")]
+        public class MissionConversationVMCtorPatch
+        {
+            private static bool Prefix(PartyBase ____encounteredParty)
+            {
+                if (____encounteredParty.MobileParty.StringId.StartsWith("Bandit_Militia"))
+                {
+                    GameMenu.SwitchToMenu("encounter");
+                    return false;
+                }
+
+                return true;
+            }
+        }
+        
         // 1.4.3b vanilla issue?  have to replace the WeaponComponentData in some cases
         // this causes naked militias when 'fixed' in this manner
         [HarmonyPatch(typeof(PartyVisual), "WieldMeleeWeapon")]
@@ -225,7 +240,6 @@ namespace Bandit_Militias.Patches
                 if (hero.PartyBelongedTo != null &&
                     hero.PartyBelongedTo.StringId.StartsWith("Bandit_Militia"))
                 {
-                    Mod.Log("DynamicBodyCampaignBehaviorCanBeEffectedByPropertiesPatch");
                     __result = false;
                 }
             }

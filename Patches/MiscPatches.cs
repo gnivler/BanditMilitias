@@ -92,16 +92,17 @@ namespace Bandit_Militias.Patches
         {
             private static void Postfix(MapEventSide __instance, PartyBase party)
             {
-                if (party.MobileParty == null ||
+                if (party?.MobileParty == null ||
                     !party.MobileParty.StringId.StartsWith("Bandit_Militia") ||
+                    party.PrisonRoster != null &&
                     party.PrisonRoster.Contains(Hero.MainHero.CharacterObject))
                 {
                     return;
                 }
 
-                if (party.MemberRoster.TotalHealthyCount < Globals.Settings.MinPartySize &&
+                if (party.MemberRoster?.TotalHealthyCount < Globals.Settings.MinPartySize &&
                     party.MemberRoster.TotalHealthyCount > 0 &&
-                    party.PrisonRoster.Count < Globals.Settings.MinPartySize &&
+                    party.PrisonRoster?.Count < Globals.Settings.MinPartySize &&
                     __instance.Casualties > party.MemberRoster.Count / 2)
                 {
                     Mod.Log($"Dispersing militia of {party.MemberRoster.TotalHealthyCount}+{party.MemberRoster.TotalWounded}w+{party.PrisonRoster.Count}p");
@@ -143,7 +144,7 @@ namespace Bandit_Militias.Patches
             {
                 // ReSharper disable once PossibleNullReferenceException
                 if (hero.PartyBelongedTo != null &&
-                    hero.PartyBelongedTo.ToString().StartsWith("Bandit_Militia"))
+                    hero.PartyBelongedTo.StringId.StartsWith("Bandit_Militia"))
                 {
                     return 1;
                 }
@@ -178,6 +179,20 @@ namespace Bandit_Militias.Patches
                     PlayerEncounter.Finish();
                     Campaign.Current.TimeControlMode = CampaignTimeControlMode.Stop;
                 }
+            }
+        }
+
+        [HarmonyPatch(typeof(HeroSpawnCampaignBehavior), "OnHeroDailyTick")]
+        public class HeroSpawnCampaignBehaviorOnHeroDailyTickPatch
+        {
+            private static bool Prefix(Hero hero)
+            {
+                // latest 1.4.3b patch is trying to teleport bandit heroes apparently before they have parties
+                // there's no party here so unable to filter by Bandit_Militia
+                // for now this probably doesn't matter but vanilla isn't ready for bandit heroes
+                // it could fuck up other mods relying on this method unfortunately
+                // but that seems very unlikely to me right now
+                return !Clan.BanditFactions.Contains(hero.Clan);
             }
         }
     }

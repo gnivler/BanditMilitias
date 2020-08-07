@@ -38,13 +38,15 @@ namespace Bandit_Militias
         {
             try
             {
-                if (logging >= logLevel)
+                if (logging < logLevel)
                 {
-                    FileLog.Log($"[Bandit Militias] {input ?? "null"}");
-                    using (var sw = new StreamWriter(Path.Combine(modDirectory, "mod.log"), true))
-                    {
-                        sw.WriteLine($"[{DateTime.Now:G}] {input ?? "null"}");
-                    }
+                    return;
+                }
+
+                FileLog.Log($"[Bandit Militias] {input ?? "null"}");
+                using (var sw = new StreamWriter(Path.Combine(modDirectory, "mod.log"), true))
+                {
+                    sw.WriteLine($"[{DateTime.Now:G}] {input ?? "null"}");
                 }
             }
             catch (Exception ex)
