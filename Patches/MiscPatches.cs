@@ -10,6 +10,7 @@ using TaleWorlds.CampaignSystem.SandBox.CampaignBehaviors;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
 using static Bandit_Militias.Helpers.Helper;
+using static Bandit_Militias.Helpers.Helper.Globals;
 
 // ReSharper disable UnusedMember.Global 
 // ReSharper disable UnusedType.Global  
@@ -27,17 +28,31 @@ namespace Bandit_Militias.Patches
             private static void Postfix()
             {
                 Mod.Log("MapScreen.OnInitialize");
-                Globals.Militias.Clear();
-                Globals.Hideouts = Settlement.FindAll(x =>
+                LordEquipment = CharacterObject.Templates.Where(x =>
+                        x.StringId.Contains("lord") &&
+                        x.FirstBattleEquipment != null)
+                    .Select(x => x.FirstBattleEquipment)
+                    .ToList();
+                Militias.Clear();
+                Hideouts = Settlement.FindAll(x =>
                     x.IsHideout() && x.MapFaction != CampaignData.NeutralFaction).ToList();
                 var militias = MobileParty.All.Where(x =>
                     x != null && x.StringId.StartsWith("Bandit_Militia")).ToList();
-                foreach (var militia in militias)
+                for (var i = 0; i < militias.Count; i++)
                 {
-                    Globals.Militias.Add(new Militia(militia));
+                    var militia = militias[i];
+                    if (militia.LeaderHero == null)
+                    {
+                        Mod.Log("Leaderless militia found and removed.");
+                        Trash(militia);
+                    }
+                    else
+                    {
+                        Militias.Add(new Militia(militia));
+                    }
                 }
 
-                Mod.Log($"Militias: {militias.Count} (registered {Globals.Militias.Count})");
+                Mod.Log($"Militias: {militias.Count} (registered {Militias.Count})");
                 Flush();
                 // 1.4.3b is dropping the militia settlements at some point, I haven't figured out where
                 // this will cause a crash at map load if the mod isn't installed but has militias
@@ -77,19 +92,17 @@ namespace Bandit_Militias.Patches
         {
             private static void Postfix(MapEventSide __instance, PartyBase party)
             {
-                if (party.Name.ToString() != "Bandit Militia")
+                if (party?.MobileParty == null ||
+                    !party.MobileParty.StringId.StartsWith("Bandit_Militia") ||
+                    party.PrisonRoster != null &&
+                    party.PrisonRoster.Contains(Hero.MainHero.CharacterObject))
                 {
                     return;
                 }
 
-                if (party.PrisonRoster.Contains(Hero.MainHero.CharacterObject))
-                {
-                    return;
-                }
-
-                if (party.MemberRoster.TotalHealthyCount < Globals.Settings.MinPartySize &&
+                if (party.MemberRoster?.TotalHealthyCount < Globals.Settings.MinPartySize &&
                     party.MemberRoster.TotalHealthyCount > 0 &&
-                    party.PrisonRoster.Count < Globals.Settings.MinPartySize &&
+                    party.PrisonRoster?.Count < Globals.Settings.MinPartySize &&
                     __instance.Casualties > party.MemberRoster.Count / 2)
                 {
                     Mod.Log($"Dispersing militia of {party.MemberRoster.TotalHealthyCount}+{party.MemberRoster.TotalWounded}w+{party.PrisonRoster.Count}p");
@@ -130,21 +143,13 @@ namespace Bandit_Militias.Patches
             private static int helper(Hero hero)
             {
                 // ReSharper disable once PossibleNullReferenceException
-                return hero.StringId.StartsWith("Bandit_Militia") ? 1 : 0;
-            }
-        }
-
-        // prevents militias from being added to DynamicBodyCampaignBehavior._heroBehaviorsDictionary 
-        [HarmonyPatch(typeof(DynamicBodyCampaignBehavior), "CanBeEffectedByProperties")]
-        public class DynamicBodyCampaignBehaviorCanBeEffectedByPropertiesPatch
-        {
-            private static void Postfix(Hero hero, ref bool __result)
-            {
-                if (hero.StringId.StartsWith("Bandit_Militia"))
+                if (hero.PartyBelongedTo != null &&
+                    hero.PartyBelongedTo.StringId.StartsWith("Bandit_Militia"))
                 {
-                    Mod.Log("DynamicBodyCampaignBehaviorCanBeEffectedByPropertiesPatch");
-                    __result = false;
+                    return 1;
                 }
+
+                return 0;
             }
         }
 
@@ -174,6 +179,20 @@ namespace Bandit_Militias.Patches
                     PlayerEncounter.Finish();
                     Campaign.Current.TimeControlMode = CampaignTimeControlMode.Stop;
                 }
+            }
+        }
+
+        [HarmonyPatch(typeof(HeroSpawnCampaignBehavior), "OnHeroDailyTick")]
+        public class HeroSpawnCampaignBehaviorOnHeroDailyTickPatch
+        {
+            private static bool Prefix(Hero hero)
+            {
+                // latest 1.4.3b patch is trying to teleport bandit heroes apparently before they have parties
+                // there's no party here so unable to filter by Bandit_Militia
+                // for now this probably doesn't matter but vanilla isn't ready for bandit heroes
+                // it could fuck up other mods relying on this method unfortunately
+                // but that seems very unlikely to me right now
+                return !Clan.BanditFactions.Contains(hero.Clan);
             }
         }
     }

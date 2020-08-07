@@ -312,7 +312,7 @@ namespace Bandit_Militias.Helpers
 
         internal static void ReHome()
         {
-            var tempList = Militias.Where(x => x?.Hero.HomeSettlement == null).Select(x => x.Hero).ToList();
+            var tempList = Militias.Where(x => x?.Hero?.HomeSettlement == null).Select(x => x.Hero).ToList();
             Mod.Log($"Fixing {tempList.Count} null HomeSettlement heroes");
             tempList.Do(x => Traverse.Create(x).Field("_homeSettlement").SetValue(Hideouts.GetRandomElement()));
         }
@@ -466,25 +466,19 @@ namespace Bandit_Militias.Helpers
             PurgeList($"CampaignHourlyTickPatch Clearing {tempList.Count} empty parties", tempList);
         }
 
-        internal static Equipment CreateEquipment(bool randomizeWornEquipment)
+        internal static Equipment CreateEquipment()
         {
-            if (LordEquipment.Count == 0)
-            {
-                LordEquipment = CharacterObject.Templates.Where(x =>
-                        x.StringId.Contains("lord") &&
-                        x.FirstBattleEquipment != null)
-                    .Select(x => x.FirstBattleEquipment).ToList();
-            }
-
-            if (!randomizeWornEquipment)
-            {
-                return LordEquipment.GetRandomElement().Clone();
-            }
-
             var gear = new Equipment();
-            for (var j = 0; j < 12; j++)
+            for (var j = 0; j < 10; j++)
             {
-                gear[j] = LordEquipment.GetRandomElement().Clone()[j];
+                var piece = LordEquipment.GetRandomElement()[j];
+                while (j < 4 && piece.Item != null && piece.Item?.PrimaryWeapon == null)
+                {
+                    // this is never reached luckily.. troubleshooting code leaving in just case
+                    piece = LordEquipment.GetRandomElement()[j];
+                }
+
+                gear[j] = new EquipmentElement(piece);
             }
 
             // get rid of any mount

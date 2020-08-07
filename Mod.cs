@@ -30,19 +30,29 @@ namespace Bandit_Militias
     public class Mod : MBSubModuleBase
     {
         // ReSharper disable once ConvertToConstant.Local
-        private static readonly LogLevel logging = LogLevel.Debug;
+        private static readonly LogLevel logging = LogLevel.Disabled;
         private static readonly Harmony harmony = new Harmony("ca.gnivler.bannerlord.BanditMilitias");
         private static readonly string modDirectory = new FileInfo(@"..\..\Modules\Bandit Militias\").DirectoryName;
 
         internal static void Log(object input, LogLevel logLevel = LogLevel.Debug)
         {
-            if (logging >= logLevel)
+            try
             {
+                if (logging < logLevel)
+                {
+                    return;
+                }
+
                 FileLog.Log($"[Bandit Militias] {input ?? "null"}");
                 using (var sw = new StreamWriter(Path.Combine(modDirectory, "mod.log"), true))
                 {
                     sw.WriteLine($"[{DateTime.Now:G}] {input ?? "null"}");
                 }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+                throw;
             }
         }
 
