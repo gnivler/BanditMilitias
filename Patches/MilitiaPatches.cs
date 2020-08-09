@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using Bandit_Militias.Helpers;
@@ -88,6 +89,7 @@ namespace Bandit_Militias.Patches
         public static class MobilePartyHourlyTickPatch
         {
             private static readonly Stopwatch t = new Stopwatch();
+            private static readonly Dictionary<MobileParty, CampaignTime> MergeMap = new Dictionary<MobileParty, CampaignTime>();
 
             private static void Postfix(MobileParty __instance)
             {
@@ -104,7 +106,7 @@ namespace Bandit_Militias.Patches
                     return;
                 }
 
-                var targetParty = MobileParty.FindPartiesAroundPosition(__instance.Position2D, MergeDistance * 1.33f,
+                var targetParty = MobileParty.FindPartiesAroundPosition(__instance.Position2D, FindRadius,
                     x => x != __instance && x.IsBandit && IsValidParty(x)).GetRandomElement()?.Party;
 
                 // "nobody" is a valid answer
@@ -120,19 +122,30 @@ namespace Bandit_Militias.Patches
                     return;
                 }
 
+                if (!MergeMap.ContainsKey(__instance))
+                {
+                    MergeMap.Add(__instance, CampaignTime.Now);
+                }
+
                 if (Campaign.Current.Models.MapDistanceModel.GetDistance(targetParty.MobileParty, __instance) > MergeDistance)
                 {
                     if (!IsMovingToBandit(targetParty.MobileParty, __instance) &&
-                        !IsMovingToBandit(__instance, targetParty.MobileParty))
-
+                        !IsMovingToBandit(__instance, targetParty.MobileParty) &&
+                        CampaignTime.Now > MergeMap[__instance] + CampaignTime.Hours(6 ))
                     {
+                        MergeMap.Remove(__instance);
                         Mod.Log($"{__instance} Seeking target {targetParty.MobileParty}");
                         Traverse.Create(__instance).Method("SetNavigationModeParty", targetParty.MobileParty).GetValue();
+                    }
+                    else if (__instance.MoveTargetParty == targetParty.MobileParty)
+                    {
+                        Traverse.Create(targetParty.MobileParty).Method("SetNavigationModeParty", __instance).GetValue();
                     }
 
                     return;
                 }
 
+                MergeMap.Remove(__instance);
                 var militiaTotalCount = __instance.MemberRoster.TotalManCount + targetParty.MemberRoster.TotalManCount;
                 if (militiaTotalCount > Globals.Settings.MaxPartySize ||
                     militiaTotalCount > CalculatedMaxPartySize ||
@@ -145,6 +158,12 @@ namespace Bandit_Militias.Patches
                 if (Settlement.FindSettlementsAroundPosition(__instance.Position2D, MinDistanceFromHideout, x => x.IsHideout()).Any())
                 {
                     return;
+                }
+
+
+                if (MergeMap.ContainsKey(targetParty.MobileParty))
+                {
+                    MergeMap.Remove(targetParty.MobileParty);
                 }
 
                 // create a new party merged from the two
@@ -211,7 +230,7 @@ namespace Bandit_Militias.Patches
                 return true;
             }
         }
-        
+
         // 1.4.3b vanilla issue?  have to replace the WeaponComponentData in some cases
         // this causes naked militias when 'fixed' in this manner
         [HarmonyPatch(typeof(PartyVisual), "WieldMeleeWeapon")]

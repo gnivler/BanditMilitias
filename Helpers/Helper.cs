@@ -24,6 +24,7 @@ namespace Bandit_Militias.Helpers
 
             // how close before merging
             internal const float MergeDistance = 2f;
+            internal const float FindRadius = 10f;
             internal const float MinDistanceFromHideout = 15;
 
             // holders for criteria

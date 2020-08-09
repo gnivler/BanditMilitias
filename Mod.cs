@@ -29,8 +29,7 @@ namespace Bandit_Militias
 
     public class Mod : MBSubModuleBase
     {
-        // ReSharper disable once ConvertToConstant.Local
-        private static readonly LogLevel logging = LogLevel.Disabled;
+        private const LogLevel logging = LogLevel.Disabled;
         private static readonly Harmony harmony = new Harmony("ca.gnivler.bannerlord.BanditMilitias");
         private static readonly string modDirectory = new FileInfo(@"..\..\Modules\Bandit Militias\").DirectoryName;
 
