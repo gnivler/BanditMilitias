@@ -9,7 +9,7 @@ using TaleWorlds.Core;
 using TaleWorlds.Library;
 using TaleWorlds.Localization;
 using TaleWorlds.ObjectSystem;
-using static Bandit_Militias.Helpers.Helper.Globals;
+using static Bandit_Militias.Helpers.Globals;
 using static Bandit_Militias.Helpers.Helper;
 
 namespace Bandit_Militias

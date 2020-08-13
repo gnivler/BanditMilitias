@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
+using Bandit_Militias.Helpers;
 using HarmonyLib;
 using SandBox.View.Map;
 using TaleWorlds.CampaignSystem;
@@ -10,7 +11,7 @@ using TaleWorlds.CampaignSystem.SandBox.CampaignBehaviors;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
 using static Bandit_Militias.Helpers.Helper;
-using static Bandit_Militias.Helpers.Helper.Globals;
+using static Bandit_Militias.Helpers.Globals;
 
 // ReSharper disable UnusedMember.Global 
 // ReSharper disable UnusedType.Global  

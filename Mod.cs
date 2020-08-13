@@ -1,15 +1,17 @@
 ﻿using System;
 using System.IO;
 using System.Reflection;
+using Bandit_Militias.Helpers;
 using HarmonyLib;
 using Newtonsoft.Json;
+using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
 using TaleWorlds.InputSystem;
 using TaleWorlds.Library;
 using TaleWorlds.Localization;
 using TaleWorlds.MountAndBlade;
 using static Bandit_Militias.Helpers.Helper;
-using static Bandit_Militias.Helpers.Helper.Globals;
+using static Bandit_Militias.Helpers.Globals;
 
 // ReSharper disable ConditionIsAlwaysTrueOrFalse  
 // ReSharper disable ClassNeverInstantiated.Global  
@@ -120,6 +122,11 @@ namespace Bandit_Militias
                     Log(ex, LogLevel.Error);
                 }
             }
+        }
+
+        protected override void OnGameStart(Game game, IGameStarter gameStarterObject)
+        {
+            ((CampaignGameStarter) gameStarterObject).AddBehavior(new MilitiaBehavior());
         }
 
         private static void RunManualPatches()

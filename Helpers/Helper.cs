@@ -9,54 +9,54 @@ using TaleWorlds.CampaignSystem.SandBox.CampaignBehaviors;
 using TaleWorlds.Core;
 using TaleWorlds.Localization;
 using TaleWorlds.ObjectSystem;
-using static Bandit_Militias.Helpers.Helper.Globals;
+using static Bandit_Militias.Helpers.Globals;
 
 // ReSharper disable InconsistentNaming
 
 namespace Bandit_Militias.Helpers
 {
+    public static class Globals
+    {
+        // dev
+        internal static bool testingMode;
+
+        // how close before merging
+        internal const float MergeDistance = 2f;
+        internal const float FindRadius = 10f;
+        internal const float MinDistanceFromHideout = 15;
+
+        // holders for criteria
+        internal static float CalculatedHeroPartyStrength;
+        internal static float CalculatedMaxPartyStrength;
+        internal static double CalculatedMaxPartySize;
+
+        // misc
+        internal static readonly Random Rng = new Random();
+        internal static List<Equipment> LordEquipment = new List<Equipment>();
+
+        internal static Settings Settings;
+        internal static readonly HashSet<Militia> Militias = new HashSet<Militia>();
+        internal static List<Settlement> Hideouts = new List<Settlement>();
+
+        internal static readonly Dictionary<string, int> DifficultyXpMap = new Dictionary<string, int>
+        {
+            {"LOW", 0},
+            {"NORMAL", 300},
+            {"HARD", 600},
+            {"HARDER", 900},
+        };
+
+        internal static readonly Dictionary<string, int> GoldMap = new Dictionary<string, int>
+        {
+            {"LOW", 250},
+            {"NORMAL", 500},
+            {"RICH", 900},
+            {"RICHER", 2000},
+        };
+    }
+
     public static class Helper
     {
-        public static class Globals
-        {
-            // dev
-            internal static bool testingMode;
-
-            // how close before merging
-            internal const float MergeDistance = 2f;
-            internal const float FindRadius = 10f;
-            internal const float MinDistanceFromHideout = 15;
-
-            // holders for criteria
-            internal static float CalculatedHeroPartyStrength;
-            internal static float CalculatedMaxPartyStrength;
-            internal static double CalculatedMaxPartySize;
-
-            // misc
-            internal static readonly Random Rng = new Random();
-            internal static List<Equipment> LordEquipment = new List<Equipment>();
-
-            internal static Settings Settings;
-            internal static readonly HashSet<Militia> Militias = new HashSet<Militia>();
-            internal static List<Settlement> Hideouts = new List<Settlement>();
-
-            internal static readonly Dictionary<string, int> DifficultyXpMap = new Dictionary<string, int>
-            {
-                {"LOW", 0},
-                {"NORMAL", 300},
-                {"HARD", 600},
-                {"HARDER", 900},
-            };
-
-            internal static readonly Dictionary<string, int> GoldMap = new Dictionary<string, int>
-            {
-                {"LOW", 250},
-                {"NORMAL", 500},
-                {"RICH", 900},
-                {"RICHER", 2000},
-            };
-        }
-
         internal static int NumMountedTroops(TroopRoster troopRoster) => troopRoster.Troops
             .Where(x => x.IsMounted).Sum(troopRoster.GetTroopCount);
 

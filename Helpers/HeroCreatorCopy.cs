@@ -15,7 +15,7 @@ namespace Bandit_Militias.Helpers
         // copied from the assembly, notably removed is the RegisterObject call from the end
         public static Hero CreateUnregisteredOutlaw()
         {
-            var settlement = Helper.Globals.Hideouts.GetRandomElement();
+            var settlement = Globals.Hideouts.GetRandomElement();
 
             var num1 = 0;
             foreach (var characterObject in Source)
