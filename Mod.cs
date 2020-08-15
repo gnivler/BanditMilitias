@@ -1,15 +1,17 @@
 ﻿using System;
 using System.IO;
 using System.Reflection;
+using Bandit_Militias.Helpers;
 using HarmonyLib;
 using Newtonsoft.Json;
+using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
 using TaleWorlds.InputSystem;
 using TaleWorlds.Library;
 using TaleWorlds.Localization;
 using TaleWorlds.MountAndBlade;
 using static Bandit_Militias.Helpers.Helper;
-using static Bandit_Militias.Helpers.Helper.Globals;
+using static Bandit_Militias.Helpers.Globals;
 
 // ReSharper disable ConditionIsAlwaysTrueOrFalse  
 // ReSharper disable ClassNeverInstantiated.Global  
@@ -29,8 +31,7 @@ namespace Bandit_Militias
 
     public class Mod : MBSubModuleBase
     {
-        // ReSharper disable once ConvertToConstant.Local
-        private static readonly LogLevel logging = LogLevel.Disabled;
+        private const LogLevel logging = LogLevel.Disabled;
         private static readonly Harmony harmony = new Harmony("ca.gnivler.bannerlord.BanditMilitias");
         private static readonly string modDirectory = new FileInfo(@"..\..\Modules\Bandit Militias\").DirectoryName;
 
@@ -121,6 +122,11 @@ namespace Bandit_Militias
                     Log(ex, LogLevel.Error);
                 }
             }
+        }
+
+        protected override void OnGameStart(Game game, IGameStarter gameStarterObject)
+        {
+            ((CampaignGameStarter) gameStarterObject).AddBehavior(new MilitiaBehavior());
         }
 
         private static void RunManualPatches()

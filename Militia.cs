@@ -1,22 +1,22 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using Bandit_Militias.Helpers;
 using HarmonyLib;
 using Helpers;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
-using TaleWorlds.Library;
 using TaleWorlds.Localization;
 using TaleWorlds.ObjectSystem;
-using static Bandit_Militias.Helpers.Helper.Globals;
+using static Bandit_Militias.Helpers.Globals;
 using static Bandit_Militias.Helpers.Helper;
+using Debug = TaleWorlds.Library.Debug;
 
 namespace Bandit_Militias
 {
     internal class Militia
     {
-        //private static readonly TextObject Name = new TextObject("Bandit Militia");
         public MobileParty MobileParty;
         internal readonly Banner Banner;
         internal Hero Hero;
@@ -65,18 +65,13 @@ namespace Bandit_Militias
                     return;
                 }
 
-                MobileParty.Party.Owner = Hero;
                 MobileParty.Name = new TextObject($"{Possess(Hero.FirstName.ToString())} Bandit Militia");
                 MBObjectManager.Instance.RegisterObject(Hero);
-                EquipmentHelper.AssignHeroEquipmentFromEquipment(Hero, CreateEquipment());
+                EquipmentHelper.AssignHeroEquipmentFromEquipment(Hero, BuildViableEquipmentSet());
                 var mostPrevalent = (Clan) MostPrevalentFaction(MobileParty) ?? Clan.BanditFactions.First();
                 SetupHero(mostPrevalent);
-                var hideout = Hideouts.GetRandomElement();
-                // home has to be set to a hideout to make party aggressive (see PartyBase.MapFaction)
-                // 1.4.3b changed this now we also have to set ActualClan
-                MobileParty.ActualClan = mostPrevalent;
-                Traverse.Create(Hero).Field("_homeSettlement").SetValue(hideout);
-                Traverse.Create(Hero.Clan).Field("_warParties").Method("Add", MobileParty).GetValue();
+                MobileParty.Party.Owner = Hero;
+
                 var index = Rng.Next(1, MobileParty.MemberRoster.Count);
                 int iterations = default;
                 switch (Globals.Settings.XpGift)
@@ -105,7 +100,8 @@ namespace Bandit_Militias
             {
                 Trash(MobileParty);
                 Debug.PrintError("Bandit Militias is failing to configure parties!  Exception:");
-                Mod.Log(ex);
+                var stackTrace = new StackTrace(ex, true);
+                Mod.Log(stackTrace.GetFrame(0).GetFileLineNumber());
             }
         }
 
@@ -115,9 +111,19 @@ namespace Bandit_Militias
             Hero.NeverBecomePrisoner = true;
             Hero.AlwaysDie = true;
             Hero.Gold = Convert.ToInt32(MobileParty.Party.CalculateStrength() * GoldMap[Globals.Settings.GoldReward]);
+            var hideout = Hideouts.Where(x => x.MapFaction != CampaignData.NeutralFaction).GetRandomElement();
+            // home has to be set to a hideout to make party aggressive (see PartyBase.MapFaction)
+            // 1.4.3b changed this now we also have to set ActualClan
+            Hero.Clan = mostPrevalent;
+#if !OneFourTwo
+                Traverse.Create(Hero).Field("_homeSettlement").SetValue(hideout);
+                MobileParty.ActualClan = mostPrevalent;
+                Traverse.Create(Hero.Clan).Field("_warParties").Method("Add", MobileParty).GetValue();
+#else
+            Traverse.Create(Hero).Property("HomeSettlement").SetValue(hideout);
+#endif
             if (Globals.Settings.CanTrain)
             {
-                Hero.Clan = mostPrevalent;
                 MobileParty.MemberRoster.AddToCounts(Hero.CharacterObject, 1, false, 0, 0, true, 0);
                 Hero.SetSkillValue(Leadership, 125);
                 Hero.SetPerkValue(Disciplinarian, true);
@@ -157,9 +163,16 @@ namespace Bandit_Militias
 
         private static void LogMilitiaFormed(MobileParty mobileParty)
         {
-            var troopString = $"{mobileParty.Party.NumberOfAllMembers} troop" + (mobileParty.Party.NumberOfAllMembers > 1 ? "s" : "");
-            var strengthString = $"{Math.Round(mobileParty.Party.TotalStrength)} strength";
-            Mod.Log($"{$"New Bandit Militia led by {mobileParty.LeaderHero.Name}",-40} | {troopString,10} | {strengthString,10} |");
+            try
+            {
+                var troopString = $"{mobileParty.Party.NumberOfAllMembers} troop" + (mobileParty.Party.NumberOfAllMembers > 1 ? "s" : "");
+                var strengthString = $"{Math.Round(mobileParty.Party.TotalStrength)} strength";
+                Mod.Log($"{$"New Bandit Militia led by {mobileParty.LeaderHero.Name}",-70} | {troopString,10} | {strengthString,10} |");
+            }
+            catch (Exception ex)
+            {
+                Mod.Log(ex);
+            }
         }
     }
 }
