@@ -200,6 +200,8 @@ namespace Bandit_Militias.Patches
                 return !Clan.BanditFactions.Contains(hero.Clan);
             }
         }
+    }
+}
 #endif
 
 #if OneFourTwo
@@ -209,10 +211,15 @@ namespace Bandit_Militias.Patches
         {
             private static bool Prefix(Hero victim)
             {
-                return !victim.PartyBelongedTo.StringId.StartsWith("Bandit_Militia");
+                if (victim.PartyBelongedTo != null &&
+                    victim.PartyBelongedTo.StringId.StartsWith("Bandit_Militia"))
+                {
+                    return false;
+                }
+
+                return true;
             }
         }
     }
-#endif
-    }
 }
+#endif
