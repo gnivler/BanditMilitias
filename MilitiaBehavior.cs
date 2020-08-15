@@ -8,11 +8,13 @@ using TaleWorlds.Core;
 using static Bandit_Militias.Helpers.Globals;
 using static Bandit_Militias.Helpers.Helper;
 
+// ReSharper disable InconsistentNaming
+
 namespace Bandit_Militias
 {
     public class MilitiaBehavior : CampaignBehaviorBase
     {
-        private static readonly Stopwatch t = new Stopwatch();
+        private static readonly Stopwatch T = new Stopwatch();
         private static readonly Dictionary<MobileParty, CampaignTime> MergeMap = new Dictionary<MobileParty, CampaignTime>();
 
         public override void RegisterEvents()
@@ -25,23 +27,23 @@ namespace Bandit_Militias
         {
         }
 
-        private void HourlyTick(MobileParty mobileParty)
+        private static void HourlyTick(MobileParty __instance)
         {
-            t.Restart();
-            if (!IsValidParty(mobileParty))
+            T.Restart();
+            if (!IsValidParty(__instance))
             {
                 return;
             }
 
-            var lastMergedOrSplitDate = Militia.FindMilitiaByParty(mobileParty)?.LastMergedOrSplitDate;
+            var lastMergedOrSplitDate = Militia.FindMilitiaByParty(__instance)?.LastMergedOrSplitDate;
             if (lastMergedOrSplitDate != null &&
                 CampaignTime.Now < lastMergedOrSplitDate + CampaignTime.Hours(Globals.Settings.CooldownHours))
             {
                 return;
             }
 
-            var targetParty = MobileParty.FindPartiesAroundPosition(mobileParty.Position2D, FindRadius,
-                x => x != mobileParty && x.IsBandit && IsValidParty(x)).GetRandomElement()?.Party;
+            var targetParty = MobileParty.FindPartiesAroundPosition(__instance.Position2D, FindRadius,
+                x => x != __instance && x.IsBandit && IsValidParty(x)).GetRandomElement()?.Party;
 
             // "nobody" is a valid answer
             if (targetParty == null)
@@ -56,51 +58,51 @@ namespace Bandit_Militias
                 return;
             }
 
-            if (Campaign.Current.Models.MapDistanceModel.GetDistance(targetParty.MobileParty, mobileParty) > MergeDistance)
+            if (Campaign.Current.Models.MapDistanceModel.GetDistance(targetParty.MobileParty, __instance) > MergeDistance)
             {
-                if (!MergeMap.ContainsKey(mobileParty))
+                if (!MergeMap.ContainsKey(__instance))
                 {
-                    MergeMap.Add(mobileParty, CampaignTime.Now);
+                    MergeMap.Add(__instance, CampaignTime.Now);
                 }
 
-                if (!IsMovingToBandit(mobileParty, targetParty.MobileParty) &&
-                    CampaignTime.Now > MergeMap[mobileParty] + CampaignTime.Hours(4))
+                if (!IsMovingToBandit(__instance, targetParty.MobileParty) &&
+                    CampaignTime.Now > MergeMap[__instance] + CampaignTime.Hours(4))
                 {
-                    MergeMap.Remove(mobileParty);
-                    Mod.Log($"{mobileParty} seeking >> target {targetParty.MobileParty}");
-                    Traverse.Create(mobileParty).Method("SetNavigationModeParty", targetParty.MobileParty).GetValue();
+                    MergeMap.Remove(__instance);
+                    Mod.Log($"{__instance} seeking >> target {targetParty.MobileParty}");
+                    Traverse.Create(__instance).Method("SetNavigationModeParty", targetParty.MobileParty).GetValue();
                 }
 
-                if (targetParty.MobileParty.MoveTargetParty == mobileParty)
+                if (targetParty.MobileParty.MoveTargetParty == __instance)
                 {
                     MergeMap.Remove(targetParty.MobileParty);
-                    Mod.Log($"{targetParty.MobileParty} target << seeking {mobileParty}");
-                    Traverse.Create(targetParty.MobileParty).Method("SetNavigationModeParty", mobileParty).GetValue();
+                    Mod.Log($"{targetParty.MobileParty} target << seeking {__instance}");
+                    Traverse.Create(targetParty.MobileParty).Method("SetNavigationModeParty", __instance).GetValue();
                 }
 
                 return;
             }
 
-            var militiaTotalCount = mobileParty.MemberRoster.TotalManCount + targetParty.MemberRoster.TotalManCount;
+            var militiaTotalCount = __instance.MemberRoster.TotalManCount + targetParty.MemberRoster.TotalManCount;
             if (militiaTotalCount > Globals.Settings.MaxPartySize ||
                 militiaTotalCount > CalculatedMaxPartySize ||
-                mobileParty.Party.TotalStrength > CalculatedMaxPartyStrength ||
-                NumMountedTroops(mobileParty.MemberRoster) + NumMountedTroops(targetParty.MemberRoster) > militiaTotalCount / 2)
+                __instance.Party.TotalStrength > CalculatedMaxPartyStrength ||
+                NumMountedTroops(__instance.MemberRoster) + NumMountedTroops(targetParty.MemberRoster) > militiaTotalCount / 2)
             {
                 return;
             }
 
-            if (Settlement.FindSettlementsAroundPosition(mobileParty.Position2D, MinDistanceFromHideout, x => x.IsHideout()).Any())
+            if (Settlement.FindSettlementsAroundPosition(__instance.Position2D, MinDistanceFromHideout, x => x.IsHideout()).Any())
             {
                 return;
             }
 
-            MergeMap.Remove(mobileParty);
+            MergeMap.Remove(__instance);
             MergeMap.Remove(targetParty.MobileParty);
 
             // create a new party merged from the two
-            var rosters = MergeRosters(mobileParty, targetParty);
-            var militia = new Militia(mobileParty, rosters[0], rosters[1]);
+            var rosters = MergeRosters(__instance, targetParty);
+            var militia = new Militia(__instance, rosters[0], rosters[1]);
             // teleport new militias near the player
             if (testingMode)
             {
@@ -110,9 +112,9 @@ namespace Bandit_Militias
             }
 
             militia.MobileParty.Party.Visuals.SetMapIconAsDirty();
-            Trash(mobileParty);
+            Trash(__instance);
             Trash(targetParty.MobileParty);
-            Mod.Log($"finished ==> {t.ElapsedTicks / 10000F:F3}ms");
+            Mod.Log($"finished ==> {T.ElapsedTicks / 10000F:F3}ms");
             Mod.Log($"MergeMap.Count ==> {MergeMap.Count}");
         }
     }

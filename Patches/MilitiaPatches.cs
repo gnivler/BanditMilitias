@@ -84,6 +84,20 @@ namespace Bandit_Militias.Patches
         [HarmonyPatch(typeof(EnterSettlementAction), "ApplyForParty")]
         public class EnterSettlementActionApplyForPartyPatch
         {
+#if OneFourTwo
+            private static bool Prefix(MobileParty owner, Settlement settlement)
+            {
+                if (owner.StringId.StartsWith("Bandit_Militia"))
+                {
+                    Mod.Log($"Preventing {owner} from entering {settlement}");
+                    owner.SetMovePatrolAroundSettlement(settlement);
+                    return false;
+                }
+
+                return true;
+            }
+        }
+#else
             private static bool Prefix(MobileParty mobileParty, Settlement settlement)
             {
                 if (mobileParty.StringId.StartsWith("Bandit_Militia"))
@@ -96,6 +110,7 @@ namespace Bandit_Militias.Patches
                 return true;
             }
         }
+#endif
 
         // changes the name on the campaign map (hot path)
         [HarmonyPatch(typeof(PartyNameplateVM), "RefreshDynamicProperties")]
@@ -161,5 +176,16 @@ namespace Bandit_Militias.Patches
                 }
             }
         }
+
+#if OneFourTwo
+        [HarmonyPatch(typeof(MilitiasCampaignBehavior), "CheckProvocation")]
+        public class MilitiasCampaignBehaviorCheckProvocationPatch
+        {
+            private static bool Prefix(MobileParty militia)
+            {
+                return true;//militia.Party.MapEvent != null;
+            }
+        }
+#endif
     }
 }

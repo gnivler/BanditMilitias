@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using HarmonyLib;
 using TaleWorlds.CampaignSystem;
@@ -11,7 +12,7 @@ using TaleWorlds.Localization;
 using TaleWorlds.ObjectSystem;
 using static Bandit_Militias.Helpers.Globals;
 
-// ReSharper disable InconsistentNaming
+// ReSharper disable InconsistentNaming  
 
 namespace Bandit_Militias.Helpers
 {
@@ -32,7 +33,6 @@ namespace Bandit_Militias.Helpers
 
         // misc
         internal static readonly Random Rng = new Random();
-        internal static List<Equipment> LordEquipment = new List<Equipment>();
 
         internal static Settings Settings;
         internal static readonly HashSet<Militia> Militias = new HashSet<Militia>();
@@ -53,6 +53,31 @@ namespace Bandit_Militias.Helpers
             {"RICH", 900},
             {"RICHER", 2000},
         };
+
+        internal static readonly Dictionary<ItemObject.ItemTypeEnum, List<ItemObject>> ItemTypes = new Dictionary<ItemObject.ItemTypeEnum, List<ItemObject>>();
+
+        // which items fit in which slots.  ammo always goes last for proc gen purposes
+        //internal static Dictionary<ItemObject.ItemTypeEnum, List<int>> SlotMap = new Dictionary<ItemObject.ItemTypeEnum, List<int>>
+        //{
+        //    {ItemObject.ItemTypeEnum.Arrows, new List<int> {3}},
+        //    {ItemObject.ItemTypeEnum.Bolts, new List<int> {3}},
+        //    {ItemObject.ItemTypeEnum.Bow, new List<int> {0, 1, 2, 3}},
+        //    {ItemObject.ItemTypeEnum.Crossbow, new List<int> {0, 1, 2, 3}},
+        //    {ItemObject.ItemTypeEnum.Polearm, new List<int> {0, 1, 2, 3}},
+        //    {ItemObject.ItemTypeEnum.Shield, new List<int> {0, 1, 2, 3}},
+        //    {ItemObject.ItemTypeEnum.Thrown, new List<int> {0, 1, 2, 3}},
+        //    {ItemObject.ItemTypeEnum.OneHandedWeapon, new List<int> {0, 1, 2, 3}},
+        //    {ItemObject.ItemTypeEnum.TwoHandedWeapon, new List<int> {0, 1, 2, 3}},
+        //    {ItemObject.ItemTypeEnum.HeadArmor, new List<int> {5}},
+        //    {ItemObject.ItemTypeEnum.BodyArmor, new List<int> {6}},
+        //    {ItemObject.ItemTypeEnum.LegArmor, new List<int> {7}},
+        //    {ItemObject.ItemTypeEnum.HandArmor, new List<int> {8}},
+        //    {ItemObject.ItemTypeEnum.Cape, new List<int> {9}},
+        //};
+
+        internal static readonly List<EquipmentElement> EquipmentItems = new List<EquipmentElement>();
+        internal static List<ItemObject> Arrows = new List<ItemObject>();
+        internal static List<ItemObject> Bolts = new List<ItemObject>();
     }
 
     public static class Helper
@@ -163,15 +188,15 @@ namespace Bandit_Militias.Helpers
                 Traverse.Create(militia2.MobileParty.Party).Property("ItemRoster").SetValue(inventory2);
                 militia1.MobileParty.Party.Visuals.SetMapIconAsDirty();
                 militia2.MobileParty.Party.Visuals.SetMapIconAsDirty();
+#if !OneFourTwo
                 var warParties = Traverse.Create(original.ActualClan).Field("_warParties").GetValue<List<MobileParty>>();
                 while (warParties.Contains(original))
                 {
                     // it's been added twice... at least.  for Reasons?
                     warParties.Remove(original);
                 }
-
+#endif
                 Trash(original);
-                //Mod.Log("After split " + MobileParty.All.Count(x => x.MemberRoster.Count == 0 && x.HomeSettlement == null));
             }
             catch (Exception ex)
             {
@@ -271,14 +296,14 @@ namespace Bandit_Militias.Helpers
         {
             try
             {
-                hero.ChangeState(Hero.CharacterStates.NotSpawned);
+                hero.ChangeState(Hero.CharacterStates.Dead);
                 hero.HeroDeveloper.ClearUnspentPoints();
                 AccessTools.Method(typeof(CampaignEventDispatcher), "OnHeroKilled")
                     .Invoke(CampaignEventDispatcher.Instance, new object[] {hero, hero, KillCharacterAction.KillCharacterActionDetail.None, false});
                 // no longer needed without registered heroes but leaving in for a few extra versions...
                 Traverse.Create(hero.CurrentSettlement).Field("_heroesWithoutParty").Method("Remove", hero).GetValue();
-                MBObjectManager.Instance.UnregisterObject(hero);
                 MBObjectManager.Instance.UnregisterObject(hero.CharacterObject);
+                MBObjectManager.Instance.UnregisterObject(hero);
             }
             catch (Exception ex)
             {
@@ -467,27 +492,6 @@ namespace Bandit_Militias.Helpers
             PurgeList($"CampaignHourlyTickPatch Clearing {tempList.Count} empty parties", tempList);
         }
 
-        internal static Equipment CreateEquipment()
-        {
-            var gear = new Equipment();
-            for (var j = 0; j < 10; j++)
-            {
-                var piece = LordEquipment.GetRandomElement()[j];
-                while (j < 4 && piece.Item != null && piece.Item?.PrimaryWeapon == null)
-                {
-                    // this is never reached luckily.. troubleshooting code leaving in just case
-                    piece = LordEquipment.GetRandomElement()[j];
-                }
-
-                gear[j] = new EquipmentElement(piece);
-            }
-
-            // get rid of any mount
-            gear[10] = new EquipmentElement();
-            gear[11] = new EquipmentElement();
-            return gear;
-        }
-
         internal static bool IsMovingToBandit(MobileParty mobileParty, MobileParty other)
         {
             return mobileParty.MoveTargetParty != null &&
@@ -505,6 +509,124 @@ namespace Bandit_Militias.Helpers
 
             var lastChar = input[input.Length - 1];
             return $"{input}{(lastChar == 's' ? "'" : "'s")}";
+        }
+
+        internal static void PopulateItems()
+        {
+            var all = ItemObject.All.Where(x =>
+                !x.Name.Contains("Crafted") &&
+                !x.Name.Contains("Wooden") &&
+                !x.Name.Contains("Practice") &&
+                x.Name.ToString() != "Torch" &&
+                x.Name.ToString() != "Horse Whip" &&
+                x.Name.ToString() != "Push Fork" &&
+                x.Name.ToString() != "Bound Crossbow").ToList();
+            Arrows = all.Where(x => x.ItemType == ItemObject.ItemTypeEnum.Arrows)
+                .Where(x => !x.Name.Contains("Ballista")).ToList();
+            Bolts = all.Where(x => x.ItemType == ItemObject.ItemTypeEnum.Bolts).ToList();
+            all = all.Where(x => x.Tierf >= 2).ToList();
+            var oneHanded = all.Where(x => x.ItemType == ItemObject.ItemTypeEnum.OneHandedWeapon);
+            var twoHanded = all.Where(x => x.ItemType == ItemObject.ItemTypeEnum.TwoHandedWeapon);
+            var polearm = all.Where(x => x.ItemType == ItemObject.ItemTypeEnum.Polearm);
+            var thrown = all.Where(x => x.ItemType == ItemObject.ItemTypeEnum.Thrown &&
+                                        x.Name.ToString() != "Boulder" && x.Name.ToString() != "Fire Pot");
+            var shields = all.Where(x => x.ItemType == ItemObject.ItemTypeEnum.Shield);
+            var bows = all.Where(x =>
+                x.ItemType == ItemObject.ItemTypeEnum.Bow ||
+                x.ItemType == ItemObject.ItemTypeEnum.Crossbow);
+            var any = new List<ItemObject>(oneHanded.Concat(twoHanded).Concat(polearm).Concat(thrown).Concat(shields).Concat(bows).ToList());
+            any.Do(x => EquipmentItems.Add(new EquipmentElement(x)));
+        }
+
+        // builds a set of 4 weapons that won't include more than 1 bow or shield, nor any lack of ammo
+        internal static Equipment BuildViableEquipmentSet()
+        {
+            var gear = new Equipment();
+            var haveShield = false;
+            var haveBow = false;
+            try
+            {
+                for (var i = 0; i < 4; i++)
+                {
+                    if (i == 3 && !gear[3].IsEmpty)
+                    {
+                        break;
+                    }
+
+                    var randomElement = EquipmentItems.GetRandomElement();
+                    if (!gear[3].IsEmpty && i == 3 &&
+                        (randomElement.Item.ItemType == ItemObject.ItemTypeEnum.Bow ||
+                         randomElement.Item.ItemType == ItemObject.ItemTypeEnum.Crossbow))
+                    {
+                        randomElement = EquipmentItems.Where(x =>
+                            x.Item.ItemType != ItemObject.ItemTypeEnum.Bow &&
+                            x.Item.ItemType != ItemObject.ItemTypeEnum.Crossbow).GetRandomElement();
+                    }
+
+                    if (randomElement.Item.ItemType == ItemObject.ItemTypeEnum.Bow ||
+                        randomElement.Item.ItemType == ItemObject.ItemTypeEnum.Crossbow)
+                    {
+                        if (i < 3)
+                        {
+                            if (haveBow)
+                            {
+                                i--;
+                                continue;
+                            }
+
+                            haveBow = true;
+                            gear[i] = randomElement;
+                            if (randomElement.Item.ItemType == ItemObject.ItemTypeEnum.Bow)
+                            {
+                                gear[3] = new EquipmentElement(Arrows.ToList()[Rng.Next(0, Arrows.Count)]);
+                            }
+
+                            if (randomElement.Item.ItemType == ItemObject.ItemTypeEnum.Crossbow)
+                            {
+                                gear[3] = new EquipmentElement(Bolts.ToList()[Rng.Next(0, Bolts.Count)]);
+                            }
+
+                            continue;
+                        }
+
+                        randomElement = EquipmentItems.Where(x =>
+                            x.Item.ItemType != ItemObject.ItemTypeEnum.Bow &&
+                            x.Item.ItemType != ItemObject.ItemTypeEnum.Crossbow).GetRandomElement();
+                    }
+
+                    if (randomElement.Item.ItemType == ItemObject.ItemTypeEnum.Shield)
+                    {
+                        if (haveShield)
+                        {
+                            i--;
+                            continue;
+                        }
+
+                        haveShield = true;
+                    }
+
+                    gear[i] = randomElement;
+                }
+
+                gear[5] = new EquipmentElement(ItemTypes[ItemObject.ItemTypeEnum.HeadArmor].GetRandomElement());
+                gear[6] = new EquipmentElement(ItemTypes[ItemObject.ItemTypeEnum.BodyArmor].GetRandomElement());
+                gear[7] = new EquipmentElement(ItemTypes[ItemObject.ItemTypeEnum.LegArmor].GetRandomElement());
+                gear[8] = new EquipmentElement(ItemTypes[ItemObject.ItemTypeEnum.HandArmor].GetRandomElement());
+                gear[9] = new EquipmentElement(ItemTypes[ItemObject.ItemTypeEnum.Cape].GetRandomElement());
+                Mod.Log("-----");
+                for (var i = 0; i < 10; i++)
+                {
+                    Mod.Log(gear[i].Item?.Name);
+                }
+            }
+            catch (Exception ex)
+            {
+                var stackTrace = new StackTrace(ex, true);
+                Mod.Log($"\n{stackTrace}");
+                Mod.Log(stackTrace.GetFrame(0).GetFileLineNumber());
+            }
+
+            return gear.Clone();
         }
     }
 }

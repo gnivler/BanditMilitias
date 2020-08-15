@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -29,14 +30,16 @@ namespace Bandit_Militias.Patches
             private static void Postfix()
             {
                 Mod.Log("MapScreen.OnInitialize");
-                LordEquipment = CharacterObject.Templates.Where(x =>
-                        x.StringId.Contains("lord") &&
-                        x.FirstBattleEquipment != null)
-                    .Select(x => x.FirstBattleEquipment)
-                    .ToList();
+                PopulateItems();
+                foreach (ItemObject.ItemTypeEnum value in Enum.GetValues(typeof(ItemObject.ItemTypeEnum)))
+                {
+                    ItemTypes[value] = Items.FindAll(x =>
+                        x.Type == value && x.Tierf >= 2).ToList();
+                }
+
                 Militias.Clear();
-                Hideouts = Settlement.FindAll(x =>
-                    x.IsHideout() && x.MapFaction != CampaignData.NeutralFaction).ToList();
+                Hideouts = Settlement.FindAll(x => x.IsHideout()).ToList();
+
                 var militias = MobileParty.All.Where(x =>
                     x != null && x.StringId.StartsWith("Bandit_Militia")).ToList();
                 for (var i = 0; i < militias.Count; i++)
@@ -183,6 +186,7 @@ namespace Bandit_Militias.Patches
             }
         }
 
+#if !OneFourTwo
         [HarmonyPatch(typeof(HeroSpawnCampaignBehavior), "OnHeroDailyTick")]
         public class HeroSpawnCampaignBehaviorOnHeroDailyTickPatch
         {
@@ -196,5 +200,19 @@ namespace Bandit_Militias.Patches
                 return !Clan.BanditFactions.Contains(hero.Clan);
             }
         }
+#endif
+
+#if OneFourTwo
+        // stop the game from trying to create relatives of the dead bandits
+        [HarmonyPatch(typeof(UrbanCharactersCampaignBehavior), "OnHeroKilled")]
+        public class UrbanCharactersCampaignBehaviorOnHeroKilledPatch
+        {
+            private static bool Prefix(Hero victim)
+            {
+                return !victim.PartyBelongedTo.StringId.StartsWith("Bandit_Militia");
+            }
+        }
+    }
+#endif
     }
 }
