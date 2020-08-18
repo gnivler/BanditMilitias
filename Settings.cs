@@ -18,5 +18,8 @@ namespace Bandit_Militias
         public float SizeSplitFactor = 0.8f;
         public float PartyStrengthFactor = 0.8f;
         public float MaxPartySizeFactor = 0.8f;
+        public bool Growth = true;
+        public float GrowthChance = 0.75f;
+        public float GrowthInPercent = 2;
     }
 }

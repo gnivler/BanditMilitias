@@ -22,9 +22,9 @@ namespace Bandit_Militias.Helpers
         internal static bool testingMode;
 
         // how close before merging
-        internal const float MergeDistance = 2f;
-        internal const float FindRadius = 10f;
-        internal const float MinDistanceFromHideout = 15;
+        internal const float MergeDistance = 2;
+        internal const float FindRadius = 5;
+        internal const float MinDistanceFromHideout = 10;
 
         // holders for criteria
         internal static float CalculatedHeroPartyStrength;
@@ -33,10 +33,16 @@ namespace Bandit_Militias.Helpers
 
         // misc
         internal static readonly Random Rng = new Random();
-
-        internal static Settings Settings;
         internal static readonly HashSet<Militia> Militias = new HashSet<Militia>();
+        internal static readonly Dictionary<ItemObject.ItemTypeEnum, List<ItemObject>> ItemTypes = new Dictionary<ItemObject.ItemTypeEnum, List<ItemObject>>();
+        internal static readonly List<EquipmentElement> EquipmentItems = new List<EquipmentElement>();
         internal static List<Settlement> Hideouts = new List<Settlement>();
+        internal static Settings Settings;
+        internal static List<ItemObject> Arrows = new List<ItemObject>();
+        internal static List<ItemObject> Bolts = new List<ItemObject>();
+        internal static readonly Stopwatch T = new Stopwatch();
+        internal static readonly Dictionary<MobileParty, CampaignTime> MergeMap = new Dictionary<MobileParty, CampaignTime>();
+        internal static readonly List<Equipment> BanditEquipment = new List<Equipment>();
 
         internal static readonly Dictionary<string, int> DifficultyXpMap = new Dictionary<string, int>
         {
@@ -54,7 +60,6 @@ namespace Bandit_Militias.Helpers
             {"RICHER", 2000},
         };
 
-        internal static readonly Dictionary<ItemObject.ItemTypeEnum, List<ItemObject>> ItemTypes = new Dictionary<ItemObject.ItemTypeEnum, List<ItemObject>>();
 
         // which items fit in which slots.  ammo always goes last for proc gen purposes
         //internal static Dictionary<ItemObject.ItemTypeEnum, List<int>> SlotMap = new Dictionary<ItemObject.ItemTypeEnum, List<int>>
@@ -74,10 +79,6 @@ namespace Bandit_Militias.Helpers
         //    {ItemObject.ItemTypeEnum.HandArmor, new List<int> {8}},
         //    {ItemObject.ItemTypeEnum.Cape, new List<int> {9}},
         //};
-
-        internal static readonly List<EquipmentElement> EquipmentItems = new List<EquipmentElement>();
-        internal static List<ItemObject> Arrows = new List<ItemObject>();
-        internal static List<ItemObject> Bolts = new List<ItemObject>();
     }
 
     public static class Helper
@@ -85,7 +86,7 @@ namespace Bandit_Militias.Helpers
         internal static int NumMountedTroops(TroopRoster troopRoster) => troopRoster.Troops
             .Where(x => x.IsMounted).Sum(troopRoster.GetTroopCount);
 
-        private static float Variance => MBRandom.RandomFloatRanged(0.5f, 1.5f);
+        private static float Variance => MBRandom.RandomFloatRanged(0.8f, 1.5f);
 
         internal static void CalcMergeCriteria()
         {
@@ -297,17 +298,18 @@ namespace Bandit_Militias.Helpers
             try
             {
                 hero.ChangeState(Hero.CharacterStates.Dead);
-                hero.HeroDeveloper.ClearUnspentPoints();
+                MBObjectManager.Instance.UnregisterObject(hero);
                 AccessTools.Method(typeof(CampaignEventDispatcher), "OnHeroKilled")
                     .Invoke(CampaignEventDispatcher.Instance, new object[] {hero, hero, KillCharacterAction.KillCharacterActionDetail.None, false});
+
                 // no longer needed without registered heroes but leaving in for a few extra versions...
-                Traverse.Create(hero.CurrentSettlement).Field("_heroesWithoutParty").Method("Remove", hero).GetValue();
-                MBObjectManager.Instance.UnregisterObject(hero.CharacterObject);
-                MBObjectManager.Instance.UnregisterObject(hero);
+                //Traverse.Create(hero.CurrentSettlement).Field("_heroesWithoutParty").Method("Remove", hero).GetValue();
+                //MBObjectManager.Instance.UnregisterObject(hero.CharacterObject);
             }
-            catch (Exception ex)
+            catch
             {
-                Mod.Log(ex, LogLevel.Error);
+                // ignored
+                // HeroCreator.CreateRelativeNotableHero has no Outlaw templates with bandit cultures, so it throws
             }
         }
 
@@ -452,6 +454,11 @@ namespace Bandit_Militias.Helpers
             var hasLogged = false;
             foreach (var badChar in badChars)
             {
+                if (badChar == null)
+                {
+                    continue;
+                }
+
                 if (!hasLogged)
                 {
                     hasLogged = true;
@@ -541,6 +548,7 @@ namespace Bandit_Militias.Helpers
         // builds a set of 4 weapons that won't include more than 1 bow or shield, nor any lack of ammo
         internal static Equipment BuildViableEquipmentSet()
         {
+            //T.Restart();
             var gear = new Equipment();
             var haveShield = false;
             var haveBow = false;
@@ -548,19 +556,28 @@ namespace Bandit_Militias.Helpers
             {
                 for (var i = 0; i < 4; i++)
                 {
+                    EquipmentElement randomElement = default;
+                    switch (i)
+                    {
+                        case 0:
+                        case 1:
+                            randomElement = EquipmentItems.GetRandomElement();
+                            break;
+                        case 2 when !gear[3].IsEmpty:
+                            randomElement = EquipmentItems.Where(x =>
+                                x.Item.ItemType != ItemObject.ItemTypeEnum.Bow &&
+                                x.Item.ItemType != ItemObject.ItemTypeEnum.Crossbow).GetRandomElement();
+                            break;
+                        case 2:
+                        case 3:
+                            randomElement = EquipmentItems.GetRandomElement();
+                            break;
+                    }
+
+                    // matches here by obtaining a bow, which then stuffed ammo into [3]
                     if (i == 3 && !gear[3].IsEmpty)
                     {
                         break;
-                    }
-
-                    var randomElement = EquipmentItems.GetRandomElement();
-                    if (!gear[3].IsEmpty && i == 3 &&
-                        (randomElement.Item.ItemType == ItemObject.ItemTypeEnum.Bow ||
-                         randomElement.Item.ItemType == ItemObject.ItemTypeEnum.Crossbow))
-                    {
-                        randomElement = EquipmentItems.Where(x =>
-                            x.Item.ItemType != ItemObject.ItemTypeEnum.Bow &&
-                            x.Item.ItemType != ItemObject.ItemTypeEnum.Crossbow).GetRandomElement();
                     }
 
                     if (randomElement.Item.ItemType == ItemObject.ItemTypeEnum.Bow ||
@@ -568,6 +585,7 @@ namespace Bandit_Militias.Helpers
                     {
                         if (i < 3)
                         {
+                            // try again, try harder
                             if (haveBow)
                             {
                                 i--;
@@ -580,8 +598,7 @@ namespace Bandit_Militias.Helpers
                             {
                                 gear[3] = new EquipmentElement(Arrows.ToList()[Rng.Next(0, Arrows.Count)]);
                             }
-
-                            if (randomElement.Item.ItemType == ItemObject.ItemTypeEnum.Crossbow)
+                            else if (randomElement.Item.ItemType == ItemObject.ItemTypeEnum.Crossbow)
                             {
                                 gear[3] = new EquipmentElement(Bolts.ToList()[Rng.Next(0, Bolts.Count)]);
                             }
@@ -596,6 +613,7 @@ namespace Bandit_Militias.Helpers
 
                     if (randomElement.Item.ItemType == ItemObject.ItemTypeEnum.Shield)
                     {
+                        // try again, try harder
                         if (haveShield)
                         {
                             i--;
@@ -626,6 +644,7 @@ namespace Bandit_Militias.Helpers
                 Mod.Log(stackTrace.GetFrame(0).GetFileLineNumber());
             }
 
+            //Mod.Log($"GEAR ==> {T.ElapsedTicks / 10000:F3}ms");
             return gear.Clone();
         }
     }
