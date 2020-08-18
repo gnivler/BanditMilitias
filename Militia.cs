@@ -67,7 +67,7 @@ namespace Bandit_Militias
 
                 MobileParty.Name = new TextObject($"{Possess(Hero.FirstName.ToString())} Bandit Militia");
                 MBObjectManager.Instance.RegisterObject(Hero);
-                EquipmentHelper.AssignHeroEquipmentFromEquipment(Hero, BuildViableEquipmentSet());
+                EquipmentHelper.AssignHeroEquipmentFromEquipment(Hero, BanditEquipment.GetRandomElement());
                 var mostPrevalent = (Clan) MostPrevalentFaction(MobileParty) ?? Clan.BanditFactions.First();
                 SetupHero(mostPrevalent);
                 MobileParty.Party.Owner = Hero;
@@ -116,9 +116,9 @@ namespace Bandit_Militias
             // 1.4.3b changed this now we also have to set ActualClan
             Hero.Clan = mostPrevalent;
 #if !OneFourTwo
-                Traverse.Create(Hero).Field("_homeSettlement").SetValue(hideout);
-                MobileParty.ActualClan = mostPrevalent;
-                Traverse.Create(Hero.Clan).Field("_warParties").Method("Add", MobileParty).GetValue();
+            Traverse.Create(Hero).Field("_homeSettlement").SetValue(hideout);
+            MobileParty.ActualClan = mostPrevalent;
+            Traverse.Create(Hero.Clan).Field("_warParties").Method("Add", MobileParty).GetValue();
 #else
             Traverse.Create(Hero).Property("HomeSettlement").SetValue(hideout);
 #endif

@@ -59,37 +59,37 @@
           <Private>True</Private>
         </Reference>
         <Reference Include="SandBox.View, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-          <HintPath>..\..\BannerlordRefs\Current\SandBox.View.dll</HintPath>
+          <HintPath>..\..\BannerlordRefs\1.4.2\SandBox.View.dll</HintPath>
         </Reference>
         <Reference Include="SandBox.ViewModelCollection, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-          <HintPath>..\..\BannerlordRefs\Current\SandBox.ViewModelCollection.dll</HintPath>
+          <HintPath>..\..\BannerlordRefs\1.4.2\SandBox.ViewModelCollection.dll</HintPath>
         </Reference>
         <Reference Include="System" />
         <Reference Include="System.Core" />
         <Reference Include="System.Runtime.InteropServices.RuntimeInformation" />
         <Reference Include="TaleWorlds.CampaignSystem, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-          <HintPath>..\..\BannerlordRefs\Current\TaleWorlds.CampaignSystem.dll</HintPath>
+          <HintPath>..\..\BannerlordRefs\1.4.2\TaleWorlds.CampaignSystem.dll</HintPath>
         </Reference>
         <Reference Include="TaleWorlds.Core, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-          <HintPath>..\..\BannerlordRefs\Current\TaleWorlds.Core.dll</HintPath>
+          <HintPath>..\..\BannerlordRefs\1.4.2\TaleWorlds.Core.dll</HintPath>
         </Reference>
         <Reference Include="TaleWorlds.Engine, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-          <HintPath>..\..\BannerlordRefs\Current\TaleWorlds.Engine.dll</HintPath>
+          <HintPath>..\..\BannerlordRefs\1.4.2\TaleWorlds.Engine.dll</HintPath>
         </Reference>
         <Reference Include="TaleWorlds.InputSystem, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-          <HintPath>..\..\BannerlordRefs\Current\TaleWorlds.InputSystem.dll</HintPath>
+          <HintPath>..\..\BannerlordRefs\1.4.2\TaleWorlds.InputSystem.dll</HintPath>
         </Reference>
         <Reference Include="TaleWorlds.Library, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-          <HintPath>..\..\BannerlordRefs\Current\TaleWorlds.Library.dll</HintPath>
+          <HintPath>..\..\BannerlordRefs\1.4.2\TaleWorlds.Library.dll</HintPath>
         </Reference>
         <Reference Include="TaleWorlds.Localization, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-          <HintPath>..\..\BannerlordRefs\Current\TaleWorlds.Localization.dll</HintPath>
+          <HintPath>..\..\BannerlordRefs\1.4.2\TaleWorlds.Localization.dll</HintPath>
         </Reference>
         <Reference Include="TaleWorlds.MountAndBlade, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-          <HintPath>..\..\BannerlordRefs\Current\TaleWorlds.MountAndBlade.dll</HintPath>
+          <HintPath>..\..\BannerlordRefs\1.4.2\TaleWorlds.MountAndBlade.dll</HintPath>
         </Reference>
         <Reference Include="TaleWorlds.ObjectSystem, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-          <HintPath>..\..\BannerlordRefs\Current\TaleWorlds.ObjectSystem.dll</HintPath>
+          <HintPath>..\..\BannerlordRefs\1.4.2\TaleWorlds.ObjectSystem.dll</HintPath>
         </Reference>
     </ItemGroup>
     <ItemGroup>

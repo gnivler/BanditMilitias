@@ -9,6 +9,7 @@ using HarmonyLib;
 using SandBox.View.Map;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.SandBox.CampaignBehaviors;
+using TaleWorlds.CampaignSystem.SandBox.Issues;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
 using static Bandit_Militias.Helpers.Helper;
@@ -30,11 +31,19 @@ namespace Bandit_Militias.Patches
             private static void Postfix()
             {
                 Mod.Log("MapScreen.OnInitialize");
+                EquipmentItems.Clear();
                 PopulateItems();
+
                 foreach (ItemObject.ItemTypeEnum value in Enum.GetValues(typeof(ItemObject.ItemTypeEnum)))
                 {
                     ItemTypes[value] = Items.FindAll(x =>
                         x.Type == value && x.Tierf >= 2).ToList();
+                }
+
+                BanditEquipment.Clear();
+                for (var i = 0; i < 500; i++)
+                {
+                    BanditEquipment.Add(BuildViableEquipmentSet());
                 }
 
                 Militias.Clear();
@@ -59,7 +68,6 @@ namespace Bandit_Militias.Patches
                 Mod.Log($"Militias: {militias.Count} (registered {Militias.Count})");
                 Flush();
                 // 1.4.3b is dropping the militia settlements at some point, I haven't figured out where
-                // this will cause a crash at map load if the mod isn't installed but has militias
                 ReHome();
                 CalcMergeCriteria();
             }
@@ -186,6 +194,56 @@ namespace Bandit_Militias.Patches
             }
         }
 
+        [HarmonyPatch(typeof(HeroCreator), "CreateRelativeNotableHero")]
+        public class HeroCreatorCreateRelativeNotableHeroPatch
+        {
+            private static bool Prefix(Hero relative)
+            {
+                if (relative.CharacterObject.Occupation == Occupation.Outlaw &&
+                    relative.PartyBelongedTo != null &&
+                    relative.PartyBelongedTo.StringId.StartsWith("Bandit_Militia"))
+                {
+                    Mod.Log("Not creating relative of Bandit Militia hero");
+                    return false;
+                }
+
+                return true;
+            }
+        }
+
+#if OneFourTwo
+        // swapped (copied) two very similar methods in assemblies, one was throwing one wasn't
+        [HarmonyPatch(typeof(NearbyBanditBaseIssueBehavior), "FindSuitableHideout")]
+        public static class NearbyBanditBaseIssueBehaviorFindSuitableHideoutPatch
+        {
+            private const float floatMaxValue = float.MaxValue;
+
+            // taken from CapturedByBountyHuntersIssue because this class' version throws
+            private static bool Prefix(Hero issueOwner, ref Settlement __result)
+            {
+                foreach (var settlement in Settlement.FindAll(x => x.Hideout != null))
+                {
+                    if (Campaign.Current.Models.MapDistanceModel.GetDistance(issueOwner.GetMapPoint(),
+                            settlement, 55f, out var num2) &&
+                        num2 < floatMaxValue)
+                    {
+                        __result = settlement;
+                    }
+                }
+
+                return false;
+            }
+        }
+
+        [HarmonyPatch(typeof(BanditsCampaignBehavior), "CheckForSpawningBanditBoss")]
+        public class BanditsCampaignBehaviorCheckForSpawningBanditBossPatch
+        {
+            private static bool Prefix(MobileParty mobileParty) => mobileParty != null;
+        }
+    }
+}
+#endif
+
 #if !OneFourTwo
         [HarmonyPatch(typeof(HeroSpawnCampaignBehavior), "OnHeroDailyTick")]
         public class HeroSpawnCampaignBehaviorOnHeroDailyTickPatch
@@ -200,19 +258,6 @@ namespace Bandit_Militias.Patches
                 return !Clan.BanditFactions.Contains(hero.Clan);
             }
         }
-#endif
-
-#if OneFourTwo
-        // stop the game from trying to create relatives of the dead bandits
-        [HarmonyPatch(typeof(UrbanCharactersCampaignBehavior), "OnHeroKilled")]
-        public class UrbanCharactersCampaignBehaviorOnHeroKilledPatch
-        {
-            private static bool Prefix(Hero victim)
-            {
-                return !victim.PartyBelongedTo.StringId.StartsWith("Bandit_Militia");
-            }
-        }
-    }
-#endif
     }
 }
+#endif
