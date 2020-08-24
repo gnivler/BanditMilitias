@@ -1,16 +1,15 @@
 using System;
 using System.Linq;
-using Bandit_Militias.Helpers;
 using HarmonyLib;
 using SandBox.View.Map;
 using SandBox.ViewModelCollection.Nameplate;
 using TaleWorlds.CampaignSystem;
-using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.GameMenus;
 using TaleWorlds.CampaignSystem.SandBox.CampaignBehaviors;
+using TaleWorlds.CampaignSystem.SandBox.GameComponents.Map;
 using TaleWorlds.Core;
 using static Bandit_Militias.Helpers.Helper;
-using static Bandit_Militias.Helpers.Globals;
+using static Bandit_Militias.Globals;
 
 // ReSharper disable UnusedMember.Global 
 // ReSharper disable UnusedType.Global   
@@ -37,7 +36,7 @@ namespace Bandit_Militias.Patches
                     }
 
                     var parties = MobileParty.All.Where(x => x.IsBandit && x.CurrentSettlement == null).ToList();
-                    //T.Restart();
+                    T.Restart();
                     for (var i = 0; i < parties.Count; i++)
                     {
                         var __instance = parties[i];
@@ -47,8 +46,7 @@ namespace Bandit_Militias.Patches
                         }
 
                         var lastMergedOrSplitDate = Militia.FindMilitiaByParty(__instance)?.LastMergedOrSplitDate;
-                        if ( //lastMergedOrSplitDate != null &&
-                            CampaignTime.Now < lastMergedOrSplitDate + CampaignTime.Hours(Globals.Settings.CooldownHours))
+                        if (CampaignTime.Now < lastMergedOrSplitDate + CampaignTime.Hours(Globals.Settings.CooldownHours))
                         {
                             continue;
                         }
@@ -107,7 +105,6 @@ namespace Bandit_Militias.Patches
                             return;
                         }
 
-
                         if (Settlement.FindSettlementsAroundPosition(__instance.Position2D, MinDistanceFromHideout, x => x.IsHideout()).Any())
                         {
                             continue;
@@ -127,7 +124,6 @@ namespace Bandit_Militias.Patches
                             militia.MobileParty.Position2D = party.Position2D;
                         }
 
-
                         militia.MobileParty.Party.Visuals.SetMapIconAsDirty();
                         Trash(__instance);
                         Trash(targetParty.MobileParty);
@@ -137,12 +133,25 @@ namespace Bandit_Militias.Patches
                         Mod.Log($"MergeMap.Count ==> {MergeMap.Count}");
                     }
 
-                    //Mod.Log($"Looped ==> {T.ElapsedTicks / 10000F:F3}ms");
-                    //Mod.Log($"Count of non bandit Looters: {MobileParty.All.Count(x => x.Name.Equals("Looters") && !x.IsBandit)}");
+                    Mod.Log($"Looped ==> {T.ElapsedTicks / 10000F:F3}ms");
                 }
                 catch (Exception ex)
                 {
                     Mod.Log(ex);
+                }
+            }
+        }
+
+        [HarmonyPatch(typeof(DefaultPartySpeedCalculatingModel), "CalculateFinalSpeed")]
+        public class DefaultPartySpeedCalculatingModelCalculateFinalSpeedPatch
+        {
+            private const float SpeedFactor = 0.88f;
+
+            private static void Postfix(MobileParty mobileParty, ref float __result)
+            {
+                if (mobileParty.StringId.StartsWith("Bandit_Militia"))
+                {
+                    __result *= SpeedFactor;
                 }
             }
         }
@@ -208,10 +217,10 @@ namespace Bandit_Militias.Patches
             }
         }
 
+#if OneFourTwo
         [HarmonyPatch(typeof(EnterSettlementAction), "ApplyForParty")]
         public class EnterSettlementActionApplyForPartyPatch
         {
-#if OneFourTwo
             private static bool Prefix(MobileParty owner, Settlement settlement)
             {
                 if (owner.StringId.StartsWith("Bandit_Militia"))
@@ -224,19 +233,21 @@ namespace Bandit_Militias.Patches
                 return true;
             }
         }
+    }  
+}
 #else
-            private static bool Prefix(MobileParty mobileParty, Settlement settlement)
+        private static bool Prefix(MobileParty mobileParty, Settlement settlement)
+        {
+            if (mobileParty.StringId.StartsWith("Bandit_Militia"))
             {
-                if (mobileParty.StringId.StartsWith("Bandit_Militia"))
-                {
-                    Mod.Log($"Preventing {mobileParty} from entering {settlement}");
-                    mobileParty.SetMovePatrolAroundSettlement(settlement);
-                    return false;
-                }
-
-                return true;
+                Mod.Log($"Preventing {mobileParty} from entering {settlement}");
+                mobileParty.SetMovePatrolAroundSettlement(settlement);
+                return false;
             }
+
+            return true;
         }
+
 #endif
 
         // changes the name on the campaign map (hot path)

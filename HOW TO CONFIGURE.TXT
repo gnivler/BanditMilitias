@@ -2,9 +2,9 @@ Note the syntax must be exactly right.  Use a site like https://jsonlint.com/ to
 
 
   "CanTrain": true,                can be true or false, case insensitive.  False means they will never train.  True means they will train as XP and gold permit.
-  "XPGift": "NORMAL",              can be LOW, NORMAL, HARD, HARDER, in CAPS.  Low grants NO XP on merges, while HARDER grants enough XP to significantly upgrade their troops.  No effect if CanTrain is false.                                         
+  "XPGift": "NORMAL",              can be OFF, NORMAL, HARD, HARDEST, in CAPS.  HARDEST grants enough XP to significantly upgrade troops.  No effect if CanTrain is false.                                         
   "CooldownHours": 24,             militias can't merge or split again before this much game time passes (minimum 1).
-  "GoldReward": "NORMAL",          can be LOW, NORMAL, RICH, RICHER, in CAPS.  This scales with the strength of the party, regardless.
+  "GoldReward": "NORMAL",          can be LOW, NORMAL, RICH, RICHEST, in CAPS.  This scales with the strength of the party, regardless.
   "MinPartySize": 20,              integer.  Parties with fewer than this number of healthy troops will be dispersed, if defeated. 
   "MaxPartySize": 300,             integer lower than 2147483648.
   "RandomSplitChance": 0.25,       the daily probability a viable militia will split.
@@ -12,3 +12,4 @@ Note the syntax must be exactly right.  Use a site like https://jsonlint.com/ to
   "SizeSplitFactor": 0.8,          militias will start randomly checking for split once they reach this threshold.           values over 1 skew the difficulty harder
   "PartyStrengthFactor": 0.8,      weakens the militias by scaling both strength and power to be less than the hero.         values over 1 skew the difficulty harder
   "MaxPartySizeFactor": 0.8        weakens the militias by scaling both strength and power to be less than the hero.         values over 1 skew the difficulty harder
+  "MaxItemValue": 3000             limits the value of equipment given to the heroes (it's also subject to variance)

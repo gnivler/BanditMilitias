@@ -10,77 +10,13 @@ using TaleWorlds.CampaignSystem.SandBox.CampaignBehaviors;
 using TaleWorlds.Core;
 using TaleWorlds.Localization;
 using TaleWorlds.ObjectSystem;
-using static Bandit_Militias.Helpers.Globals;
+using TaleWorlds.TwoDimension;
+using static Bandit_Militias.Globals;
 
 // ReSharper disable InconsistentNaming  
 
 namespace Bandit_Militias.Helpers
 {
-    public static class Globals
-    {
-        // dev
-        internal static bool testingMode;
-
-        // how close before merging
-        internal const float MergeDistance = 2;
-        internal const float FindRadius = 5;
-        internal const float MinDistanceFromHideout = 10;
-
-        // holders for criteria
-        internal static float CalculatedHeroPartyStrength;
-        internal static float CalculatedMaxPartyStrength;
-        internal static double CalculatedMaxPartySize;
-
-        // misc
-        internal static readonly Random Rng = new Random();
-        internal static readonly HashSet<Militia> Militias = new HashSet<Militia>();
-        internal static readonly Dictionary<ItemObject.ItemTypeEnum, List<ItemObject>> ItemTypes = new Dictionary<ItemObject.ItemTypeEnum, List<ItemObject>>();
-        internal static readonly List<EquipmentElement> EquipmentItems = new List<EquipmentElement>();
-        internal static List<Settlement> Hideouts = new List<Settlement>();
-        internal static Settings Settings;
-        internal static List<ItemObject> Arrows = new List<ItemObject>();
-        internal static List<ItemObject> Bolts = new List<ItemObject>();
-        internal static readonly Stopwatch T = new Stopwatch();
-        internal static readonly Dictionary<MobileParty, CampaignTime> MergeMap = new Dictionary<MobileParty, CampaignTime>();
-        internal static readonly List<Equipment> BanditEquipment = new List<Equipment>();
-
-        internal static readonly Dictionary<string, int> DifficultyXpMap = new Dictionary<string, int>
-        {
-            {"LOW", 0},
-            {"NORMAL", 300},
-            {"HARD", 600},
-            {"HARDER", 900},
-        };
-
-        internal static readonly Dictionary<string, int> GoldMap = new Dictionary<string, int>
-        {
-            {"LOW", 250},
-            {"NORMAL", 500},
-            {"RICH", 900},
-            {"RICHER", 2000},
-        };
-
-
-        // which items fit in which slots.  ammo always goes last for proc gen purposes
-        //internal static Dictionary<ItemObject.ItemTypeEnum, List<int>> SlotMap = new Dictionary<ItemObject.ItemTypeEnum, List<int>>
-        //{
-        //    {ItemObject.ItemTypeEnum.Arrows, new List<int> {3}},
-        //    {ItemObject.ItemTypeEnum.Bolts, new List<int> {3}},
-        //    {ItemObject.ItemTypeEnum.Bow, new List<int> {0, 1, 2, 3}},
-        //    {ItemObject.ItemTypeEnum.Crossbow, new List<int> {0, 1, 2, 3}},
-        //    {ItemObject.ItemTypeEnum.Polearm, new List<int> {0, 1, 2, 3}},
-        //    {ItemObject.ItemTypeEnum.Shield, new List<int> {0, 1, 2, 3}},
-        //    {ItemObject.ItemTypeEnum.Thrown, new List<int> {0, 1, 2, 3}},
-        //    {ItemObject.ItemTypeEnum.OneHandedWeapon, new List<int> {0, 1, 2, 3}},
-        //    {ItemObject.ItemTypeEnum.TwoHandedWeapon, new List<int> {0, 1, 2, 3}},
-        //    {ItemObject.ItemTypeEnum.HeadArmor, new List<int> {5}},
-        //    {ItemObject.ItemTypeEnum.BodyArmor, new List<int> {6}},
-        //    {ItemObject.ItemTypeEnum.LegArmor, new List<int> {7}},
-        //    {ItemObject.ItemTypeEnum.HandArmor, new List<int> {8}},
-        //    {ItemObject.ItemTypeEnum.Cape, new List<int> {9}},
-        //};
-    }
-
     public static class Helper
     {
         internal static int NumMountedTroops(TroopRoster troopRoster) => troopRoster.Troops
@@ -117,7 +53,7 @@ namespace Bandit_Militias.Helpers
 
             var roll = Rng.NextDouble();
             if (__instance.MemberRoster.TotalManCount == 0 ||
-                roll > Globals.Settings.RandomSplitChance ||
+                roll <= Globals.Settings.RandomSplitChance ||
                 !__instance.StringId.StartsWith("Bandit_Militia") ||
                 __instance.Party.TotalStrength <= CalculatedMaxPartyStrength * Globals.Settings.StrengthSplitFactor * Variance ||
                 __instance.Party.MemberRoster.TotalManCount <= CalculatedMaxPartySize * Globals.Settings.SizeSplitFactor * Variance)
@@ -351,7 +287,7 @@ namespace Bandit_Militias.Helpers
             FlushNullPartyHeroes();
             FlushEmptyMilitiaParties();
             FlushNeutralBanditParties();
-            FlushBadCharacterObjects();
+            //FlushBadCharacterObjects();
             FlushBadBehaviors();
             FlushMapEvents();
         }
@@ -465,11 +401,10 @@ namespace Bandit_Militias.Helpers
                     Mod.Log($"Unregistering {badChars.Count} bad characters.", LogLevel.Info);
                 }
 
-                Mod.Log(badChar, LogLevel.Info);
-                Traverse.Create(badChar?.HeroObject?.CurrentSettlement)
-                    .Field("_heroesWithoutParty").Method("Remove", badChar?.HeroObject).GetValue();
-                MBObjectManager.Instance.UnregisterObject(badChar);
-                CharacterObject.All.Contains(badChar);
+                Mod.Log($"mock Unregistering {badChar.StringId}");
+                //Traverse.Create(badChar.HeroObject?.CurrentSettlement)
+                //    .Field("_heroesWithoutParty").Method("Remove", badChar.HeroObject).GetValue();
+                //MBObjectManager.Instance.UnregisterObject(badChar);
             }
         }
 
@@ -531,7 +466,7 @@ namespace Bandit_Militias.Helpers
             Arrows = all.Where(x => x.ItemType == ItemObject.ItemTypeEnum.Arrows)
                 .Where(x => !x.Name.Contains("Ballista")).ToList();
             Bolts = all.Where(x => x.ItemType == ItemObject.ItemTypeEnum.Bolts).ToList();
-            all = all.Where(x => x.Tierf >= 2).ToList();
+            all = all.Where(x => x.Value >= 1000 && x.Value <= Globals.Settings.MaxItemValue * Variance).ToList();
             var oneHanded = all.Where(x => x.ItemType == ItemObject.ItemTypeEnum.OneHandedWeapon);
             var twoHanded = all.Where(x => x.ItemType == ItemObject.ItemTypeEnum.TwoHandedWeapon);
             var polearm = all.Where(x => x.ItemType == ItemObject.ItemTypeEnum.Polearm);
@@ -548,7 +483,7 @@ namespace Bandit_Militias.Helpers
         // builds a set of 4 weapons that won't include more than 1 bow or shield, nor any lack of ammo
         internal static Equipment BuildViableEquipmentSet()
         {
-            //T.Restart();
+            T.Restart();
             var gear = new Equipment();
             var haveShield = false;
             var haveBow = false;
@@ -644,8 +579,35 @@ namespace Bandit_Militias.Helpers
                 Mod.Log(stackTrace.GetFrame(0).GetFileLineNumber());
             }
 
-            //Mod.Log($"GEAR ==> {T.ElapsedTicks / 10000:F3}ms");
+            Mod.Log($"GEAR ==> {T.ElapsedTicks / 10000F:F3}ms");
             return gear.Clone();
         }
+
+
+        internal static void ClampSettingsValues(ref Settings settings)
+        {
+            settings.CooldownHours = settings.CooldownHours.Clamp(1, 168);
+            settings.GrowthInPercent = settings.GrowthInPercent.Clamp(0, 100);
+            settings.GrowthChance = settings.GrowthChance.Clamp(0, 1);
+            settings.MaxItemValue = settings.MaxItemValue.Clamp(1000, int.MaxValue);
+            settings.MinPartySize = settings.MinPartySize.Clamp(15, int.MaxValue);
+            settings.MaxPartySize = settings.MaxPartySize.Clamp(75, int.MaxValue);
+            settings.MaxPartySizeFactor = settings.MaxPartySizeFactor.Clamp(0.25f, 2);
+            settings.PartyStrengthFactor = settings.PartyStrengthFactor.Clamp(0.25f, 2);
+            settings.SizeSplitFactor = settings.SizeSplitFactor.Clamp(0.25f, 1);
+            settings.StrengthSplitFactor = settings.StrengthSplitFactor.Clamp(0.25f, 1);
+            settings.RandomSplitChance = settings.RandomSplitChance.Clamp(0, 1);
+        }
+
+        internal static void PrintValidatedSettings(Settings settings)
+        {
+            foreach (var value in settings.GetType().GetFields())
+            {
+                Mod.Log($"{value.Name}: {value.GetValue(settings)}");
+            }
+        }
+
+        private static int Clamp(this int number, int min, int max) => Mathf.Clamp(number, min, max);
+        private static float Clamp(this float number, float min, float max) => Mathf.Clamp(number, min, max);
     }
 }

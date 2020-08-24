@@ -8,18 +8,19 @@ namespace Bandit_Militias
     {
         public bool CanTrain = true;
         public bool RandomBanners = true;
-        public float CooldownHours = 24;
         public string XpGift = "NORMAL";
         public string GoldReward = "NORMAL";
-        public int MaxPartySize = 300;
+        public float CooldownHours = 24;
         public int MinPartySize = 20;
+        public int MaxPartySize = 300;
         public float RandomSplitChance = 0.25f;
         public float StrengthSplitFactor = 0.8f;
         public float SizeSplitFactor = 0.8f;
         public float PartyStrengthFactor = 0.8f;
         public float MaxPartySizeFactor = 0.8f;
         public bool Growth = true;
-        public float GrowthChance = 0.75f;
-        public float GrowthInPercent = 2;
+        public float GrowthChance = 0.66f;
+        public float GrowthInPercent = 1;
+        public int MaxItemValue = 3000;
     }
 }
