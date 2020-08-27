@@ -15,6 +15,7 @@ namespace Bandit_Militias.Patches
 {
     public class PrisonerPatches
     {
+        // blocks NPC battles from taking prisoners
         [HarmonyPatch(typeof(TakePrisonerAction), "Apply")]
         public class TakePrisonerActionApplyPatch
         {
@@ -24,6 +25,7 @@ namespace Bandit_Militias.Patches
             }
         }
 
+        // this blocks the prisoner dialog in player battles (no heroes to capture)
         [HarmonyPatch(typeof(MapEvent), "LootDefeatedParties")]
         public class MapEventFinishBattlePatch
         {

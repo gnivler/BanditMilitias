@@ -4,16 +4,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
-using Bandit_Militias.Helpers;
 using HarmonyLib;
 using SandBox.View.Map;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.SandBox.CampaignBehaviors;
-using TaleWorlds.CampaignSystem.SandBox.Issues;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
 using static Bandit_Militias.Helpers.Helper;
-using static Bandit_Militias.Helpers.Globals;
+using static Bandit_Militias.Globals;
 
 // ReSharper disable UnusedMember.Global 
 // ReSharper disable UnusedType.Global  
@@ -34,12 +32,14 @@ namespace Bandit_Militias.Patches
                 EquipmentItems.Clear();
                 PopulateItems();
 
+                // used for armour
                 foreach (ItemObject.ItemTypeEnum value in Enum.GetValues(typeof(ItemObject.ItemTypeEnum)))
                 {
                     ItemTypes[value] = Items.FindAll(x =>
-                        x.Type == value && x.Tierf >= 2).ToList();
+                        x.Type == value && x.Value >= 1000 && x.Value <= Globals.Settings.MaxItemValue * Variance).ToList();
                 }
 
+                // front-load
                 BanditEquipment.Clear();
                 for (var i = 0; i < 500; i++)
                 {
@@ -69,14 +69,8 @@ namespace Bandit_Militias.Patches
                 Flush();
                 // 1.4.3b is dropping the militia settlements at some point, I haven't figured out where
                 ReHome();
-                CalcMergeCriteria();
+                DailyCalculations();
             }
-        }
-
-        [HarmonyPatch(typeof(Campaign), "DailyTick")]
-        public static class CampaignDailyTickPatch
-        {
-            private static void Postfix() => CalcMergeCriteria();
         }
 
         // 0 member parties will form if this is happening
@@ -250,12 +244,21 @@ namespace Bandit_Militias.Patches
         {
             private static bool Prefix(Hero hero)
             {
-                // latest 1.4.3b patch is trying to teleport bandit heroes apparently before they have parties
+                // latest 1.4.3 patch is trying to teleport bandit heroes apparently before they have parties
                 // there's no party here so unable to filter by Bandit_Militia
                 // for now this probably doesn't matter but vanilla isn't ready for bandit heroes
                 // it could fuck up other mods relying on this method unfortunately
                 // but that seems very unlikely to me right now
                 return !Clan.BanditFactions.Contains(hero.Clan);
+            }
+        }
+
+        [HarmonyPatch(typeof(HeroSpawnCampaignBehavior), "GetMoveScoreForCompanion")]
+        public class HeroSpawnCampaignBehaviorGetMoveScoreForCompanionPatch
+        {
+            private static bool Prefix(Hero companion, Settlement settlement)
+            {
+                return !(companion?.LastSeenPlace == null || settlement?.MapFaction == null);
             }
         }
     }
