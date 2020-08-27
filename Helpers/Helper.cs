@@ -22,25 +22,7 @@ namespace Bandit_Militias.Helpers
         internal static int NumMountedTroops(TroopRoster troopRoster) => troopRoster.Troops
             .Where(x => x.IsMounted).Sum(troopRoster.GetTroopCount);
 
-        private static float Variance => MBRandom.RandomFloatRanged(0.8f, 1.5f);
-
-        internal static void CalcMergeCriteria()
-        {
-            // first campaign init hasn't populated this apparently
-            var parties = MobileParty.All.Where(
-                x => x.LeaderHero != null && !x.StringId.StartsWith("Bandit_Militia")).ToList();
-            if (parties.Any())
-            {
-                CalculatedHeroPartyStrength = parties.Select(x => x.Party.TotalStrength).Average();
-                // reduce strength
-                CalculatedMaxPartyStrength = CalculatedHeroPartyStrength * Globals.Settings.PartyStrengthFactor * Variance;
-                // maximum size grows over time as clans level up
-                CalculatedMaxPartySize = Math.Round(MobileParty.All
-                    .Where(x => x.LeaderHero != null && !x.IsBandit).Select(x => x.Party.PartySizeLimit).Average());
-                CalculatedMaxPartySize *= Globals.Settings.MaxPartySizeFactor * Variance;
-                Mod.Log($"Daily calculations => size: {CalculatedMaxPartySize:0} strength: {CalculatedMaxPartyStrength:0}");
-            }
-        }
+        internal static float Variance => MBRandom.RandomFloatRanged(0.8f, 1.5f);
 
         internal static void TrySplitParty(MobileParty __instance)
         {
@@ -290,6 +272,18 @@ namespace Bandit_Militias.Helpers
             //FlushBadCharacterObjects();
             FlushBadBehaviors();
             FlushMapEvents();
+            FlushZeroParties();
+        }
+
+        private static void FlushZeroParties()
+        {
+            var parties = MobileParty.All.Where(x => x.CurrentSettlement == null && x.MemberRoster.TotalManCount == 0).ToList();
+            Mod.Log($"Removing {parties.Count()} parties without a current settlement or any troops");
+            for (var i = 0; i < parties.Count(); i++)
+            {
+                KillHero(parties[i].LeaderHero);
+                parties[i].RemoveParty();
+            }
         }
 
         private static void FlushMapEvents()
@@ -350,7 +344,6 @@ namespace Bandit_Militias.Helpers
             }
         }
 
-        // todo Patch Hero.Encyclopedia link et al to not have data
         private static void FlushNullPartyHeroes()
         {
             var heroes = Hero.All.Where(x =>
@@ -419,7 +412,7 @@ namespace Bandit_Militias.Helpers
                 tempList.Add(mobileParty);
             }
 
-            PurgeList($"CampaignHourlyTickPatch Clearing {tempList.Count} weird neutral parties", tempList);
+            PurgeList($"FlushNeutralBanditParties Clearing {tempList.Count} weird neutral parties", tempList);
         }
 
         private static void FlushEmptyMilitiaParties()
@@ -431,7 +424,7 @@ namespace Bandit_Militias.Helpers
                 tempList.Add(mobileParty);
             }
 
-            PurgeList($"CampaignHourlyTickPatch Clearing {tempList.Count} empty parties", tempList);
+            PurgeList($"FlushEmptyMilitiaParties Clearing {tempList.Count} empty parties", tempList);
         }
 
         internal static bool IsMovingToBandit(MobileParty mobileParty, MobileParty other)
@@ -609,5 +602,21 @@ namespace Bandit_Militias.Helpers
 
         private static int Clamp(this int number, int min, int max) => Mathf.Clamp(number, min, max);
         private static float Clamp(this float number, float min, float max) => Mathf.Clamp(number, min, max);
+
+        internal static void DailyCalculations()
+        {
+            // first campaign init hasn't populated this apparently
+            var parties = MobileParty.All.Where(x =>
+                x.LeaderHero != null &&
+                !x.IsBandit).ToList();
+            MilitiasLimit = Convert.ToInt32(parties.Count * Globals.Settings.MilitiaLimitFactor);
+            CalculatedHeroPartyStrength = parties.Select(x => x.Party.TotalStrength).Average();
+            // reduce strength
+            CalculatedMaxPartyStrength = CalculatedHeroPartyStrength * Globals.Settings.PartyStrengthFactor * Variance;
+            // maximum size grows over time as clans level up
+            CalculatedMaxPartySize = Math.Round(parties.Select(x => x.Party.PartySizeLimit).Average());
+            CalculatedMaxPartySize *= Globals.Settings.MaxPartySizeFactor * Variance;
+            Mod.Log($"Daily calculations => size: {CalculatedMaxPartySize:0} strength: {CalculatedMaxPartyStrength:0} (cap {MilitiasLimit})");
+        }
     }
 }

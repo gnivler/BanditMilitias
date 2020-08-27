@@ -88,19 +88,27 @@ namespace Bandit_Militias
                         break;
                 }
 
-                // upgrade any looters first, then go back over and iterate further upgrades
                 int number, numberToUpgrade;
-                var looter = MobileParty.MemberRoster.Troops.FirstOrDefault(x => x.Name.Contains("Looter"));
-                if (looter != null)
+                if (Globals.Settings.LooterUpgradeFactor > float.Epsilon)
                 {
-                    number = MobileParty.MemberRoster.GetElementCopyAtIndex(MobileParty.MemberRoster.FindIndexOfTroop(looter)).Number;
-                    numberToUpgrade = Convert.ToInt32(number * Math.Max(number * 0.5, Rng.NextDouble()));
-                    MobileParty.MemberRoster.AddXpToTroop(numberToUpgrade * 100, looter);
-                    PartyUpgraderCopy.UpgradeReadyTroopsCopy(MobileParty.Party);
+                    // upgrade any looters first, then go back over and iterate further upgrades
+                    var looters = MobileParty.MemberRoster.Troops.Where(x =>
+                        x.Name.Contains("Looter")).ToList();
+                    if (looters.Any())
+                    {
+                        foreach (var looter in looters)
+                        {
+                            number = MobileParty.MemberRoster.GetElementCopyAtIndex(MobileParty.MemberRoster.FindIndexOfTroop(looter)).Number;
+                            numberToUpgrade = Convert.ToInt32(number * Globals.Settings.LooterUpgradeFactor);
+                            MobileParty.MemberRoster.AddXpToTroop(numberToUpgrade * 100, looter);
+                            PartyUpgraderCopy.UpgradeReadyTroopsCopy(MobileParty.Party);
+                        }
+                    }
                 }
 
                 for (var i = 0; i < iterations; i++)
                 {
+                    // start at index 1 to avoid hero - could be more robust...
                     var randomIndex = Rng.Next(1, MobileParty.MemberRoster.Troops.Count());
                     number = MobileParty.MemberRoster.GetElementCopyAtIndex(randomIndex).Number;
                     var minNumberToUpgrade = Convert.ToInt32(Math.Min(number * 0.25 * Rng.NextDouble(), number));

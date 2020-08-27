@@ -32,12 +32,14 @@ namespace Bandit_Militias.Patches
                 EquipmentItems.Clear();
                 PopulateItems();
 
+                // used for armour
                 foreach (ItemObject.ItemTypeEnum value in Enum.GetValues(typeof(ItemObject.ItemTypeEnum)))
                 {
                     ItemTypes[value] = Items.FindAll(x =>
-                        x.Type == value && x.Tierf >= 2).ToList();
+                        x.Type == value && x.Value >= 1000 && x.Value <= Globals.Settings.MaxItemValue * Variance).ToList();
                 }
 
+                // front-load
                 BanditEquipment.Clear();
                 for (var i = 0; i < 500; i++)
                 {
@@ -67,14 +69,8 @@ namespace Bandit_Militias.Patches
                 Flush();
                 // 1.4.3b is dropping the militia settlements at some point, I haven't figured out where
                 ReHome();
-                CalcMergeCriteria();
+                DailyCalculations();
             }
-        }
-
-        [HarmonyPatch(typeof(Campaign), "DailyTick")]
-        public static class CampaignDailyTickPatch
-        {
-            private static void Postfix() => CalcMergeCriteria();
         }
 
         // 0 member parties will form if this is happening

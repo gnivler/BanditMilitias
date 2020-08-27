@@ -1,13 +1,20 @@
 {
-  "RandomBanners": true,
   "CanTrain": true,
+  "RandomBanners": true,
   "XpGift": "NORMAL",
   "GoldReward": "NORMAL",
+  "CooldownHours": 24,
   "MinPartySize": 20,
   "MaxPartySize": 300,
   "RandomSplitChance": 0.25,
   "StrengthSplitFactor": 0.8,
   "SizeSplitFactor": 0.8,
-  "PartyStrengthFactor": 0.8,
-  "MaxPartySizeFactor": 0.8
+  "PartyStrengthFactor": 0.66,
+  "MaxPartySizeFactor": 0.66,
+  "Growth": true,
+  "GrowthChance": 0.33,
+  "GrowthInPercent": 1,
+  "MaxItemValue": 3000,
+  "LooterUpgradeFactor": 0.25,
+  "MilitiaLimitFactor": 0.5
 }

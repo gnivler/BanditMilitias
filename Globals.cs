@@ -26,6 +26,7 @@ namespace Bandit_Militias
         internal static readonly HashSet<Militia> Militias = new HashSet<Militia>();
         internal static readonly Dictionary<ItemObject.ItemTypeEnum, List<ItemObject>> ItemTypes = new Dictionary<ItemObject.ItemTypeEnum, List<ItemObject>>();
         internal static readonly List<EquipmentElement> EquipmentItems = new List<EquipmentElement>();
+        internal static int MilitiasLimit;
         internal static List<Settlement> Hideouts = new List<Settlement>();
         internal static Settings Settings;
         internal static List<ItemObject> Arrows = new List<ItemObject>();
@@ -49,6 +50,5 @@ namespace Bandit_Militias
             {"RICH", 900},
             {"RICHEST", 2000},
         };
-
     }
 }

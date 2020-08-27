@@ -22,5 +22,7 @@ namespace Bandit_Militias
         public float GrowthChance = 0.66f;
         public float GrowthInPercent = 1;
         public int MaxItemValue = 3000;
+        public float LooterUpgradeFactor = 0.25f;
+        public float MilitiaLimitFactor = 0.5f;
     }
 }

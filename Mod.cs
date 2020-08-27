@@ -105,6 +105,17 @@ namespace Bandit_Militias
                 testingMode = !testingMode;
                 InformationManager.AddQuickInformation(new TextObject("Testing mode: " + testingMode));
             }
+            
+            if ((Input.IsKeyDown(InputKey.LeftControl) || Input.IsKeyDown(InputKey.RightControl)) &&
+                (Input.IsKeyDown(InputKey.LeftAlt) || Input.IsKeyDown(InputKey.RightAlt)) &&
+                (Input.IsKeyDown(InputKey.LeftShift) || Input.IsKeyDown(InputKey.RightShift)) &&
+                Input.IsKeyPressed(InputKey.F12))
+            {
+                foreach (var militia in Militias)
+                {
+                    Log($"{militia.Hero.Name}: {militia.MobileParty.MemberRoster.TotalManCount}/{militia.MobileParty.Party.TotalStrength}");
+                }
+            }
 
             if ((Input.IsKeyDown(InputKey.LeftControl) || Input.IsKeyDown(InputKey.RightControl)) &&
                 (Input.IsKeyDown(InputKey.LeftAlt) || Input.IsKeyDown(InputKey.RightAlt)) &&

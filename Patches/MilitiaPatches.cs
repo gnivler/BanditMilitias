@@ -30,7 +30,8 @@ namespace Bandit_Militias.Patches
                 {
                     if (Campaign.Current.TimeControlMode == CampaignTimeControlMode.Stop ||
                         Campaign.Current.TimeControlMode == CampaignTimeControlMode.UnstoppableFastForwardForPartyWaitTime ||
-                        Campaign.Current.TimeControlMode == CampaignTimeControlMode.FastForwardStop)
+                        Campaign.Current.TimeControlMode == CampaignTimeControlMode.FastForwardStop ||
+                        Militias.Count >= MilitiasLimit)
                     {
                         return;
                     }
