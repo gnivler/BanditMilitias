@@ -35,23 +35,15 @@ namespace Bandit_Militias
 
         internal static void Log(object input, LogLevel logLevel = LogLevel.Debug)
         {
-            try
+            if (logging < logLevel)
             {
-                if (logging < logLevel)
-                {
-                    return;
-                }
-
-                FileLog.Log($"[Bandit Militias] {input ?? "null"}");
-                using (var sw = new StreamWriter(Path.Combine(modDirectory, "mod.log"), true))
-                {
-                    sw.WriteLine($"[{DateTime.Now:G}] {input ?? "null"}");
-                }
+                return;
             }
-            catch (Exception ex)
+
+            FileLog.Log($"[Bandit Militias] {input ?? "null"}");
+            using (var sw = new StreamWriter(Path.Combine(modDirectory, "mod.log"), true))
             {
-                Console.WriteLine(ex);
-                throw;
+                sw.WriteLine($"[{DateTime.Now:G}] {input ?? "null"}");
             }
         }
 
@@ -105,7 +97,7 @@ namespace Bandit_Militias
                 TestingMode = !TestingMode;
                 InformationManager.AddQuickInformation(new TextObject("Testing mode: " + TestingMode));
             }
-            
+
             if ((Input.IsKeyDown(InputKey.LeftControl) || Input.IsKeyDown(InputKey.RightControl)) &&
                 (Input.IsKeyDown(InputKey.LeftAlt) || Input.IsKeyDown(InputKey.RightAlt)) &&
                 (Input.IsKeyDown(InputKey.LeftShift) || Input.IsKeyDown(InputKey.RightShift)) &&
