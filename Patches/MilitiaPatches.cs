@@ -93,7 +93,6 @@ namespace Bandit_Militias.Patches
                                 __instance.SetMoveEscortParty(targetParty.MobileParty);
                                 Mod.Log($"SetNavigationModeParty ==> {T.ElapsedTicks / 10000F:F3}ms");
 
-
                                 if (targetParty.MobileParty.MoveTargetParty != __instance)
                                 {
                                     MergeMap.Remove(targetParty.MobileParty);
@@ -118,7 +117,7 @@ namespace Bandit_Militias.Patches
                         var rosters = MergeRosters(__instance, targetParty);
                         var militia = new Militia(__instance, rosters[0], rosters[1]);
                         // teleport new militias near the player
-                        if (testingMode)
+                        if (TestingMode)
                         {
                             // in case a prisoner
                             var party = Hero.MainHero.PartyBelongedTo ?? Hero.MainHero.PartyBelongedToAsPrisoner.MobileParty;
@@ -130,11 +129,11 @@ namespace Bandit_Militias.Patches
                         Trash(targetParty.MobileParty);
 
                         parties = MobileParty.All.Where(x => x.IsBandit && x.CurrentSettlement == null).ToList();
-                        Mod.Log($"finished ==> {T.ElapsedTicks / 10000F:F3}ms");
-                        Mod.Log($"MergeMap.Count ==> {MergeMap.Count}");
+                        Mod.Log($"{"finished",-20} ==> {T.ElapsedTicks / 10000F:F3}ms");
+                        Mod.Log($"MergeMap: {MergeMap.Count}");
                     }
 
-                    Mod.Log($"Looped ==> {T.ElapsedTicks / 10000F:F3}ms");
+                    //Mod.Log($"Looped ==> {T.ElapsedTicks / 10000F:F3}ms");
                 }
                 catch (Exception ex)
                 {
@@ -248,7 +247,6 @@ namespace Bandit_Militias.Patches
 
             return true;
         }
-
 #endif
 
         // changes the name on the campaign map (hot path)
@@ -258,8 +256,8 @@ namespace Bandit_Militias.Patches
             private static void Postfix(PartyNameplateVM __instance, ref string ____fullNameBind)
             {
                 // Leader is null after a battle, crashes after-action
-                if (__instance.Party.StringId.StartsWith("Bandit_Militia") &&
-                    __instance.Party.Leader != null)
+                if (__instance?.Party?.Leader != null &&
+                    __instance.Party.StringId.StartsWith("Bandit_Militia"))
                 {
                     var heroName = __instance.Party.LeaderHero?.FirstName.ToString();
                     ____fullNameBind = $"{Possess(heroName)} Bandit Militia";
@@ -312,6 +310,34 @@ namespace Bandit_Militias.Patches
                     hero.PartyBelongedTo.StringId.StartsWith("Bandit_Militia"))
                 {
                     __result = false;
+                }
+            }
+        }
+
+        // ignore caravans and villagers for balance, and to help focus against more real threats
+        [HarmonyPatch(typeof(MobileParty), "CanAttack")]
+        public class MobilePartyCanAttackPatch
+        {
+            private static void Postfix(MobileParty __instance, MobileParty targetParty, ref bool __result)
+            {
+                if (__result &&
+                    !targetParty.IsGarrison &&
+                    !targetParty.IsMilitia &&
+                    __instance.StringId.StartsWith("Bandit_Militia"))
+                {
+                    if (targetParty == MobileParty.MainParty)
+                    {
+                        __result = true;
+                    }
+                    else
+                    {
+                        var party1Strength = __instance.GetTotalStrengthWithFollowers();
+                        var party2Strength = targetParty.GetTotalStrengthWithFollowers();
+                        var delta = (party1Strength - party2Strength) / party1Strength * 100;
+                        __result = delta <= Globals.Settings.MaxStrengthDelta;
+                        //if (__result) 
+                        //    Mod.Log($"## ({party1Strength} - {party2Strength}) / {party1Strength} * 100 = {delta}");  
+                    }
                 }
             }
         }

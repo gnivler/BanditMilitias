@@ -1,0 +1,22 @@
+{
+  "CanTrain": true,
+  "RandomBanners": true,
+  "XpGift": "HARDEST",
+  "GoldReward": "RICH",
+  "CooldownHours": 8,
+  "MinPartySize": 20,
+  "MaxPartySize": 300,
+  "RandomSplitChance": 0.5,
+  "StrengthSplitFactor": 1,
+  "SizeSplitFactor": 1,
+  "PartyStrengthFactor": 1.25,
+  "MaxPartySizeFactor": 1,
+  "Growth": true,
+  "GrowthChance": 1,
+  "GrowthInPercent": 3,
+  "MaxItemValue": 6000,
+  "LooterUpgradeFactor": 0.66,
+  "MilitiaLimitFactor": 0.5,
+  "MaxStrengthDelta": 10,
+  "UpgradeUnitsFactor": 0.33
+}

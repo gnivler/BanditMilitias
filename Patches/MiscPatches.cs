@@ -31,6 +31,21 @@ namespace Bandit_Militias.Patches
                 Mod.Log("MapScreen.OnInitialize");
                 EquipmentItems.Clear();
                 PopulateItems();
+                Recruits = CharacterObject.All.Where(x =>
+                        x.Level == 11 &&
+                        x.Occupation == Occupation.Soldier &&
+                        !x.StringId.StartsWith("regular_fighter") &&
+                        !x.StringId.StartsWith("veteran_borrowed_troop") &&
+                        !x.StringId.EndsWith("_tier_1") &&
+                        !x.StringId.Contains("_militia_") &&
+                        !x.StringId.Equals("sturgian_warrior_son") &&
+                        !x.StringId.Equals("khuzait_noble_son") &&
+                        !x.StringId.Equals("imperial_vigla_recruit") &&
+                        !x.StringId.Equals("battanian_highborn_youth") &&
+                        !x.StringId.Equals("vlandian_squire") &&
+                        !x.StringId.Equals("aserai_youth") &&
+                        !x.StringId.Equals("poacher"))
+                    .ToList();
 
                 // used for armour
                 foreach (ItemObject.ItemTypeEnum value in Enum.GetValues(typeof(ItemObject.ItemTypeEnum)))

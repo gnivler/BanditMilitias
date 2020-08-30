@@ -16,5 +16,7 @@
   "GrowthInPercent": 1,
   "MaxItemValue": 3000,
   "LooterUpgradeFactor": 0.25,
-  "MilitiaLimitFactor": 0.5
+  "MilitiaLimitFactor": 0.5,
+  "MaxStrengthDelta": 10,
+  "UpgradeUnitsFactor": 0.25
 }

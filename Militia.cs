@@ -91,18 +91,32 @@ namespace Bandit_Militias
                 int number, numberToUpgrade;
                 if (Globals.Settings.LooterUpgradeFactor > float.Epsilon)
                 {
-                    // upgrade any looters first, then go back over and iterate further upgrades
-                    var looters = MobileParty.MemberRoster.Troops.Where(x =>
-                        x.Name.Contains("Looter")).ToList();
-                    if (looters.Any())
+                    try
                     {
-                        foreach (var looter in looters)
+                        // upgrade any looters first, then go back over and iterate further upgrades
+                        var looters = MobileParty.MemberRoster.Troops.Where(x =>
+                            x.Name.Contains("Looter")).ToList();
+                        var culture = FindMostPrevalentFaction(MobileParty.Position2D);
+                        if (looters.Any())
                         {
-                            number = MobileParty.MemberRoster.GetElementCopyAtIndex(MobileParty.MemberRoster.FindIndexOfTroop(looter)).Number;
-                            numberToUpgrade = Convert.ToInt32(number * Globals.Settings.LooterUpgradeFactor);
-                            MobileParty.MemberRoster.AddXpToTroop(numberToUpgrade * 100, looter);
-                            PartyUpgraderCopy.UpgradeReadyTroopsCopy(MobileParty.Party);
+                            foreach (var looter in looters)
+                            {
+                                number = MobileParty.MemberRoster.GetElementCopyAtIndex(MobileParty.MemberRoster.FindIndexOfTroop(looter)).Number;
+                                numberToUpgrade = Convert.ToInt32(number * Globals.Settings.LooterUpgradeFactor);
+                                if (numberToUpgrade == 0)
+                                {
+                                    continue;
+                                }
+
+                                var roster = MobileParty.MemberRoster;
+                                roster.RemoveTroop(looter, numberToUpgrade);
+                                ConvertLootersToKingdomCultureRecruits(ref roster, culture, numberToUpgrade);
+                            }
                         }
+                    }
+                    catch (Exception ex)
+                    {
+                        Mod.Log(ex);
                     }
                 }
 
@@ -111,8 +125,13 @@ namespace Bandit_Militias
                     // start at index 1 to avoid hero - could be more robust...
                     var randomIndex = Rng.Next(1, MobileParty.MemberRoster.Troops.Count());
                     number = MobileParty.MemberRoster.GetElementCopyAtIndex(randomIndex).Number;
-                    var minNumberToUpgrade = Convert.ToInt32(Math.Min(number * 0.25 * Rng.NextDouble(), number));
-                    numberToUpgrade = Convert.ToInt32(Math.Max(minNumberToUpgrade, number + 1));
+                    var minNumberToUpgrade = Convert.ToInt32(Math.Min(Globals.Settings.UpgradeUnitsFactor * number * Rng.NextDouble(), number));
+                    if (minNumberToUpgrade ==0)
+                    {
+                        minNumberToUpgrade = 1;
+                    }
+                    numberToUpgrade = Convert.ToInt32(Rng.Next(minNumberToUpgrade, number + 1));
+                    Mod.Log($"Adding {numberToUpgrade,-3} from {number}");
                     MobileParty.MemberRoster.AddXpToTroopAtIndex(numberToUpgrade * DifficultyXpMap[Globals.Settings.XpGift], randomIndex);
                     PartyUpgraderCopy.UpgradeReadyTroopsCopy(MobileParty.Party);
                 }
@@ -120,9 +139,8 @@ namespace Bandit_Militias
             catch (Exception ex)
             {
                 Trash(MobileParty);
-                Debug.PrintError("Bandit Militias is failing to configure parties!  Exception:");
-                var stackTrace = new StackTrace(ex, true);
-                Mod.Log(stackTrace.GetFrame(0).GetFileLineNumber());
+                Mod.Log("Bandit Militias is failing to configure parties!  Exception: " + ex);
+                Debug.PrintError("Bandit Militias is failing to configure parties!  Exception: " + ex);
             }
         }
 
@@ -167,6 +185,7 @@ namespace Bandit_Militias
             }
             catch (Exception ex)
             {
+                Mod.Log(new StackTrace());
                 Mod.Log(ex);
             }
         }

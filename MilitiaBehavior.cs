@@ -14,10 +14,20 @@ namespace Bandit_Militias
         {
             CampaignEvents.AfterDailyTickEvent.AddNonSerializedListener(this, Helper.DailyCalculations);
             CampaignEvents.DailyTickPartyEvent.AddNonSerializedListener(this, TryGrowing);
-            CampaignEvents.OnPartyRemovedEvent.AddNonSerializedListener(this, x => MergeMap.Remove(x.MobileParty));
+            CampaignEvents.OnPartyRemovedEvent.AddNonSerializedListener(this, OnMilitiaRemoved);
         }
 
+        private static void OnMilitiaRemoved(PartyBase partyBase)
+        {
+            if (!partyBase.MobileParty.StringId.StartsWith("Bandit_Militia"))
+            {
+                return;
+            }
 
+            Mod.Log("OnMilitiaRemoved");
+            MergeMap.Remove(partyBase.MobileParty);
+            Militias.Remove(Militia.FindMilitiaByParty(partyBase.MobileParty));
+        }
 
         private static void TryGrowing(MobileParty mobileParty)
         {
