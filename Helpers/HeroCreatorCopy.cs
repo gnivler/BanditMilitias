@@ -26,6 +26,7 @@ namespace Bandit_Militias.Helpers
             Hero specialHero = default;
             try
             {
+                // todo make it the closest hideout
                 var settlement = Hideouts.GetRandomElement();
                 var num1 = 0;
                 foreach (var characterObject in Source)

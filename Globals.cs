@@ -9,7 +9,7 @@ namespace Bandit_Militias
     public static class Globals
     {
         // dev
-        internal static bool testingMode;
+        internal static bool TestingMode;
 
         // how close before merging
         internal const float MergeDistance = 2;
@@ -34,7 +34,8 @@ namespace Bandit_Militias
         internal static readonly Stopwatch T = new Stopwatch();
         internal static readonly Dictionary<MobileParty, CampaignTime> MergeMap = new Dictionary<MobileParty, CampaignTime>();
         internal static readonly List<Equipment> BanditEquipment = new List<Equipment>();
-
+        internal static List<CharacterObject> Recruits = new List<CharacterObject>();
+        
         internal static readonly Dictionary<string, int> DifficultyXpMap = new Dictionary<string, int>
         {
             {"OFF", 0},

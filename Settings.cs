@@ -24,5 +24,7 @@ namespace Bandit_Militias
         public int MaxItemValue = 3000;
         public float LooterUpgradeFactor = 0.25f;
         public float MilitiaLimitFactor = 0.5f;
+        public int MaxStrengthDelta = 10;
+        public float UpgradeUnitsFactor = 0.25f;
     }
 }

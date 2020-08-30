@@ -102,8 +102,8 @@ namespace Bandit_Militias
                 (Input.IsKeyDown(InputKey.LeftShift) || Input.IsKeyDown(InputKey.RightShift)) &&
                 Input.IsKeyPressed(InputKey.F11))
             {
-                testingMode = !testingMode;
-                InformationManager.AddQuickInformation(new TextObject("Testing mode: " + testingMode));
+                TestingMode = !TestingMode;
+                InformationManager.AddQuickInformation(new TextObject("Testing mode: " + TestingMode));
             }
             
             if ((Input.IsKeyDown(InputKey.LeftControl) || Input.IsKeyDown(InputKey.RightControl)) &&
@@ -111,9 +111,10 @@ namespace Bandit_Militias
                 (Input.IsKeyDown(InputKey.LeftShift) || Input.IsKeyDown(InputKey.RightShift)) &&
                 Input.IsKeyPressed(InputKey.F12))
             {
+                Log($"Total {Militias.Count}");
                 foreach (var militia in Militias)
                 {
-                    Log($"{militia.Hero.Name}: {militia.MobileParty.MemberRoster.TotalManCount}/{militia.MobileParty.Party.TotalStrength}");
+                    Log($"{militia.Hero.Name,-30}: {militia.MobileParty.MemberRoster.TotalManCount}/{militia.MobileParty.Party.TotalStrength}");
                 }
             }
 

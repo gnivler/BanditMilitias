@@ -8,6 +8,7 @@ using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.SandBox.CampaignBehaviors;
 using TaleWorlds.Core;
+using TaleWorlds.Library;
 using TaleWorlds.Localization;
 using TaleWorlds.ObjectSystem;
 using TaleWorlds.TwoDimension;
@@ -227,7 +228,6 @@ namespace Bandit_Militias.Helpers
             catch
             {
                 // ignored
-                // HeroCreator.CreateRelativeNotableHero has no Outlaw templates with bandit cultures, so it throws
             }
         }
 
@@ -242,6 +242,7 @@ namespace Bandit_Militias.Helpers
         private static void FlushBanditMilitias()
         {
             Militias.Clear();
+            MergeMap.Clear();
             var tempList = MobileParty.All.Where(x => x.StringId.StartsWith("Bandit_Militia")).ToList();
             var hasLogged = false;
             foreach (var mobileParty in tempList)
@@ -269,7 +270,7 @@ namespace Bandit_Militias.Helpers
             FlushNullPartyHeroes();
             FlushEmptyMilitiaParties();
             FlushNeutralBanditParties();
-            //FlushBadCharacterObjects();
+            FlushBadCharacterObjects();
             FlushBadBehaviors();
             FlushMapEvents();
             FlushZeroParties();
@@ -279,7 +280,7 @@ namespace Bandit_Militias.Helpers
         {
             var parties = MobileParty.All.Where(x => x.CurrentSettlement == null && x.MemberRoster.TotalManCount == 0).ToList();
             Mod.Log($"Removing {parties.Count()} parties without a current settlement or any troops");
-            for (var i = 0; i < parties.Count(); i++)
+            for (var i = 0; i < parties.Count; i++)
             {
                 KillHero(parties[i].LeaderHero);
                 parties[i].RemoveParty();
@@ -585,11 +586,17 @@ namespace Bandit_Militias.Helpers
             settings.MaxItemValue = settings.MaxItemValue.Clamp(1000, int.MaxValue);
             settings.MinPartySize = settings.MinPartySize.Clamp(15, int.MaxValue);
             settings.MaxPartySize = settings.MaxPartySize.Clamp(75, int.MaxValue);
-            settings.MaxPartySizeFactor = settings.MaxPartySizeFactor.Clamp(0.25f, 2);
-            settings.PartyStrengthFactor = settings.PartyStrengthFactor.Clamp(0.25f, 2);
-            settings.SizeSplitFactor = settings.SizeSplitFactor.Clamp(0.25f, 1);
-            settings.StrengthSplitFactor = settings.StrengthSplitFactor.Clamp(0.25f, 1);
             settings.RandomSplitChance = settings.RandomSplitChance.Clamp(0, 1);
+            settings.StrengthSplitFactor = settings.StrengthSplitFactor.Clamp(0.25f, 1);
+            settings.SizeSplitFactor = settings.SizeSplitFactor.Clamp(0.25f, 1);
+            settings.PartyStrengthFactor = settings.PartyStrengthFactor.Clamp(0.25f, 2);
+            settings.MaxPartySizeFactor = settings.MaxPartySizeFactor.Clamp(0.25f, 2);
+            settings.GrowthChance = settings.GrowthChance.Clamp(0, 1);
+            settings.GrowthInPercent = settings.GrowthInPercent.Clamp(0, 100);
+            settings.MaxItemValue = settings.MaxItemValue.Clamp(1_000, int.MaxValue);
+            settings.LooterUpgradeFactor = settings.LooterUpgradeFactor.Clamp(0, 1);
+            settings.MilitiaLimitFactor = settings.MilitiaLimitFactor.Clamp(0, 1);
+            settings.MaxStrengthDelta = settings.MaxStrengthDelta.Clamp(0, 100);
         }
 
         internal static void PrintValidatedSettings(Settings settings)
@@ -616,7 +623,48 @@ namespace Bandit_Militias.Helpers
             // maximum size grows over time as clans level up
             CalculatedMaxPartySize = Math.Round(parties.Select(x => x.Party.PartySizeLimit).Average());
             CalculatedMaxPartySize *= Globals.Settings.MaxPartySizeFactor * Variance;
-            Mod.Log($"Daily calculations => size: {CalculatedMaxPartySize:0} strength: {CalculatedMaxPartyStrength:0} (cap {MilitiasLimit})");
+            Mod.Log($"Daily calculations => size: {CalculatedMaxPartySize:0} strength: {CalculatedMaxPartyStrength:0} ({Militias.Count}/{MilitiasLimit} militias)");
+        }
+
+        public static CultureObject FindMostPrevalentFaction(Vec2 position)
+        {
+            var settlements = Settlement.FindSettlementsAroundPosition(position, 20);
+            var map = new Dictionary<CultureObject, int>();
+            foreach (var settlement in settlements)
+            {
+                if (map.ContainsKey(settlement.Culture))
+                {
+                    map[settlement.Culture]++;
+                }
+                else
+                {
+                    map.Add(settlement.Culture, 1);
+                }
+            }
+
+            var highest = map.Where(x =>
+                x.Value == map.Values.Max()).Select(x => x.Key);
+            var result = highest.GetRandomElement();
+            return result;
+        }
+
+        public static void ConvertLootersToKingdomCultureRecruits(ref TroopRoster troopRoster, CultureObject cultureObject, int numberToUpgrade)
+        {
+            if (cultureObject == null)
+            {
+                return;
+            }
+
+            if (Clan.BanditFactions.Any(x => x.Culture == cultureObject))
+            {
+                cultureObject = Kingdom.All.First(x => x.StringId == "empire").Culture;
+            }
+
+            var recruit = Recruits.Where(x =>
+                    x.Culture == Kingdom.All.First(k =>
+                        k.Culture == cultureObject).Culture)
+                .GetRandomElement();
+            troopRoster.AddToCounts(recruit, numberToUpgrade);
         }
     }
 }

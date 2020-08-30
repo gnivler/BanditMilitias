@@ -43,6 +43,7 @@ namespace Bandit_Militias.Patches
 
                 foreach (var party in loser.Parties)
                 {
+                    Globals.Militias.Remove(Militia.FindMilitiaByParty(party.MobileParty));
                     var heroes = party.MemberRoster.RemoveIf(x => x.Character.IsHero).ToList();
                     for (var i = 0; i < heroes.Count; i++)
                     {
