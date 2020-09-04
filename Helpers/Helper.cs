@@ -630,6 +630,7 @@ namespace Bandit_Militias.Helpers
                     return;
                 }
 
+                // ReSharper disable once ConditionIsAlwaysTrueOrFalse
                 if (Mod.logging == LogLevel.Debug)
                 {
                     Mod.Log($">> {Militias.Select(x => x.MobileParty.MemberRoster.TotalManCount).Sum():0} troops.  Strength: {Militias.Select(x => x.MobileParty.Party.TotalStrength).Sum():0}/{parties.Select(x => x.Party.TotalStrength).Sum():0} ({Militias.Select(x => x.MobileParty.Party.TotalStrength).Sum() / parties.Select(x => x.Party.TotalStrength).Sum() * 100:F1}%).  Max size {Militias.OrderByDescending(x => x.MobileParty.MemberRoster.TotalManCount).Select(x => x.MobileParty.MemberRoster.TotalManCount).First()}/{CalculatedMaxPartySize}");

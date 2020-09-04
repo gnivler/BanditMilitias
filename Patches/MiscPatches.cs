@@ -242,7 +242,7 @@ namespace Bandit_Militias.Patches
         [HarmonyPatch(typeof(AiBanditPatrollingBehavior), "AiHourlyTick")]
         public class AiBanditPatrollingBehaviorAiHourlyTickPatch
         {
-            private static Exception Finalizer(MobileParty mobileParty, PartyThinkParams p, Exception __exception)
+            private static Exception Finalizer(MobileParty mobileParty, Exception __exception)
             {
                 if (__exception != null)
                 {
