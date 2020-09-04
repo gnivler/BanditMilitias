@@ -12,19 +12,17 @@ namespace Bandit_Militias
         public string GoldReward = "NORMAL";
         public float CooldownHours = 24;
         public int MinPartySize = 20;
-        public int MaxPartySize = 300;
         public float RandomSplitChance = 0.25f;
         public float StrengthSplitFactor = 0.8f;
         public float SizeSplitFactor = 0.8f;
-        public float PartyStrengthFactor = 0.8f;
-        public float MaxPartySizeFactor = 0.8f;
-        public bool Growth = true;
-        public float GrowthChance = 0.66f;
-        public float GrowthInPercent = 1;
+        public float PartyStrengthFactor = 0.9f;
+        public float MaxPartySizeFactor = 0.9f;
+        public float GrowthChance = 0.5f;
+        public float GrowthFactor = 0.01f;
         public int MaxItemValue = 3000;
         public float LooterUpgradeFactor = 0.25f;
-        public float MilitiaLimitFactor = 0.5f;
-        public int MaxStrengthDelta = 10;
+        public int PartyStrengthDeltaPercent = 10;
         public float UpgradeUnitsFactor = 0.25f;
+        public float GlobalPowerFactor = 0.15f;
     }
 }

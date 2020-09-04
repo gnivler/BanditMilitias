@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using HarmonyLib;
 using Helpers;
@@ -14,8 +13,8 @@ namespace Bandit_Militias.Helpers
 {
     public static class HeroCreatorCopy
     {
-        private static readonly PerkObject Disciplinarian = PerkObject.All.First(x => x.Name.ToString() == "Disciplinarian");
-        private static readonly SkillObject Leadership = SkillObject.All.First(x => x.Name.ToString() == "Leadership");
+        internal static PerkObject Disciplinarian = default;
+        internal static SkillObject Leadership = default;
 
         private static readonly List<CharacterObject> Source = CharacterObject.Templates.Where(x =>
             x.Occupation == Occupation.Outlaw).ToList();
@@ -26,8 +25,15 @@ namespace Bandit_Militias.Helpers
             Hero specialHero = default;
             try
             {
-                // todo make it the closest hideout
-                var settlement = Hideouts.GetRandomElement();
+                // completes in a few hundred ticks
+                var distanceMap = new Dictionary<Settlement, float>();
+                foreach (var hideout in Hideouts)
+                {
+                    distanceMap.Add(hideout, mobileParty.Position2D.Distance(hideout.Position2D));
+                }
+                
+                var closest = 0;
+                var settlement = Hideouts.FirstOrDefault(x => distanceMap[x] <= closest) ?? Hideouts.GetRandomElement();
                 var num1 = 0;
                 foreach (var characterObject in Source)
                 {
@@ -74,15 +80,14 @@ namespace Bandit_Militias.Helpers
                 if (Globals.Settings.CanTrain)
                 {
                     mobileParty.MemberRoster.AddToCounts(specialHero.CharacterObject, 1, false, 0, 0, true, 0);
+
                     specialHero.SetSkillValue(Leadership, 125);
                     specialHero.SetPerkValue(Disciplinarian, true);
                 }
             }
             catch (Exception ex)
             {
-                var stackTrace = new StackTrace(ex, true);
-                Mod.Log(stackTrace);
-                Mod.Log(stackTrace.GetFrame(0).GetFileLineNumber());
+                Mod.Log(ex);
             }
 
             MBObjectManager.Instance.RegisterObject(specialHero);

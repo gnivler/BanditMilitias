@@ -31,7 +31,7 @@ namespace Bandit_Militias.Patches
                     if (Campaign.Current.TimeControlMode == CampaignTimeControlMode.Stop ||
                         Campaign.Current.TimeControlMode == CampaignTimeControlMode.UnstoppableFastForwardForPartyWaitTime ||
                         Campaign.Current.TimeControlMode == CampaignTimeControlMode.FastForwardStop ||
-                        Militias.Count >= MilitiasLimit)
+                        GlobalMilitiaPower > CalculatedGlobalPowerLimit)
                     {
                         return;
                     }
@@ -69,7 +69,7 @@ namespace Bandit_Militias.Patches
                         }
 
                         var militiaTotalCount = __instance.MemberRoster.TotalManCount + targetParty.MemberRoster.TotalManCount;
-                        if (militiaTotalCount > Globals.Settings.MaxPartySize ||
+                        if (militiaTotalCount < Globals.Settings.MinPartySize ||
                             militiaTotalCount > CalculatedMaxPartySize ||
                             __instance.Party.TotalStrength > CalculatedMaxPartyStrength ||
                             NumMountedTroops(__instance.MemberRoster) + NumMountedTroops(targetParty.MemberRoster) > militiaTotalCount / 2)
@@ -89,14 +89,14 @@ namespace Bandit_Militias.Patches
                             {
                                 //var midPoint = GetMidPoint(__instance.Position2D, targetParty.Position2D);
                                 MergeMap.Remove(__instance);
-                                Mod.Log($"{__instance} seeking >> target {targetParty.MobileParty}");
+                                Mod.Log($"{__instance} seeking > {targetParty.MobileParty}");
                                 __instance.SetMoveEscortParty(targetParty.MobileParty);
                                 Mod.Log($"SetNavigationModeParty ==> {T.ElapsedTicks / 10000F:F3}ms");
 
                                 if (targetParty.MobileParty.MoveTargetParty != __instance)
                                 {
                                     MergeMap.Remove(targetParty.MobileParty);
-                                    Mod.Log($"{targetParty.MobileParty} target << seeking {__instance}");
+                                    Mod.Log($"{targetParty.MobileParty} seeking back > {__instance}");
                                     targetParty.MobileParty.SetMoveEscortParty(__instance);
                                     Mod.Log($"SetNavigationModeTargetParty ==> {T.ElapsedTicks / 10000F:F3}ms");
                                 }
@@ -145,7 +145,7 @@ namespace Bandit_Militias.Patches
         [HarmonyPatch(typeof(DefaultPartySpeedCalculatingModel), "CalculateFinalSpeed")]
         public class DefaultPartySpeedCalculatingModelCalculateFinalSpeedPatch
         {
-            private const float SpeedFactor = 0.88f;
+            private const float SpeedFactor = 0.86f;
 
             private static void Postfix(MobileParty mobileParty, ref float __result)
             {
@@ -334,7 +334,7 @@ namespace Bandit_Militias.Patches
                         var party1Strength = __instance.GetTotalStrengthWithFollowers();
                         var party2Strength = targetParty.GetTotalStrengthWithFollowers();
                         var delta = (party1Strength - party2Strength) / party1Strength * 100;
-                        __result = delta <= Globals.Settings.MaxStrengthDelta;
+                        __result = delta <= Globals.Settings.PartyStrengthDeltaPercent;
                         //if (__result) 
                         //    Mod.Log($"## ({party1Strength} - {party2Strength}) / {party1Strength} * 100 = {delta}");  
                     }

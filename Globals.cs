@@ -13,20 +13,20 @@ namespace Bandit_Militias
 
         // how close before merging
         internal const float MergeDistance = 2;
-        internal const float FindRadius = 5;
-        internal const float MinDistanceFromHideout = 10;
+        internal static float FindRadius = 7;
+        internal static float MinDistanceFromHideout = 8;
 
         // holders for criteria
-        internal static float CalculatedHeroPartyStrength;
-        internal static float CalculatedMaxPartyStrength;
-        internal static double CalculatedMaxPartySize;
+        internal static int CalculatedMaxPartyStrength;
+        internal static int CalculatedMaxPartySize;
+        internal static int CalculatedGlobalPowerLimit;
+        internal static int GlobalMilitiaPower;
 
         // misc
         internal static readonly Random Rng = new Random();
         internal static readonly HashSet<Militia> Militias = new HashSet<Militia>();
         internal static readonly Dictionary<ItemObject.ItemTypeEnum, List<ItemObject>> ItemTypes = new Dictionary<ItemObject.ItemTypeEnum, List<ItemObject>>();
         internal static readonly List<EquipmentElement> EquipmentItems = new List<EquipmentElement>();
-        internal static int MilitiasLimit;
         internal static List<Settlement> Hideouts = new List<Settlement>();
         internal static Settings Settings;
         internal static List<ItemObject> Arrows = new List<ItemObject>();
@@ -35,7 +35,7 @@ namespace Bandit_Militias
         internal static readonly Dictionary<MobileParty, CampaignTime> MergeMap = new Dictionary<MobileParty, CampaignTime>();
         internal static readonly List<Equipment> BanditEquipment = new List<Equipment>();
         internal static List<CharacterObject> Recruits = new List<CharacterObject>();
-        
+
         internal static readonly Dictionary<string, int> DifficultyXpMap = new Dictionary<string, int>
         {
             {"OFF", 0},

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using HarmonyLib;
 using Newtonsoft.Json;
@@ -29,7 +30,7 @@ namespace Bandit_Militias
 
     public class Mod : MBSubModuleBase
     {
-        private const LogLevel logging = LogLevel.Disabled;
+        internal const LogLevel logging = LogLevel.Disabled;
         private static readonly Harmony harmony = new Harmony("ca.gnivler.bannerlord.BanditMilitias");
         private static readonly string modDirectory = new FileInfo(@"..\..\Modules\Bandit Militias\").DirectoryName;
 
@@ -101,13 +102,22 @@ namespace Bandit_Militias
             if ((Input.IsKeyDown(InputKey.LeftControl) || Input.IsKeyDown(InputKey.RightControl)) &&
                 (Input.IsKeyDown(InputKey.LeftAlt) || Input.IsKeyDown(InputKey.RightAlt)) &&
                 (Input.IsKeyDown(InputKey.LeftShift) || Input.IsKeyDown(InputKey.RightShift)) &&
+                Input.IsKeyPressed(InputKey.C))
+            {
+                ReadConfig();
+                InformationManager.AddQuickInformation(new TextObject("Reloaded config"));
+            }
+
+            if ((Input.IsKeyDown(InputKey.LeftControl) || Input.IsKeyDown(InputKey.RightControl)) &&
+                (Input.IsKeyDown(InputKey.LeftAlt) || Input.IsKeyDown(InputKey.RightAlt)) &&
+                (Input.IsKeyDown(InputKey.LeftShift) || Input.IsKeyDown(InputKey.RightShift)) &&
                 Input.IsKeyPressed(InputKey.F12))
             {
-                Log($"Total {Militias.Count}");
-                foreach (var militia in Militias)
+                foreach (var militia in Militias.OrderByDescending(x=>x.MobileParty.MemberRoster.TotalManCount))
                 {
-                    Log($"{militia.Hero.Name,-30}: {militia.MobileParty.MemberRoster.TotalManCount}/{militia.MobileParty.Party.TotalStrength}");
+                    Log($">> {militia.Hero.Name,-30}: {militia.MobileParty.MemberRoster.TotalManCount}/{militia.MobileParty.Party.TotalStrength:0}");
                 }
+                Log($">> Total {Militias.Count} = {Militias.Select(x => x.MobileParty.MemberRoster.TotalManCount).Sum()}");
             }
 
             if ((Input.IsKeyDown(InputKey.LeftControl) || Input.IsKeyDown(InputKey.RightControl)) &&
@@ -127,7 +137,10 @@ namespace Bandit_Militias
 
         protected override void OnGameStart(Game game, IGameStarter gameStarterObject)
         {
-            ((CampaignGameStarter) gameStarterObject).AddBehavior(new MilitiaBehavior());
+            if (gameStarterObject is CampaignGameStarter gameStarter)
+            {
+                gameStarter.AddBehavior(new MilitiaBehavior());
+            }
         }
 
         private static void RunManualPatches()

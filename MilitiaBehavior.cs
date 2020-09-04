@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using Bandit_Militias.Helpers;
 using TaleWorlds.CampaignSystem;
 using static Bandit_Militias.Globals;
@@ -10,6 +9,8 @@ namespace Bandit_Militias
 {
     public class MilitiaBehavior : CampaignBehaviorBase
     {
+        private static readonly bool Growth = Globals.Settings.GrowthFactor > 0;
+
         public override void RegisterEvents()
         {
             CampaignEvents.AfterDailyTickEvent.AddNonSerializedListener(this, Helper.DailyCalculations);
@@ -33,21 +34,26 @@ namespace Bandit_Militias
         {
             try
             {
-                if (Globals.Settings.Growth &&
+                if (Growth &&
+                    Helper.IsValidParty(mobileParty) &&
                     mobileParty.StringId.StartsWith("Bandit_Militia") &&
                     Rng.NextDouble() <= Globals.Settings.GrowthChance)
                 {
-                    Mod.Log($"TryGrowing {mobileParty}, total: {mobileParty.MemberRoster.TotalManCount}");
-                    foreach (var troopRosterElement in mobileParty.MemberRoster.Where(x => x.Character.HeroObject == null))
+                    Mod.Log($"TryGrowing {mobileParty.LeaderHero}, total: {mobileParty.MemberRoster.TotalManCount}");
+                    var growthAmount = mobileParty.MemberRoster.TotalManCount * Globals.Settings.GrowthFactor;
+                    growthAmount = Math.Max(1, growthAmount);
+                    var rounded = Convert.ToInt32(growthAmount);
+                    // last condition doesn't account for the size increase but who cares
+                    if (mobileParty.MemberRoster.TotalManCount + rounded > CalculatedMaxPartySize ||
+                        GlobalMilitiaPower + mobileParty.Party.TotalStrength > CalculatedGlobalPowerLimit)
                     {
-                        // calculate x percent of each unit type, need at least 0.5 to add a unit
-                        var growth = troopRosterElement.Number * Globals.Settings.GrowthInPercent / 100;
-                        var amount = Convert.ToInt32(Math.Max(1, growth));
-                        // deliberately not 'topping up' militias so there aren't a bunch of same-sizes around
-                        if (mobileParty.MemberRoster.TotalManCount + amount <= Globals.Settings.MaxPartySize)
-                        {
-                            mobileParty.MemberRoster.AddToCounts(troopRosterElement.Character, amount);
-                        }
+                        return;
+                    }
+
+                    for (var i = 0; i < rounded; i++)
+                    {
+                        var index = Rng.Next(1, mobileParty.MemberRoster.Count);
+                        mobileParty.MemberRoster.AddToCountsAtIndex(index, 1);
                     }
 
                     var troopString = $"{mobileParty.Party.NumberOfAllMembers} troop" + (mobileParty.Party.NumberOfAllMembers > 1 ? "s" : "");

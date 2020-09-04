@@ -232,8 +232,8 @@
         <Compile Include="Settings.cs" />
     </ItemGroup>
     <ItemGroup>
-        <Content Include="LICENSE" />
         <Content Include="HOW TO CONFIGURE.TXT" />
+        <Content Include="LICENSE" />
         <Content Include="mod_settings.json" />
         <Content Include="mod_settings_hardmode.json" />
         <Content Include="SubModule.xml" />

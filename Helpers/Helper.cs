@@ -1,7 +1,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using HarmonyLib;
 using TaleWorlds.CampaignSystem;
@@ -23,23 +22,24 @@ namespace Bandit_Militias.Helpers
         internal static int NumMountedTroops(TroopRoster troopRoster) => troopRoster.Troops
             .Where(x => x.IsMounted).Sum(troopRoster.GetTroopCount);
 
-        internal static float Variance => MBRandom.RandomFloatRanged(0.8f, 1.5f);
+        internal static float Variance => MBRandom.RandomFloatRanged(0.8f, 1.2f);
+        private static readonly int MinSplitSize = Globals.Settings.MinPartySize * 2;
 
-        internal static void TrySplitParty(MobileParty __instance)
+        internal static void TrySplitParty(MobileParty mobileParty)
         {
-            if (!__instance.StringId.StartsWith("Bandit_Militia") ||
-                __instance.Party.MemberRoster.TotalManCount < 50 ||
-                __instance.IsTooBusyToMerge())
+            if (GlobalMilitiaPower + mobileParty.Party.TotalStrength > CalculatedGlobalPowerLimit ||
+                mobileParty.MemberRoster.TotalManCount < MinSplitSize ||
+                !mobileParty.StringId.StartsWith("Bandit_Militia") ||
+                mobileParty.IsTooBusyToMerge())
             {
                 return;
             }
 
             var roll = Rng.NextDouble();
-            if (__instance.MemberRoster.TotalManCount == 0 ||
-                roll <= Globals.Settings.RandomSplitChance ||
-                !__instance.StringId.StartsWith("Bandit_Militia") ||
-                __instance.Party.TotalStrength <= CalculatedMaxPartyStrength * Globals.Settings.StrengthSplitFactor * Variance ||
-                __instance.Party.MemberRoster.TotalManCount <= CalculatedMaxPartySize * Globals.Settings.SizeSplitFactor * Variance)
+            if (roll <= Globals.Settings.RandomSplitChance ||
+                !mobileParty.StringId.StartsWith("Bandit_Militia") ||
+                mobileParty.Party.TotalStrength <= CalculatedMaxPartyStrength * Globals.Settings.StrengthSplitFactor * Variance ||
+                mobileParty.Party.MemberRoster.TotalManCount <= CalculatedMaxPartySize * Globals.Settings.SizeSplitFactor * Variance)
             {
                 return;
             }
@@ -50,8 +50,8 @@ namespace Bandit_Militias.Helpers
             var prisoners2 = new TroopRoster();
             var inventory1 = new ItemRoster();
             var inventory2 = new ItemRoster();
-            SplitRosters(__instance, party1, party2, prisoners1, prisoners2, inventory1, inventory2);
-            CreateSplitMilitias(__instance, party1, party2, prisoners1, prisoners2, inventory1, inventory2);
+            SplitRosters(mobileParty, party1, party2, prisoners1, prisoners2, inventory1, inventory2);
+            CreateSplitMilitias(mobileParty, party1, party2, prisoners1, prisoners2, inventory1, inventory2);
         }
 
         private static void SplitRosters(MobileParty original, TroopRoster troops1, TroopRoster troops2,
@@ -77,21 +77,29 @@ namespace Bandit_Militias.Helpers
                 var half = Math.Max(1, item.Amount / 2);
                 inventory1.AddToCounts(item.EquipmentElement, half);
                 var remainder = item.Amount % 2;
-                if (half > 2)
-                {
-                    inventory2.AddToCounts(item.EquipmentElement, half + remainder);
-                }
+                inventory2.AddToCounts(item.EquipmentElement, half + remainder);
             }
         }
 
         private static void SplitRosters(TroopRoster troops1, TroopRoster troops2, TroopRosterElement rosterElement)
         {
-            var half = Math.Max(1, rosterElement.Number / 2);
-            troops1.AddToCounts(rosterElement.Character, half);
-            var remainder = rosterElement.Number % 2;
-            // 1-3 will have a half of 1.  4 would be 2, and worth adding to second roster
-            if (half > 2)
+            // toss a coin (to your Witcher)
+            if (rosterElement.Number == 1)
             {
+                if (Rng.Next(0, 1) == 0)
+                {
+                    troops1.AddToCounts(rosterElement.Character, 1);
+                }
+                else
+                {
+                    troops2.AddToCounts(rosterElement.Character, 1);
+                }
+            }
+            else
+            {
+                var half = Math.Max(1, rosterElement.Number / 2);
+                troops1.AddToCounts(rosterElement.Character, half);
+                var remainder = rosterElement.Number % 2;
                 troops2.AddToCounts(rosterElement.Character, Math.Max(1, half + remainder));
             }
         }
@@ -103,7 +111,7 @@ namespace Bandit_Militias.Helpers
             {
                 var militia1 = new Militia(original, party1, prisoners1);
                 var militia2 = new Militia(original, party2, prisoners2);
-                Mod.Log($"{militia1.MobileParty.MapFaction.Name} <<< Split >>> {militia2.MobileParty.MapFaction.Name}");
+                Mod.Log($"{militia1.MobileParty.MapFaction.Name} <- Split -> {militia2.MobileParty.MapFaction.Name}");
                 Traverse.Create(militia1.MobileParty.Party).Property("ItemRoster").SetValue(inventory1);
                 Traverse.Create(militia2.MobileParty.Party).Property("ItemRoster").SetValue(inventory2);
                 militia1.MobileParty.Party.Visuals.SetMapIconAsDirty();
@@ -437,7 +445,7 @@ namespace Bandit_Militias.Helpers
         internal static string Possess(string input)
         {
             // game tries to redraw the PartyNamePlateVM after combat with multiple militias
-            // and crashes because __instance.Party.LeaderHero?.FirstName.ToString() is null
+            // and crashes because mobileParty.Party.LeaderHero?.FirstName.ToString() is null
             if (input == null)
             {
                 return null;
@@ -560,20 +568,18 @@ namespace Bandit_Militias.Helpers
                 gear[7] = new EquipmentElement(ItemTypes[ItemObject.ItemTypeEnum.LegArmor].GetRandomElement());
                 gear[8] = new EquipmentElement(ItemTypes[ItemObject.ItemTypeEnum.HandArmor].GetRandomElement());
                 gear[9] = new EquipmentElement(ItemTypes[ItemObject.ItemTypeEnum.Cape].GetRandomElement());
-                Mod.Log("-----");
-                for (var i = 0; i < 10; i++)
-                {
-                    Mod.Log(gear[i].Item?.Name);
-                }
+                //Mod.Log("-----");
+                //for (var i = 0; i < 10; i++)
+                //{
+                //    Mod.Log(gear[i].Item?.Name);
+                //}
             }
             catch (Exception ex)
             {
-                var stackTrace = new StackTrace(ex, true);
-                Mod.Log($"\n{stackTrace}");
-                Mod.Log(stackTrace.GetFrame(0).GetFileLineNumber());
+                Mod.Log(ex);
             }
 
-            Mod.Log($"GEAR ==> {T.ElapsedTicks / 10000F:F3}ms");
+            //Mod.Log($"GEAR ==> {T.ElapsedTicks / 10000F:F3}ms");
             return gear.Clone();
         }
 
@@ -581,22 +587,21 @@ namespace Bandit_Militias.Helpers
         internal static void ClampSettingsValues(ref Settings settings)
         {
             settings.CooldownHours = settings.CooldownHours.Clamp(1, 168);
-            settings.GrowthInPercent = settings.GrowthInPercent.Clamp(0, 100);
+            settings.GrowthFactor = settings.GrowthFactor.Clamp(0, 100);
             settings.GrowthChance = settings.GrowthChance.Clamp(0, 1);
             settings.MaxItemValue = settings.MaxItemValue.Clamp(1000, int.MaxValue);
             settings.MinPartySize = settings.MinPartySize.Clamp(15, int.MaxValue);
-            settings.MaxPartySize = settings.MaxPartySize.Clamp(75, int.MaxValue);
             settings.RandomSplitChance = settings.RandomSplitChance.Clamp(0, 1);
             settings.StrengthSplitFactor = settings.StrengthSplitFactor.Clamp(0.25f, 1);
             settings.SizeSplitFactor = settings.SizeSplitFactor.Clamp(0.25f, 1);
             settings.PartyStrengthFactor = settings.PartyStrengthFactor.Clamp(0.25f, 2);
             settings.MaxPartySizeFactor = settings.MaxPartySizeFactor.Clamp(0.25f, 2);
             settings.GrowthChance = settings.GrowthChance.Clamp(0, 1);
-            settings.GrowthInPercent = settings.GrowthInPercent.Clamp(0, 100);
+            settings.GrowthFactor = settings.GrowthFactor.Clamp(0, 1);
             settings.MaxItemValue = settings.MaxItemValue.Clamp(1_000, int.MaxValue);
             settings.LooterUpgradeFactor = settings.LooterUpgradeFactor.Clamp(0, 1);
-            settings.MilitiaLimitFactor = settings.MilitiaLimitFactor.Clamp(0, 1);
-            settings.MaxStrengthDelta = settings.MaxStrengthDelta.Clamp(0, 100);
+            settings.PartyStrengthDeltaPercent = settings.PartyStrengthDeltaPercent.Clamp(0, 100);
+            settings.GlobalPowerFactor = settings.GlobalPowerFactor.Clamp(0, 1);
         }
 
         internal static void PrintValidatedSettings(Settings settings)
@@ -612,18 +617,28 @@ namespace Bandit_Militias.Helpers
 
         internal static void DailyCalculations()
         {
-            // first campaign init hasn't populated this apparently
-            var parties = MobileParty.All.Where(x =>
-                x.LeaderHero != null &&
-                !x.IsBandit).ToList();
-            MilitiasLimit = Convert.ToInt32(parties.Count * Globals.Settings.MilitiaLimitFactor);
-            CalculatedHeroPartyStrength = parties.Select(x => x.Party.TotalStrength).Average();
-            // reduce strength
-            CalculatedMaxPartyStrength = CalculatedHeroPartyStrength * Globals.Settings.PartyStrengthFactor * Variance;
-            // maximum size grows over time as clans level up
-            CalculatedMaxPartySize = Math.Round(parties.Select(x => x.Party.PartySizeLimit).Average());
-            CalculatedMaxPartySize *= Globals.Settings.MaxPartySizeFactor * Variance;
-            Mod.Log($"Daily calculations => size: {CalculatedMaxPartySize:0} strength: {CalculatedMaxPartyStrength:0} ({Militias.Count}/{MilitiasLimit} militias)");
+            try
+            {
+                // first campaign init hasn't populated this apparently
+                var parties = MobileParty.All.Where(x => x.LeaderHero != null && !x.IsBandit).ToList();
+                CalculatedMaxPartySize = Convert.ToInt32(parties.Select(x => x.Party.PartySizeLimit).Average() * Globals.Settings.MaxPartySizeFactor * Variance);
+                CalculatedMaxPartyStrength = Convert.ToInt32(parties.Select(x => x.Party.TotalStrength).Average() * Globals.Settings.PartyStrengthFactor * Variance);
+                CalculatedGlobalPowerLimit = Convert.ToInt32(parties.Select(x => x.Party.TotalStrength).Sum() * Globals.Settings.GlobalPowerFactor * Variance);
+                GlobalMilitiaPower = Convert.ToInt32(Militias.Select(x => x.MobileParty.Party.TotalStrength).Sum());
+                if (Militias.Count == 0)
+                {
+                    return;
+                }
+
+                if (Mod.logging == LogLevel.Debug)
+                {
+                    Mod.Log($">> {Militias.Select(x => x.MobileParty.MemberRoster.TotalManCount).Sum():0} troops.  Strength: {Militias.Select(x => x.MobileParty.Party.TotalStrength).Sum():0}/{parties.Select(x => x.Party.TotalStrength).Sum():0} ({Militias.Select(x => x.MobileParty.Party.TotalStrength).Sum() / parties.Select(x => x.Party.TotalStrength).Sum() * 100:F1}%).  Max size {Militias.OrderByDescending(x => x.MobileParty.MemberRoster.TotalManCount).Select(x => x.MobileParty.MemberRoster.TotalManCount).First()}/{CalculatedMaxPartySize}");
+                }
+            }
+            catch
+            {
+                // ignore
+            }
         }
 
         public static CultureObject FindMostPrevalentFaction(Vec2 position)

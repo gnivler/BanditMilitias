@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using Bandit_Militias.Helpers;
+using HarmonyLib;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
 using TaleWorlds.Localization;
@@ -63,7 +64,9 @@ namespace Bandit_Militias
                     return;
                 }
 
-                MobileParty.Name = new TextObject($"{Possess(Hero.FirstName.ToString())} Bandit Militia");
+                var partyName = (string) Traverse.Create(typeof(MBTextManager))
+                    .Method("GetLocalizedText", $"{Possess(Hero.FirstName.ToString())} Bandit Militia").GetValue();
+                MobileParty.Name = new TextObject(partyName);
                 MobileParty.Party.Owner = Hero;
 
                 if (!Globals.Settings.CanTrain ||
@@ -125,11 +128,12 @@ namespace Bandit_Militias
                     // start at index 1 to avoid hero - could be more robust...
                     var randomIndex = Rng.Next(1, MobileParty.MemberRoster.Troops.Count());
                     number = MobileParty.MemberRoster.GetElementCopyAtIndex(randomIndex).Number;
-                    var minNumberToUpgrade = Convert.ToInt32(Math.Min(Globals.Settings.UpgradeUnitsFactor * number * Rng.NextDouble(), number));
-                    if (minNumberToUpgrade ==0)
+                    var minNumberToUpgrade = Convert.ToInt32(Globals.Settings.UpgradeUnitsFactor * number * Rng.NextDouble());
+                    if (minNumberToUpgrade == 0)
                     {
                         minNumberToUpgrade = 1;
                     }
+
                     numberToUpgrade = Convert.ToInt32(Rng.Next(minNumberToUpgrade, number + 1));
                     Mod.Log($"Adding {numberToUpgrade,-3} from {number}");
                     MobileParty.MemberRoster.AddXpToTroopAtIndex(numberToUpgrade * DifficultyXpMap[Globals.Settings.XpGift], randomIndex);
@@ -137,6 +141,7 @@ namespace Bandit_Militias
                 }
             }
             catch (Exception ex)
+
             {
                 Trash(MobileParty);
                 Mod.Log("Bandit Militias is failing to configure parties!  Exception: " + ex);

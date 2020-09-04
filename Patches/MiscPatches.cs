@@ -4,10 +4,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
+using Bandit_Militias.Helpers;
 using HarmonyLib;
 using SandBox.View.Map;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.SandBox.CampaignBehaviors;
+using TaleWorlds.CampaignSystem.SandBox.CampaignBehaviors.AiBehaviors;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
 using static Bandit_Militias.Helpers.Helper;
@@ -29,6 +31,8 @@ namespace Bandit_Militias.Patches
             private static void Postfix()
             {
                 Mod.Log("MapScreen.OnInitialize");
+                HeroCreatorCopy.Disciplinarian = PerkObject.All.First(x => x.StringId == "LeadershipLeaderOfMasses");
+                HeroCreatorCopy.Leadership = SkillObject.All.First(x => x.StringId == "Leadership");
                 EquipmentItems.Clear();
                 PopulateItems();
                 Recruits = CharacterObject.All.Where(x =>
@@ -220,6 +224,39 @@ namespace Bandit_Militias.Patches
             }
         }
 
+        // todo remove, temp testing
+        [HarmonyPatch(typeof(PartyUpgrader), "UpgradeReadyTroops")]
+        public class PartyUpgraderUpgradeReadyTroopsPatch
+        {
+            private static Exception Finalizer(PartyBase party, Exception __exception)
+            {
+                if (__exception != null)
+                {
+                    FileLog.Log($"party: {party} has a roster? {party.MemberRoster != null} has leader? {party.LeaderHero}");
+                }
+
+                return null;
+            }
+        }
+
+        [HarmonyPatch(typeof(AiBanditPatrollingBehavior), "AiHourlyTick")]
+        public class AiBanditPatrollingBehaviorAiHourlyTickPatch
+        {
+            private static Exception Finalizer(MobileParty mobileParty, PartyThinkParams p, Exception __exception)
+            {
+                if (__exception != null)
+                {
+                    FileLog.Log($"mobileParty: {mobileParty}");
+                    if (mobileParty.LeaderHero == null)
+                    {
+                        FileLog.Log("\tCRITICAL ERROR - this party has no leader for some reason, trashing...");
+                        Trash(mobileParty);
+                    }
+                }
+
+                return null;
+            }
+        }
 #if OneFourTwo
         // swapped (copied) two very similar methods in assemblies, one was throwing one wasn't
         [HarmonyPatch(typeof(NearbyBanditBaseIssueBehavior), "FindSuitableHideout")]
@@ -268,6 +305,7 @@ namespace Bandit_Militias.Patches
             }
         }
 
+        // todo check if needed in later game versions (currently e1.5.1)
         [HarmonyPatch(typeof(HeroSpawnCampaignBehavior), "GetMoveScoreForCompanion")]
         public class HeroSpawnCampaignBehaviorGetMoveScoreForCompanionPatch
         {
