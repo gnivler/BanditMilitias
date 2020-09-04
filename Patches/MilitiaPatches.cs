@@ -36,24 +36,24 @@ namespace Bandit_Militias.Patches
                         return;
                     }
 
-                    var parties = MobileParty.All.Where(x => x.IsBandit && x.CurrentSettlement == null).ToList();
+                    var parties = MobileParty.All.Where(x => x.IsBandit && x.CurrentSettlement == null);
                     T.Restart();
-                    for (var i = 0; i < parties.Count; i++)
+                    //for (var i = 0; i < parties.Count; i++)
+                    foreach (var mobileParty in parties)
                     {
-                        var __instance = parties[i];
-                        if (!IsValidParty(__instance))
+                        if (!IsValidParty(mobileParty))
                         {
                             continue;
                         }
 
-                        var lastMergedOrSplitDate = Militia.FindMilitiaByParty(__instance)?.LastMergedOrSplitDate;
+                        var lastMergedOrSplitDate = Militia.FindMilitiaByParty(mobileParty)?.LastMergedOrSplitDate;
                         if (CampaignTime.Now < lastMergedOrSplitDate + CampaignTime.Hours(Globals.Settings.CooldownHours))
                         {
                             continue;
                         }
 
-                        var targetParty = MobileParty.FindPartiesAroundPosition(__instance.Position2D, FindRadius,
-                            x => x != __instance && x.IsBandit && IsValidParty(x)).GetRandomElement()?.Party;
+                        var targetParty = MobileParty.FindPartiesAroundPosition(mobileParty.Position2D, FindRadius,
+                            x => x != mobileParty && x.IsBandit && IsValidParty(x)).GetRandomElement()?.Party;
 
                         // "nobody" is a valid answer
                         if (targetParty == null)
@@ -68,36 +68,36 @@ namespace Bandit_Militias.Patches
                             continue;
                         }
 
-                        var militiaTotalCount = __instance.MemberRoster.TotalManCount + targetParty.MemberRoster.TotalManCount;
+                        var militiaTotalCount = mobileParty.MemberRoster.TotalManCount + targetParty.MemberRoster.TotalManCount;
                         if (militiaTotalCount < Globals.Settings.MinPartySize ||
                             militiaTotalCount > CalculatedMaxPartySize ||
-                            __instance.Party.TotalStrength > CalculatedMaxPartyStrength ||
-                            NumMountedTroops(__instance.MemberRoster) + NumMountedTroops(targetParty.MemberRoster) > militiaTotalCount / 2)
+                            mobileParty.Party.TotalStrength > CalculatedMaxPartyStrength ||
+                            NumMountedTroops(mobileParty.MemberRoster) + NumMountedTroops(targetParty.MemberRoster) > militiaTotalCount / 2)
                         {
                             continue;
                         }
 
-                        if (Campaign.Current.Models.MapDistanceModel.GetDistance(targetParty.MobileParty, __instance) > MergeDistance)
+                        if (Campaign.Current.Models.MapDistanceModel.GetDistance(targetParty.MobileParty, mobileParty) > MergeDistance)
                         {
-                            if (!MergeMap.ContainsKey(__instance))
+                            if (!MergeMap.ContainsKey(mobileParty))
                             {
-                                MergeMap.Add(__instance, CampaignTime.Now);
+                                MergeMap.Add(mobileParty, CampaignTime.Now);
                             }
 
-                            if (!IsMovingToBandit(__instance, targetParty.MobileParty) &&
-                                CampaignTime.Now > MergeMap[__instance] + CampaignTime.Hours(Globals.Settings.CooldownHours))
+                            if (!IsMovingToBandit(mobileParty, targetParty.MobileParty) &&
+                                CampaignTime.Now > MergeMap[mobileParty] + CampaignTime.Hours(Globals.Settings.CooldownHours))
                             {
                                 //var midPoint = GetMidPoint(__instance.Position2D, targetParty.Position2D);
-                                MergeMap.Remove(__instance);
-                                Mod.Log($"{__instance} seeking > {targetParty.MobileParty}");
-                                __instance.SetMoveEscortParty(targetParty.MobileParty);
+                                MergeMap.Remove(mobileParty);
+                                Mod.Log($"{mobileParty} seeking > {targetParty.MobileParty}");
+                                mobileParty.SetMoveEscortParty(targetParty.MobileParty);
                                 Mod.Log($"SetNavigationModeParty ==> {T.ElapsedTicks / 10000F:F3}ms");
 
-                                if (targetParty.MobileParty.MoveTargetParty != __instance)
+                                if (targetParty.MobileParty.MoveTargetParty != mobileParty)
                                 {
                                     MergeMap.Remove(targetParty.MobileParty);
-                                    Mod.Log($"{targetParty.MobileParty} seeking back > {__instance}");
-                                    targetParty.MobileParty.SetMoveEscortParty(__instance);
+                                    Mod.Log($"{targetParty.MobileParty} seeking back > {mobileParty}");
+                                    targetParty.MobileParty.SetMoveEscortParty(mobileParty);
                                     Mod.Log($"SetNavigationModeTargetParty ==> {T.ElapsedTicks / 10000F:F3}ms");
                                 }
                             }
@@ -105,17 +105,17 @@ namespace Bandit_Militias.Patches
                             return;
                         }
 
-                        if (Settlement.FindSettlementsAroundPosition(__instance.Position2D, MinDistanceFromHideout, x => x.IsHideout()).Any())
+                        if (Settlement.FindSettlementsAroundPosition(mobileParty.Position2D, MinDistanceFromHideout, x => x.IsHideout()).Any())
                         {
                             continue;
                         }
 
-                        MergeMap.Remove(__instance);
+                        MergeMap.Remove(mobileParty);
                         MergeMap.Remove(targetParty.MobileParty);
 
                         // create a new party merged from the two
-                        var rosters = MergeRosters(__instance, targetParty);
-                        var militia = new Militia(__instance, rosters[0], rosters[1]);
+                        var rosters = MergeRosters(mobileParty, targetParty);
+                        var militia = new Militia(mobileParty, rosters[0], rosters[1]);
                         // teleport new militias near the player
                         if (TestingMode)
                         {
@@ -125,7 +125,7 @@ namespace Bandit_Militias.Patches
                         }
 
                         militia.MobileParty.Party.Visuals.SetMapIconAsDirty();
-                        Trash(__instance);
+                        Trash(mobileParty);
                         Trash(targetParty.MobileParty);
 
                         parties = MobileParty.All.Where(x => x.IsBandit && x.CurrentSettlement == null).ToList();

@@ -19,8 +19,18 @@ namespace Bandit_Militias.Helpers
 {
     public static class Helper
     {
-        internal static int NumMountedTroops(TroopRoster troopRoster) => troopRoster.Troops
-            .Where(x => x.IsMounted).Sum(troopRoster.GetTroopCount);
+        internal static int NumMountedTroops(TroopRoster troopRoster)
+        {
+            var mountedTroops = troopRoster.Troops.Where(x => x.IsMounted);
+            var mountedTroopTypeCount = mountedTroops.Count();
+            var total = 0;
+            for (var i = 0; i < mountedTroopTypeCount; i++)
+            {
+                total += troopRoster.GetElementNumber(i);
+            }
+
+            return total;
+        }
 
         internal static float Variance => MBRandom.RandomFloatRanged(0.8f, 1.2f);
         private static readonly int MinSplitSize = Globals.Settings.MinPartySize * 2;
