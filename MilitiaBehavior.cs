@@ -1,6 +1,8 @@
 using System;
+using System.Linq;
 using Bandit_Militias.Helpers;
 using TaleWorlds.CampaignSystem;
+using TaleWorlds.Core;
 using static Bandit_Militias.Globals;
 
 // ReSharper disable InconsistentNaming
@@ -37,29 +39,47 @@ namespace Bandit_Militias
                 if (Growth &&
                     Helper.IsValidParty(mobileParty) &&
                     mobileParty.StringId.StartsWith("Bandit_Militia") &&
-                    Rng.NextDouble() <= Globals.Settings.GrowthChance)
+                    ((float) GlobalMilitiaPower / CalculatedGlobalPowerLimit < Globals.Settings.GrowthFactor ||
+                     Rng.NextDouble() <= Globals.Settings.GrowthChance))
                 {
-                    Mod.Log($"TryGrowing {mobileParty.LeaderHero}, total: {mobileParty.MemberRoster.TotalManCount}");
-                    var growthAmount = mobileParty.MemberRoster.TotalManCount * Globals.Settings.GrowthFactor;
-                    growthAmount = Math.Max(1, growthAmount);
-                    var rounded = Convert.ToInt32(growthAmount);
-                    // last condition doesn't account for the size increase but who cares
-                    if (mobileParty.MemberRoster.TotalManCount + rounded > CalculatedMaxPartySize ||
-                        GlobalMilitiaPower + mobileParty.Party.TotalStrength > CalculatedGlobalPowerLimit)
+                    //  don't grow Tier3+ units
+                    var eligibleToGrow = mobileParty.MemberRoster.Troops.Where(x => x.Tier <= 2 && !x.IsHero).ToList();
+                    if (eligibleToGrow.Any())
                     {
-                        return;
-                    }
+                        Mod.Log($"TryGrowing {mobileParty.LeaderHero}, total: {mobileParty.MemberRoster.TotalManCount}");
+                        var growthAmount = mobileParty.MemberRoster.TotalManCount * Globals.Settings.GrowthFactor;
+                        // bump up growth to reach GrowthFactor
+                        // Growth cap % - current % = additional
+                        growthAmount += Globals.Settings.GlobalPowerFactor * 100 - (float) GlobalMilitiaPower / CalculatedGlobalPowerLimit * 100;
+                        growthAmount = Math.Max(1, growthAmount);
+                        var growthRounded = Convert.ToInt32(growthAmount);
+                        // last condition doesn't account for the size increase but who cares
+                        if (mobileParty.MemberRoster.TotalManCount + growthRounded > CalculatedMaxPartySize ||
+                            GlobalMilitiaPower + mobileParty.Party.TotalStrength > CalculatedGlobalPowerLimit)
+                        {
+                            return;
+                        }
 
-                    for (var i = 0; i < rounded; i++)
-                    {
-                        var index = Rng.Next(1, mobileParty.MemberRoster.Count);
-                        mobileParty.MemberRoster.AddToCountsAtIndex(index, 1);
-                    }
+                        var iterations = Convert.ToInt32((float) growthRounded / eligibleToGrow.Count);
+                        for (var i = 0; i < iterations; i++)
+                        {
+                            var amount = Convert.ToInt32((float) growthRounded / iterations);
+                            if (iterations % 2 != 0 && i + 1 == iterations)
+                            {
+                                // final loop, add the leftover troop randomly
+                                mobileParty.MemberRoster.AddToCounts(eligibleToGrow.GetRandomElement(), amount + 1);
+                            }
+                            else
+                            {
+                                mobileParty.MemberRoster.AddToCounts(eligibleToGrow.GetRandomElement(), amount);
+                            }
+                        }
 
-                    var troopString = $"{mobileParty.Party.NumberOfAllMembers} troop" + (mobileParty.Party.NumberOfAllMembers > 1 ? "s" : "");
-                    var strengthString = $"{Math.Round(mobileParty.Party.TotalStrength)} strength";
-                    Mod.Log($"{$"Grown to",-70} | {troopString,10} | {strengthString,12} |");
-                    // Mod.Log($"Grown to: {mobileParty.MemberRoster.TotalManCount}");
+                        var troopString = $"{mobileParty.Party.NumberOfAllMembers} troop" + (mobileParty.Party.NumberOfAllMembers > 1 ? "s" : "");
+                        var strengthString = $"{Math.Round(mobileParty.Party.TotalStrength)} strength";
+                        Mod.Log($"{$"Grown to",-70} | {troopString,10} | {strengthString,12} |");
+                        // Mod.Log($"Grown to: {mobileParty.MemberRoster.TotalManCount}"); 
+                    }
                 }
             }
             catch (Exception ex)

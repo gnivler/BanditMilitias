@@ -135,7 +135,7 @@ namespace Bandit_Militias
                     }
 
                     numberToUpgrade = Convert.ToInt32(Rng.Next(minNumberToUpgrade, number + 1));
-                    Mod.Log($"Adding {numberToUpgrade,-3} from {number}");
+                    Mod.Log($"Upgrading {numberToUpgrade,-3} from {number}");
                     MobileParty.MemberRoster.AddXpToTroopAtIndex(numberToUpgrade * DifficultyXpMap[Globals.Settings.XpGift], randomIndex);
                     PartyUpgraderCopy.UpgradeReadyTroopsCopy(MobileParty.Party);
                 }

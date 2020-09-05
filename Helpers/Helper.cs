@@ -209,18 +209,12 @@ namespace Bandit_Militias.Helpers
             }
         }
 
-        private static bool IsTooBusyToMerge(this MobileParty mobileParty)
+        internal static bool IsTooBusyToMerge(this MobileParty mobileParty)
         {
             return mobileParty.TargetParty != null ||
                    mobileParty.ShortTermTargetParty != null ||
                    mobileParty.ShortTermBehavior == AiBehavior.EngageParty ||
-                   mobileParty.DefaultBehavior == AiBehavior.EngageParty ||
-                   mobileParty.ShortTermBehavior == AiBehavior.RaidSettlement ||
-                   mobileParty.DefaultBehavior == AiBehavior.RaidSettlement ||
-                   mobileParty.ShortTermBehavior == AiBehavior.BesiegeSettlement ||
-                   mobileParty.DefaultBehavior == AiBehavior.BesiegeSettlement ||
-                   mobileParty.ShortTermBehavior == AiBehavior.AssaultSettlement ||
-                   mobileParty.DefaultBehavior == AiBehavior.AssaultSettlement;
+                   mobileParty.DefaultBehavior == AiBehavior.EngageParty;
         }
 
         internal static void Trash(MobileParty mobileParty)
@@ -633,7 +627,7 @@ namespace Bandit_Militias.Helpers
                 var parties = MobileParty.All.Where(x => x.LeaderHero != null && !x.IsBandit).ToList();
                 CalculatedMaxPartySize = Convert.ToInt32(parties.Select(x => x.Party.PartySizeLimit).Average() * Globals.Settings.MaxPartySizeFactor * Variance);
                 CalculatedMaxPartyStrength = Convert.ToInt32(parties.Select(x => x.Party.TotalStrength).Average() * Globals.Settings.PartyStrengthFactor * Variance);
-                CalculatedGlobalPowerLimit = Convert.ToInt32(parties.Select(x => x.Party.TotalStrength).Sum() * Globals.Settings.GlobalPowerFactor * Variance);
+                CalculatedGlobalPowerLimit = Convert.ToInt32(parties.Select(x => x.Party.TotalStrength).Sum() * Variance);
                 GlobalMilitiaPower = Convert.ToInt32(Militias.Select(x => x.MobileParty.Party.TotalStrength).Sum());
                 if (Militias.Count == 0)
                 {

@@ -36,12 +36,18 @@ namespace Bandit_Militias.Patches
                         return;
                     }
 
-                    var parties = MobileParty.All.Where(x => x.IsBandit && x.CurrentSettlement == null);
+                    var parties = MobileParty.All.Where(x =>
+                        x.Party.IsMobile &&
+                        x.CurrentSettlement == null &&
+                        !x.IsCurrentlyUsedByAQuest &&
+                        x.IsBandit).ToList();
                     T.Restart();
-                    //for (var i = 0; i < parties.Count; i++)
-                    foreach (var mobileParty in parties)
+                    for (var index = 0; index < parties.Count; index++)
                     {
-                        if (!IsValidParty(mobileParty))
+                        var mobileParty = parties[index];
+                        if (mobileParty.MoveTargetParty != null &&
+                            mobileParty.MoveTargetParty.IsBandit ||
+                            mobileParty.IsTooBusyToMerge())
                         {
                             continue;
                         }
@@ -53,7 +59,7 @@ namespace Bandit_Militias.Patches
                         }
 
                         var targetParty = MobileParty.FindPartiesAroundPosition(mobileParty.Position2D, FindRadius,
-                            x => x != mobileParty && x.IsBandit && IsValidParty(x)).GetRandomElement()?.Party;
+                            x => x != mobileParty && IsValidParty(x)).GetRandomElement()?.Party;
 
                         // "nobody" is a valid answer
                         if (targetParty == null)
@@ -84,10 +90,8 @@ namespace Bandit_Militias.Patches
                                 MergeMap.Add(mobileParty, CampaignTime.Now);
                             }
 
-                            if (!IsMovingToBandit(mobileParty, targetParty.MobileParty) &&
-                                CampaignTime.Now > MergeMap[mobileParty] + CampaignTime.Hours(Globals.Settings.CooldownHours))
+                            if (CampaignTime.Now > MergeMap[mobileParty] + CampaignTime.Hours(Globals.Settings.CooldownHours))
                             {
-                                //var midPoint = GetMidPoint(__instance.Position2D, targetParty.Position2D);
                                 MergeMap.Remove(mobileParty);
                                 Mod.Log($"{mobileParty} seeking > {targetParty.MobileParty}");
                                 mobileParty.SetMoveEscortParty(targetParty.MobileParty);
@@ -145,7 +149,7 @@ namespace Bandit_Militias.Patches
         [HarmonyPatch(typeof(DefaultPartySpeedCalculatingModel), "CalculateFinalSpeed")]
         public class DefaultPartySpeedCalculatingModelCalculateFinalSpeedPatch
         {
-            private const float SpeedFactor = 0.86f;
+            private const float SpeedFactor = 0.85f;
 
             private static void Postfix(MobileParty mobileParty, ref float __result)
             {
