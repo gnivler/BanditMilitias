@@ -54,10 +54,10 @@ namespace Bandit_Militias.Helpers
                 return;
             }
 
-            var party1 = new TroopRoster();
-            var party2 = new TroopRoster();
-            var prisoners1 = new TroopRoster();
-            var prisoners2 = new TroopRoster();
+            var party1 = TroopRoster.CreateDummyTroopRoster();
+            var party2 = TroopRoster.CreateDummyTroopRoster();
+            var prisoners1 = TroopRoster.CreateDummyTroopRoster();
+            var prisoners2 = TroopRoster.CreateDummyTroopRoster();
             var inventory1 = new ItemRoster();
             var inventory2 = new ItemRoster();
             SplitRosters(mobileParty, party1, party2, prisoners1, prisoners2, inventory1, inventory2);
@@ -159,8 +159,8 @@ namespace Bandit_Militias.Helpers
 
         internal static TroopRoster[] MergeRosters(MobileParty sourceParty, PartyBase targetParty)
         {
-            var troopRoster = new TroopRoster();
-            var prisonerRoster = new TroopRoster();
+            var troopRoster = TroopRoster.CreateDummyTroopRoster();
+            var prisonerRoster = TroopRoster.CreateDummyTroopRoster();
             var rosters = new List<TroopRoster>
             {
                 sourceParty.MemberRoster,
