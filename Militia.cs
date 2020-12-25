@@ -137,11 +137,11 @@ namespace Bandit_Militias
                     numberToUpgrade = Convert.ToInt32(Rng.Next(minNumberToUpgrade, number + 1));
                     Mod.Log($"Upgrading {numberToUpgrade,-3} from {number}");
                     MobileParty.MemberRoster.AddXpToTroopAtIndex(numberToUpgrade * DifficultyXpMap[Globals.Settings.XpGift], randomIndex);
-                    PartyUpgraderCopy.UpgradeReadyTroopsCopy(MobileParty.Party);
+                    Campaign.Current.PartyUpgrader.UpgradeReadyTroops(MobileParty.Party);
+                    //PartyUpgraderCopy.UpgradeReadyTroopsCopy(MobileParty.Party);
                 }
             }
             catch (Exception ex)
-
             {
                 Trash(MobileParty);
                 Mod.Log("Bandit Militias is failing to configure parties!  Exception: " + ex);

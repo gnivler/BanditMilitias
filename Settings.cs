@@ -6,6 +6,7 @@ namespace Bandit_Militias
 {
     public class Settings
     {
+        public bool Debug = false;
         public bool CanTrain = true;
         public bool RandomBanners = true;
         public string XpGift = "NORMAL";

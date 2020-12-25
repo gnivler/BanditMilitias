@@ -1,9 +1,5 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
-using System.Reflection.Emit;
 using Bandit_Militias.Helpers;
 using HarmonyLib;
 using SandBox.View.Map;
@@ -136,47 +132,48 @@ namespace Bandit_Militias.Patches
             }
         }
 
+        // in e1.5.6 this class was rewritten
         // prevents militias from being added to DynamicBodyCampaignBehavior._heroBehaviorsDictionary
         // checked 1.4.3b
-        [HarmonyPatch(typeof(DynamicBodyCampaignBehavior), "OnAfterDailyTick")]
-        public class DynamicBodyCampaignBehaviorOnAfterDailyTickPatch
-        {
-            private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator ilg)
-            {
-                var label = ilg.DefineLabel();
-                var codes = instructions.ToList();
-                var insertAt = codes.FindIndex(x => x.opcode.Equals(OpCodes.Stloc_2));
-                insertAt++;
-                var moveNext = AccessTools.Method(typeof(IEnumerator), nameof(IEnumerator.MoveNext));
-                var jumpIndex = codes.FindIndex(x =>
-                    x.opcode == OpCodes.Callvirt && (MethodInfo) x.operand == moveNext);
-                jumpIndex--;
-                codes[jumpIndex].labels.Add(label);
-                var helperMi = AccessTools.Method(
-                    typeof(DynamicBodyCampaignBehaviorOnAfterDailyTickPatch), nameof(helper));
-                var stack = new List<CodeInstruction>
-                {
-                    // copy the Hero on top of the stack then feed it to the helper for a bool then branch
-                    new CodeInstruction(OpCodes.Ldloc_2),
-                    new CodeInstruction(OpCodes.Call, helperMi),
-                    new CodeInstruction(OpCodes.Brfalse, label)
-                };
-                codes.InsertRange(insertAt, stack);
-                return codes.AsEnumerable();
-            }
-
-            private static int helper(Hero hero)
-            {
-                // ReSharper disable once PossibleNullReferenceException
-                if (hero.PartyBelongedTo != null &&
-                    hero.PartyBelongedTo.StringId.StartsWith("Bandit_Militia"))
-                {
-                    return 1;
-                }
-
-                return 0;
-            }
-        }
+        //[HarmonyPatch(typeof(DynamicBodyCampaignBehavior), "OnAfterDailyTick")]
+        //public class DynamicBodyCampaignBehaviorOnAfterDailyTickPatch
+        //{
+        //    private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator ilg)
+        //    {
+        //        var label = ilg.DefineLabel();
+        //        var codes = instructions.ToList();
+        //        var insertAt = codes.FindIndex(x => x.opcode.Equals(OpCodes.Stloc_2));
+        //        insertAt++;
+        //        var moveNext = AccessTools.Method(typeof(IEnumerator), nameof(IEnumerator.MoveNext));
+        //        var jumpIndex = codes.FindIndex(x =>
+        //            x.opcode == OpCodes.Callvirt && (MethodInfo) x.operand == moveNext);
+        //        jumpIndex--;
+        //        codes[jumpIndex].labels.Add(label);
+        //        var helperMi = AccessTools.Method(
+        //            typeof(DynamicBodyCampaignBehaviorOnAfterDailyTickPatch), nameof(helper));
+        //        var stack = new List<CodeInstruction>
+        //        {
+        //            // copy the Hero on top of the stack then feed it to the helper for a bool then branch
+        //            new CodeInstruction(OpCodes.Ldloc_2),
+        //            new CodeInstruction(OpCodes.Call, helperMi),
+        //            new CodeInstruction(OpCodes.Brfalse, label)
+        //        };
+        //        codes.InsertRange(insertAt, stack);
+        //        return codes.AsEnumerable();
+        //    }
+        //
+        //    private static int helper(Hero hero)
+        //    {
+        //        // ReSharper disable once PossibleNullReferenceException
+        //        if (hero.PartyBelongedTo != null &&
+        //            hero.PartyBelongedTo.StringId.StartsWith("Bandit_Militia"))
+        //        {
+        //            return 1;
+        //        }
+        //
+        //        return 0;
+        //    }
+        //}
 
         // 1.4.3b is throwing when militias are nuked and the game is reloaded with militia MapEvents
         //[HarmonyPatch(typeof(MapEvent), "RemoveInvolvedPartyInternal")]
@@ -316,4 +313,5 @@ namespace Bandit_Militias.Patches
         }
     }
 }
+
 #endif

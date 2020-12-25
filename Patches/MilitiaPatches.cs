@@ -5,7 +5,6 @@ using SandBox.View.Map;
 using SandBox.ViewModelCollection.Nameplate;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.GameMenus;
-using TaleWorlds.CampaignSystem.SandBox.CampaignBehaviors;
 using TaleWorlds.CampaignSystem.SandBox.GameComponents.Map;
 using TaleWorlds.Core;
 using static Bandit_Militias.Helpers.Helper;
@@ -151,11 +150,20 @@ namespace Bandit_Militias.Patches
         {
             private const float SpeedFactor = 0.85f;
 
+            // todo un-kludge
             private static void Postfix(MobileParty mobileParty, ref float __result)
             {
-                if (mobileParty.StringId.StartsWith("Bandit_Militia"))
+                try
                 {
-                    __result *= SpeedFactor;
+                    if (mobileParty?.StringId != null &&
+                        mobileParty.StringId.StartsWith("Bandit_Militia"))
+                    {
+                        __result *= SpeedFactor;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Mod.Log(ex);
                 }
             }
         }
@@ -206,6 +214,7 @@ namespace Bandit_Militias.Patches
             }
         }
 
+        // check daily each bandit party against the size factor and a random chance to split up
         [HarmonyPatch(typeof(MobileParty), "DailyTick")]
         public static class MobilePartyDailyTickPatch
         {
@@ -216,7 +225,6 @@ namespace Bandit_Militias.Patches
                     return;
                 }
 
-                // check daily each bandit party against the size factor and a random chance to split up
                 TrySplitParty(__instance);
             }
         }
@@ -305,20 +313,20 @@ namespace Bandit_Militias.Patches
         }
 
         // prevents militias from being added to DynamicBodyCampaignBehavior._heroBehaviorsDictionary 
-        [HarmonyPatch(typeof(DynamicBodyCampaignBehavior), "CanBeEffectedByProperties")]
-        public class DynamicBodyCampaignBehaviorCanBeEffectedByPropertiesPatch
-        {
-            private static void Postfix(Hero hero, ref bool __result)
-            {
-                if (hero.PartyBelongedTo != null &&
-                    hero.PartyBelongedTo.StringId.StartsWith("Bandit_Militia"))
-                {
-                    __result = false;
-                }
-            }
-        }
+        //[HarmonyPatch(typeof(DynamicBodyCampaignBehavior), "CanBeEffectedByProperties")]
+        //public class DynamicBodyCampaignBehaviorCanBeEffectedByPropertiesPatch
+        //{
+        //    private static void Postfix(Hero hero, ref bool __result)
+        //    {
+        //        if (hero.PartyBelongedTo != null &&
+        //            hero.PartyBelongedTo.StringId.StartsWith("Bandit_Militia"))
+        //        {
+        //            __result = false;
+        //        }
+        //    }
+        //}
 
-        // ignore caravans and villagers for balance, and to help focus against more real threats
+        // prevent militias from attacking parties they can destroy easily
         [HarmonyPatch(typeof(MobileParty), "CanAttack")]
         public class MobilePartyCanAttackPatch
         {

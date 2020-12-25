@@ -36,7 +36,7 @@ namespace Bandit_Militias
 
         internal static void Log(object input, LogLevel logLevel = LogLevel.Debug)
         {
-            if (logging < logLevel)
+            if (!Globals.Settings.Debug)
             {
                 return;
             }
@@ -50,10 +50,10 @@ namespace Bandit_Militias
 
         protected override void OnSubModuleLoad()
         {
-            Log($"Startup {DateTime.Now.ToShortTimeString()}", LogLevel.Info);
             try
             {
                 ReadConfig();
+                Log($"Startup {DateTime.Now.ToShortTimeString()}", LogLevel.Info);
             }
             catch (Exception ex)
             {
@@ -113,10 +113,11 @@ namespace Bandit_Militias
                 (Input.IsKeyDown(InputKey.LeftShift) || Input.IsKeyDown(InputKey.RightShift)) &&
                 Input.IsKeyPressed(InputKey.F12))
             {
-                foreach (var militia in Militias.OrderByDescending(x=>x.MobileParty.MemberRoster.TotalManCount))
+                foreach (var militia in Militias.OrderByDescending(x => x.MobileParty.MemberRoster.TotalManCount))
                 {
                     Log($">> {militia.Hero.Name,-30}: {militia.MobileParty.MemberRoster.TotalManCount}/{militia.MobileParty.Party.TotalStrength:0}");
                 }
+
                 Log($">> Total {Militias.Count} = {Militias.Select(x => x.MobileParty.MemberRoster.TotalManCount).Sum()}");
             }
 

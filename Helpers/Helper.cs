@@ -1,11 +1,9 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using HarmonyLib;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
-using TaleWorlds.CampaignSystem.SandBox.CampaignBehaviors;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
 using TaleWorlds.Localization;
@@ -283,7 +281,7 @@ namespace Bandit_Militias.Helpers
             FlushEmptyMilitiaParties();
             FlushNeutralBanditParties();
             FlushBadCharacterObjects();
-            FlushBadBehaviors();
+            //FlushBadBehaviors();
             FlushMapEvents();
             FlushZeroParties();
         }
@@ -330,32 +328,33 @@ namespace Bandit_Militias.Helpers
             }
         }
 
-        private static void FlushBadBehaviors()
-        {
-            var behaviors = (IDictionary) Traverse.Create(
-                    Campaign.Current.CampaignBehaviorManager.GetBehavior<DynamicBodyCampaignBehavior>())
-                .Field("_heroBehaviorsDictionary").GetValue();
-            var heroes = new List<Hero>();
-            foreach (var hero in behaviors.Keys)
-            {
-                if (!Hero.All.Contains(hero))
-                {
-                    heroes.Add((Hero) hero);
-                }
-            }
-
-            var hasLogged = false;
-            foreach (var hero in heroes)
-            {
-                if (!hasLogged)
-                {
-                    hasLogged = true;
-                    Mod.Log($"Clearing {heroes.Count} hero behaviors without heroes.", LogLevel.Info);
-                }
-
-                behaviors.Remove(hero);
-            }
-        }
+        // in e1.5.5 the DynamicBodyCampaignBehavior class was rewritten
+        //private static void FlushBadBehaviors()
+        //{
+        //    var behaviors = (IDictionary) Traverse.Create(
+        //            Campaign.Current.CampaignBehaviorManager.GetBehavior<DynamicBodyCampaignBehavior>())
+        //        .Field("_heroBehaviorsDictionary").GetValue();
+        //    var heroes = new List<Hero>();
+        //    foreach (var hero in behaviors.Keys)
+        //    {
+        //        if (!Hero.All.Contains(hero))
+        //        {
+        //            heroes.Add((Hero) hero);
+        //        }
+        //    }
+        //
+        //    var hasLogged = false;
+        //    foreach (var hero in heroes)
+        //    {
+        //        if (!hasLogged)
+        //        {
+        //            hasLogged = true;
+        //            Mod.Log($"Clearing {heroes.Count} hero behaviors without heroes.", LogLevel.Info);
+        //        }
+        //
+        //        behaviors.Remove(hero);
+        //    }
+        //}
 
         private static void FlushNullPartyHeroes()
         {
