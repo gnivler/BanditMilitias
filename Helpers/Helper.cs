@@ -176,7 +176,8 @@ namespace Bandit_Militias.Helpers
             {
                 foreach (var troopRosterElement in roster.Where(x => x.Character?.HeroObject == null))
                 {
-                    troopRoster.AddToCounts(troopRosterElement.Character, troopRosterElement.Number, woundedCount: troopRosterElement.WoundedNumber, xp: troopRosterElement.Xp);
+                    troopRoster.AddToCounts(troopRosterElement.Character, troopRosterElement.Number,
+                        woundedCount: troopRosterElement.WoundedNumber, xpChange: troopRosterElement.Xp);
                 }
             }
 
@@ -184,7 +185,8 @@ namespace Bandit_Militias.Helpers
             {
                 foreach (var troopRosterElement in roster.Where(x => x.Character?.HeroObject == null))
                 {
-                    prisonerRoster.AddToCounts(troopRosterElement.Character, troopRosterElement.Number, woundedCount: troopRosterElement.WoundedNumber, xp: troopRosterElement.Xp);
+                    prisonerRoster.AddToCounts(troopRosterElement.Character, troopRosterElement.Number,
+                        woundedCount: troopRosterElement.WoundedNumber, xpChange: troopRosterElement.Xp);
                 }
             }
 
