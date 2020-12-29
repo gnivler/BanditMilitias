@@ -36,7 +36,7 @@ namespace Bandit_Militias
 
         internal static void Log(object input, LogLevel logLevel = LogLevel.Debug)
         {
-            if (!Globals.Settings.Debug)
+            if (Globals.Settings == null || !Globals.Settings.Debug)
             {
                 return;
             }
@@ -84,7 +84,7 @@ namespace Bandit_Militias
             }
             catch (Exception ex)
             {
-                Log(ex, LogLevel.Error);
+                FileLog.Log(ex.ToString());
             }
         }
 

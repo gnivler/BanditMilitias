@@ -51,6 +51,10 @@ namespace Bandit_Militias
             var mostPrevalent = (Clan) MostPrevalentFaction(MobileParty) ?? Clan.BanditFactions.First();
             MobileParty.ActualClan = mostPrevalent;
             Hero = HeroCreatorCopy.CreateBanditHero(mostPrevalent, MobileParty);
+            var partyName = (string) Traverse.Create(typeof(MBTextManager))
+                .Method("GetLocalizedText", $"{Possess(Hero.FirstName.ToString())} Bandit Militia").GetValue();
+            MobileParty.Name = new TextObject(partyName);
+            MobileParty.Party.Owner = Hero;
         }
 
         private void TrainMilitia()
@@ -63,11 +67,6 @@ namespace Bandit_Militias
                     Trash(MobileParty);
                     return;
                 }
-
-                var partyName = (string) Traverse.Create(typeof(MBTextManager))
-                    .Method("GetLocalizedText", $"{Possess(Hero.FirstName.ToString())} Bandit Militia").GetValue();
-                MobileParty.Name = new TextObject(partyName);
-                MobileParty.Party.Owner = Hero;
 
                 if (!Globals.Settings.CanTrain ||
                     DifficultyXpMap[Globals.Settings.XpGift] == 0)
@@ -143,9 +142,9 @@ namespace Bandit_Militias
             }
             catch (Exception ex)
             {
-                Trash(MobileParty);
                 Mod.Log("Bandit Militias is failing to configure parties!  Exception: " + ex);
                 Debug.PrintError("Bandit Militias is failing to configure parties!  Exception: " + ex);
+                Trash(MobileParty);
             }
         }
 

@@ -31,7 +31,7 @@ namespace Bandit_Militias.Helpers
                 {
                     distanceMap.Add(hideout, mobileParty.Position2D.Distance(hideout.Position2D));
                 }
-                
+
                 var closest = 0;
                 var settlement = Hideouts.FirstOrDefault(x => distanceMap[x] <= closest) ?? Hideouts.GetRandomElement();
                 var num1 = 0;
@@ -78,10 +78,9 @@ namespace Bandit_Militias.Helpers
 #else
                 Traverse.Create(Hero).Property("HomeSettlement").SetValue(hideout);
 #endif
+                mobileParty.MemberRoster.AddToCounts(specialHero.CharacterObject, 1, false, 0, 0, true, 0);
                 if (Globals.Settings.CanTrain)
                 {
-                    mobileParty.MemberRoster.AddToCounts(specialHero.CharacterObject, 1, false, 0, 0, true, 0);
-
                     specialHero.SetSkillValue(Leadership, 125);
                     specialHero.SetPerkValue(Disciplinarian, true);
                 }

@@ -119,6 +119,8 @@ namespace Bandit_Militias.Patches
                         // create a new party merged from the two
                         var rosters = MergeRosters(mobileParty, targetParty);
                         var militia = new Militia(mobileParty, rosters[0], rosters[1]);
+                        militia.MobileParty.SetMovePatrolAroundPoint(militia.MobileParty.Position2D);
+
                         // teleport new militias near the player
                         if (TestingMode)
                         {
