@@ -43,7 +43,7 @@ namespace Bandit_Militias
         {
             MobileParty = MBObjectManager.Instance.CreateObject<MobileParty>("Bandit_Militia");
             MobileParty.InitializeMobileParty(
-                null,
+                new TextObject(),
                 party,
                 prisoners,
                 mobileParty.Position2D,

@@ -13,7 +13,7 @@ namespace Bandit_Militias.Helpers
 {
     public static class HeroCreatorCopy
     {
-        internal static PerkObject Disciplinarian = default;
+        internal static PerkObject VeteransRespect = default;
         internal static SkillObject Leadership = default;
 
         private static readonly List<CharacterObject> Source = CharacterObject.Templates.Where(x =>
@@ -81,8 +81,8 @@ namespace Bandit_Militias.Helpers
                 mobileParty.MemberRoster.AddToCounts(specialHero.CharacterObject, 1, false, 0, 0, true, 0);
                 if (Globals.Settings.CanTrain)
                 {
-                    specialHero.SetSkillValue(Leadership, 125);
-                    specialHero.SetPerkValue(Disciplinarian, true);
+                    specialHero.SetSkillValue(Leadership, 150);
+                    specialHero.SetPerkValue(VeteransRespect, true);
                 }
             }
             catch (Exception ex)

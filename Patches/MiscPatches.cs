@@ -11,10 +11,10 @@ using TaleWorlds.Library;
 using static Bandit_Militias.Helpers.Helper;
 using static Bandit_Militias.Globals;
 
-// ReSharper disable UnusedMember.Global 
-// ReSharper disable UnusedType.Global  
-// ReSharper disable UnusedMember.Local   
-// ReSharper disable RedundantAssignment  
+// ReSharper disable UnusedMember.Global
+// ReSharper disable UnusedType.Global
+// ReSharper disable UnusedMember.Local
+// ReSharper disable RedundantAssignment
 // ReSharper disable InconsistentNaming
 
 namespace Bandit_Militias.Patches
@@ -27,7 +27,7 @@ namespace Bandit_Militias.Patches
             private static void Postfix()
             {
                 Mod.Log("MapScreen.OnInitialize");
-                HeroCreatorCopy.Disciplinarian = PerkObject.All.First(x => x.StringId == "LeadershipLeaderOfMasses");
+                HeroCreatorCopy.VeteransRespect = PerkObject.All.First(x => x.StringId == "LeadershipVeteransRespect");
                 HeroCreatorCopy.Leadership = SkillObject.All.First(x => x.StringId == "Leadership");
                 EquipmentItems.Clear();
                 PopulateItems();
