@@ -57,7 +57,7 @@ namespace Bandit_Militias.Helpers
                 specialHero = HeroCreator.CreateSpecialHero(characterObject1, settlement);
                 specialHero.ChangeState(Hero.CharacterStates.Active);
                 Campaign.Current.GetCampaignBehavior<IHeroCreationCampaignBehavior>().DeriveSkillsFromTraits(specialHero, characterObject1);
-                specialHero.SupporterOf = Clan.All.Where(x => x.IsMafia || x.IsNomad || x.IsSect).GetRandomElement();
+                specialHero.SupporterOf = Clan.All.Where(x => x.IsMafia || x.IsNomad || x.IsSect).ToList().GetRandomElement();
                 Traverse.Create(typeof(HeroCreator)).Method("AddRandomVarianceToTraits", specialHero).GetValue();
                 // 1.4.3b doesn't have these wired up really, but I patched prisoners with it
                 specialHero.NeverBecomePrisoner = true;
@@ -72,12 +72,9 @@ namespace Bandit_Militias.Helpers
                 var lastSeenPlace = Traverse.Create(specialHero).Field<Hero.HeroLastSeenInformation>("_lastSeenInformationKnownToPlayer").Value;
                 lastSeenPlace.LastSeenPlace = settlement;
                 EquipmentHelper.AssignHeroEquipmentFromEquipment(specialHero, BanditEquipment.GetRandomElement());
-#if !OneFourTwo
                 Traverse.Create(specialHero).Field("_homeSettlement").SetValue(settlement);
                 Traverse.Create(specialHero.Clan).Field("_warParties").Method("Add", mobileParty).GetValue();
-#else
-                Traverse.Create(Hero).Property("HomeSettlement").SetValue(hideout);
-#endif
+
                 mobileParty.MemberRoster.AddToCounts(specialHero.CharacterObject, 1, false, 0, 0, true, 0);
                 if (Globals.Settings.CanTrain)
                 {

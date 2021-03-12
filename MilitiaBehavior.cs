@@ -43,7 +43,7 @@ namespace Bandit_Militias
                      Rng.NextDouble() <= Globals.Settings.GrowthChance))
                 {
                     //  don't grow Tier3+ units
-                    var eligibleToGrow = mobileParty.MemberRoster.Troops.Where(x => x.Tier <= 2 && !x.IsHero).ToList();
+                    var eligibleToGrow = mobileParty.MemberRoster.GetTroopRoster().Where(x => x.Character.Tier <= 2 && !x.Character.IsHero).ToList();
                     if (eligibleToGrow.Any())
                     {
                         Mod.Log($"TryGrowing {mobileParty.LeaderHero}, total: {mobileParty.MemberRoster.TotalManCount}");
@@ -67,11 +67,11 @@ namespace Bandit_Militias
                             if (iterations % 2 != 0 && i + 1 == iterations)
                             {
                                 // final loop, add the leftover troop randomly
-                                mobileParty.MemberRoster.AddToCounts(eligibleToGrow.GetRandomElement(), amount + 1);
+                                mobileParty.MemberRoster.AddToCounts(eligibleToGrow.GetRandomElement().Character, amount + 1);
                             }
                             else
                             {
-                                mobileParty.MemberRoster.AddToCounts(eligibleToGrow.GetRandomElement(), amount);
+                                mobileParty.MemberRoster.AddToCounts(eligibleToGrow.GetRandomElement().Character, amount);
                             }
                         }
 

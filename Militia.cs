@@ -43,7 +43,6 @@ namespace Bandit_Militias
         {
             MobileParty = MBObjectManager.Instance.CreateObject<MobileParty>("Bandit_Militia");
             MobileParty.InitializeMobileParty(
-                new TextObject(),
                 party,
                 prisoners,
                 mobileParty.Position2D,
@@ -51,9 +50,11 @@ namespace Bandit_Militias
             var mostPrevalent = (Clan) MostPrevalentFaction(MobileParty) ?? Clan.BanditFactions.First();
             MobileParty.ActualClan = mostPrevalent;
             Hero = HeroCreatorCopy.CreateBanditHero(mostPrevalent, MobileParty);
+            // matches Faction to Culture but doesn't get intended effect of making them reinforce other bandit units or other militias
+            Hero.Culture = Clan.BanditFactions.First(x => Hero.MapFaction.Name == x.Name).Culture;
             var partyName = (string) Traverse.Create(typeof(MBTextManager))
                 .Method("GetLocalizedText", $"{Possess(Hero.FirstName.ToString())} Bandit Militia").GetValue();
-            MobileParty.Name = new TextObject(partyName);
+            MobileParty.SetCustomName(new TextObject(partyName));
             MobileParty.Party.Owner = Hero;
         }
 
@@ -96,14 +97,14 @@ namespace Bandit_Militias
                     try
                     {
                         // upgrade any looters first, then go back over and iterate further upgrades
-                        var looters = MobileParty.MemberRoster.Troops.Where(x =>
-                            x.Name.Contains("Looter")).ToList();
+                        var looters = MobileParty.MemberRoster.GetTroopRoster().Where(x =>
+                            x.Character.Name.Contains("Looter")).ToList();
                         var culture = FindMostPrevalentFaction(MobileParty.Position2D);
                         if (looters.Any())
                         {
                             foreach (var looter in looters)
                             {
-                                number = MobileParty.MemberRoster.GetElementCopyAtIndex(MobileParty.MemberRoster.FindIndexOfTroop(looter)).Number;
+                                number = MobileParty.MemberRoster.GetElementCopyAtIndex(MobileParty.MemberRoster.FindIndexOfTroop(looter.Character)).Number;
                                 numberToUpgrade = Convert.ToInt32(number * Globals.Settings.LooterUpgradeFactor);
                                 if (numberToUpgrade == 0)
                                 {
@@ -111,7 +112,7 @@ namespace Bandit_Militias
                                 }
 
                                 var roster = MobileParty.MemberRoster;
-                                roster.RemoveTroop(looter, numberToUpgrade);
+                                roster.RemoveTroop(looter.Character, numberToUpgrade);
                                 ConvertLootersToKingdomCultureRecruits(ref roster, culture, numberToUpgrade);
                             }
                         }
@@ -125,7 +126,7 @@ namespace Bandit_Militias
                 for (var i = 0; i < iterations; i++)
                 {
                     // start at index 1 to avoid hero - could be more robust...
-                    var randomIndex = Rng.Next(1, MobileParty.MemberRoster.Troops.Count());
+                    var randomIndex = Rng.Next(1, MobileParty.MemberRoster.GetTroopRoster().Count);
                     number = MobileParty.MemberRoster.GetElementCopyAtIndex(randomIndex).Number;
                     var minNumberToUpgrade = Convert.ToInt32(Globals.Settings.UpgradeUnitsFactor * number * Rng.NextDouble());
                     if (minNumberToUpgrade == 0)
@@ -151,7 +152,7 @@ namespace Bandit_Militias
         private static IFaction MostPrevalentFaction(MobileParty mobileParty)
         {
             var map = new Dictionary<CultureObject, int>();
-            var troopTypes = mobileParty.MemberRoster.Select(x => x.Character).ToList();
+            var troopTypes = mobileParty.MemberRoster.GetTroopRoster().Select(x => x.Character).ToList();
             foreach (var clan in Clan.BanditFactions)
             {
                 for (var i = 0; i < troopTypes.Count && troopTypes[i].Culture == clan.Culture; i++)
@@ -186,6 +187,8 @@ namespace Bandit_Militias
                 var troopString = $"{mobileParty.Party.NumberOfAllMembers} troop" + (mobileParty.Party.NumberOfAllMembers > 1 ? "s" : "");
                 var strengthString = $"{Math.Round(mobileParty.Party.TotalStrength)} strength";
                 Mod.Log($"{$"New Bandit Militia led by {mobileParty.LeaderHero.Name}",-70} | {troopString,10} | {strengthString,12} |");
+                Mod.Log($"Faction: {mobileParty.LeaderHero.MapFaction.Name}");
+                Mod.Log($"Culture: {mobileParty.LeaderHero.Culture.GetName()}");
             }
             catch (Exception ex)
             {

@@ -19,7 +19,7 @@ namespace Bandit_Militias.Helpers
     {
         internal static int NumMountedTroops(TroopRoster troopRoster)
         {
-            var mountedTroops = troopRoster.Troops.Where(x => x.IsMounted);
+            var mountedTroops = troopRoster.GetTroopRoster().Where(x => x.Character.IsMounted);
             var mountedTroopTypeCount = mountedTroops.Count();
             var total = 0;
             for (var i = 0; i < mountedTroopTypeCount; i++)
@@ -66,7 +66,7 @@ namespace Bandit_Militias.Helpers
             TroopRoster prisoners1, TroopRoster prisoners2, ItemRoster inventory1, ItemRoster inventory2)
         {
             Mod.Log($"Processing troops: {original.MemberRoster.Count} types, {original.MemberRoster.TotalManCount} in total");
-            foreach (var rosterElement in original.MemberRoster.Where(x => x.Character.HeroObject == null))
+            foreach (var rosterElement in original.MemberRoster.GetTroopRoster().Where(x => x.Character.HeroObject == null))
             {
                 SplitRosters(troops1, troops2, rosterElement);
             }
@@ -74,7 +74,7 @@ namespace Bandit_Militias.Helpers
             if (original.PrisonRoster.TotalManCount > 0)
             {
                 Mod.Log($"Processing prisoners: {original.PrisonRoster.Count} types, {original.PrisonRoster.TotalManCount} in total");
-                foreach (var rosterElement in original.PrisonRoster)
+                foreach (var rosterElement in original.PrisonRoster.GetTroopRoster())
                 {
                     SplitRosters(prisoners1, prisoners2, rosterElement);
                 }
@@ -82,6 +82,12 @@ namespace Bandit_Militias.Helpers
 
             foreach (var item in original.ItemRoster)
             {
+                if (string.IsNullOrEmpty(item.EquipmentElement.Item?.Name?.ToString()))
+                {
+                    Mod.Log("Bad item: " + item);
+                    continue;
+                    //Traverse.Create(PartyBase.MainParty).Property<ItemRoster>("ItemRoster").Value.Remove(item);
+                }
                 var half = Math.Max(1, item.Amount / 2);
                 inventory1.AddToCounts(item.EquipmentElement, half);
                 var remainder = item.Amount % 2;
@@ -124,14 +130,6 @@ namespace Bandit_Militias.Helpers
                 Traverse.Create(militia2.MobileParty.Party).Property("ItemRoster").SetValue(inventory2);
                 militia1.MobileParty.Party.Visuals.SetMapIconAsDirty();
                 militia2.MobileParty.Party.Visuals.SetMapIconAsDirty();
-#if !OneFourTwo
-                var warParties = Traverse.Create(original.ActualClan).Field("_warParties").GetValue<List<MobileParty>>();
-                while (warParties.Contains(original))
-                {
-                    // it's been added twice... at least.  for Reasons?
-                    warParties.Remove(original);
-                }
-#endif
                 Trash(original);
             }
             catch (Exception ex)
@@ -174,7 +172,7 @@ namespace Bandit_Militias.Helpers
             // dumps all bandit heroes (shouldn't be more than 2 though...)
             foreach (var roster in rosters)
             {
-                foreach (var troopRosterElement in roster.Where(x => x.Character?.HeroObject == null))
+                foreach (var troopRosterElement in roster.GetTroopRoster().Where(x => x.Character?.HeroObject == null))
                 {
                     troopRoster.AddToCounts(troopRosterElement.Character, troopRosterElement.Number,
                         woundedCount: troopRosterElement.WoundedNumber, xpChange: troopRosterElement.Xp);
@@ -183,7 +181,7 @@ namespace Bandit_Militias.Helpers
 
             foreach (var roster in prisoners)
             {
-                foreach (var troopRosterElement in roster.Where(x => x.Character?.HeroObject == null))
+                foreach (var troopRosterElement in roster.GetTroopRoster().Where(x => x.Character?.HeroObject == null))
                 {
                     prisonerRoster.AddToCounts(troopRosterElement.Character, troopRosterElement.Number,
                         woundedCount: troopRosterElement.WoundedNumber, xpChange: troopRosterElement.Xp);
@@ -508,7 +506,7 @@ namespace Bandit_Militias.Helpers
                         case 2 when !gear[3].IsEmpty:
                             randomElement = EquipmentItems.Where(x =>
                                 x.Item.ItemType != ItemObject.ItemTypeEnum.Bow &&
-                                x.Item.ItemType != ItemObject.ItemTypeEnum.Crossbow).GetRandomElement();
+                                x.Item.ItemType != ItemObject.ItemTypeEnum.Crossbow).ToList().GetRandomElement();
                             break;
                         case 2:
                         case 3:
@@ -550,7 +548,7 @@ namespace Bandit_Militias.Helpers
 
                         randomElement = EquipmentItems.Where(x =>
                             x.Item.ItemType != ItemObject.ItemTypeEnum.Bow &&
-                            x.Item.ItemType != ItemObject.ItemTypeEnum.Crossbow).GetRandomElement();
+                            x.Item.ItemType != ItemObject.ItemTypeEnum.Crossbow).ToList().GetRandomElement();
                     }
 
                     if (randomElement.Item.ItemType == ItemObject.ItemTypeEnum.Shield)
@@ -665,7 +663,7 @@ namespace Bandit_Militias.Helpers
 
             var highest = map.Where(x =>
                 x.Value == map.Values.Max()).Select(x => x.Key);
-            var result = highest.GetRandomElement();
+            var result = highest.ToList().GetRandomElement();
             return result;
         }
 
@@ -684,6 +682,7 @@ namespace Bandit_Militias.Helpers
             var recruit = Recruits.Where(x =>
                     x.Culture == Kingdom.All.First(k =>
                         k.Culture == cultureObject).Culture)
+                .ToList()
                 .GetRandomElement();
             troopRoster.AddToCounts(recruit, numberToUpgrade);
         }

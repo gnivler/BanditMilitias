@@ -7,6 +7,7 @@ using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.GameMenus;
 using TaleWorlds.CampaignSystem.SandBox.GameComponents.Map;
 using TaleWorlds.Core;
+using TaleWorlds.Localization;
 using static Bandit_Militias.Helpers.Helper;
 using static Bandit_Militias.Globals;
 
@@ -58,7 +59,7 @@ namespace Bandit_Militias.Patches
                         }
 
                         var targetParty = MobileParty.FindPartiesAroundPosition(mobileParty.Position2D, FindRadius,
-                            x => x != mobileParty && IsValidParty(x)).GetRandomElement()?.Party;
+                            x => x != mobileParty && IsValidParty(x)).ToList().GetRandomElement()?.Party;
 
                         // "nobody" is a valid answer
                         if (targetParty == null)
@@ -150,17 +151,17 @@ namespace Bandit_Militias.Patches
         [HarmonyPatch(typeof(DefaultPartySpeedCalculatingModel), "CalculateFinalSpeed")]
         public class DefaultPartySpeedCalculatingModelCalculateFinalSpeedPatch
         {
-            private const float SpeedFactor = 0.85f;
+            private static float SpeedModifier = -0.15f;
 
             // todo un-kludge
-            private static void Postfix(MobileParty mobileParty, ref float __result)
+            private static void Postfix(MobileParty mobileParty, ref ExplainedNumber __result)
             {
                 try
                 {
                     if (mobileParty?.StringId != null &&
                         mobileParty.StringId.StartsWith("Bandit_Militia"))
                     {
-                        __result *= SpeedFactor;
+                        __result.AddFactor(SpeedModifier, new TextObject("Bandit Militia"));
                     }
                 }
                 catch (Exception ex)
@@ -231,25 +232,6 @@ namespace Bandit_Militias.Patches
             }
         }
 
-#if OneFourTwo
-        [HarmonyPatch(typeof(EnterSettlementAction), "ApplyForParty")]
-        public class EnterSettlementActionApplyForPartyPatch
-        {
-            private static bool Prefix(MobileParty owner, Settlement settlement)
-            {
-                if (owner.StringId.StartsWith("Bandit_Militia"))
-                {
-                    Mod.Log($"Preventing {owner} from entering {settlement}");
-                    owner.SetMovePatrolAroundSettlement(settlement);
-                    return false;
-                }
-
-                return true;
-            }
-        }
-    }  
-}
-#else
         private static bool Prefix(MobileParty mobileParty, Settlement settlement)
         {
             if (mobileParty.StringId.StartsWith("Bandit_Militia"))
@@ -261,7 +243,6 @@ namespace Bandit_Militias.Patches
 
             return true;
         }
-#endif
 
         // changes the name on the campaign map (hot path)
         [HarmonyPatch(typeof(PartyNameplateVM), "RefreshDynamicProperties")]

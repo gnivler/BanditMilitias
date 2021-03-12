@@ -220,21 +220,7 @@ namespace Bandit_Militias.Patches
                 return true;
             }
         }
-
-        // todo remove, temp testing
-        [HarmonyPatch(typeof(PartyUpgrader), "UpgradeReadyTroops")]
-        public class PartyUpgraderUpgradeReadyTroopsPatch
-        {
-            private static Exception Finalizer(PartyBase party, Exception __exception)
-            {
-                if (__exception != null)
-                {
-                    FileLog.Log($"party: {party} has a roster? {party.MemberRoster != null} has leader? {party.LeaderHero}");
-                }
-
-                return null;
-            }
-        }
+        
 
         [HarmonyPatch(typeof(AiBanditPatrollingBehavior), "AiHourlyTick")]
         public class AiBanditPatrollingBehaviorAiHourlyTickPatch
@@ -254,40 +240,8 @@ namespace Bandit_Militias.Patches
                 return null;
             }
         }
-#if OneFourTwo
-        // swapped (copied) two very similar methods in assemblies, one was throwing one wasn't
-        [HarmonyPatch(typeof(NearbyBanditBaseIssueBehavior), "FindSuitableHideout")]
-        public static class NearbyBanditBaseIssueBehaviorFindSuitableHideoutPatch
-        {
-            private const float floatMaxValue = float.MaxValue;
 
-            // taken from CapturedByBountyHuntersIssue because this class' version throws
-            private static bool Prefix(Hero issueOwner, ref Settlement __result)
-            {
-                foreach (var settlement in Settlement.FindAll(x => x.Hideout != null))
-                {
-                    if (Campaign.Current.Models.MapDistanceModel.GetDistance(issueOwner.GetMapPoint(),
-                            settlement, 55f, out var num2) &&
-                        num2 < floatMaxValue)
-                    {
-                        __result = settlement;
-                    }
-                }
 
-                return false;
-            }
-        }
-
-        [HarmonyPatch(typeof(BanditsCampaignBehavior), "CheckForSpawningBanditBoss")]
-        public class BanditsCampaignBehaviorCheckForSpawningBanditBossPatch
-        {
-            private static bool Prefix(MobileParty mobileParty) => mobileParty != null;
-        }
-    }
-}
-#endif
-
-#if !OneFourTwo
         [HarmonyPatch(typeof(HeroSpawnCampaignBehavior), "OnHeroDailyTick")]
         public class HeroSpawnCampaignBehaviorOnHeroDailyTickPatch
         {
@@ -313,5 +267,3 @@ namespace Bandit_Militias.Patches
         }
     }
 }
-
-#endif
