@@ -161,7 +161,9 @@ namespace Bandit_Militias.Patches
                     if (mobileParty?.StringId != null &&
                         mobileParty.StringId.StartsWith("Bandit_Militia"))
                     {
+                        //Mod.Log($"Before {__result.ResultNumber}");
                         __result.AddFactor(SpeedModifier, new TextObject("Bandit Militia"));
+                        //Mod.Log($"After {__result.ResultNumber}");
                     }
                 }
                 catch (Exception ex)
@@ -278,22 +280,23 @@ namespace Bandit_Militias.Patches
 
         // 1.4.3b vanilla issue?  have to replace the WeaponComponentData in some cases
         // this causes naked militias when 'fixed' in this manner
-        [HarmonyPatch(typeof(PartyVisual), "WieldMeleeWeapon")]
-        public class PartyVisualWieldMeleeWeaponPatch
-        {
-            private static void Prefix(PartyBase party)
-            {
-                // todo remove after a version or two... maybe solved it by changing/fixing CreateEquipment()
-                for (var i = 0; i < 5; ++i)
-                {
-                    if (party?.Leader?.Equipment[i].Item != null && party.Leader.Equipment[i].Item.PrimaryWeapon == null)
-                    {
-                        party.Leader.Equipment[i] = new EquipmentElement(ItemObject.All.First(x =>
-                            x.StringId == party.Leader.Equipment[i].Item.StringId));
-                    }
-                }
-            }
-        }
+        // todo remove after a version or two... maybe solved it by changing/fixing CreateEquipment()
+        // commented out at 1.5.8
+        //[HarmonyPatch(typeof(PartyVisual), "WieldMeleeWeapon")]
+        //public class PartyVisualWieldMeleeWeaponPatch
+        //{
+        //    private static void Prefix(PartyBase party)
+        //    {
+        //        for (var i = 0; i < 5; ++i)
+        //        {
+        //            if (party?.Leader?.Equipment[i].Item != null && party.Leader.Equipment[i].Item.PrimaryWeapon == null)
+        //            {
+        //                party.Leader.Equipment[i] = new EquipmentElement(ItemObject.All.First(x =>
+        //                    x.StringId == party.Leader.Equipment[i].Item.StringId));
+        //            }
+        //        }
+        //    }
+        //}
 
         // prevents militias from being added to DynamicBodyCampaignBehavior._heroBehaviorsDictionary 
         //[HarmonyPatch(typeof(DynamicBodyCampaignBehavior), "CanBeEffectedByProperties")]
@@ -330,8 +333,6 @@ namespace Bandit_Militias.Patches
                         var party2Strength = targetParty.GetTotalStrengthWithFollowers();
                         var delta = (party1Strength - party2Strength) / party1Strength * 100;
                         __result = delta <= Globals.Settings.PartyStrengthDeltaPercent;
-                        //if (__result) 
-                        //    Mod.Log($"## ({party1Strength} - {party2Strength}) / {party1Strength} * 100 = {delta}");  
                     }
                 }
             }

@@ -116,6 +116,10 @@ namespace Bandit_Militias
                 foreach (var militia in Militias.OrderByDescending(x => x.MobileParty.MemberRoster.TotalManCount))
                 {
                     Log($">> {militia.Hero.Name,-30}: {militia.MobileParty.MemberRoster.TotalManCount}/{militia.MobileParty.Party.TotalStrength:0}");
+                    for (int tier = 0; tier <= 6; tier++)
+                    {
+                        Log($"  Tier {tier}: {militia.MobileParty.MemberRoster.GetTroopRoster().Where(x => x.Character.Tier == tier).Sum(x => x.Number)}.");
+                    }
                 }
 
                 Log($">> Total {Militias.Count} = {Militias.Select(x => x.MobileParty.MemberRoster.TotalManCount).Sum()}");

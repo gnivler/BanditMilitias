@@ -39,9 +39,9 @@ namespace Bandit_Militias
         internal static readonly Dictionary<string, int> DifficultyXpMap = new Dictionary<string, int>
         {
             {"OFF", 0},
-            {"NORMAL", 100},
-            {"HARD", 300},
-            {"HARDEST", 600},
+            {"NORMAL", 300},
+            {"HARD", 600},
+            {"HARDEST", 900},
         };
 
         internal static readonly Dictionary<string, int> GoldMap = new Dictionary<string, int>

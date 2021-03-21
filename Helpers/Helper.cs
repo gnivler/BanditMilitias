@@ -88,6 +88,7 @@ namespace Bandit_Militias.Helpers
                     continue;
                     //Traverse.Create(PartyBase.MainParty).Property<ItemRoster>("ItemRoster").Value.Remove(item);
                 }
+
                 var half = Math.Max(1, item.Amount / 2);
                 inventory1.AddToCounts(item.EquipmentElement, half);
                 var remainder = item.Amount % 2;
@@ -222,7 +223,7 @@ namespace Bandit_Militias.Helpers
             mobileParty.RemoveParty();
         }
 
-        internal static void KillHero(this Hero hero)
+        private static void KillHero(this Hero hero)
         {
             try
             {
@@ -231,9 +232,15 @@ namespace Bandit_Militias.Helpers
                 AccessTools.Method(typeof(CampaignEventDispatcher), "OnHeroKilled")
                     .Invoke(CampaignEventDispatcher.Instance, new object[] {hero, hero, KillCharacterAction.KillCharacterActionDetail.None, false});
 
-                // no longer needed without registered heroes but leaving in for a few extra versions...
-                //Traverse.Create(hero.CurrentSettlement).Field("_heroesWithoutParty").Method("Remove", hero).GetValue();
-                //MBObjectManager.Instance.UnregisterObject(hero.CharacterObject);
+                // todo check this each patch?  maybe an issue only with non-English localizations?
+                // was only a problem with much earlier versions but I kept it just in case...
+                // old: no longer needed without registered heroes but leaving in for a few extra versions...
+                foreach (var heroWithoutParty in hero.CurrentSettlement.HeroesWithoutParty)
+                {
+                    Mod.Log($"Removing hero without party {hero.Name} at {hero.CurrentSettlement}");
+                    Traverse.Create(heroWithoutParty.CurrentSettlement).Field("_heroesWithoutParty").Method("Remove", heroWithoutParty).GetValue();
+                    MBObjectManager.Instance.UnregisterObject(hero.CharacterObject);
+                }
             }
             catch
             {
@@ -647,7 +654,8 @@ namespace Bandit_Militias.Helpers
 
         public static CultureObject FindMostPrevalentFaction(Vec2 position)
         {
-            var settlements = Settlement.FindSettlementsAroundPosition(position, 20);
+            const int arbitraryDistance = 20;
+            var settlements = Settlement.FindSettlementsAroundPosition(position, arbitraryDistance);
             var map = new Dictionary<CultureObject, int>();
             foreach (var settlement in settlements)
             {

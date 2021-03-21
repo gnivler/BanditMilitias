@@ -21,3 +21,4 @@ Note the syntax must be exactly right.  Use a site like https://jsonlint.com/ to
   "MaxStrengthDeltaPercent"            if set to 10, militias will ignore any parties more than 10% weaker (by power not headcount).  if set to 100, the militias will ignore all parties.
   "UpgradeUnitsFactor"                 troops getting upgraded (after looters) = this number * a random number 0-1 * total number of that troop type (eg 0.25 upgrades 0-25% of units).
   "GlobalPowerFactor"                  all militias in the world will not exceed this factor * global lord party power
+  "MaxTrainingTier"                    don't train units above tier X

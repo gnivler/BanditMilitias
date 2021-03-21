@@ -1,4 +1,5 @@
 {
+  "Debug": false,
   "CanTrain": true,
   "RandomBanners": true,
   "XpGift": "NORMAL",
@@ -17,5 +18,6 @@
   "MilitiaLimitFactor": 0.5,
   "MaxStrengthDeltaPercent": 10,
   "UpgradeUnitsFactor": 0.25,
-  "GlobalPowerFactor": 0.15
+  "GlobalPowerFactor": 0.15,
+  "MaxTrainingTier": 4
 }

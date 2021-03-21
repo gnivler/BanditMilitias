@@ -94,51 +94,58 @@ namespace Bandit_Militias
                 int number, numberToUpgrade;
                 if (Globals.Settings.LooterUpgradeFactor > float.Epsilon)
                 {
-                    try
+                    // upgrade any looters first, then go back over and iterate further upgrades
+                    var looters = MobileParty.MemberRoster.GetTroopRoster().Where(x =>
+                        x.Character.Name.Contains("Looter")).ToList();
+                    var culture = FindMostPrevalentFaction(MobileParty.Position2D);
+                    if (looters.Any())
                     {
-                        // upgrade any looters first, then go back over and iterate further upgrades
-                        var looters = MobileParty.MemberRoster.GetTroopRoster().Where(x =>
-                            x.Character.Name.Contains("Looter")).ToList();
-                        var culture = FindMostPrevalentFaction(MobileParty.Position2D);
-                        if (looters.Any())
+                        foreach (var looter in looters)
                         {
-                            foreach (var looter in looters)
+                            number = MobileParty.MemberRoster.GetElementCopyAtIndex(MobileParty.MemberRoster.FindIndexOfTroop(looter.Character)).Number;
+                            numberToUpgrade = Convert.ToInt32(number * Globals.Settings.LooterUpgradeFactor);
+                            if (numberToUpgrade == 0)
                             {
-                                number = MobileParty.MemberRoster.GetElementCopyAtIndex(MobileParty.MemberRoster.FindIndexOfTroop(looter.Character)).Number;
-                                numberToUpgrade = Convert.ToInt32(number * Globals.Settings.LooterUpgradeFactor);
-                                if (numberToUpgrade == 0)
-                                {
-                                    continue;
-                                }
-
-                                var roster = MobileParty.MemberRoster;
-                                roster.RemoveTroop(looter.Character, numberToUpgrade);
-                                ConvertLootersToKingdomCultureRecruits(ref roster, culture, numberToUpgrade);
+                                continue;
                             }
+
+                            var roster = MobileParty.MemberRoster;
+                            roster.RemoveTroop(looter.Character, numberToUpgrade);
+                            ConvertLootersToKingdomCultureRecruits(ref roster, culture, numberToUpgrade);
                         }
-                    }
-                    catch (Exception ex)
-                    {
-                        Mod.Log(ex);
                     }
                 }
 
+                var troopUpgradeModel = Campaign.Current.Models.PartyTroopUpgradeModel;
                 for (var i = 0; i < iterations; i++)
                 {
-                    // start at index 1 to avoid hero - could be more robust...
-                    var randomIndex = Rng.Next(1, MobileParty.MemberRoster.GetTroopRoster().Count);
-                    number = MobileParty.MemberRoster.GetElementCopyAtIndex(randomIndex).Number;
-                    var minNumberToUpgrade = Convert.ToInt32(Globals.Settings.UpgradeUnitsFactor * number * Rng.NextDouble());
-                    if (minNumberToUpgrade == 0)
+                    var validTroops = MobileParty.MemberRoster.GetTroopRoster().Where(x =>
+                        x.Character.Tier < Globals.Settings.MaxTrainingTier &&
+                        !x.Character.IsHero &&
+                        troopUpgradeModel.IsTroopUpgradeable(MobileParty.Party, x.Character));
+                    var troopToTrain = validTroops.ToList().GetRandomElement();
+                    number = troopToTrain.Number;
+                    if (number < 1)
                     {
-                        minNumberToUpgrade = 1;
+                        continue;
                     }
 
-                    numberToUpgrade = Convert.ToInt32(Rng.Next(minNumberToUpgrade, number + 1));
-                    Mod.Log($"Upgrading {numberToUpgrade,-3} from {number}");
-                    MobileParty.MemberRoster.AddXpToTroopAtIndex(numberToUpgrade * DifficultyXpMap[Globals.Settings.XpGift], randomIndex);
-                    Campaign.Current.PartyUpgrader.UpgradeReadyTroops(MobileParty.Party);
-                    //PartyUpgraderCopy.UpgradeReadyTroopsCopy(MobileParty.Party);
+                    var minNumberToUpgrade = Convert.ToInt32(Globals.Settings.UpgradeUnitsFactor * number * Rng.NextDouble());
+                    minNumberToUpgrade = Math.Max(1, minNumberToUpgrade);
+                    numberToUpgrade = Convert.ToInt32(Rng.Next(minNumberToUpgrade, Convert.ToInt32((number + 1) / 2f)));
+                    Mod.Log($"{MobileParty.LeaderHero.Name} is upgrading up to {numberToUpgrade} of {number} \"{troopToTrain.Character.Name}\".");
+                    var xpGain = numberToUpgrade * DifficultyXpMap[Globals.Settings.XpGift];
+                    MobileParty.MemberRoster.AddXpToTroop(xpGain, troopToTrain.Character);
+                    PartyUpgraderCopy.UpgradeReadyTroops(MobileParty.Party);
+                    // this is gross, not sure why it doesn't update itself, seems like the right way to call
+                    Traverse.Create(MobileParty.MemberRoster).Field<List<TroopRosterElement>>("_troopRosterElements").Value
+                        = MobileParty.MemberRoster.GetTroopRoster();
+                    MobileParty.MemberRoster.UpdateVersion();
+                    if (TestingMode)
+                    {
+                        var party = Hero.MainHero.PartyBelongedTo ?? Hero.MainHero.PartyBelongedToAsPrisoner.MobileParty;
+                        MobileParty.Position2D = party.Position2D;
+                    }
                 }
             }
             catch (Exception ex)

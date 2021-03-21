@@ -25,5 +25,6 @@ namespace Bandit_Militias
         public int PartyStrengthDeltaPercent = 10;
         public float UpgradeUnitsFactor = 0.25f;
         public float GlobalPowerFactor = 0.15f;
+        public int MaxTrainingTier = 4;
     }
 }
