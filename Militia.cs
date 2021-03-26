@@ -35,6 +35,8 @@ namespace Bandit_Militias
             Militias.Add(this);
             Banner = Banner.CreateRandomBanner();
             Spawn(mobileParty, party, prisoners);
+            Mod.Log(mobileParty.Position2D);
+            Mod.Log(MobileParty.LeaderHero.GetPosition().AsVec2);
             TrainMilitia();
             LogMilitiaFormed(MobileParty);
         }
@@ -56,6 +58,7 @@ namespace Bandit_Militias
                 .Method("GetLocalizedText", $"{Possess(Hero.FirstName.ToString())} Bandit Militia").GetValue();
             MobileParty.SetCustomName(new TextObject(partyName));
             MobileParty.Party.Owner = Hero;
+            MobileParty.Leader.StringId += "_Bandit_Militia";
         }
 
         private void TrainMilitia()

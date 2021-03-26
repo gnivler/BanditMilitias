@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using Bandit_Militias.Helpers;
+using HarmonyLib;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
 using static Bandit_Militias.Globals;
@@ -18,6 +19,20 @@ namespace Bandit_Militias
             CampaignEvents.AfterDailyTickEvent.AddNonSerializedListener(this, Helper.DailyCalculations);
             CampaignEvents.DailyTickPartyEvent.AddNonSerializedListener(this, TryGrowing);
             CampaignEvents.OnPartyRemovedEvent.AddNonSerializedListener(this, OnMilitiaRemoved);
+            CampaignEvents.DailyTickPartyEvent.AddNonSerializedListener(this, StopHoldingBehavior);
+        }
+
+        private static void StopHoldingBehavior(MobileParty mobileParty)
+        {
+            if (mobileParty.StringId.StartsWith("Bandit_Militia") &&
+                (mobileParty.ShortTermBehavior == AiBehavior.Hold ||
+                mobileParty.ShortTermBehavior == AiBehavior.None ||
+                mobileParty.DefaultBehavior == AiBehavior.Hold ||
+                mobileParty.DefaultBehavior == AiBehavior.None))
+            {
+                Traverse.Create(mobileParty).Property<AiBehavior>("ShortTermBehavior").Value = AiBehavior.PatrolAroundPoint;
+                Traverse.Create(mobileParty).Property<AiBehavior>("DefaultBehavior").Value = AiBehavior.PatrolAroundPoint;
+            }
         }
 
         private static void OnMilitiaRemoved(PartyBase partyBase)
@@ -27,7 +42,7 @@ namespace Bandit_Militias
                 return;
             }
 
-            Mod.Log("OnMilitiaRemoved");
+            Mod.Log($"OnMilitiaRemoved {partyBase.Name}");
             MergeMap.Remove(partyBase.MobileParty);
             Militias.Remove(Militia.FindMilitiaByParty(partyBase.MobileParty));
         }
@@ -42,8 +57,7 @@ namespace Bandit_Militias
                     ((float) GlobalMilitiaPower / CalculatedGlobalPowerLimit < Globals.Settings.GrowthFactor ||
                      Rng.NextDouble() <= Globals.Settings.GrowthChance))
                 {
-                    //  don't grow Tier3+ units
-                    var eligibleToGrow = mobileParty.MemberRoster.GetTroopRoster().Where(x => x.Character.Tier <= 2 && !x.Character.IsHero).ToList();
+                    var eligibleToGrow = mobileParty.MemberRoster.GetTroopRoster().Where(x => x.Character.Tier < Globals.Settings.MaxTrainingTier && !x.Character.IsHero).ToList();
                     if (eligibleToGrow.Any())
                     {
                         Mod.Log($"TryGrowing {mobileParty.LeaderHero}, total: {mobileParty.MemberRoster.TotalManCount}");

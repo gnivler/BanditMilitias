@@ -13,12 +13,29 @@ namespace Bandit_Militias.Patches
     public class PrisonerPatches
     {
         // blocks NPC battles from taking prisoners
-        [HarmonyPatch(typeof(TakePrisonerAction), "Apply")]
-        public class TakePrisonerActionApplyPatch
+        [HarmonyPatch(typeof(TakePrisonerAction), "ApplyInternal")]
+        public class TakePrisonerActionApplyInternalPatch
         {
             private static bool Prefix(Hero prisonerCharacter)
             {
                 return !prisonerCharacter.NeverBecomePrisoner;
+            }
+        }
+
+        // still blocks post-battle dialog
+        // still doesn't solve militias not reinforcing other battles
+        [HarmonyPatch(typeof(MapEventSide), "CaptureWoundedHeroes")]
+        public class MapEventSideCaptureWoundedHeroesPatch
+        {
+            private static bool Prefix(MapEventSide __instance, PartyBase defeatedParty)
+            {
+                return !defeatedParty.MobileParty.StringId.StartsWith("Bandit_Militia");
+                //if (__instance?.Parties != null)
+                //{
+                //    return __instance.Parties.Select(x => x?.Party).All(x => x != defeatedParty);
+                //}
+                //
+                //return true;
             }
         }
 
@@ -51,16 +68,5 @@ namespace Bandit_Militias.Patches
         //        }
         //    }
         //}
-
-        // still blocks prisoners but apparently works with bandits reinforcing militias
-        // still doesn't solve militias not reinforcing other battles
-        [HarmonyPatch(typeof(MapEventSide), "CaptureWoundedHeroes")]
-        public class MapEventSideCaptureWoundedHeroesPatch
-        {
-            private static bool Prefix(PartyBase defeatedParty, ref bool isSurrender)
-            {
-                return !defeatedParty.MobileParty.StringId.StartsWith("Bandit_Militia");
-            }
-        }
     }
 }

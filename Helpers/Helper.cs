@@ -151,7 +151,7 @@ namespace Bandit_Militias.Helpers
                 return false;
             }
 
-            return __instance.IsBandit && !__instance.IsBanditBossParty;
+            return true;
         }
 
         internal static TroopRoster[] MergeRosters(MobileParty sourceParty, PartyBase targetParty)
@@ -216,30 +216,31 @@ namespace Bandit_Militias.Helpers
                    mobileParty.DefaultBehavior == AiBehavior.EngageParty;
         }
 
+        private static readonly AccessTools.FieldRef<Campaign, MBReadOnlyList<CharacterObject>> _characters =
+            AccessTools.FieldRefAccess<Campaign, MBReadOnlyList<CharacterObject>>("_characters");
+
         internal static void Trash(MobileParty mobileParty)
         {
             Militias.Remove(Militia.FindMilitiaByParty(mobileParty));
-            mobileParty.LeaderHero?.KillHero();
-            mobileParty.RemoveParty();
+            mobileParty?.LeaderHero.KillHero();
+            mobileParty?.RemoveParty();
         }
 
-        private static void KillHero(this Hero hero)
+        internal static void KillHero(this Hero hero)
         {
             try
             {
+                // howitzer approach to lobotomize the game of any bandit heroes
                 hero.ChangeState(Hero.CharacterStates.Dead);
                 MBObjectManager.Instance.UnregisterObject(hero);
                 AccessTools.Method(typeof(CampaignEventDispatcher), "OnHeroKilled")
                     .Invoke(CampaignEventDispatcher.Instance, new object[] {hero, hero, KillCharacterAction.KillCharacterActionDetail.None, false});
-
-                // todo check this each patch?  maybe an issue only with non-English localizations?
-                // was only a problem with much earlier versions but I kept it just in case...
-                // old: no longer needed without registered heroes but leaving in for a few extra versions...
-                foreach (var heroWithoutParty in hero.CurrentSettlement.HeroesWithoutParty)
+                Traverse.Create(Campaign.Current.CampaignObjectManager).Field<List<Hero>>("_aliveHeroes").Value.Remove(hero);
+                Traverse.Create(Campaign.Current.CampaignObjectManager).Field<List<Hero>>("_deadAndDisabledHeroes").Value.Remove(hero);
+                Traverse.Create(Campaign.Current.CampaignObjectManager).Field<List<Hero>>("_allHeroes").Value.Remove(hero);
+                if (hero.CurrentSettlement != null)
                 {
-                    Mod.Log($"Removing hero without party {hero.Name} at {hero.CurrentSettlement}");
-                    Traverse.Create(heroWithoutParty.CurrentSettlement).Field("_heroesWithoutParty").Method("Remove", heroWithoutParty).GetValue();
-                    MBObjectManager.Instance.UnregisterObject(hero.CharacterObject);
+                    Traverse.Create(hero.CurrentSettlement).Field<List<Hero>>("_heroesWithoutParty").Value.Remove(hero);
                 }
             }
             catch
@@ -252,6 +253,7 @@ namespace Bandit_Militias.Helpers
         {
             Mod.Log("Clearing mod data.", LogLevel.Info);
             FlushBanditMilitias();
+            FlushHeroes();
             Flush();
             InformationManager.AddQuickInformation(new TextObject("BANDIT MILITIAS CLEARED"));
         }
@@ -283,20 +285,57 @@ namespace Bandit_Militias.Helpers
 
         internal static void Flush()
         {
+            FlushSettlementHeroesWithoutParty();
             FlushHideoutsOfMilitias();
             FlushNullPartyHeroes();
             FlushEmptyMilitiaParties();
             FlushNeutralBanditParties();
-            FlushBadCharacterObjects();
+            //FlushBadCharacterObjects();
             //FlushBadBehaviors();
             FlushMapEvents();
             FlushZeroParties();
         }
 
+        private static readonly AccessTools.FieldRef<Settlement, List<Hero>> _heroesWithoutPartyCache =
+            AccessTools.FieldRefAccess<Settlement, List<Hero>>("_heroesWithoutPartyCache");
+
+        private static void FlushSettlementHeroesWithoutParty()
+        {
+            // not sure why this is necessary, so much manual cleanup
+            foreach (var settlement in Settlement.All.Where(x => x.HeroesWithoutParty.Count > 0))
+            {
+                var militiaHeroes = settlement.HeroesWithoutParty.Where(x =>
+                    Clan.BanditFactions.Contains(x.MapFaction) &&
+                    x.StringId.Contains("CharacterObject")).ToList();
+
+                for (var i = 0; i < militiaHeroes.Count; i++)
+                {
+                    _heroesWithoutPartyCache(settlement).Remove(militiaHeroes[i]);
+                    Mod.Log($"Removing bandit hero without party {militiaHeroes[i].Name} at {settlement}.");
+                }
+            }
+        }
+
+        private static void FlushHeroes()
+        {
+            var heroes = Hero.All.Where(x =>
+                    (x.PartyBelongedTo == null &&
+                     x.PartyBelongedToAsPrisoner == null ||
+                     x.HeroState == Hero.CharacterStates.Prisoner) &&
+                    Clan.BanditFactions.Contains(x.MapFaction) &&
+                    x.StringId.Contains("CharacterObject"))
+                .ToList();
+
+            for (var i = 0; i < heroes.Count; i++)
+            {
+                KillHero(heroes[i]);
+            }
+        }
+
         private static void FlushZeroParties()
         {
             var parties = MobileParty.All.Where(x => x.CurrentSettlement == null && x.MemberRoster.TotalManCount == 0).ToList();
-            Mod.Log($"Removing {parties.Count()} parties without a current settlement or any troops");
+            Mod.Log($"Removing {parties.Count} parties without a current settlement or any troops");
             for (var i = 0; i < parties.Count; i++)
             {
                 KillHero(parties[i].LeaderHero);
@@ -593,7 +632,6 @@ namespace Bandit_Militias.Helpers
             return gear.Clone();
         }
 
-
         internal static void ClampSettingsValues(ref Settings settings)
         {
             settings.CooldownHours = settings.CooldownHours.Clamp(1, 168);
@@ -612,6 +650,7 @@ namespace Bandit_Militias.Helpers
             settings.LooterUpgradeFactor = settings.LooterUpgradeFactor.Clamp(0, 1);
             settings.PartyStrengthDeltaPercent = settings.PartyStrengthDeltaPercent.Clamp(0, 100);
             settings.GlobalPowerFactor = settings.GlobalPowerFactor.Clamp(0, 1);
+            settings.MaxTrainingTier = settings.MaxTrainingTier.Clamp(0, 6);
         }
 
         internal static void PrintValidatedSettings(Settings settings)
@@ -642,9 +681,11 @@ namespace Bandit_Militias.Helpers
 
                 // ReSharper disable once ConditionIsAlwaysTrueOrFalse
                 if (Mod.logging == LogLevel.Debug)
+#pragma warning disable 162
                 {
                     Mod.Log($">> {Militias.Select(x => x.MobileParty.MemberRoster.TotalManCount).Sum():0} troops.  Strength: {Militias.Select(x => x.MobileParty.Party.TotalStrength).Sum():0}/{parties.Select(x => x.Party.TotalStrength).Sum():0} ({Militias.Select(x => x.MobileParty.Party.TotalStrength).Sum() / parties.Select(x => x.Party.TotalStrength).Sum() * 100:F1}%).  Max size {Militias.OrderByDescending(x => x.MobileParty.MemberRoster.TotalManCount).Select(x => x.MobileParty.MemberRoster.TotalManCount).First()}/{CalculatedMaxPartySize}");
                 }
+#pragma warning restore 162
             }
             catch
             {
