@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using HarmonyLib;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
+using TaleWorlds.Library;
 
 namespace Bandit_Militias
 {
@@ -36,6 +38,10 @@ namespace Bandit_Militias
         internal static readonly List<Equipment> BanditEquipment = new List<Equipment>();
         internal static List<CharacterObject> Recruits = new List<CharacterObject>();
 
+        // FieldRefs
+        internal static readonly AccessTools.FieldRef<Settlement, MBReadOnlyList<Hero>> HeroesWithoutParty =
+            AccessTools.FieldRefAccess<Settlement, MBReadOnlyList<Hero>>("<HeroesWithoutParty>k__BackingField");
+        
         internal static readonly Dictionary<string, int> DifficultyXpMap = new Dictionary<string, int>
         {
             {"OFF", 0},

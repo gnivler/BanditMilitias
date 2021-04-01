@@ -17,13 +17,15 @@ namespace Bandit_Militias
     internal class Militia
     {
         public MobileParty MobileParty;
+        public string Name;
         internal readonly Banner Banner;
         internal Hero Hero;
         internal CampaignTime LastMergedOrSplitDate = CampaignTime.Now;
-
+        
+        
         public Militia(MobileParty mobileParty)
         {
-            Militias.Add(this);
+            //Militias.Add(this);
             MobileParty = mobileParty;
             Banner = Banner.CreateRandomBanner();
             Hero = mobileParty.LeaderHero;
@@ -35,8 +37,6 @@ namespace Bandit_Militias
             Militias.Add(this);
             Banner = Banner.CreateRandomBanner();
             Spawn(mobileParty, party, prisoners);
-            Mod.Log(mobileParty.Position2D);
-            Mod.Log(MobileParty.LeaderHero.GetPosition().AsVec2);
             TrainMilitia();
             LogMilitiaFormed(MobileParty);
         }
@@ -54,11 +54,12 @@ namespace Bandit_Militias
             Hero = HeroCreatorCopy.CreateBanditHero(mostPrevalent, MobileParty);
             // matches Faction to Culture but doesn't get intended effect of making them reinforce other bandit units or other militias
             Hero.Culture = Clan.BanditFactions.First(x => Hero.MapFaction.Name == x.Name).Culture;
-            var partyName = (string) Traverse.Create(typeof(MBTextManager))
+            Name = (string) Traverse.Create(typeof(MBTextManager))
                 .Method("GetLocalizedText", $"{Possess(Hero.FirstName.ToString())} Bandit Militia").GetValue();
-            MobileParty.SetCustomName(new TextObject(partyName));
+            MobileParty.SetCustomName(new TextObject(Name));
             MobileParty.Party.Owner = Hero;
             MobileParty.Leader.StringId += "_Bandit_Militia";
+            MobileParty.ShouldJoinPlayerBattles = true;
         }
 
         private void TrainMilitia()
@@ -196,9 +197,9 @@ namespace Bandit_Militias
             {
                 var troopString = $"{mobileParty.Party.NumberOfAllMembers} troop" + (mobileParty.Party.NumberOfAllMembers > 1 ? "s" : "");
                 var strengthString = $"{Math.Round(mobileParty.Party.TotalStrength)} strength";
-                Mod.Log($"{$"New Bandit Militia led by {mobileParty.LeaderHero.Name}",-70} | {troopString,10} | {strengthString,12} |");
-                Mod.Log($"Faction: {mobileParty.LeaderHero.MapFaction.Name}");
-                Mod.Log($"Culture: {mobileParty.LeaderHero.Culture.GetName()}");
+                Mod.Log($"{$">>> New Bandit Militia led by {mobileParty.LeaderHero.Name}",-70} | {troopString,10} | {strengthString,12} |");
+                //Mod.Log($"Faction: {mobileParty.LeaderHero.MapFaction.Name}");
+                //Mod.Log($"Culture: {mobileParty.LeaderHero.Culture.GetName()}");
             }
             catch (Exception ex)
             {

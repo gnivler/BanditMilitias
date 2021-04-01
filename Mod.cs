@@ -31,7 +31,7 @@ namespace Bandit_Militias
     public class Mod : MBSubModuleBase
     {
         internal const LogLevel logging = LogLevel.Disabled;
-        private static readonly Harmony harmony = new Harmony("ca.gnivler.bannerlord.BanditMilitias");
+        internal static readonly Harmony harmony = new Harmony("ca.gnivler.bannerlord.BanditMilitias");
         private static readonly string modDirectory = new FileInfo(@"..\..\Modules\Bandit Militias\").DirectoryName;
 
         internal static void Log(object input, LogLevel logLevel = LogLevel.Debug)
@@ -132,6 +132,8 @@ namespace Bandit_Militias
                 try
                 {
                     Nuke();
+                    Nuke();
+                    InformationManager.AddQuickInformation(new TextObject("BANDIT MILITIAS CLEARED"));
                 }
                 catch (Exception ex)
                 {

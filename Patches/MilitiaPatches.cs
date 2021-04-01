@@ -41,7 +41,7 @@ namespace Bandit_Militias.Patches
                         x.CurrentSettlement == null &&
                         !x.IsCurrentlyUsedByAQuest &&
                         x.IsBandit).ToList();
-                    T.Restart();
+                    //T.Restart();
                     for (var index = 0; index < parties.Count; index++)
                     {
                         var mobileParty = parties[index];
@@ -95,14 +95,14 @@ namespace Bandit_Militias.Patches
                                 MergeMap.Remove(mobileParty);
                                 Mod.Log($"{mobileParty} seeking > {targetParty.MobileParty}");
                                 mobileParty.SetMoveEscortParty(targetParty.MobileParty);
-                                Mod.Log($"SetNavigationModeParty ==> {T.ElapsedTicks / 10000F:F3}ms");
+                                //Mod.Log($"SetNavigationModeParty ==> {T.ElapsedTicks / 10000F:F3}ms");
 
                                 if (targetParty.MobileParty.MoveTargetParty != mobileParty)
                                 {
                                     MergeMap.Remove(targetParty.MobileParty);
                                     Mod.Log($"{targetParty.MobileParty} seeking back > {mobileParty}");
                                     targetParty.MobileParty.SetMoveEscortParty(mobileParty);
-                                    Mod.Log($"SetNavigationModeTargetParty ==> {T.ElapsedTicks / 10000F:F3}ms");
+                                    //Mod.Log($"SetNavigationModeTargetParty ==> {T.ElapsedTicks / 10000F:F3}ms");
                                 }
                             }
 
@@ -133,10 +133,8 @@ namespace Bandit_Militias.Patches
                         militia.MobileParty.Party.Visuals.SetMapIconAsDirty();
                         Trash(mobileParty);
                         Trash(targetParty.MobileParty);
-
                         parties = MobileParty.All.Where(x => x.IsBandit && x.CurrentSettlement == null).ToList();
-                        Mod.Log($"{"finished",-20} ==> {T.ElapsedTicks / 10000F:F3}ms");
-                        Mod.Log($"MergeMap: {MergeMap.Count}");
+                        //Mod.Log($">>> Finished all work: {T.ElapsedTicks / 10000F:F3}ms.");
                     }
 
                     //Mod.Log($"Looped ==> {T.ElapsedTicks / 10000F:F3}ms");
@@ -153,22 +151,11 @@ namespace Bandit_Militias.Patches
         {
             private static float SpeedModifier = -0.15f;
 
-            // todo un-kludge
             private static void Postfix(MobileParty mobileParty, ref ExplainedNumber __result)
             {
-                try
+                if (IsBanditMilitia(mobileParty))
                 {
-                    if (mobileParty?.StringId != null &&
-                        mobileParty.StringId.StartsWith("Bandit_Militia"))
-                    {
-                        //Mod.Log($"Before {__result.ResultNumber}");
-                        __result.AddFactor(SpeedModifier, new TextObject("Bandit Militia"));
-                        //Mod.Log($"After {__result.ResultNumber}");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Mod.Log(ex);
+                    __result.AddFactor(SpeedModifier, new TextObject("Bandit Militia"));
                 }
             }
         }
@@ -181,7 +168,7 @@ namespace Bandit_Militias.Patches
             {
                 if (Globals.Settings.RandomBanners &&
                     characterObject.HeroObject?.PartyBelongedTo != null &&
-                    characterObject.HeroObject.PartyBelongedTo.StringId.StartsWith("Bandit_Militia"))
+                    IsBanditMilitia(characterObject.HeroObject.PartyBelongedTo))
                 {
                     bannerKey = Militia.FindMilitiaByParty(characterObject.HeroObject.PartyBelongedTo).Banner.Serialize();
                 }
@@ -196,7 +183,7 @@ namespace Bandit_Militias.Patches
             {
                 if (Globals.Settings.RandomBanners &&
                     __instance.MobileParty != null &&
-                    __instance.MobileParty.StringId.StartsWith("Bandit_Militia"))
+                    IsBanditMilitia(__instance.MobileParty))
                 {
                     __result = Militia.FindMilitiaByParty(__instance.MobileParty)?.Banner;
                 }
@@ -212,7 +199,7 @@ namespace Bandit_Militias.Patches
                 var party = (PartyBase) __instance.BattleCombatant;
                 if (Globals.Settings.RandomBanners &&
                     party.MobileParty != null &&
-                    party.MobileParty.StringId.StartsWith("Bandit_Militia"))
+                    IsBanditMilitia(party.MobileParty))
                 {
                     __result = Militia.FindMilitiaByParty(party.MobileParty)?.Banner;
                 }
@@ -236,7 +223,7 @@ namespace Bandit_Militias.Patches
 
         private static bool Prefix(MobileParty mobileParty, Settlement settlement)
         {
-            if (mobileParty.StringId.StartsWith("Bandit_Militia"))
+            if (IsBanditMilitia(mobileParty))
             {
                 Mod.Log($"Preventing {mobileParty} from entering {settlement}");
                 mobileParty.SetMovePatrolAroundSettlement(settlement);
@@ -254,10 +241,9 @@ namespace Bandit_Militias.Patches
             {
                 // Leader is null after a battle, crashes after-action
                 if (__instance?.Party?.Leader != null &&
-                    __instance.Party.StringId.StartsWith("Bandit_Militia"))
+                    IsBanditMilitia(__instance.Party))
                 {
-                    var heroName = __instance.Party.LeaderHero?.FirstName.ToString();
-                    ____fullNameBind = $"{Possess(heroName)} Bandit Militia";
+                    ____fullNameBind = Militia.FindMilitiaByParty(__instance.Party).Name;
                 }
             }
         }
@@ -268,7 +254,7 @@ namespace Bandit_Militias.Patches
         {
             private static bool Prefix(PartyBase ____encounteredParty)
             {
-                if (____encounteredParty.MobileParty.StringId.StartsWith("Bandit_Militia"))
+                if (Militias.Any(x => x.MobileParty == ____encounteredParty.MobileParty))
                 {
                     GameMenu.SwitchToMenu("encounter");
                     return false;
@@ -321,7 +307,7 @@ namespace Bandit_Militias.Patches
                 if (__result &&
                     !targetParty.IsGarrison &&
                     !targetParty.IsMilitia &&
-                    __instance.StringId.StartsWith("Bandit_Militia"))
+                    Militias.Any(x => x.MobileParty == __instance))
                 {
                     if (targetParty == MobileParty.MainParty)
                     {

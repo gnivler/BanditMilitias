@@ -1,10 +1,10 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using Bandit_Militias.Helpers;
 using HarmonyLib;
 using SandBox.View.Map;
 using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.SandBox.CampaignBehaviors;
 using TaleWorlds.CampaignSystem.SandBox.CampaignBehaviors.AiBehaviors;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
@@ -81,10 +81,14 @@ namespace Bandit_Militias.Patches
                 }
 
                 Mod.Log($"Militias: {militias.Count} (registered {Militias.Count})");
-                Flush();
-                // 1.4.3b is dropping the militia settlements at some point, I haven't figured out where
+                // 1.5.8 is dropping the militia settlements at some point, I haven't figured out where
                 ReHome();
                 DailyCalculations();
+
+                // have to patch it late because of its static constructor (type initialization exception)
+                Mod.harmony.Patch(
+                    AccessTools.Method(typeof(EncounterGameMenuBehavior), "game_menu_encounter_on_init"),
+                    new HarmonyMethod(AccessTools.Method(typeof(Helper), nameof(FixMapEventFuckery))));
             }
         }
 
@@ -111,101 +115,31 @@ namespace Bandit_Militias.Patches
         [HarmonyPatch(typeof(MapEventSide), "HandleMapEventEndForParty")]
         public class MapEventSideHandleMapEventEndForPartyPatch
         {
+            // the method purges the party data so we capture the hero for use in Postfix
             private static void Prefix(PartyBase party, ref Hero __state)
             {
                 __state = party.LeaderHero;
             }
-            
+
             private static void Postfix(MapEventSide __instance, PartyBase party, Hero __state)
             {
                 if (party?.MobileParty == null ||
-                    !party.MobileParty.StringId.StartsWith("Bandit_Militia") ||
+                    !IsBanditMilitia(party.MobileParty) ||
                     party.PrisonRoster != null &&
                     party.PrisonRoster.Contains(Hero.MainHero.CharacterObject))
                 {
                     return;
                 }
-                
+
                 if (party.MemberRoster?.TotalHealthyCount == 0 ||
                     party.MemberRoster?.TotalHealthyCount < Globals.Settings.MinPartySize &&
                     party.PrisonRoster?.Count < Globals.Settings.MinPartySize &&
-                    __instance.Casualties > party.MemberRoster.Count / 2)
+                    __instance.Casualties > party.MemberRoster?.TotalHealthyCount * 2)
                 {
-                    Mod.Log($"Dispersing {party.Name} of {party.MemberRoster.TotalHealthyCount}+{party.MemberRoster.TotalWounded}w+{party.PrisonRoster.Count}p");
+                    Mod.Log($">>> Dispersing {party.Name} of {party.MemberRoster.TotalHealthyCount}+{party.MemberRoster.TotalWounded}w+{party.PrisonRoster.Count}p");
                     __state.KillHero();
+                    Militias.Remove(Militias.FirstOrDefault(x => x.Hero == __state));
                     Trash(party.MobileParty);
-                }
-            }
-        }
-
-        // in e1.5.6 this class was rewritten
-        // prevents militias from being added to DynamicBodyCampaignBehavior._heroBehaviorsDictionary
-        // checked 1.4.3b
-        //[HarmonyPatch(typeof(DynamicBodyCampaignBehavior), "OnAfterDailyTick")]
-        //public class DynamicBodyCampaignBehaviorOnAfterDailyTickPatch
-        //{
-        //    private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator ilg)
-        //    {
-        //        var label = ilg.DefineLabel();
-        //        var codes = instructions.ToList();
-        //        var insertAt = codes.FindIndex(x => x.opcode.Equals(OpCodes.Stloc_2));
-        //        insertAt++;
-        //        var moveNext = AccessTools.Method(typeof(IEnumerator), nameof(IEnumerator.MoveNext));
-        //        var jumpIndex = codes.FindIndex(x =>
-        //            x.opcode == OpCodes.Callvirt && (MethodInfo) x.operand == moveNext);
-        //        jumpIndex--;
-        //        codes[jumpIndex].labels.Add(label);
-        //        var helperMi = AccessTools.Method(
-        //            typeof(DynamicBodyCampaignBehaviorOnAfterDailyTickPatch), nameof(helper));
-        //        var stack = new List<CodeInstruction>
-        //        {
-        //            // copy the Hero on top of the stack then feed it to the helper for a bool then branch
-        //            new CodeInstruction(OpCodes.Ldloc_2),
-        //            new CodeInstruction(OpCodes.Call, helperMi),
-        //            new CodeInstruction(OpCodes.Brfalse, label)
-        //        };
-        //        codes.InsertRange(insertAt, stack);
-        //        return codes.AsEnumerable();
-        //    }
-        //
-        //    private static int helper(Hero hero)
-        //    {
-        //        // ReSharper disable once PossibleNullReferenceException
-        //        if (hero.PartyBelongedTo != null &&
-        //            hero.PartyBelongedTo.StringId.StartsWith("Bandit_Militia"))
-        //        {
-        //            return 1;
-        //        }
-        //
-        //        return 0;
-        //    }
-        //}
-
-        // 1.4.3b is throwing when militias are nuked and the game is reloaded with militia MapEvents
-        //[HarmonyPatch(typeof(MapEvent), "RemoveInvolvedPartyInternal")]
-        //public class MapEventRemoveInvolvedPartyInternalPatch
-        //{
-        //    private static bool Prefix(PartyBase party) => party.Visuals != null;
-        //} 
-
-        // 1.4.3b will crash on load at TaleWorlds.CampaignSystem.PlayerEncounter.DoWait()
-        // because MapEvent.PlayerMapEvent is saved as null for whatever reason
-        // best solution so far is to avoid the problem with a kludge
-        // myriad other corrective attempts left the game unplayable (can't encounter anything)
-        [HarmonyPatch(typeof(MBSaveLoad), "SaveGame")]
-        public class MDSaveLoadSaveGamePatch
-        {
-            private static void Prefix()
-            {
-                var mapEvent = Traverse.Create(PlayerEncounter.Current).Field("_mapEvent").GetValue<MapEvent>();
-                if (mapEvent != null &&
-                    mapEvent.InvolvedParties.Any(x =>
-                        x.MobileParty != null &&
-                        x.MobileParty.StringId.StartsWith("Bandit_Militia")))
-                {
-                    mapEvent = null;
-                    PlayerEncounter.Finish();
-                    Campaign.Current.TimeControlMode = CampaignTimeControlMode.Stop;
                 }
             }
         }
@@ -232,110 +166,15 @@ namespace Bandit_Militias.Patches
             {
                 if (__exception != null)
                 {
-                    FileLog.Log($"mobileParty: {mobileParty}");
+                    Mod.Log($"mobileParty: {mobileParty}");
                     if (mobileParty.LeaderHero == null)
                     {
-                        FileLog.Log("\tCRITICAL ERROR - this party has no leader for some reason, trashing...");
+                        Mod.Log("\tCRITICAL ERROR - this party has no leader for some reason, trashing...");
                         Trash(mobileParty);
                     }
                 }
 
                 return null;
-            }
-        }
-
-
-        //[HarmonyPatch(typeof(HeroSpawnCampaignBehavior), "OnHeroDailyTick")]
-        //public class HeroSpawnCampaignBehaviorOnHeroDailyTickPatch
-        //{
-        //    private static bool Prefix(Hero hero)
-        //    {
-        //        // latest 1.4.3 patch is trying to teleport bandit heroes apparently before they have parties
-        //        // there's no party here so unable to filter by Bandit_Militia
-        //        // for now this probably doesn't matter but vanilla isn't ready for bandit heroes
-        //        // it could fuck up other mods relying on this method unfortunately
-        //        // but that seems very unlikely to me right now
-        //        return !Clan.BanditFactions.Contains(hero.Clan);
-        //    }
-        //}
-
-        // todo check if needed in later game versions (currently e1.5.1)
-        //[HarmonyPatch(typeof(HeroSpawnCampaignBehavior), "GetMoveScoreForCompanion")]
-        //public class HeroSpawnCampaignBehaviorGetMoveScoreForCompanionPatch
-        //{
-        //    private static bool Prefix(Hero companion, Settlement settlement)
-        //    {
-        //        return !(companion?.LastSeenPlace == null || settlement?.MapFaction == null);
-        //    }
-        //}
-        //
-
-        [HarmonyPatch(typeof(CampaignEventDispatcher), "OnSettlementEntered")]
-        public class Sfsdkj
-        {
-            private static void Postfix(MobileParty party, Settlement settlement, Hero hero)
-            {
-                if (hero != null &&
-                    hero.StringId.StartsWith("Bandit_Militia"))
-                {
-                    if (settlement != null &&
-                        settlement.HeroesWithoutParty.Contains(hero))
-                    {
-                        Traverse.Create(settlement).Field<List<Hero>>("_heroesWithoutPartyCache").Value.Remove(hero);
-                    }
-                }
-            }
-
-        }
-
-        [HarmonyPatch(typeof(CampaignEvents), "OnSettlementEntered")]
-        public class asdfds
-        {
-            private static void Postfix(MobileParty party, Settlement settlement, Hero hero)
-            {
-                if (hero != null &&
-                    hero.StringId.StartsWith("Bandit_Militia"))
-                {
-                    if (settlement != null &&
-                        settlement.HeroesWithoutParty.Contains(hero))
-                    {
-                        Traverse.Create(settlement).Field<List<Hero>>("_heroesWithoutPartyCache").Value.Remove(hero);
-                    }
-                }
-
-            }
-        }
-
-        // doesn't work!  runs but player party doesn't appear nor is movable after release as prisoner
-        [HarmonyPatch(typeof(PartyBase), "UpdateVisibilityAndInspected")]
-        public class PartyBaseUpdateVisibilityAndInspectedPatch
-        {
-            private static void Prefix(PartyBase __instance, ref bool __state)
-            {
-                if (__instance.MobileParty?.StringId == "player_party")
-                {
-                    if (__instance.Visuals == null)
-                    {
-                        Traverse.Create(__instance).Field<IPartyVisual>("_visual").Value = Campaign.Current.VisualCreator.PartyVisualCreator.CreatePartyVisual();
-                        __state = true;
-                        ////__instance.Visuals?.OnStartup(__instance);
-                        //Traverse.Create(__instance.MobileParty).Method("StartUp").GetValue();
-                        //
-                        //PartyBase.MainParty.MobileParty.InitializeMobileParty(Campaign.Current.CurrentGame.ObjectManager.GetObject<PartyTemplateObject>("main_hero_party_template"), __instance.MobileParty.Position2D, 0f, 0f, -1);
-                        //PartyBase.MainParty.MobileParty.PartyComponent = new LordPartyComponent(Clan.PlayerClan, Hero.MainHero);
-                    }
-                }
-            }
-
-            private static void Postfix(PartyBase __instance, bool __state)
-            {
-                if (__instance.MobileParty?.StringId == "player_party")
-                {
-                    if (__state)
-                    {
-                        Traverse.Create((PartyVisual) __instance.Visuals).Method("RefreshPartyIcon").GetValue();
-                    }
-                }
             }
         }
     }
