@@ -264,7 +264,6 @@ namespace Bandit_Militias.Helpers
         private static void FlushBanditMilitias()
         {
             Militias.Clear();
-            MergeMap.Clear();
             var hasLogged = false;
             var partiesToRemove = MobileParty.All.Where(x => x.StringId.StartsWith("Bandit_Militia")).ToList();
             foreach (var mobileParty in partiesToRemove)
@@ -359,9 +358,7 @@ namespace Bandit_Militias.Helpers
             foreach (var settlement in Settlement.All.Where(x => x.HeroesWithoutParty.Count > 0))
             {
                 var militiaHeroes = settlement.HeroesWithoutParty.Intersect(Militias.Select(x => x.Hero)).ToList();
-                for (var i = 0;
-                    i < militiaHeroes.Count;
-                    i++)
+                for (var i = 0; i < militiaHeroes.Count; i++)
                 {
                     Traverse.Create(HeroesWithoutParty(settlement)).Field<List<Hero>>("_list").Value.Remove(militiaHeroes[i]);
                     Mod.Log($">>> FLUSH Removing bandit hero without party {militiaHeroes[i].Name} at {settlement}.");
@@ -389,7 +386,9 @@ namespace Bandit_Militias.Helpers
 
         private static void FlushZeroParties()
         {
-            var parties = MobileParty.All.Where(x => x.CurrentSettlement == null && x.MemberRoster.TotalManCount == 0).ToList();
+            var parties = MobileParty.All.Where(x =>
+                x != MobileParty.MainParty &&
+                x.CurrentSettlement == null && x.MemberRoster.TotalManCount == 0).ToList();
             for (var i = 0; i < parties.Count; i++)
             {
                 Mod.Log($">>> FLUSH party without a current settlement or any troops.");
@@ -430,35 +429,6 @@ namespace Bandit_Militias.Helpers
             }
         }
 
-// in e1.5.5 the DynamicBodyCampaignBehavior class was rewritten
-//private static void FlushBadBehaviors()
-//{
-//    var behaviors = (IDictionary) Traverse.Create(
-//            Campaign.Current.CampaignBehaviorManager.GetBehavior<DynamicBodyCampaignBehavior>())
-//        .Field("_heroBehaviorsDictionary").GetValue();
-//    var heroes = new List<Hero>();
-//    foreach (var hero in behaviors.Keys)
-//    {
-//        if (!Hero.All.Contains(hero))
-//        {
-//            heroes.Add((Hero) hero);
-//        }
-//    }
-//
-//    var hasLogged = false;
-//    foreach (var hero in heroes)
-//    {
-//        if (!hasLogged)
-//        {
-//            hasLogged = true;
-//            Mod.Log($"Clearing {heroes.Count} hero behaviors without heroes.", LogLevel.Info);
-//        }
-//
-//        behaviors.Remove(hero);
-//    }
-//}
-
-// no longer needed
         private static void FlushNullPartyHeroes()
         {
             var heroes = Hero.All.Where(x =>
@@ -477,7 +447,6 @@ namespace Bandit_Militias.Helpers
             }
         }
 
-// no longer needed
         private static void FlushBadCharacterObjects()
         {
             var badChars = CharacterObject.All.Where(x => x.HeroObject == null)
@@ -517,7 +486,6 @@ namespace Bandit_Militias.Helpers
             }
         }
 
-// not needed
         private static void FlushNeutralBanditParties()
         {
             var tempList = new List<MobileParty>();
@@ -530,7 +498,6 @@ namespace Bandit_Militias.Helpers
             PurgeList($"FlushNeutralBanditParties Clearing {tempList.Count} weird neutral parties", tempList);
         }
 
-// not needed
         private static void FlushEmptyMilitiaParties()
         {
             var tempList = new List<MobileParty>();
@@ -542,6 +509,7 @@ namespace Bandit_Militias.Helpers
             PurgeList($"FlushEmptyMilitiaParties Clearing {tempList.Count} empty parties", tempList);
         }
 
+        // Bob's Bandit Militia vs Ross' Bandit Militia
         internal static string Possess(string input)
         {
             // game tries to redraw the PartyNamePlateVM after combat with multiple militias
@@ -582,7 +550,7 @@ namespace Bandit_Militias.Helpers
             any.Do(x => EquipmentItems.Add(new EquipmentElement(x)));
         }
 
-// builds a set of 4 weapons that won't include more than 1 bow or shield, nor any lack of ammo
+        // builds a set of 4 weapons that won't include more than 1 bow or shield, nor any lack of ammo
         internal static Equipment BuildViableEquipmentSet()
         {
             //T.Restart();
@@ -719,7 +687,6 @@ namespace Bandit_Militias.Helpers
         {
             try
             {
-                Flush();
                 var parties = MobileParty.All.Where(x => x.LeaderHero != null && !IsBanditMilitia(x)).ToList();
                 CalculatedMaxPartySize = Convert.ToInt32(parties.Select(x => x.Party.PartySizeLimit).Average() * Globals.Settings.MaxPartySizeFactor * Variance);
                 CalculatedMaxPartyStrength = Convert.ToInt32(parties.Select(x => x.Party.TotalStrength).Average() * Globals.Settings.PartyStrengthFactor * Variance);
@@ -787,7 +754,7 @@ namespace Bandit_Militias.Helpers
             troopRoster.AddToCounts(recruit, numberToUpgrade);
         }
 
-// this condition leads to a null ref in DoWait() so we hack it
+        // this condition leads to a null ref in DoWait() so we hack it
         internal static void FixMapEventFuckery()
         {
             if (PlayerEncounter.Battle != null &&

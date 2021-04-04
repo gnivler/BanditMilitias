@@ -27,6 +27,10 @@ namespace Bandit_Militias.Patches
             private static void Postfix()
             {
                 Mod.Log("MapScreen.OnInitialize");
+                Mod.Log("Clans:");
+                Clan.All.Do(x => Mod.Log($"Name: {x.Name} MapFaction: {x.MapFaction} Culture: {x.Culture}"));
+                Mod.Log("Bandit Clans:");
+                Clan.BanditFactions.Do(x => Mod.Log($"Name: {x.Name} MapFaction: {x.MapFaction} Culture: {x.Culture}"));
                 HeroCreatorCopy.VeteransRespect = PerkObject.All.First(x => x.StringId == "LeadershipVeteransRespect");
                 HeroCreatorCopy.Leadership = SkillObject.All.First(x => x.StringId == "Leadership");
                 EquipmentItems.Clear();
@@ -136,7 +140,7 @@ namespace Bandit_Militias.Patches
                     party.PrisonRoster?.Count < Globals.Settings.MinPartySize &&
                     __instance.Casualties > party.MemberRoster?.TotalHealthyCount * 2)
                 {
-                    Mod.Log($">>> Dispersing {party.Name} of {party.MemberRoster.TotalHealthyCount}+{party.MemberRoster.TotalWounded}w+{party.PrisonRoster.Count}p");
+                    Mod.Log($">>> Dispersing {party.Name} of {party.MemberRoster.TotalHealthyCount}+{party.MemberRoster.TotalWounded}w+{party.PrisonRoster?.Count}p");
                     __state.KillHero();
                     Militias.Remove(Militias.FirstOrDefault(x => x.Hero == __state));
                     Trash(party.MobileParty);

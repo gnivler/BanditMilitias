@@ -34,7 +34,6 @@ namespace Bandit_Militias
         internal static List<ItemObject> Arrows = new List<ItemObject>();
         internal static List<ItemObject> Bolts = new List<ItemObject>();
         internal static readonly Stopwatch T = new Stopwatch();
-        internal static readonly Dictionary<MobileParty, CampaignTime> MergeMap = new Dictionary<MobileParty, CampaignTime>();
         internal static readonly List<Equipment> BanditEquipment = new List<Equipment>();
         internal static List<CharacterObject> Recruits = new List<CharacterObject>();
 

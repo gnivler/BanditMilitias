@@ -52,8 +52,8 @@ namespace Bandit_Militias
             var mostPrevalent = (Clan) MostPrevalentFaction(MobileParty) ?? Clan.BanditFactions.First();
             MobileParty.ActualClan = mostPrevalent;
             Hero = HeroCreatorCopy.CreateBanditHero(mostPrevalent, MobileParty);
-            // matches Faction to Culture but doesn't get intended effect of making them reinforce other bandit units or other militias
-            Hero.Culture = Clan.BanditFactions.First(x => Hero.MapFaction.Name == x.Name).Culture;
+            var faction = Clan.BanditFactions.FirstOrDefault(x => Hero.MapFaction.Name == x.Name);
+            Hero.Culture = faction == null ? Clan.All.FirstOrDefault(x => x.Name.ToString() == "Looters")?.Culture : faction.Culture;
             Name = (string) Traverse.Create(typeof(MBTextManager))
                 .Method("GetLocalizedText", $"{Possess(Hero.FirstName.ToString())} Bandit Militia").GetValue();
             MobileParty.SetCustomName(new TextObject(Name));

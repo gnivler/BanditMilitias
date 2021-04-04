@@ -31,6 +31,7 @@ namespace Bandit_Militias.Patches
                     if (Campaign.Current.TimeControlMode == CampaignTimeControlMode.Stop ||
                         Campaign.Current.TimeControlMode == CampaignTimeControlMode.UnstoppableFastForwardForPartyWaitTime ||
                         Campaign.Current.TimeControlMode == CampaignTimeControlMode.FastForwardStop ||
+                        Campaign.Current.TimeControlMode == CampaignTimeControlMode.StoppableFastForward ||
                         GlobalMilitiaPower > CalculatedGlobalPowerLimit)
                     {
                         return;
@@ -59,7 +60,9 @@ namespace Bandit_Militias.Patches
                         }
 
                         var targetParty = MobileParty.FindPartiesAroundPosition(mobileParty.Position2D, FindRadius,
-                            x => x != mobileParty && IsValidParty(x)).ToList().GetRandomElement()?.Party;
+                                x => x != mobileParty && IsValidParty(x) &&
+                                     x.MemberRoster.TotalManCount + mobileParty.MemberRoster.TotalManCount >= Globals.Settings.MinPartySize)
+                            .ToList().GetRandomElement()?.Party;
 
                         // "nobody" is a valid answer
                         if (targetParty == null)
@@ -68,8 +71,7 @@ namespace Bandit_Militias.Patches
                         }
 
                         var targetLastMergedOrSplitDate = Militia.FindMilitiaByParty(targetParty.MobileParty)?.LastMergedOrSplitDate;
-                        if ( //targetLastMergedOrSplitDate != null &&
-                            CampaignTime.Now < targetLastMergedOrSplitDate + CampaignTime.Hours(Globals.Settings.CooldownHours))
+                        if (CampaignTime.Now < targetLastMergedOrSplitDate + CampaignTime.Hours(Globals.Settings.CooldownHours))
                         {
                             continue;
                         }
@@ -85,37 +87,24 @@ namespace Bandit_Militias.Patches
 
                         if (Campaign.Current.Models.MapDistanceModel.GetDistance(targetParty.MobileParty, mobileParty) > MergeDistance)
                         {
-                            if (!MergeMap.ContainsKey(mobileParty))
+                            Mod.Log($"{mobileParty} seeking > {targetParty.MobileParty}");
+                            mobileParty.SetMoveEscortParty(targetParty.MobileParty);
+                            //Mod.Log($"SetNavigationModeParty ==> {T.ElapsedTicks / 10000F:F3}ms");
+
+                            if (targetParty.MobileParty.MoveTargetParty != mobileParty)
                             {
-                                MergeMap.Add(mobileParty, CampaignTime.Now);
+                                Mod.Log($"{targetParty.MobileParty} seeking back > {mobileParty}");
+                                targetParty.MobileParty.SetMoveEscortParty(mobileParty);
+                                //Mod.Log($"SetNavigationModeTargetParty ==> {T.ElapsedTicks / 10000F:F3}ms");
                             }
 
-                            if (CampaignTime.Now > MergeMap[mobileParty] + CampaignTime.Hours(Globals.Settings.CooldownHours))
-                            {
-                                MergeMap.Remove(mobileParty);
-                                Mod.Log($"{mobileParty} seeking > {targetParty.MobileParty}");
-                                mobileParty.SetMoveEscortParty(targetParty.MobileParty);
-                                //Mod.Log($"SetNavigationModeParty ==> {T.ElapsedTicks / 10000F:F3}ms");
-
-                                if (targetParty.MobileParty.MoveTargetParty != mobileParty)
-                                {
-                                    MergeMap.Remove(targetParty.MobileParty);
-                                    Mod.Log($"{targetParty.MobileParty} seeking back > {mobileParty}");
-                                    targetParty.MobileParty.SetMoveEscortParty(mobileParty);
-                                    //Mod.Log($"SetNavigationModeTargetParty ==> {T.ElapsedTicks / 10000F:F3}ms");
-                                }
-                            }
-
-                            return;
+                            continue;
                         }
 
                         if (Settlement.FindSettlementsAroundPosition(mobileParty.Position2D, MinDistanceFromHideout, x => x.IsHideout()).Any())
                         {
                             continue;
                         }
-
-                        MergeMap.Remove(mobileParty);
-                        MergeMap.Remove(targetParty.MobileParty);
 
                         // create a new party merged from the two
                         var rosters = MergeRosters(mobileParty, targetParty);
@@ -133,7 +122,6 @@ namespace Bandit_Militias.Patches
                         militia.MobileParty.Party.Visuals.SetMapIconAsDirty();
                         Trash(mobileParty);
                         Trash(targetParty.MobileParty);
-                        parties = MobileParty.All.Where(x => x.IsBandit && x.CurrentSettlement == null).ToList();
                         //Mod.Log($">>> Finished all work: {T.ElapsedTicks / 10000F:F3}ms.");
                     }
 

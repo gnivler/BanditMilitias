@@ -45,7 +45,6 @@ namespace Bandit_Militias
             }
 
             Mod.Log($">>> OnMilitiaRemoved - {partyBase.Name}.");
-            MergeMap.Remove(partyBase.MobileParty);
             if (partyBase.MobileParty.LeaderHero?.CurrentSettlement != null)
             {
                 Traverse.Create(HeroesWithoutParty(partyBase.MobileParty.LeaderHero?.CurrentSettlement)).Field<List<Hero>>("_list").Value.Remove(partyBase.MobileParty.LeaderHero);
