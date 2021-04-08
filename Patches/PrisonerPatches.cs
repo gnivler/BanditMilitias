@@ -22,7 +22,12 @@ namespace Bandit_Militias.Patches
         {
             private static bool Prefix(Hero prisonerCharacter)
             {
-                return !IsBanditMilitia(prisonerCharacter.PartyBelongedTo);
+                if (prisonerCharacter?.PartyBelongedTo == null)
+                {
+                    return true;
+                }
+
+                return !IsBM(prisonerCharacter.PartyBelongedTo);
             }
         }
 
@@ -36,16 +41,16 @@ namespace Bandit_Militias.Patches
                 var loser = __instance.BattleState != BattleState.AttackerVictory
                     ? __instance.AttackerSide
                     : __instance.DefenderSide;
-                var parties = loser.Parties.Where(x => Globals.Militias.Any(y => y.MobileParty == x.Party.MobileParty)).ToList();
+                var parties = loser.Parties.Where(x => Globals.PartyMilitiaMap.Keys.Any(y => y == x.Party.MobileParty)).ToList();
                 if (loser.LeaderParty.MobileParty != null &&
-                    !parties.Any(x => Globals.Militias.Any(y => y.MobileParty == x.Party.MobileParty)))
+                    !parties.Any(x => Globals.PartyMilitiaMap.Keys.Any(y => y == x.Party.MobileParty)))
                 {
                     return;
                 }
-                
+
                 foreach (var party in parties)
                 {
-                    Globals.Militias.Remove(Militia.FindMilitiaByParty(party.Party.MobileParty));
+                    Globals.PartyMilitiaMap.Remove(party.Party.MobileParty);
                     var heroes = party.Party.MemberRoster.RemoveIf(x => x.Character.IsHero).ToList();
                     for (var i = 0; i < heroes.Count; i++)
                     {
@@ -62,7 +67,7 @@ namespace Bandit_Militias.Patches
         {
             private static bool Prefix(PartyBase defeatedParty)
             {
-                return !IsBanditMilitia(defeatedParty.MobileParty);
+                return !IsBM(defeatedParty.MobileParty);
             }
         }
     }

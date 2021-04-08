@@ -61,8 +61,24 @@ namespace Bandit_Militias
                 Globals.Settings = new Settings();
             }
 
+            CacheBanners();
             RunManualPatches();
             harmony.PatchAll(Assembly.GetExecutingAssembly());
+        }
+
+        private static void CacheBanners()
+        {
+            //T.Restart();
+            for (var i = 0; i < 10_000; i++)
+            {
+                // need to cache the banners before CEK adds background colours which
+                // causes custom banners to crash for reasons unknown
+                // have to use a seed because the game hasn't initialized the game's
+                // inefficient but does it really matter for 38ms once at startup
+                Banners.Add(Banner.CreateRandomBanner((int) DateTime.Now.Ticks));
+            }
+
+            //Log(T.ElapsedMilliseconds);
         }
 
         private static void ReadConfig()
@@ -113,7 +129,7 @@ namespace Bandit_Militias
                 (Input.IsKeyDown(InputKey.LeftShift) || Input.IsKeyDown(InputKey.RightShift)) &&
                 Input.IsKeyPressed(InputKey.F12))
             {
-                foreach (var militia in Militias.OrderByDescending(x => x.MobileParty.MemberRoster.TotalManCount))
+                foreach (var militia in PartyMilitiaMap.Values.OrderByDescending(x => x.MobileParty.MemberRoster.TotalManCount))
                 {
                     Log($">> {militia.Hero.Name,-30}: {militia.MobileParty.MemberRoster.TotalManCount}/{militia.MobileParty.Party.TotalStrength:0}");
                     for (int tier = 0; tier <= 6; tier++)
@@ -122,7 +138,7 @@ namespace Bandit_Militias
                     }
                 }
 
-                Log($">> Total {Militias.Count} = {Militias.Select(x => x.MobileParty.MemberRoster.TotalManCount).Sum()}");
+                Log($">> Total {PartyMilitiaMap.Values.Count} = {PartyMilitiaMap.Values.Select(x => x.MobileParty.MemberRoster.TotalManCount).Sum()}");
             }
 
             if ((Input.IsKeyDown(InputKey.LeftControl) || Input.IsKeyDown(InputKey.RightControl)) &&
@@ -152,13 +168,13 @@ namespace Bandit_Militias
 
         private static void RunManualPatches()
         {
-            try
-            {
-            }
-            catch (Exception ex)
-            {
-                Log(ex, LogLevel.Error);
-            }
+            //try
+            //{
+            //}
+            //catch (Exception ex)
+            //{
+            //    Log(ex, LogLevel.Error);
+            //}
         }
     }
 }

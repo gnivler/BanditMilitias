@@ -19,25 +19,26 @@ namespace Bandit_Militias
         public MobileParty MobileParty;
         public string Name;
         internal readonly Banner Banner;
+        internal readonly string BannerKey;
         internal Hero Hero;
         internal CampaignTime LastMergedOrSplitDate = CampaignTime.Now;
-        
-        
+
         public Militia(MobileParty mobileParty)
         {
-            //Militias.Add(this);
             MobileParty = mobileParty;
-            Banner = Banner.CreateRandomBanner();
+            Banner = Banners.GetRandomElement();
+            BannerKey = Banner.Serialize();
             Hero = mobileParty.LeaderHero;
             LogMilitiaFormed(MobileParty);
         }
 
         public Militia(MobileParty mobileParty, TroopRoster party, TroopRoster prisoners)
         {
-            Militias.Add(this);
-            Banner = Banner.CreateRandomBanner();
+            Banner = Banners.GetRandomElement();
+            BannerKey = Banner.Serialize();
             Spawn(mobileParty, party, prisoners);
             TrainMilitia();
+            PartyMilitiaMap.Add(MobileParty, this);
             LogMilitiaFormed(MobileParty);
         }
 
@@ -184,11 +185,6 @@ namespace Bandit_Militias
             var faction = Clan.BanditFactions.FirstOrDefault(
                 x => x.Culture == map.OrderByDescending(y => y.Value).FirstOrDefault().Key);
             return faction;
-        }
-
-        public static Militia FindMilitiaByParty(MobileParty mobileParty)
-        {
-            return Militias.FirstOrDefault(x => x.MobileParty == mobileParty);
         }
 
         private static void LogMilitiaFormed(MobileParty mobileParty)

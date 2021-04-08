@@ -27,29 +27,28 @@ namespace Bandit_Militias.Patches
             private static void Postfix()
             {
                 Mod.Log("MapScreen.OnInitialize");
-                Mod.Log("Clans:");
-                Clan.All.Do(x => Mod.Log($"Name: {x.Name} MapFaction: {x.MapFaction} Culture: {x.Culture}"));
-                Mod.Log("Bandit Clans:");
-                Clan.BanditFactions.Do(x => Mod.Log($"Name: {x.Name} MapFaction: {x.MapFaction} Culture: {x.Culture}"));
+                //Mod.Log("Clans:");
+                //Clan.All.Do(x => Mod.Log($"Name: {x.Name} MapFaction: {x.MapFaction} Culture: {x.Culture}"));
+                //Mod.Log("Bandit Clans:");
+                //Clan.BanditFactions.Do(x => Mod.Log($"Name: {x.Name} MapFaction: {x.MapFaction} Culture: {x.Culture}"));
                 HeroCreatorCopy.VeteransRespect = PerkObject.All.First(x => x.StringId == "LeadershipVeteransRespect");
                 HeroCreatorCopy.Leadership = SkillObject.All.First(x => x.StringId == "Leadership");
                 EquipmentItems.Clear();
                 PopulateItems();
                 Recruits = CharacterObject.All.Where(x =>
-                        x.Level == 11 &&
-                        x.Occupation == Occupation.Soldier &&
-                        !x.StringId.StartsWith("regular_fighter") &&
-                        !x.StringId.StartsWith("veteran_borrowed_troop") &&
-                        !x.StringId.EndsWith("_tier_1") &&
-                        !x.StringId.Contains("_militia_") &&
-                        !x.StringId.Equals("sturgian_warrior_son") &&
-                        !x.StringId.Equals("khuzait_noble_son") &&
-                        !x.StringId.Equals("imperial_vigla_recruit") &&
-                        !x.StringId.Equals("battanian_highborn_youth") &&
-                        !x.StringId.Equals("vlandian_squire") &&
-                        !x.StringId.Equals("aserai_youth") &&
-                        !x.StringId.Equals("poacher"))
-                    .ToList();
+                    x.Level == 11 &&
+                    x.Occupation == Occupation.Soldier &&
+                    !x.StringId.StartsWith("regular_fighter") &&
+                    !x.StringId.StartsWith("veteran_borrowed_troop") &&
+                    !x.StringId.EndsWith("_tier_1") &&
+                    !x.StringId.Contains("_militia_") &&
+                    !x.StringId.Equals("sturgian_warrior_son") &&
+                    !x.StringId.Equals("khuzait_noble_son") &&
+                    !x.StringId.Equals("imperial_vigla_recruit") &&
+                    !x.StringId.Equals("battanian_highborn_youth") &&
+                    !x.StringId.Equals("vlandian_squire") &&
+                    !x.StringId.Equals("aserai_youth") &&
+                    !x.StringId.Equals("poacher"));
 
                 // used for armour
                 foreach (ItemObject.ItemTypeEnum value in Enum.GetValues(typeof(ItemObject.ItemTypeEnum)))
@@ -65,7 +64,7 @@ namespace Bandit_Militias.Patches
                     BanditEquipment.Add(BuildViableEquipmentSet());
                 }
 
-                Militias.Clear();
+                PartyMilitiaMap.Clear();
                 Hideouts = Settlement.FindAll(x => x.IsHideout()).ToList();
 
                 var militias = MobileParty.All.Where(x =>
@@ -80,11 +79,12 @@ namespace Bandit_Militias.Patches
                     }
                     else
                     {
-                        Militias.Add(new Militia(militia));
+                        var recreatedMilitia = new Militia(militia);
+                        PartyMilitiaMap.Add(recreatedMilitia.MobileParty, recreatedMilitia);
                     }
                 }
 
-                Mod.Log($"Militias: {militias.Count} (registered {Militias.Count})");
+                Mod.Log($"Militias: {militias.Count} (registered {PartyMilitiaMap.Count})");
                 // 1.5.8 is dropping the militia settlements at some point, I haven't figured out where
                 ReHome();
                 DailyCalculations();
@@ -95,6 +95,18 @@ namespace Bandit_Militias.Patches
                     new HarmonyMethod(AccessTools.Method(typeof(Helper), nameof(FixMapEventFuckery))));
             }
         }
+
+        // create banners from vanilla resources, added resources like CEK colours are causing null Materials
+        // up the stack
+        [HarmonyPatch(typeof(Game), "BeginLoading")]
+        public class BannerManagerInitializePatch
+        {
+            private static void GameBeginLoadingPatch()
+            {
+                Mod.Log("PING");
+            }
+        }
+
 
         // 0 member parties will form if this is happening
         // was only happening with debugger attached because that makes sense
@@ -127,8 +139,9 @@ namespace Bandit_Militias.Patches
 
             private static void Postfix(MapEventSide __instance, PartyBase party, Hero __state)
             {
-                if (party?.MobileParty == null ||
-                    !IsBanditMilitia(party.MobileParty) ||
+                if (__state == null ||
+                    party?.MobileParty == null ||
+                    !IsBM(party.MobileParty) ||
                     party.PrisonRoster != null &&
                     party.PrisonRoster.Contains(Hero.MainHero.CharacterObject))
                 {
@@ -142,7 +155,6 @@ namespace Bandit_Militias.Patches
                 {
                     Mod.Log($">>> Dispersing {party.Name} of {party.MemberRoster.TotalHealthyCount}+{party.MemberRoster.TotalWounded}w+{party.PrisonRoster?.Count}p");
                     __state.KillHero();
-                    Militias.Remove(Militias.FirstOrDefault(x => x.Hero == __state));
                     Trash(party.MobileParty);
                 }
             }
@@ -153,7 +165,7 @@ namespace Bandit_Militias.Patches
         {
             private static bool Prefix(Hero relative)
             {
-                if (Militias.Any(x => x.Hero == relative))
+                if (PartyMilitiaMap.Values.Any(x => x.Hero == relative))
                 {
                     Mod.Log("Not creating relative of Bandit Militia hero");
                     return false;

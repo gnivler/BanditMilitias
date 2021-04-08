@@ -26,7 +26,7 @@ namespace Bandit_Militias
         // kludge to unstick stuck militias
         private static void StopHoldingBehavior(MobileParty mobileParty)
         {
-            if (IsBanditMilitia(mobileParty) &&
+            if (IsBM(mobileParty) &&
                 (mobileParty.ShortTermBehavior == AiBehavior.Hold ||
                  mobileParty.ShortTermBehavior == AiBehavior.None ||
                  mobileParty.DefaultBehavior == AiBehavior.Hold ||
@@ -39,7 +39,7 @@ namespace Bandit_Militias
 
         private static void OnMilitiaRemoved(PartyBase partyBase)
         {
-            if (!IsBanditMilitia(partyBase.MobileParty))
+            if (!IsBM(partyBase.MobileParty))
             {
                 return;
             }
@@ -50,7 +50,8 @@ namespace Bandit_Militias
                 Traverse.Create(HeroesWithoutParty(partyBase.MobileParty.LeaderHero?.CurrentSettlement)).Field<List<Hero>>("_list").Value.Remove(partyBase.MobileParty.LeaderHero);
                 Mod.Log($">>> FLUSH OnMilitiaRemoved bandit hero without party - {partyBase.MobileParty.LeaderHero.Name} at {partyBase.MobileParty.LeaderHero?.CurrentSettlement}.");
             }
-            Militias.Remove(Militia.FindMilitiaByParty(partyBase.MobileParty));
+
+            PartyMilitiaMap.Remove(partyBase.MobileParty);
         }
 
         private static void TryGrowing(MobileParty mobileParty)
@@ -59,7 +60,7 @@ namespace Bandit_Militias
             {
                 if (Growth &&
                     IsValidParty(mobileParty) &&
-                    IsBanditMilitia(mobileParty) &&
+                    IsBM(mobileParty) &&
                     ((float) GlobalMilitiaPower / CalculatedGlobalPowerLimit < Globals.Settings.GrowthFactor ||
                      Rng.NextDouble() <= Globals.Settings.GrowthChance))
                 {

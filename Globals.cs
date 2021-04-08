@@ -26,7 +26,7 @@ namespace Bandit_Militias
 
         // misc
         internal static readonly Random Rng = new Random();
-        internal static readonly HashSet<Militia> Militias = new HashSet<Militia>();
+        internal static readonly Dictionary<MobileParty, Militia> PartyMilitiaMap = new Dictionary<MobileParty, Militia>();
         internal static readonly Dictionary<ItemObject.ItemTypeEnum, List<ItemObject>> ItemTypes = new Dictionary<ItemObject.ItemTypeEnum, List<ItemObject>>();
         internal static readonly List<EquipmentElement> EquipmentItems = new List<EquipmentElement>();
         internal static List<Settlement> Hideouts = new List<Settlement>();
@@ -35,8 +35,9 @@ namespace Bandit_Militias
         internal static List<ItemObject> Bolts = new List<ItemObject>();
         internal static readonly Stopwatch T = new Stopwatch();
         internal static readonly List<Equipment> BanditEquipment = new List<Equipment>();
-        internal static List<CharacterObject> Recruits = new List<CharacterObject>();
-
+        internal static IEnumerable<CharacterObject> Recruits;
+        internal static readonly List<Banner> Banners = new List<Banner>();
+        
         // FieldRefs
         internal static readonly AccessTools.FieldRef<Settlement, MBReadOnlyList<Hero>> HeroesWithoutParty =
             AccessTools.FieldRefAccess<Settlement, MBReadOnlyList<Hero>>("<HeroesWithoutParty>k__BackingField");
@@ -56,5 +57,7 @@ namespace Bandit_Militias
             {"RICH", 900},
             {"RICHEST", 2000},
         };
+
+       
     }
 }

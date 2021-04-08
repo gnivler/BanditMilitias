@@ -36,7 +36,7 @@ namespace Bandit_Militias.Helpers
         {
             if (GlobalMilitiaPower + mobileParty.Party.TotalStrength > CalculatedGlobalPowerLimit ||
                 mobileParty.MemberRoster.TotalManCount < MinSplitSize ||
-                !IsBanditMilitia(mobileParty) ||
+                !IsBM(mobileParty) ||
                 mobileParty.IsTooBusyToMerge())
             {
                 return;
@@ -44,7 +44,7 @@ namespace Bandit_Militias.Helpers
 
             var roll = Rng.NextDouble();
             if (roll <= Globals.Settings.RandomSplitChance ||
-                !IsBanditMilitia(mobileParty) ||
+                !IsBM(mobileParty) ||
                 mobileParty.Party.TotalStrength <= CalculatedMaxPartyStrength * Globals.Settings.StrengthSplitFactor * Variance ||
                 mobileParty.Party.MemberRoster.TotalManCount <= CalculatedMaxPartySize * Globals.Settings.SizeSplitFactor * Variance)
             {
@@ -145,6 +145,8 @@ namespace Bandit_Militias.Helpers
                 __instance.CurrentSettlement != null ||
                 __instance.Party.MemberRoster.TotalManCount == 0 ||
                 __instance.IsCurrentlyUsedByAQuest ||
+                // Calradia Expanded Kingdoms
+                __instance.Name.Contains("manhunter") ||
                 __instance.IsTooBusyToMerge())
             {
                 return false;
@@ -218,10 +220,15 @@ namespace Bandit_Militias.Helpers
 
         internal static void Trash(MobileParty mobileParty)
         {
-            Militias.Remove(Militia.FindMilitiaByParty(mobileParty));
-            mobileParty?.LeaderHero?.KillHero();
-            mobileParty?.RemoveParty();
+            Mod.Log("Trashing " + mobileParty.Name);
+            PartyMilitiaMap.Remove(mobileParty);
+            // added as workaround/fix for issue seen in 1.5.9 where TroopRoster.Count is wrong and TroopRoster.Clear() throws
+            Traverse.Create(mobileParty.MemberRoster).Field<int>("_count").Value =
+                mobileParty.MemberRoster.GetTroopRoster().Count(x => x.Character != null);
+            mobileParty.MemberRoster.UpdateVersion();
+            mobileParty.RemoveParty();
         }
+
 
         internal static void KillHero(this Hero hero)
         {
@@ -263,7 +270,7 @@ namespace Bandit_Militias.Helpers
 
         private static void FlushBanditMilitias()
         {
-            Militias.Clear();
+            PartyMilitiaMap.Clear();
             var hasLogged = false;
             var partiesToRemove = MobileParty.All.Where(x => x.StringId.StartsWith("Bandit_Militia")).ToList();
             foreach (var mobileParty in partiesToRemove)
@@ -334,7 +341,7 @@ namespace Bandit_Militias.Helpers
 
         internal static void ReHome()
         {
-            var tempList = Militias.Where(x => x?.Hero?.HomeSettlement == null).Select(x => x.Hero).ToList();
+            var tempList =PartyMilitiaMap.Values.Where(x => x?.Hero?.HomeSettlement == null).Select(x => x.Hero).ToList();
             Mod.Log($"Fixing {tempList.Count} null HomeSettlement heroes");
             tempList.Do(x => Traverse.Create(x).Field("_homeSettlement").SetValue(Hideouts.GetRandomElement()));
         }
@@ -357,7 +364,7 @@ namespace Bandit_Militias.Helpers
             // ~~fixed in 2.8.0, leaving in for now~~
             foreach (var settlement in Settlement.All.Where(x => x.HeroesWithoutParty.Count > 0))
             {
-                var militiaHeroes = settlement.HeroesWithoutParty.Intersect(Militias.Select(x => x.Hero)).ToList();
+                var militiaHeroes = settlement.HeroesWithoutParty.Intersect(PartyMilitiaMap.Values.Select(x => x.Hero)).ToList();
                 for (var i = 0; i < militiaHeroes.Count; i++)
                 {
                     Traverse.Create(HeroesWithoutParty(settlement)).Field<List<Hero>>("_list").Value.Remove(militiaHeroes[i]);
@@ -404,7 +411,7 @@ namespace Bandit_Militias.Helpers
             {
                 var mapEvent = mapEvents[index];
                 if (mapEvent.InvolvedParties.Any(x =>
-                    IsBanditMilitia(x.MobileParty)))
+                    IsBM(x.MobileParty)))
                 {
                     Mod.Log(">>> FLUSH MapEvent.");
                     mapEvent.FinalizeEvent();
@@ -419,7 +426,7 @@ namespace Bandit_Militias.Helpers
                 for (var index = 0; index < hideout.Parties.Count; index++)
                 {
                     var party = hideout.Parties[index];
-                    if (IsBanditMilitia(party))
+                    if (IsBM(party))
                     {
                         Mod.Log(">>> FLUSH Hideout.");
                         LeaveSettlementAction.ApplyForParty(party);
@@ -462,6 +469,8 @@ namespace Bandit_Militias.Helpers
                     !x.StringId.Contains("for_perf") &&
                     !x.StringId.Contains("dummy") &&
                     !x.StringId.Contains("npc_") &&
+                    // Calradia Expanded Kingdoms
+                    !x.StringId.Contains("vlandian_balestrieri_veterani") &&
                     !x.StringId.Contains("unarmed_ai"))
                 .ToList();
 
@@ -489,7 +498,7 @@ namespace Bandit_Militias.Helpers
         private static void FlushNeutralBanditParties()
         {
             var tempList = new List<MobileParty>();
-            foreach (var mobileParty in Militias.Where(x => x.MobileParty.MapFaction == CampaignData.NeutralFaction))
+            foreach (var mobileParty in PartyMilitiaMap.Values.Where(x => x.MobileParty.MapFaction == CampaignData.NeutralFaction))
             {
                 Mod.Log("This bandit shouldn't exist " + mobileParty.MobileParty + " size " + mobileParty.MobileParty.MemberRoster.TotalManCount, LogLevel.Info);
                 tempList.Add(mobileParty.MobileParty);
@@ -501,7 +510,7 @@ namespace Bandit_Militias.Helpers
         private static void FlushEmptyMilitiaParties()
         {
             var tempList = new List<MobileParty>();
-            foreach (var mobileParty in Militias.Where(x => x.MobileParty.MemberRoster.TotalManCount == 0))
+            foreach (var mobileParty in PartyMilitiaMap.Values.Where(x => x.MobileParty.MemberRoster.TotalManCount == 0))
             {
                 tempList.Add(mobileParty.MobileParty);
             }
@@ -559,10 +568,10 @@ namespace Bandit_Militias.Helpers
             var haveBow = false;
             try
             {
-                for (var i = 0; i < 4; i++)
+                for (var slot = 0; slot < 4; slot++)
                 {
                     EquipmentElement randomElement = default;
-                    switch (i)
+                    switch (slot)
                     {
                         case 0:
                         case 1:
@@ -580,7 +589,7 @@ namespace Bandit_Militias.Helpers
                     }
 
                     // matches here by obtaining a bow, which then stuffed ammo into [3]
-                    if (i == 3 && !gear[3].IsEmpty)
+                    if (slot == 3 && !gear[3].IsEmpty)
                     {
                         break;
                     }
@@ -588,17 +597,17 @@ namespace Bandit_Militias.Helpers
                     if (randomElement.Item.ItemType == ItemObject.ItemTypeEnum.Bow ||
                         randomElement.Item.ItemType == ItemObject.ItemTypeEnum.Crossbow)
                     {
-                        if (i < 3)
+                        if (slot < 3)
                         {
                             // try again, try harder
                             if (haveBow)
                             {
-                                i--;
+                                slot--;
                                 continue;
                             }
 
                             haveBow = true;
-                            gear[i] = randomElement;
+                            gear[slot] = randomElement;
                             if (randomElement.Item.ItemType == ItemObject.ItemTypeEnum.Bow)
                             {
                                 gear[3] = new EquipmentElement(Arrows.ToList()[Rng.Next(0, Arrows.Count)]);
@@ -621,14 +630,14 @@ namespace Bandit_Militias.Helpers
                         // try again, try harder
                         if (haveShield)
                         {
-                            i--;
+                            slot--;
                             continue;
                         }
 
                         haveShield = true;
                     }
 
-                    gear[i] = randomElement;
+                    gear[slot] = randomElement;
                 }
 
                 gear[5] = new EquipmentElement(ItemTypes[ItemObject.ItemTypeEnum.HeadArmor].GetRandomElement());
@@ -687,12 +696,12 @@ namespace Bandit_Militias.Helpers
         {
             try
             {
-                var parties = MobileParty.All.Where(x => x.LeaderHero != null && !IsBanditMilitia(x)).ToList();
+                var parties = MobileParty.All.Where(x => x.LeaderHero != null && !IsBM(x)).ToList();
                 CalculatedMaxPartySize = Convert.ToInt32(parties.Select(x => x.Party.PartySizeLimit).Average() * Globals.Settings.MaxPartySizeFactor * Variance);
                 CalculatedMaxPartyStrength = Convert.ToInt32(parties.Select(x => x.Party.TotalStrength).Average() * Globals.Settings.PartyStrengthFactor * Variance);
                 CalculatedGlobalPowerLimit = Convert.ToInt32(parties.Select(x => x.Party.TotalStrength).Sum() * Variance);
-                GlobalMilitiaPower = Convert.ToInt32(Militias.Select(x => x.MobileParty.Party.TotalStrength).Sum());
-                if (Militias.Count == 0)
+                GlobalMilitiaPower = Convert.ToInt32(PartyMilitiaMap.Keys.Select(x => x.Party.TotalStrength).Sum());
+                if (PartyMilitiaMap.Count == 0)
                 {
                     return;
                 }
@@ -701,7 +710,7 @@ namespace Bandit_Militias.Helpers
                 if (Mod.logging == LogLevel.Debug)
 #pragma warning disable 162
                 {
-                    Mod.Log($">> {Militias.Select(x => x.MobileParty.MemberRoster.TotalManCount).Sum():0} troops.  Strength: {Militias.Select(x => x.MobileParty.Party.TotalStrength).Sum():0}/{parties.Select(x => x.Party.TotalStrength).Sum():0} ({Militias.Select(x => x.MobileParty.Party.TotalStrength).Sum() / parties.Select(x => x.Party.TotalStrength).Sum() * 100:F1}%).  Max size {Militias.OrderByDescending(x => x.MobileParty.MemberRoster.TotalManCount).Select(x => x.MobileParty.MemberRoster.TotalManCount).First()}/{CalculatedMaxPartySize}");
+                    Mod.Log($">> {PartyMilitiaMap.Values.Select(x => x.MobileParty.MemberRoster.TotalManCount).Sum():0} troops.  Strength: {PartyMilitiaMap.Values.Select(x => x.MobileParty.Party.TotalStrength).Sum():0}/{parties.Select(x => x.Party.TotalStrength).Sum():0} ({PartyMilitiaMap.Values.Select(x => x.MobileParty.Party.TotalStrength).Sum() / parties.Select(x => x.Party.TotalStrength).Sum() * 100:F1}%).  Max size {PartyMilitiaMap.Values.OrderByDescending(x => x.MobileParty.MemberRoster.TotalManCount).Select(x => x.MobileParty.MemberRoster.TotalManCount).First()}/{CalculatedMaxPartySize}");
                 }
 #pragma warning restore 162
             }
@@ -734,23 +743,12 @@ namespace Bandit_Militias.Helpers
             return result;
         }
 
-        public static void ConvertLootersToKingdomCultureRecruits(ref TroopRoster troopRoster, CultureObject cultureObject, int numberToUpgrade)
+        public static void ConvertLootersToKingdomCultureRecruits(ref TroopRoster troopRoster, CultureObject culture, int numberToUpgrade)
         {
-            if (cultureObject == null)
-            {
-                return;
-            }
-
-            if (Clan.BanditFactions.Any(x => x.Culture == cultureObject))
-            {
-                cultureObject = Kingdom.All.First(x => x.StringId == "empire").Culture;
-            }
-
             var recruit = Recruits.Where(x =>
-                    x.Culture == Kingdom.All.First(k =>
-                        k.Culture == cultureObject).Culture)
-                .ToList()
-                .GetRandomElement();
+                    x.Culture == Clan.All.FirstOrDefault(k => k.Culture == culture)?.Culture)
+                .ToList().GetRandomElement() ?? Recruits.ToList().GetRandomElement();
+
             troopRoster.AddToCounts(recruit, numberToUpgrade);
         }
 
@@ -770,6 +768,42 @@ namespace Bandit_Militias.Helpers
             }
         }
 
-        internal static bool IsBanditMilitia(MobileParty mobileParty) => Militias.Any(x => x?.MobileParty == mobileParty);
+        internal static bool IsBM(MobileParty mobileParty)
+        {
+            return mobileParty != null &&
+                   PartyMilitiaMap.ContainsKey(mobileParty);
+        }
+        
+        //private static Banner CreateVanillaBanditBanner(int seed = -1, object orientation = null)
+        //{
+        //    Game current = Game.Current;
+        //    Random random = seed == -1 ? MBRandom.Random : new Random(seed);
+        //    Banner banner = new Banner();
+        //    BannerData iconData = new BannerData(BannerManager.Instance.GetRandomBackgroundId(random), random.Next(BannerManager.ColorPalette.Count), random.Next(BannerManager.ColorPalette.Count), new Vec2(1536f, 1536f), new Vec2(768f, 768f), false, false, 0.0f);
+        //    banner.AddIconData(iconData);
+        //    switch (orientation == Banner.BannerIconOrientation.None ? random.Next(6) : (int) orientation)
+        //    {
+        //        case 0:
+        //            banner.CentralPositionedOneIcon(random);
+        //            break;
+        //        case 1:
+        //            banner.CenteredTwoMirroredIcons(random);
+        //            break;
+        //        case 2:
+        //            banner.DiagonalIcons(random);
+        //            break;
+        //        case 3:
+        //            banner.HorizontalIcons(random);
+        //            break;
+        //        case 4:
+        //            banner.VerticalIcons(random);
+        //            break;
+        //        case 5:
+        //            banner.SquarePositionedFourIcons(random);
+        //            break;
+        //    }
+        //    return banner;
+        //}
+
     }
 }

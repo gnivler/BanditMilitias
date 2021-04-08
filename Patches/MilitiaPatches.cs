@@ -1,9 +1,11 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using HarmonyLib;
 using SandBox.View.Map;
 using SandBox.ViewModelCollection.Nameplate;
 using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.GameMenus;
 using TaleWorlds.CampaignSystem.SandBox.GameComponents.Map;
 using TaleWorlds.Core;
@@ -48,13 +50,20 @@ namespace Bandit_Militias.Patches
                         var mobileParty = parties[index];
                         if (mobileParty.MoveTargetParty != null &&
                             mobileParty.MoveTargetParty.IsBandit ||
+                            // Calradia Expanded Kingdoms
+                            mobileParty.ToString().Contains("manhunter") ||
                             mobileParty.IsTooBusyToMerge())
                         {
                             continue;
                         }
 
-                        var lastMergedOrSplitDate = Militia.FindMilitiaByParty(mobileParty)?.LastMergedOrSplitDate;
-                        if (CampaignTime.Now < lastMergedOrSplitDate + CampaignTime.Hours(Globals.Settings.CooldownHours))
+                        CampaignTime? lastChangeDate = null;
+                        if (PartyMilitiaMap.ContainsKey(mobileParty))
+                        {
+                            lastChangeDate = PartyMilitiaMap[mobileParty].LastMergedOrSplitDate;
+                        }
+
+                        if (CampaignTime.Now < lastChangeDate + CampaignTime.Hours(Globals.Settings.CooldownHours))
                         {
                             continue;
                         }
@@ -70,8 +79,13 @@ namespace Bandit_Militias.Patches
                             continue;
                         }
 
-                        var targetLastMergedOrSplitDate = Militia.FindMilitiaByParty(targetParty.MobileParty)?.LastMergedOrSplitDate;
-                        if (CampaignTime.Now < targetLastMergedOrSplitDate + CampaignTime.Hours(Globals.Settings.CooldownHours))
+                        CampaignTime? targetLastChangeDate = null;
+                        if (PartyMilitiaMap.ContainsKey(targetParty.MobileParty))
+                        {
+                            targetLastChangeDate = PartyMilitiaMap[mobileParty].LastMergedOrSplitDate;
+                        }
+
+                        if (CampaignTime.Now < targetLastChangeDate + CampaignTime.Hours(Globals.Settings.CooldownHours))
                         {
                             continue;
                         }
@@ -141,7 +155,7 @@ namespace Bandit_Militias.Patches
 
             private static void Postfix(MobileParty mobileParty, ref ExplainedNumber __result)
             {
-                if (IsBanditMilitia(mobileParty))
+                if (PartyMilitiaMap.ContainsKey(mobileParty))
                 {
                     __result.AddFactor(SpeedModifier, new TextObject("Bandit Militia"));
                 }
@@ -156,14 +170,14 @@ namespace Bandit_Militias.Patches
             {
                 if (Globals.Settings.RandomBanners &&
                     characterObject.HeroObject?.PartyBelongedTo != null &&
-                    IsBanditMilitia(characterObject.HeroObject.PartyBelongedTo))
+                    IsBM(characterObject.HeroObject.PartyBelongedTo))
                 {
-                    bannerKey = Militia.FindMilitiaByParty(characterObject.HeroObject.PartyBelongedTo).Banner.Serialize();
+                    bannerKey = PartyMilitiaMap[characterObject.HeroObject.PartyBelongedTo].BannerKey;
                 }
             }
         }
 
-        // changes the little shield icon under the party
+        //// changes the little shield icon under the party
         [HarmonyPatch(typeof(PartyBase), "Banner", MethodType.Getter)]
         public class PartyBaseBannerPatch
         {
@@ -171,14 +185,14 @@ namespace Bandit_Militias.Patches
             {
                 if (Globals.Settings.RandomBanners &&
                     __instance.MobileParty != null &&
-                    IsBanditMilitia(__instance.MobileParty))
+                    IsBM(__instance.MobileParty))
                 {
-                    __result = Militia.FindMilitiaByParty(__instance.MobileParty)?.Banner;
+                    __result = PartyMilitiaMap[__instance.MobileParty].Banner;
                 }
             }
         }
 
-        // changes the shields in combat
+        //// changes the shields in combat
         [HarmonyPatch(typeof(PartyGroupAgentOrigin), "Banner", MethodType.Getter)]
         public class PartyGroupAgentOriginBannerGetterPatch
         {
@@ -187,9 +201,9 @@ namespace Bandit_Militias.Patches
                 var party = (PartyBase) __instance.BattleCombatant;
                 if (Globals.Settings.RandomBanners &&
                     party.MobileParty != null &&
-                    IsBanditMilitia(party.MobileParty))
+                    IsBM(party.MobileParty))
                 {
-                    __result = Militia.FindMilitiaByParty(party.MobileParty)?.Banner;
+                    __result = PartyMilitiaMap[party.MobileParty]?.Banner;
                 }
             }
         }
@@ -209,9 +223,10 @@ namespace Bandit_Militias.Patches
             }
         }
 
+        [HarmonyPatch(typeof(EnterSettlementAction), "ApplyInternal")]
         private static bool Prefix(MobileParty mobileParty, Settlement settlement)
         {
-            if (IsBanditMilitia(mobileParty))
+            if (IsBM(mobileParty))
             {
                 Mod.Log($"Preventing {mobileParty} from entering {settlement}");
                 mobileParty.SetMovePatrolAroundSettlement(settlement);
@@ -225,14 +240,33 @@ namespace Bandit_Militias.Patches
         [HarmonyPatch(typeof(PartyNameplateVM), "RefreshDynamicProperties")]
         public class PartyNameplateVMRefreshDynamicPropertiesPatch
         {
+            private static readonly Dictionary<MobileParty, string> Map = new Dictionary<MobileParty, string>();
+
             private static void Postfix(PartyNameplateVM __instance, ref string ____fullNameBind)
             {
+                //T.Restart();
                 // Leader is null after a battle, crashes after-action
-                if (__instance?.Party?.Leader != null &&
-                    IsBanditMilitia(__instance.Party))
+                // this staged approach feels awkward but it's fast; FindMilitiaByParty on every frame is wasteful
+                if (__instance.Party?.Leader == null)
                 {
-                    ____fullNameBind = Militia.FindMilitiaByParty(__instance.Party).Name;
+                    return;
                 }
+
+                if (Map.ContainsKey(__instance.Party))
+                {
+                    ____fullNameBind = Map[__instance.Party];
+                    //Mod.Log(T.ElapsedTicks);
+                    return;
+                }
+
+                if (!IsBM(__instance.Party))
+                {
+                    return;
+                }
+
+                Map.Add(__instance.Party, PartyMilitiaMap[__instance.Party].Name);
+                ____fullNameBind = Map[__instance.Party];
+                //Mod.Log(T.ElapsedTicks);
             }
         }
 
@@ -242,7 +276,7 @@ namespace Bandit_Militias.Patches
         {
             private static bool Prefix(PartyBase ____encounteredParty)
             {
-                if (Militias.Any(x => x.MobileParty == ____encounteredParty.MobileParty))
+                if (IsBM(____encounteredParty.MobileParty))
                 {
                     GameMenu.SwitchToMenu("encounter");
                     return false;
@@ -295,7 +329,8 @@ namespace Bandit_Militias.Patches
                 if (__result &&
                     !targetParty.IsGarrison &&
                     !targetParty.IsMilitia &&
-                    Militias.Any(x => x.MobileParty == __instance))
+                    PartyMilitiaMap.ContainsKey(__instance))
+                    //Militias.Any(x => x.MobileParty == __instance))
                 {
                     if (targetParty == MobileParty.MainParty)
                     {
