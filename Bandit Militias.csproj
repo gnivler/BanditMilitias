@@ -102,9 +102,6 @@
         <Reference Include="TaleWorlds.Diamond.AccessProvider.Test, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
           <HintPath>..\..\BannerlordRefs\Current\TaleWorlds.Diamond.AccessProvider.Test.dll</HintPath>
         </Reference>
-        <Reference Include="TaleWorlds.Diamond.ChatSystem, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-          <HintPath>..\..\BannerlordRefs\Current\TaleWorlds.Diamond.ChatSystem.dll</HintPath>
-        </Reference>
         <Reference Include="TaleWorlds.Diamond.ChatSystem.Library, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
           <HintPath>..\..\BannerlordRefs\Current\TaleWorlds.Diamond.ChatSystem.Library.dll</HintPath>
         </Reference>
