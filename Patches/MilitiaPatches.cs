@@ -7,6 +7,7 @@ using SandBox.ViewModelCollection.Nameplate;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.GameMenus;
+using TaleWorlds.CampaignSystem.SandBox.CampaignBehaviors.AiBehaviors;
 using TaleWorlds.CampaignSystem.SandBox.GameComponents.Map;
 using TaleWorlds.Core;
 using TaleWorlds.Localization;
@@ -82,7 +83,7 @@ namespace Bandit_Militias.Patches
                         CampaignTime? targetLastChangeDate = null;
                         if (PartyMilitiaMap.ContainsKey(targetParty.MobileParty))
                         {
-                            targetLastChangeDate = PartyMilitiaMap[mobileParty].LastMergedOrSplitDate;
+                            targetLastChangeDate = PartyMilitiaMap[targetParty.MobileParty].LastMergedOrSplitDate;
                         }
 
                         if (CampaignTime.Now < targetLastChangeDate + CampaignTime.Hours(Globals.Settings.CooldownHours))
@@ -246,7 +247,7 @@ namespace Bandit_Militias.Patches
             {
                 //T.Restart();
                 // Leader is null after a battle, crashes after-action
-                // this staged approach feels awkward but it's fast; FindMilitiaByParty on every frame is wasteful
+                // this staged approach feels awkward but it's fast
                 if (__instance.Party?.Leader == null)
                 {
                     return;
@@ -326,23 +327,32 @@ namespace Bandit_Militias.Patches
         {
             private static void Postfix(MobileParty __instance, MobileParty targetParty, ref bool __result)
             {
-                if (__result &&
-                    !targetParty.IsGarrison &&
-                    !targetParty.IsMilitia &&
-                    PartyMilitiaMap.ContainsKey(__instance))
-                    //Militias.Any(x => x.MobileParty == __instance))
+                if (__result && PartyMilitiaMap.ContainsKey(__instance))
                 {
-                    if (targetParty == MobileParty.MainParty)
-                    {
-                        __result = true;
-                    }
-                    else
-                    {
-                        var party1Strength = __instance.GetTotalStrengthWithFollowers();
-                        var party2Strength = targetParty.GetTotalStrengthWithFollowers();
-                        var delta = (party1Strength - party2Strength) / party1Strength * 100;
-                        __result = delta <= Globals.Settings.PartyStrengthDeltaPercent;
-                    }
+                    var party1Strength = __instance.GetTotalStrengthWithFollowers();
+                    var party2Strength = targetParty.GetTotalStrengthWithFollowers();
+                    var delta = (party1Strength - party2Strength) / party1Strength * 100;
+                    __result = delta <= Globals.Settings.PartyStrengthDeltaPercent;
+                }
+            }
+        }
+
+        // workaround for mobileParty.MapFaction.Leader is null
+        /*
+        public void AiHourlyTick(MobileParty mobileParty, PartyThinkParams p)
+        {
+            if (mobileParty.IsMilitia || mobileParty.IsCaravan || (mobileParty.IsVillager || mobileParty.IsBandit) || !mobileParty.MapFaction.IsMinorFaction && !mobileParty.MapFaction.IsKingdomFaction && !mobileParty.MapFaction.Leader.IsNoble || (mobileParty.IsDeserterParty || mobileParty.CurrentSettlement != null && mobileParty.CurrentSettlement.SiegeEvent != null))
+        */
+        [HarmonyPatch(typeof(AiPatrollingBehavior), "AiHourlyTick")]
+        public class AiPatrollingBehaviorAiHourlyTickPatch
+        {
+            private static void Prefix(MobileParty mobileParty, PartyThinkParams p)
+            {
+                if (mobileParty != null && p != null &&
+                    PartyMilitiaMap.ContainsKey(mobileParty) &&
+                    mobileParty.ActualClan?.Leader == null)
+                {
+                    Traverse.Create(mobileParty.ActualClan).Field<Hero>("_leader").Value = mobileParty.LeaderHero;
                 }
             }
         }

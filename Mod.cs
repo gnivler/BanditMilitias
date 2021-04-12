@@ -68,17 +68,12 @@ namespace Bandit_Militias
 
         private static void CacheBanners()
         {
-            //T.Restart();
-            for (var i = 0; i < 10_000; i++)
+            for (var i = 0; i < 5000; i++)
             {
                 // need to cache the banners before CEK adds background colours which
                 // causes custom banners to crash for reasons unknown
-                // have to use a seed because the game hasn't initialized the game's
-                // inefficient but does it really matter for 38ms once at startup
-                Banners.Add(Banner.CreateRandomBanner((int) DateTime.Now.Ticks));
+                Banners.Add(Banner.CreateRandomBanner(Rng.Next()));
             }
-
-            //Log(T.ElapsedMilliseconds);
         }
 
         private static void ReadConfig()

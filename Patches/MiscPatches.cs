@@ -5,9 +5,7 @@ using HarmonyLib;
 using SandBox.View.Map;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.SandBox.CampaignBehaviors;
-using TaleWorlds.CampaignSystem.SandBox.CampaignBehaviors.AiBehaviors;
 using TaleWorlds.Core;
-using TaleWorlds.Library;
 using static Bandit_Militias.Helpers.Helper;
 using static Bandit_Militias.Globals;
 
@@ -96,36 +94,6 @@ namespace Bandit_Militias.Patches
             }
         }
 
-        // create banners from vanilla resources, added resources like CEK colours are causing null Materials
-        // up the stack
-        [HarmonyPatch(typeof(Game), "BeginLoading")]
-        public class BannerManagerInitializePatch
-        {
-            private static void GameBeginLoadingPatch()
-            {
-                Mod.Log("PING");
-            }
-        }
-
-
-        // 0 member parties will form if this is happening
-        // was only happening with debugger attached because that makes sense
-        [HarmonyPatch(typeof(MobileParty), "FillPartyStacks")]
-        public class MobilePartyFillPartyStacksPatch
-        {
-            private static bool Prefix(PartyTemplateObject pt)
-            {
-                if (pt == null)
-                {
-                    Mod.Log("BROKEN");
-                    Debug.PrintError("Bandit Militias is broken please notify @gnivler via Nexus");
-                    return false;
-                }
-
-                return true;
-            }
-        }
-
         // just disperse small militias
         // todo prevent this unless the militia has lost or retreated from combat
         [HarmonyPatch(typeof(MapEventSide), "HandleMapEventEndForParty")]
@@ -172,25 +140,6 @@ namespace Bandit_Militias.Patches
                 }
 
                 return true;
-            }
-        }
-
-        [HarmonyPatch(typeof(AiBanditPatrollingBehavior), "AiHourlyTick")]
-        public class AiBanditPatrollingBehaviorAiHourlyTickPatch
-        {
-            private static Exception Finalizer(MobileParty mobileParty, Exception __exception)
-            {
-                if (__exception != null)
-                {
-                    Mod.Log($"mobileParty: {mobileParty}");
-                    if (mobileParty.LeaderHero == null)
-                    {
-                        Mod.Log("\tCRITICAL ERROR - this party has no leader for some reason, trashing...");
-                        Trash(mobileParty);
-                    }
-                }
-
-                return null;
             }
         }
     }

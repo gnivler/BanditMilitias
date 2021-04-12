@@ -31,8 +31,7 @@ namespace Bandit_Militias.Patches
             }
         }
 
-        // prevents prisoners being taken
-        // bug possible - causing battles with reinforcements to crash at loot?
+        // prevents prisoners being taken after player wins played battle
         [HarmonyPatch(typeof(MapEvent), "LootDefeatedParties")]
         public class MapEventFinishBattlePatch
         {
@@ -50,13 +49,14 @@ namespace Bandit_Militias.Patches
 
                 foreach (var party in parties)
                 {
-                    Globals.PartyMilitiaMap.Remove(party.Party.MobileParty);
                     var heroes = party.Party.MemberRoster.RemoveIf(x => x.Character.IsHero).ToList();
                     for (var i = 0; i < heroes.Count; i++)
                     {
                         Mod.Log($"Killing {heroes[i].Character.Name} at LootDefeatedParties.");
                         heroes[i].Character.HeroObject.KillHero();
                     }
+
+                    Trash(party.Party.MobileParty);
                 }
             }
         }

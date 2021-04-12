@@ -673,7 +673,7 @@ namespace Bandit_Militias.Helpers
             settings.PartyStrengthFactor = settings.PartyStrengthFactor.Clamp(0.25f, 2);
             settings.MaxPartySizeFactor = settings.MaxPartySizeFactor.Clamp(0.25f, 2);
             settings.GrowthChance = settings.GrowthChance.Clamp(0, 1);
-            settings.GrowthFactor = settings.GrowthFactor.Clamp(0, 1);
+            settings.GrowthFactor = settings.GrowthFactor.Clamp(0, 1);// todo fix dupe
             settings.MaxItemValue = settings.MaxItemValue.Clamp(1_000, int.MaxValue);
             settings.LooterUpgradeFactor = settings.LooterUpgradeFactor.Clamp(0, 1);
             settings.PartyStrengthDeltaPercent = settings.PartyStrengthDeltaPercent.Clamp(0, 100);
@@ -701,26 +701,14 @@ namespace Bandit_Militias.Helpers
                 CalculatedMaxPartyStrength = Convert.ToInt32(parties.Select(x => x.Party.TotalStrength).Average() * Globals.Settings.PartyStrengthFactor * Variance);
                 CalculatedGlobalPowerLimit = Convert.ToInt32(parties.Select(x => x.Party.TotalStrength).Sum() * Variance);
                 GlobalMilitiaPower = Convert.ToInt32(PartyMilitiaMap.Keys.Select(x => x.Party.TotalStrength).Sum());
-                if (PartyMilitiaMap.Count == 0)
-                {
-                    return;
-                }
-
-                // ReSharper disable once ConditionIsAlwaysTrueOrFalse
-                if (Mod.logging == LogLevel.Debug)
-#pragma warning disable 162
-                {
-                    Mod.Log($">> {PartyMilitiaMap.Values.Select(x => x.MobileParty.MemberRoster.TotalManCount).Sum():0} troops.  Strength: {PartyMilitiaMap.Values.Select(x => x.MobileParty.Party.TotalStrength).Sum():0}/{parties.Select(x => x.Party.TotalStrength).Sum():0} ({PartyMilitiaMap.Values.Select(x => x.MobileParty.Party.TotalStrength).Sum() / parties.Select(x => x.Party.TotalStrength).Sum() * 100:F1}%).  Max size {PartyMilitiaMap.Values.OrderByDescending(x => x.MobileParty.MemberRoster.TotalManCount).Select(x => x.MobileParty.MemberRoster.TotalManCount).First()}/{CalculatedMaxPartySize}");
-                }
-#pragma warning restore 162
             }
-            catch
+            catch (Exception ex)
             {
-                // ignore
+                Mod.Log(ex);
             }
         }
 
-        public static CultureObject FindMostPrevalentFaction(Vec2 position)
+        public static CultureObject GetMostPrevalentFromNearbySettlements(Vec2 position)
         {
             const int arbitraryDistance = 20;
             var settlements = Settlement.FindSettlementsAroundPosition(position, arbitraryDistance);
@@ -752,7 +740,7 @@ namespace Bandit_Militias.Helpers
             troopRoster.AddToCounts(recruit, numberToUpgrade);
         }
 
-        // this condition leads to a null ref in DoWait() so we hack it
+        // 1.5.9 this condition leads to a null ref in DoWait() so we hack it
         internal static void FixMapEventFuckery()
         {
             if (PlayerEncounter.Battle != null &&
@@ -773,37 +761,5 @@ namespace Bandit_Militias.Helpers
             return mobileParty != null &&
                    PartyMilitiaMap.ContainsKey(mobileParty);
         }
-        
-        //private static Banner CreateVanillaBanditBanner(int seed = -1, object orientation = null)
-        //{
-        //    Game current = Game.Current;
-        //    Random random = seed == -1 ? MBRandom.Random : new Random(seed);
-        //    Banner banner = new Banner();
-        //    BannerData iconData = new BannerData(BannerManager.Instance.GetRandomBackgroundId(random), random.Next(BannerManager.ColorPalette.Count), random.Next(BannerManager.ColorPalette.Count), new Vec2(1536f, 1536f), new Vec2(768f, 768f), false, false, 0.0f);
-        //    banner.AddIconData(iconData);
-        //    switch (orientation == Banner.BannerIconOrientation.None ? random.Next(6) : (int) orientation)
-        //    {
-        //        case 0:
-        //            banner.CentralPositionedOneIcon(random);
-        //            break;
-        //        case 1:
-        //            banner.CenteredTwoMirroredIcons(random);
-        //            break;
-        //        case 2:
-        //            banner.DiagonalIcons(random);
-        //            break;
-        //        case 3:
-        //            banner.HorizontalIcons(random);
-        //            break;
-        //        case 4:
-        //            banner.VerticalIcons(random);
-        //            break;
-        //        case 5:
-        //            banner.SquarePositionedFourIcons(random);
-        //            break;
-        //    }
-        //    return banner;
-        //}
-
     }
 }

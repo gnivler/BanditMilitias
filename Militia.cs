@@ -50,11 +50,11 @@ namespace Bandit_Militias
                 prisoners,
                 mobileParty.Position2D,
                 0);
-            var mostPrevalent = (Clan) MostPrevalentFaction(MobileParty) ?? Clan.BanditFactions.First();
+            var mostPrevalent = (Clan) GetMostPrevalentFactionInParty(MobileParty) ?? Clan.BanditFactions.First();
             MobileParty.ActualClan = mostPrevalent;
             Hero = HeroCreatorCopy.CreateBanditHero(mostPrevalent, MobileParty);
             var faction = Clan.BanditFactions.FirstOrDefault(x => Hero.MapFaction.Name == x.Name);
-            Hero.Culture = faction == null ? Clan.All.FirstOrDefault(x => x.Name.ToString() == "Looters")?.Culture : faction.Culture;
+            Hero.Culture = faction == null ? Clan.BanditFactions.FirstOrDefault(x => x.Name.ToString() == "Looters")?.Culture : faction.Culture;
             Name = (string) Traverse.Create(typeof(MBTextManager))
                 .Method("GetLocalizedText", $"{Possess(Hero.FirstName.ToString())} Bandit Militia").GetValue();
             MobileParty.SetCustomName(new TextObject(Name));
@@ -102,7 +102,7 @@ namespace Bandit_Militias
                     // upgrade any looters first, then go back over and iterate further upgrades
                     var looters = MobileParty.MemberRoster.GetTroopRoster().Where(x =>
                         x.Character.Name.Contains("Looter")).ToList();
-                    var culture = FindMostPrevalentFaction(MobileParty.Position2D);
+                    var culture = GetMostPrevalentFromNearbySettlements(MobileParty.Position2D);
                     if (looters.Any())
                     {
                         foreach (var looter in looters)
@@ -161,7 +161,7 @@ namespace Bandit_Militias
             }
         }
 
-        private static IFaction MostPrevalentFaction(MobileParty mobileParty)
+        private static IFaction GetMostPrevalentFactionInParty(MobileParty mobileParty)
         {
             var map = new Dictionary<CultureObject, int>();
             var troopTypes = mobileParty.MemberRoster.GetTroopRoster().Select(x => x.Character).ToList();
@@ -194,8 +194,6 @@ namespace Bandit_Militias
                 var troopString = $"{mobileParty.Party.NumberOfAllMembers} troop" + (mobileParty.Party.NumberOfAllMembers > 1 ? "s" : "");
                 var strengthString = $"{Math.Round(mobileParty.Party.TotalStrength)} strength";
                 Mod.Log($"{$">>> New Bandit Militia led by {mobileParty.LeaderHero.Name}",-70} | {troopString,10} | {strengthString,12} |");
-                //Mod.Log($"Faction: {mobileParty.LeaderHero.MapFaction.Name}");
-                //Mod.Log($"Culture: {mobileParty.LeaderHero.Culture.GetName()}");
             }
             catch (Exception ex)
             {

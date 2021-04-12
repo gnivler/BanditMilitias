@@ -17,7 +17,6 @@ Note the syntax must be exactly right.  Use a site like https://jsonlint.com/ to
   "GrowthFactor"                       sensitive value, 0.01 is 1%.  Minimum of 1 troop is added if GrowthFactor is greater than 0.
   "MaxItemValue"                       limits the value of each piece of equipment given to the heroes (it's also subject to variance).
   "LooterUpgradeFactor"                this number * all looters are upgraded to local-culture tier 1 troops automatically (eg 0.25 means 25% of looters are upgraded).
-  "MilitiaLimitFactor"                 the maximum number of Bandit Militia parties is this number * all non-caravan parties on the map.
   "MaxStrengthDeltaPercent"            if set to 10, militias will ignore any parties more than 10% weaker (by power not headcount).  if set to 100, the militias will ignore all parties.
   "UpgradeUnitsFactor"                 troops getting upgraded (after looters) = this number * a random number 0-1 * total number of that troop type (eg 0.25 upgrades 0-25% of units).
   "GlobalPowerFactor"                  all militias in the world will not exceed this factor * global lord party power

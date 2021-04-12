@@ -59,12 +59,16 @@ namespace Bandit_Militias
             try
             {
                 if (Growth &&
+                    mobileParty.ShortTermBehavior != AiBehavior.FleeToPoint &&
                     IsValidParty(mobileParty) &&
                     IsBM(mobileParty) &&
                     ((float) GlobalMilitiaPower / CalculatedGlobalPowerLimit < Globals.Settings.GrowthFactor ||
                      Rng.NextDouble() <= Globals.Settings.GrowthChance))
                 {
-                    var eligibleToGrow = mobileParty.MemberRoster.GetTroopRoster().Where(x => x.Character.Tier < Globals.Settings.MaxTrainingTier && !x.Character.IsHero).ToList();
+                    var eligibleToGrow = mobileParty.MemberRoster.GetTroopRoster().Where(x =>
+                        x.Character.Tier < Globals.Settings.MaxTrainingTier &&
+                        !x.Character.IsHero &&
+                        mobileParty.ShortTermBehavior != AiBehavior.FleeToPoint).ToList();
                     if (eligibleToGrow.Any())
                     {
                         Mod.Log($"TryGrowing {mobileParty.LeaderHero}, total: {mobileParty.MemberRoster.TotalManCount}");
