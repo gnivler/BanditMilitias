@@ -129,7 +129,7 @@ namespace Bandit_Militias.Patches
                         if (TestingMode)
                         {
                             // in case a prisoner
-                            var party = Hero.MainHero.PartyBelongedTo ?? Hero.MainHero.PartyBelongedToAsPrisoner.MobileParty;
+                            var party = Hero.MainHero.PartyBelongedTo ?? Hero.MainHero.PartyBelongedToAsPrisoner.MobileParty;?
                             militia.MobileParty.Position2D = party.Position2D;
                         }
 
