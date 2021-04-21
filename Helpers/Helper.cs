@@ -140,19 +140,20 @@ namespace Bandit_Militias.Helpers
 
         internal static bool IsValidParty(MobileParty __instance)
         {
-            if (!__instance.IsBandit ||
-                !__instance.Party.IsMobile ||
-                __instance.CurrentSettlement != null ||
-                __instance.Party.MemberRoster.TotalManCount == 0 ||
-                __instance.IsCurrentlyUsedByAQuest ||
+            if (__instance.IsBandit ||
+                PartyMilitiaMap.ContainsKey(__instance) &&
+                __instance.Party.IsMobile &&
+                __instance.CurrentSettlement == null &&
+                __instance.Party.MemberRoster.TotalManCount > 0 &&
+                !__instance.IsCurrentlyUsedByAQuest &&
                 // Calradia Expanded Kingdoms
-                __instance.Name.Contains("manhunter") ||
-                __instance.IsTooBusyToMerge())
+                !__instance.Name.Contains("manhunter") &&
+                !__instance.IsTooBusyToMerge())
             {
-                return false;
+                return true;
             }
 
-            return true;
+            return false;
         }
 
         internal static TroopRoster[] MergeRosters(MobileParty sourceParty, PartyBase targetParty)
@@ -212,6 +213,11 @@ namespace Bandit_Militias.Helpers
 
         internal static bool IsTooBusyToMerge(this MobileParty mobileParty)
         {
+            if (mobileParty == mobileParty?.MoveTargetParty?.MoveTargetParty)
+            {
+                return false;
+            }
+
             return mobileParty.TargetParty != null ||
                    mobileParty.ShortTermTargetParty != null ||
                    mobileParty.ShortTermBehavior == AiBehavior.EngageParty ||
@@ -341,7 +347,7 @@ namespace Bandit_Militias.Helpers
 
         internal static void ReHome()
         {
-            var tempList =PartyMilitiaMap.Values.Where(x => x?.Hero?.HomeSettlement == null).Select(x => x.Hero).ToList();
+            var tempList = PartyMilitiaMap.Values.Where(x => x?.Hero?.HomeSettlement == null).Select(x => x.Hero).ToList();
             Mod.Log($"Fixing {tempList.Count} null HomeSettlement heroes");
             tempList.Do(x => Traverse.Create(x).Field("_homeSettlement").SetValue(Hideouts.GetRandomElement()));
         }
@@ -666,14 +672,14 @@ namespace Bandit_Militias.Helpers
             settings.GrowthFactor = settings.GrowthFactor.Clamp(0, 100);
             settings.GrowthChance = settings.GrowthChance.Clamp(0, 1);
             settings.MaxItemValue = settings.MaxItemValue.Clamp(1000, int.MaxValue);
-            settings.MinPartySize = settings.MinPartySize.Clamp(15, int.MaxValue);
+            settings.MinPartySize = settings.MinPartySize.Clamp(1, int.MaxValue);
             settings.RandomSplitChance = settings.RandomSplitChance.Clamp(0, 1);
             settings.StrengthSplitFactor = settings.StrengthSplitFactor.Clamp(0.25f, 1);
             settings.SizeSplitFactor = settings.SizeSplitFactor.Clamp(0.25f, 1);
             settings.PartyStrengthFactor = settings.PartyStrengthFactor.Clamp(0.25f, 2);
             settings.MaxPartySizeFactor = settings.MaxPartySizeFactor.Clamp(0.25f, 2);
             settings.GrowthChance = settings.GrowthChance.Clamp(0, 1);
-            settings.GrowthFactor = settings.GrowthFactor.Clamp(0, 1);// todo fix dupe
+            settings.GrowthFactor = settings.GrowthFactor.Clamp(0, 1); // todo fix dupe
             settings.MaxItemValue = settings.MaxItemValue.Clamp(1_000, int.MaxValue);
             settings.LooterUpgradeFactor = settings.LooterUpgradeFactor.Clamp(0, 1);
             settings.PartyStrengthDeltaPercent = settings.PartyStrengthDeltaPercent.Clamp(0, 100);

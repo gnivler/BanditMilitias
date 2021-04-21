@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using HarmonyLib;
 using TaleWorlds.CampaignSystem;
@@ -31,22 +32,13 @@ namespace Bandit_Militias.Patches
             }
         }
 
-        // prevents prisoners being taken after player wins played battle
+        // prevents BM hero prisoners being taken after battle
         [HarmonyPatch(typeof(MapEvent), "LootDefeatedParties")]
         public class MapEventFinishBattlePatch
         {
             private static void Prefix(MapEvent __instance)
             {
-                var loser = __instance.BattleState != BattleState.AttackerVictory
-                    ? __instance.AttackerSide
-                    : __instance.DefenderSide;
-                var parties = loser.Parties.Where(x => Globals.PartyMilitiaMap.Keys.Any(y => y == x.Party.MobileParty)).ToList();
-                if (loser.LeaderParty.MobileParty != null &&
-                    !parties.Any(x => Globals.PartyMilitiaMap.Keys.Any(y => y == x.Party.MobileParty)))
-                {
-                    return;
-                }
-
+                var parties = CheckIfMilitiaMapEvent(__instance);
                 foreach (var party in parties)
                 {
                     var heroes = party.Party.MemberRoster.RemoveIf(x => x.Character.IsHero).ToList();
@@ -55,10 +47,30 @@ namespace Bandit_Militias.Patches
                         Mod.Log($"Killing {heroes[i].Character.Name} at LootDefeatedParties.");
                         heroes[i].Character.HeroObject.KillHero();
                     }
-
-                    Trash(party.Party.MobileParty);
                 }
             }
+
+            private static void Postfix(MapEvent __instance)
+            {
+                var parties = CheckIfMilitiaMapEvent(__instance);
+                parties.Do(p => Trash(p.Party.MobileParty));
+            }
+
+            private static IEnumerable<MapEventParty> CheckIfMilitiaMapEvent(MapEvent __instance)
+            {
+                var loser = __instance.BattleState != BattleState.AttackerVictory
+                    ? __instance.AttackerSide
+                    : __instance.DefenderSide;
+                var parties = loser.Parties.Where(x => Globals.PartyMilitiaMap.Keys.Any(y => y == x.Party.MobileParty)).ToList();
+                if (loser.LeaderParty?.MobileParty != null &&
+                    !parties.Any(x => Globals.PartyMilitiaMap.Keys.Any(y => y == x.Party.MobileParty)))
+                {
+                    return parties;
+                }
+
+                return parties;
+            }
+
         }
 
         // still blocks prisoners but apparently works with bandits reinforcing militias
