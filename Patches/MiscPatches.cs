@@ -5,6 +5,7 @@ using HarmonyLib;
 using SandBox.View.Map;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.SandBox.CampaignBehaviors;
+using TaleWorlds.CampaignSystem.SandBox.CampaignBehaviors.Towns;
 using TaleWorlds.Core;
 using static Bandit_Militias.Helpers.Helper;
 using static Bandit_Militias.Globals;
@@ -87,10 +88,14 @@ namespace Bandit_Militias.Patches
                 ReHome();
                 DailyCalculations();
 
-                // have to patch it late because of its static constructor (type initialization exception)
+                // have to patch late because of static constructors (type initialization exception)
                 Mod.harmony.Patch(
                     AccessTools.Method(typeof(EncounterGameMenuBehavior), "game_menu_encounter_on_init"),
                     new HarmonyMethod(AccessTools.Method(typeof(Helper), nameof(FixMapEventFuckery))));
+
+                Mod.harmony.Patch(AccessTools.Method(typeof(PlayerTownVisitCampaignBehavior), "wait_menu_prisoner_wait_on_tick")
+                    , null, null, null,
+                    new HarmonyMethod(AccessTools.Method(typeof(MiscPatches), nameof(wait_menu_prisoner_wait_on_tickFinalizer))));
             }
         }
 
@@ -140,6 +145,53 @@ namespace Bandit_Militias.Patches
                 }
 
                 return true;
+            }
+        }
+
+        // 1.5.9 throws a vanilla stack, ignoring it seems to be fine
+        public static Exception wait_menu_prisoner_wait_on_tickFinalizer(Exception __exception)
+        {
+            if (__exception != null)
+            {
+                Mod.Log(__exception);
+            }
+
+            return null;
+        }
+
+        // possibly related to Separatism and new kingdoms, ignoring it seems fine...
+        [HarmonyPatch(typeof(BanditPartyComponent), "Name", MethodType.Getter)]
+        public class BanditPartyComponentGetNamePatch
+        {
+            public static Exception Finalizer(BanditPartyComponent __instance, Exception __exception)
+            {
+                if (__exception != null)
+                {
+                    Mod.Log(new string('-', 50));
+                    Mod.Log(new string('-', 50));
+                    Mod.Log("PING");
+                    if (__instance.Hideout == null)
+                    {
+                        Mod.Log("Hideout is null.");
+                    }
+
+                    if (__instance.Hideout?.MapFaction == null)
+                    {
+                        Mod.Log("MapFaction is null.");
+                    }
+
+                    if (__instance.Hideout?.MapFaction?.Name == null)
+                    {
+                        Mod.Log("Name is null.");
+                    }
+
+                    Mod.Log($"Party {__instance.MobileParty.Name} is throwing.");
+                    Mod.Log($"MapFaction {__instance.Hideout?.MapFaction}.");
+                    Mod.Log($"MapFaction.Name {__instance.Hideout?.MapFaction?.Name}.");
+                    Mod.Log(__exception);
+                }
+
+                return null;
             }
         }
     }

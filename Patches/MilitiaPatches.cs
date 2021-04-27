@@ -43,7 +43,7 @@ namespace Bandit_Militias.Patches
                     var parties = MobileParty.All.Where(x =>
                         x.Party.IsMobile &&
                         x.CurrentSettlement == null &&
-                        !x.IsCurrentlyUsedByAQuest &&
+                        !x.IsUsedByAQuest() &&
                         x.IsBandit).Concat(PartyMilitiaMap.Keys).ToList(); // might cause duplicates if IsBandit returns differently in the future
                     //T.Restart();
                     for (var index = 0; index < parties.Count; index++)
@@ -60,7 +60,7 @@ namespace Bandit_Militias.Patches
                         {
                             lastChangeDate = PartyMilitiaMap[mobileParty].LastMergedOrSplitDate;
                         }
-                        
+
                         if (CampaignTime.Now < lastChangeDate + CampaignTime.Hours(Globals.Settings.CooldownHours))
                         {
                             continue;
@@ -83,7 +83,7 @@ namespace Bandit_Militias.Patches
                         {
                             targetLastChangeDate = PartyMilitiaMap[targetParty.MobileParty].LastMergedOrSplitDate;
                         }
-                        
+
                         if (CampaignTime.Now < targetLastChangeDate + CampaignTime.Hours(Globals.Settings.CooldownHours))
                         {
                             continue;

@@ -145,7 +145,8 @@ namespace Bandit_Militias.Helpers
                 __instance.Party.IsMobile &&
                 __instance.CurrentSettlement == null &&
                 __instance.Party.MemberRoster.TotalManCount > 0 &&
-                !__instance.IsCurrentlyUsedByAQuest &&
+                !__instance.IsUsedByAQuest() &&
+                !__instance.Name.Equals("Deserters Party") &&
                 // Calradia Expanded Kingdoms
                 !__instance.Name.Contains("manhunter") &&
                 !__instance.IsTooBusyToMerge())
@@ -154,6 +155,11 @@ namespace Bandit_Militias.Helpers
             }
 
             return false;
+        }
+
+        internal static bool IsUsedByAQuest(this MobileParty mobileParty)
+        {
+            return Campaign.Current.VisualTrackerManager.CheckTracked(mobileParty);
         }
 
         internal static TroopRoster[] MergeRosters(MobileParty sourceParty, PartyBase targetParty)

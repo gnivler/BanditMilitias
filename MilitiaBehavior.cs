@@ -73,9 +73,9 @@ namespace Bandit_Militias
                     {
                         Mod.Log($"TryGrowing {mobileParty.LeaderHero}, total: {mobileParty.MemberRoster.TotalManCount}");
                         var growthAmount = mobileParty.MemberRoster.TotalManCount * Globals.Settings.GrowthFactor;
-                        // bump up growth to reach GrowthFactor
-                        // Growth cap % - current % = additional
-                        growthAmount += Globals.Settings.GlobalPowerFactor * 100 - (float) GlobalMilitiaPower / CalculatedGlobalPowerLimit * 100;
+                        // bump up growth to reach GlobalPowerFactor (synthetic but it helps warm up militia population)
+                        // (Growth cap % - current %) / 2 = additional
+                        growthAmount += (Globals.Settings.GlobalPowerFactor * 100 - (float) GlobalMilitiaPower / CalculatedGlobalPowerLimit * 100) / 2;
                         growthAmount = Math.Max(1, growthAmount);
                         var growthRounded = Convert.ToInt32(growthAmount);
                         // last condition doesn't account for the size increase but who cares

@@ -7,6 +7,7 @@ using Newtonsoft.Json;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
 using TaleWorlds.InputSystem;
+using TaleWorlds.Library;
 using TaleWorlds.Localization;
 using TaleWorlds.MountAndBlade;
 using static Bandit_Militias.Helpers.Helper;
@@ -66,12 +67,12 @@ namespace Bandit_Militias
             harmony.PatchAll(Assembly.GetExecutingAssembly());
         }
 
+        // need to cache the banners before CEK adds background colours which
+        // causes custom banners to crash for reasons unknown
         private static void CacheBanners()
         {
             for (var i = 0; i < 5000; i++)
             {
-                // need to cache the banners before CEK adds background colours which
-                // causes custom banners to crash for reasons unknown
                 Banners.Add(Banner.CreateRandomBanner(Rng.Next()));
             }
         }
@@ -92,10 +93,26 @@ namespace Bandit_Militias
                     Log($"Configuration file expected at {fileName} but not found, using default settings", LogLevel.Error);
                     Globals.Settings = new Settings();
                 }
+
+                AdjustForLoadOrder();
             }
             catch (Exception ex)
             {
                 FileLog.Log(ex.ToString());
+            }
+        }
+
+        private static void AdjustForLoadOrder()
+        {
+            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+            var BMidx = assemblies.First(a => a.FullName.StartsWith("Bandit Militias"));
+            var CAKidx = assemblies.FirstOrDefault(x => x.FullName.StartsWith("CalradiaExpandedKingdoms"));
+            if (CAKidx != null)
+            {
+                if (assemblies.FindIndex(a => a == BMidx) > assemblies.FindIndex(a => a == CAKidx))
+                {
+                    Globals.Settings.RandomBanners = false;
+                }
             }
         }
 
@@ -163,13 +180,13 @@ namespace Bandit_Militias
 
         private static void RunManualPatches()
         {
-            //try
-            //{
-            //}
-            //catch (Exception ex)
-            //{
-            //    Log(ex, LogLevel.Error);
-            //}
+            try
+            {
+            }
+            catch (Exception ex)
+            {
+                Log(ex, LogLevel.Error);
+            }
         }
     }
 }

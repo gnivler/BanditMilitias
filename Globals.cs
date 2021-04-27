@@ -57,7 +57,5 @@ namespace Bandit_Militias
             {"RICH", 900},
             {"RICHEST", 2000},
         };
-
-       
     }
 }
