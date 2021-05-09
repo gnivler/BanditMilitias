@@ -177,7 +177,6 @@ namespace Bandit_Militias.Patches
                 if (__exception != null)
                 {
                     Mod.Log(new string('-', 50));
-                    Mod.Log(new string('-', 50));
                     Mod.Log("PING");
                     if (__instance.Hideout == null)
                     {

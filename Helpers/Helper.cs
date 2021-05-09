@@ -88,7 +88,6 @@ namespace Bandit_Militias.Helpers
                     //Traverse.Create(PartyBase.MainParty).Property<ItemRoster>("ItemRoster").Value.Remove(item);
                 }
 
-                Mod.Log($"Adding item {item.EquipmentElement.Item.Name}.");
                 var half = Math.Max(1, item.Amount / 2);
                 inventory1.AddToCounts(item.EquipmentElement, half);
                 var remainder = item.Amount % 2;
