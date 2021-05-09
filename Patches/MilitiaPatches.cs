@@ -49,8 +49,8 @@ namespace Bandit_Militias.Patches
                     for (var index = 0; index < parties.Count; index++)
                     {
                         var mobileParty = parties[index];
-                        if (mobileParty.ToString().Contains("manhunter") || // Calradia Expanded Kingdoms
-                            mobileParty.IsTooBusyToMerge())
+                        if (mobileParty.IsTooBusyToMerge() ||
+                            mobileParty.ToString().Contains("manhunter")) // Calradia Expanded Kingdoms
                         {
                             continue;
                         }
@@ -123,8 +123,6 @@ namespace Bandit_Militias.Patches
                         // create a new party merged from the two
                         var rosters = MergeRosters(mobileParty, targetParty);
                         var militia = new Militia(mobileParty, rosters[0], rosters[1]);
-                        militia.MobileParty.SetMovePatrolAroundPoint(militia.MobileParty.Position2D);
-
                         // teleport new militias near the player
                         if (TestingMode)
                         {
@@ -224,16 +222,19 @@ namespace Bandit_Militias.Patches
         }
 
         [HarmonyPatch(typeof(EnterSettlementAction), "ApplyInternal")]
-        private static bool Prefix(MobileParty mobileParty, Settlement settlement)
+        public class EnterSettlementActionApplyInternalPatch
         {
-            if (IsBM(mobileParty))
+            private static bool Prefix(MobileParty mobileParty, Settlement settlement)
             {
-                Mod.Log($"Preventing {mobileParty} from entering {settlement}");
-                mobileParty.SetMovePatrolAroundSettlement(settlement);
-                return false;
-            }
+                if (IsBM(mobileParty))
+                {
+                    Mod.Log($"Preventing {mobileParty} from entering {settlement}");
+                    mobileParty.SetMovePatrolAroundSettlement(settlement);
+                    return false;
+                }
 
-            return true;
+                return true;
+            }
         }
 
         // changes the name on the campaign map (hot path)

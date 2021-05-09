@@ -88,6 +88,7 @@ namespace Bandit_Militias.Helpers
                     //Traverse.Create(PartyBase.MainParty).Property<ItemRoster>("ItemRoster").Value.Remove(item);
                 }
 
+                Mod.Log($"Adding item {item.EquipmentElement.Item.Name}.");
                 var half = Math.Max(1, item.Amount / 2);
                 inventory1.AddToCounts(item.EquipmentElement, half);
                 var remainder = item.Amount % 2;
@@ -227,7 +228,7 @@ namespace Bandit_Militias.Helpers
             return mobileParty.TargetParty != null ||
                    mobileParty.ShortTermTargetParty != null ||
                    mobileParty.ShortTermBehavior == AiBehavior.EngageParty ||
-                   mobileParty.DefaultBehavior == AiBehavior.EngageParty;
+                   mobileParty.ShortTermBehavior == AiBehavior.FleeToPoint;
         }
 
         internal static void Trash(MobileParty mobileParty)
@@ -550,6 +551,8 @@ namespace Bandit_Militias.Helpers
                 !x.Name.Contains("Crafted") &&
                 !x.Name.Contains("Wooden") &&
                 !x.Name.Contains("Practice") &&
+                x.Name.ToString() != "Sparring Targe" &&
+                x.Name.ToString() != "Trash Item" &&
                 x.Name.ToString() != "Torch" &&
                 x.Name.ToString() != "Horse Whip" &&
                 x.Name.ToString() != "Push Fork" &&

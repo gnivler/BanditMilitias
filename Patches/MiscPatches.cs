@@ -6,6 +6,7 @@ using SandBox.View.Map;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.SandBox.CampaignBehaviors;
 using TaleWorlds.CampaignSystem.SandBox.CampaignBehaviors.Towns;
+using TaleWorlds.CampaignSystem.ViewModelCollection;
 using TaleWorlds.Core;
 using static Bandit_Militias.Helpers.Helper;
 using static Bandit_Militias.Globals;
@@ -71,6 +72,14 @@ namespace Bandit_Militias.Patches
                 for (var i = 0; i < militias.Count; i++)
                 {
                     var militia = militias[i];
+                    // this could be removed after 2.8.7 ish
+                    if (militia.CurrentSettlement != null)
+                    {
+                        Mod.Log("Militia in hideout found and removed.");
+                        Trash(militia);
+                        continue;
+                    }
+
                     if (militia.LeaderHero == null)
                     {
                         Mod.Log("Leaderless militia found and removed.");
@@ -188,6 +197,41 @@ namespace Bandit_Militias.Patches
                     Mod.Log($"Party {__instance.MobileParty.Name} is throwing.");
                     Mod.Log($"MapFaction {__instance.Hideout?.MapFaction}.");
                     Mod.Log($"MapFaction.Name {__instance.Hideout?.MapFaction?.Name}.");
+                    Mod.Log(__exception);
+                }
+
+                return null;
+            }
+        }
+
+        [HarmonyPatch(typeof(SPInventoryVM), "InitializeInventory")]
+        public class SPInventoryVMInitializeInventoryVMPatch
+        {
+            private static void Prefix(InventoryLogic ____inventoryLogic)
+            {
+                Mod.Log("InitializeInventory - removing invalid items.");
+                try
+                {
+                    for (var i = 0; i < 2; i++)
+                    {
+                        var roster = Traverse.Create(____inventoryLogic).Field<ItemRoster[]>("_rosters").Value[i];
+                        var replacement = new ItemRoster
+                        {
+                            roster.Where(item => item.EquipmentElement.Item?.Name?.ToString() != null).ToArray()
+                        };
+                        roster = replacement;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Mod.Log(ex);
+                }
+            }
+
+            private static Exception Finalizer(Exception __exception)
+            {
+                if (__exception != null)
+                {
                     Mod.Log(__exception);
                 }
 

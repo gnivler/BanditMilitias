@@ -118,28 +118,30 @@ namespace Bandit_Militias
 
         protected override void OnApplicationTick(float dt)
         {
-            if ((Input.IsKeyDown(InputKey.LeftControl) || Input.IsKeyDown(InputKey.RightControl)) &&
-                (Input.IsKeyDown(InputKey.LeftAlt) || Input.IsKeyDown(InputKey.RightAlt)) &&
-                (Input.IsKeyDown(InputKey.LeftShift) || Input.IsKeyDown(InputKey.RightShift)) &&
-                Input.IsKeyPressed(InputKey.F11))
+            var superKey = (Input.IsKeyDown(InputKey.LeftControl) || Input.IsKeyDown(InputKey.RightControl)) &&
+                           (Input.IsKeyDown(InputKey.LeftAlt) || Input.IsKeyDown(InputKey.RightAlt)) &&
+                           (Input.IsKeyDown(InputKey.LeftShift) || Input.IsKeyDown(InputKey.RightShift));
+            if (superKey && Input.IsKeyPressed(InputKey.F11))
             {
                 TestingMode = !TestingMode;
                 InformationManager.AddQuickInformation(new TextObject("Testing mode: " + TestingMode));
             }
 
-            if ((Input.IsKeyDown(InputKey.LeftControl) || Input.IsKeyDown(InputKey.RightControl)) &&
-                (Input.IsKeyDown(InputKey.LeftAlt) || Input.IsKeyDown(InputKey.RightAlt)) &&
-                (Input.IsKeyDown(InputKey.LeftShift) || Input.IsKeyDown(InputKey.RightShift)) &&
-                Input.IsKeyPressed(InputKey.C))
+            if (superKey && Input.IsKeyPressed(InputKey.C))
             {
                 ReadConfig();
                 InformationManager.AddQuickInformation(new TextObject("Reloaded config"));
             }
 
-            if ((Input.IsKeyDown(InputKey.LeftControl) || Input.IsKeyDown(InputKey.RightControl)) &&
-                (Input.IsKeyDown(InputKey.LeftAlt) || Input.IsKeyDown(InputKey.RightAlt)) &&
-                (Input.IsKeyDown(InputKey.LeftShift) || Input.IsKeyDown(InputKey.RightShift)) &&
-                Input.IsKeyPressed(InputKey.F12))
+            if (superKey && Input.IsKeyPressed(InputKey.F10))
+            {
+                foreach (var militia in PartyMilitiaMap)
+                {
+                    Log($"{militia.Key.Name}.  {militia.Value.Hero.MapFaction}.");
+                }
+            }
+
+            if (superKey && Input.IsKeyPressed(InputKey.F12))
             {
                 foreach (var militia in PartyMilitiaMap.Values.OrderByDescending(x => x.MobileParty.MemberRoster.TotalManCount))
                 {

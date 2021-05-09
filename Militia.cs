@@ -39,6 +39,8 @@ namespace Bandit_Militias
             Spawn(mobileParty, party, prisoners);
             TrainMilitia();
             PartyMilitiaMap.Add(MobileParty, this);
+            var nearbySettlement = Settlement.FindSettlementsAroundPosition(MobileParty.Position2D, 30)?.ToList().GetRandomElement();
+            MobileParty.SetMovePatrolAroundSettlement(nearbySettlement ?? Settlement.All.GetRandomElement());
             LogMilitiaFormed(MobileParty);
         }
 
