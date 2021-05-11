@@ -146,7 +146,8 @@ namespace Bandit_Militias.Helpers
                 __instance.CurrentSettlement == null &&
                 __instance.Party.MemberRoster.TotalManCount > 0 &&
                 !__instance.IsUsedByAQuest() &&
-                !__instance.Name.Equals("Deserters Party") &&
+                !__instance.StringId.StartsWith("ebdi_deserters_party_1") &&
+                !__instance.StringId.StartsWith("caravan_ambush_quest_") &&
                 // Calradia Expanded Kingdoms
                 !__instance.Name.Contains("manhunter") &&
                 !__instance.IsTooBusyToMerge())
