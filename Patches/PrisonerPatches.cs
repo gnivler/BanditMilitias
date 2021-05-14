@@ -23,7 +23,7 @@ namespace Bandit_Militias.Patches
         {
             private static bool Prefix(Hero prisonerCharacter)
             {
-                if (prisonerCharacter?.PartyBelongedTo == null)
+                if (prisonerCharacter?.PartyBelongedTo is null)
                 {
                     return true;
                 }
@@ -62,7 +62,7 @@ namespace Bandit_Militias.Patches
                     ? __instance.AttackerSide
                     : __instance.DefenderSide;
                 var parties = loser.Parties.Where(x => Globals.PartyMilitiaMap.Keys.Any(y => y == x.Party.MobileParty)).ToList();
-                if (loser.LeaderParty?.MobileParty != null &&
+                if (loser.LeaderParty?.MobileParty is not null &&
                     !parties.Any(x => Globals.PartyMilitiaMap.Keys.Any(y => y == x.Party.MobileParty)))
                 {
                     return parties;

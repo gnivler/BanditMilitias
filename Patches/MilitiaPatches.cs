@@ -42,10 +42,10 @@ namespace Bandit_Militias.Patches
 
                     var parties = MobileParty.All.Where(x =>
                         x.Party.IsMobile &&
-                        x.CurrentSettlement == null &&
+                        x.CurrentSettlement is null &&
                         !x.IsUsedByAQuest() &&
                         x.IsBandit).Concat(PartyMilitiaMap.Keys).ToList(); // might cause duplicates if IsBandit returns differently in the future
-                    //T.Restart();
+                    T.Restart();
                     for (var index = 0; index < parties.Count; index++)
                     {
                         var mobileParty = parties[index];
@@ -73,7 +73,7 @@ namespace Bandit_Militias.Patches
                             .ToList().GetRandomElement()?.Party;
 
                         // "nobody" is a valid answer
-                        if (targetParty == null)
+                        if (targetParty is null)
                         {
                             continue;
                         }
@@ -134,9 +134,8 @@ namespace Bandit_Militias.Patches
                         militia.MobileParty.Party.Visuals.SetMapIconAsDirty();
                         Trash(mobileParty);
                         Trash(targetParty.MobileParty);
-                        //Mod.Log($">>> Finished all work: {T.ElapsedTicks / 10000F:F3}ms.");
+                        Mod.Log($">>> Finished all work: {T.ElapsedTicks / 10000F:F3}ms.");
                     }
-
                     //Mod.Log($"Looped ==> {T.ElapsedTicks / 10000F:F3}ms");
                 }
                 catch (Exception ex)
@@ -167,7 +166,7 @@ namespace Bandit_Militias.Patches
             private static void Prefix(CharacterObject characterObject, ref string bannerKey)
             {
                 if (Globals.Settings.RandomBanners &&
-                    characterObject.HeroObject?.PartyBelongedTo != null &&
+                    characterObject.HeroObject?.PartyBelongedTo is not null &&
                     IsBM(characterObject.HeroObject.PartyBelongedTo))
                 {
                     bannerKey = PartyMilitiaMap[characterObject.HeroObject.PartyBelongedTo].BannerKey;
@@ -182,7 +181,7 @@ namespace Bandit_Militias.Patches
             private static void Postfix(PartyBase __instance, ref Banner __result)
             {
                 if (Globals.Settings.RandomBanners &&
-                    __instance.MobileParty != null &&
+                    __instance.MobileParty is not null &&
                     IsBM(__instance.MobileParty))
                 {
                     __result = PartyMilitiaMap[__instance.MobileParty].Banner;
@@ -198,7 +197,7 @@ namespace Bandit_Militias.Patches
             {
                 var party = (PartyBase) __instance.BattleCombatant;
                 if (Globals.Settings.RandomBanners &&
-                    party.MobileParty != null &&
+                    party.MobileParty is not null &&
                     IsBM(party.MobileParty))
                 {
                     __result = PartyMilitiaMap[party.MobileParty]?.Banner;
@@ -248,7 +247,7 @@ namespace Bandit_Militias.Patches
                 //T.Restart();
                 // Leader is null after a battle, crashes after-action
                 // this staged approach feels awkward but it's fast
-                if (__instance.Party?.Leader == null)
+                if (__instance.Party?.Leader is null)
                 {
                     return;
                 }
@@ -298,7 +297,7 @@ namespace Bandit_Militias.Patches
         //    {
         //        for (var i = 0; i < 5; ++i)
         //        {
-        //            if (party?.Leader?.Equipment[i].Item != null && party.Leader.Equipment[i].Item.PrimaryWeapon == null)
+        //            if (party?.Leader?.Equipment[i].Item is not null && party.Leader.Equipment[i].Item.PrimaryWeapon is null)
         //            {
         //                party.Leader.Equipment[i] = new EquipmentElement(ItemObject.All.First(x =>
         //                    x.StringId == party.Leader.Equipment[i].Item.StringId));
@@ -313,7 +312,7 @@ namespace Bandit_Militias.Patches
         //{
         //    private static void Postfix(Hero hero, ref bool __result)
         //    {
-        //        if (hero.PartyBelongedTo != null &&
+        //        if (hero.PartyBelongedTo is not null &&
         //            hero.PartyBelongedTo.StringId.StartsWith("Bandit_Militia"))
         //        {
         //            __result = false;
@@ -341,16 +340,16 @@ namespace Bandit_Militias.Patches
         /*
         public void AiHourlyTick(MobileParty mobileParty, PartyThinkParams p)
         {
-            if (mobileParty.IsMilitia || mobileParty.IsCaravan || (mobileParty.IsVillager || mobileParty.IsBandit) || !mobileParty.MapFaction.IsMinorFaction && !mobileParty.MapFaction.IsKingdomFaction && !mobileParty.MapFaction.Leader.IsNoble || (mobileParty.IsDeserterParty || mobileParty.CurrentSettlement != null && mobileParty.CurrentSettlement.SiegeEvent != null))
+            if (mobileParty.IsMilitia || mobileParty.IsCaravan || (mobileParty.IsVillager || mobileParty.IsBandit) || !mobileParty.MapFaction.IsMinorFaction && !mobileParty.MapFaction.IsKingdomFaction && !mobileParty.MapFaction.Leader.IsNoble || (mobileParty.IsDeserterParty || mobileParty.CurrentSettlement is not null && mobileParty.CurrentSettlement.SiegeEvent is not null))
         */
         [HarmonyPatch(typeof(AiPatrollingBehavior), "AiHourlyTick")]
         public class AiPatrollingBehaviorAiHourlyTickPatch
         {
             private static void Prefix(MobileParty mobileParty, PartyThinkParams p)
             {
-                if (mobileParty != null && p != null &&
+                if (mobileParty is not null && p is not null &&
                     PartyMilitiaMap.ContainsKey(mobileParty) &&
-                    mobileParty.ActualClan?.Leader == null)
+                    mobileParty.ActualClan?.Leader is null)
                 {
                     Traverse.Create(mobileParty.ActualClan).Field<Hero>("_leader").Value = mobileParty.LeaderHero;
                 }

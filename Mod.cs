@@ -37,7 +37,7 @@ namespace Bandit_Militias
 
         internal static void Log(object input, LogLevel logLevel = LogLevel.Debug)
         {
-            if (Globals.Settings == null || !Globals.Settings.Debug)
+            if (Globals.Settings is null || !Globals.Settings.Debug)
             {
                 return;
             }
@@ -107,7 +107,7 @@ namespace Bandit_Militias
             var assemblies = AppDomain.CurrentDomain.GetAssemblies();
             var BMidx = assemblies.First(a => a.FullName.StartsWith("Bandit Militias"));
             var CAKidx = assemblies.FirstOrDefault(x => x.FullName.StartsWith("CalradiaExpandedKingdoms"));
-            if (CAKidx != null)
+            if (CAKidx is not null)
             {
                 if (assemblies.FindIndex(a => a == BMidx) > assemblies.FindIndex(a => a == CAKidx))
                 {

@@ -65,7 +65,7 @@ namespace Bandit_Militias.Helpers
             TroopRoster prisoners1, TroopRoster prisoners2, ItemRoster inventory1, ItemRoster inventory2)
         {
             Mod.Log($"Processing troops: {original.MemberRoster.Count} types, {original.MemberRoster.TotalManCount} in total");
-            foreach (var rosterElement in original.MemberRoster.GetTroopRoster().Where(x => x.Character.HeroObject == null))
+            foreach (var rosterElement in original.MemberRoster.GetTroopRoster().Where(x => x.Character.HeroObject is null))
             {
                 SplitRosters(troops1, troops2, rosterElement);
             }
@@ -122,9 +122,12 @@ namespace Bandit_Militias.Helpers
             TroopRoster prisoners1, TroopRoster prisoners2, ItemRoster inventory1, ItemRoster inventory2)
         {
             try
-            {
+            {                                                                              
                 var militia1 = new Militia(original, party1, prisoners1);
                 var militia2 = new Militia(original, party2, prisoners2);
+                var settlements = Settlement.FindSettlementsAroundPosition(original.Position2D, 30).ToList();
+                militia1.MobileParty.SetMovePatrolAroundSettlement(settlements.GetRandomElement() ?? Settlement.All.GetRandomElement());
+                militia2.MobileParty.SetMovePatrolAroundSettlement(settlements.GetRandomElement() ?? Settlement.All.GetRandomElement());
                 Mod.Log($"{militia1.MobileParty.MapFaction.Name} <- Split -> {militia2.MobileParty.MapFaction.Name}");
                 Traverse.Create(militia1.MobileParty.Party).Property("ItemRoster").SetValue(inventory1);
                 Traverse.Create(militia2.MobileParty.Party).Property("ItemRoster").SetValue(inventory2);
@@ -143,11 +146,20 @@ namespace Bandit_Militias.Helpers
             if (__instance.IsBandit ||
                 PartyMilitiaMap.ContainsKey(__instance) &&
                 __instance.Party.IsMobile &&
-                __instance.CurrentSettlement == null &&
+                __instance.CurrentSettlement is null &&
                 __instance.Party.MemberRoster.TotalManCount > 0 &&
                 !__instance.IsUsedByAQuest() &&
-                !__instance.StringId.StartsWith("ebdi_deserters_party_1") &&
+                !__instance.StringId.StartsWith("ebdi_deserters_party_") &&
                 !__instance.StringId.StartsWith("caravan_ambush_quest_") &&
+                !__instance.StringId.StartsWith("arzagos_banner_piece_quest_raider_party_") &&
+                !__instance.StringId.StartsWith("istiana_banner_piece_quest_raider_party_") &&
+                !__instance.StringId.StartsWith("rescue_family_quest_raider_party_") &&
+                !__instance.StringId.StartsWith("destroy_raiders_conspiracy_quest_") &&
+                !__instance.StringId.StartsWith("radagos_raider_party_") &&
+                !__instance.StringId.StartsWith("locate_and_rescue_traveller_quest_raider_party_") &&
+                !__instance.StringId.StartsWith("company_of_trouble_") &&
+                !__instance.StringId.StartsWith("locate_and_rescue_traveller_quest_raider_party_") &&
+                !__instance.StringId.StartsWith("villagers_of_landlord_needs_access_to_village_common_quest") &&
                 // Calradia Expanded Kingdoms
                 !__instance.Name.Contains("manhunter") &&
                 !__instance.IsTooBusyToMerge())
@@ -182,7 +194,7 @@ namespace Bandit_Militias.Helpers
             // dumps all bandit heroes (shouldn't be more than 2 though...)
             foreach (var roster in rosters)
             {
-                foreach (var troopRosterElement in roster.GetTroopRoster().Where(x => x.Character?.HeroObject == null))
+                foreach (var troopRosterElement in roster.GetTroopRoster().Where(x => x.Character?.HeroObject is null))
                 {
                     troopRoster.AddToCounts(troopRosterElement.Character, troopRosterElement.Number,
                         woundedCount: troopRosterElement.WoundedNumber, xpChange: troopRosterElement.Xp);
@@ -191,7 +203,7 @@ namespace Bandit_Militias.Helpers
 
             foreach (var roster in prisoners)
             {
-                foreach (var troopRosterElement in roster.GetTroopRoster().Where(x => x.Character?.HeroObject == null))
+                foreach (var troopRosterElement in roster.GetTroopRoster().Where(x => x.Character?.HeroObject is null))
                 {
                     prisonerRoster.AddToCounts(troopRosterElement.Character, troopRosterElement.Number,
                         woundedCount: troopRosterElement.WoundedNumber, xpChange: troopRosterElement.Xp);
@@ -225,8 +237,8 @@ namespace Bandit_Militias.Helpers
                 return false;
             }
 
-            return mobileParty.TargetParty != null ||
-                   mobileParty.ShortTermTargetParty != null ||
+            return mobileParty.TargetParty is not null ||
+                   mobileParty.ShortTermTargetParty is not null ||
                    mobileParty.ShortTermBehavior == AiBehavior.EngageParty ||
                    mobileParty.ShortTermBehavior == AiBehavior.FleeToPoint;
         }
@@ -237,7 +249,7 @@ namespace Bandit_Militias.Helpers
             PartyMilitiaMap.Remove(mobileParty);
             // added as workaround/fix for issue seen in 1.5.9 where TroopRoster.Count is wrong and TroopRoster.Clear() throws
             Traverse.Create(mobileParty.MemberRoster).Field<int>("_count").Value =
-                mobileParty.MemberRoster.GetTroopRoster().Count(x => x.Character != null);
+                mobileParty.MemberRoster.GetTroopRoster().Count(x => x.Character is not null);
             mobileParty.MemberRoster.UpdateVersion();
             mobileParty.RemoveParty();
         }
@@ -259,7 +271,7 @@ namespace Bandit_Militias.Helpers
                 var fieldInfo = AccessTools.Field(typeof(MBReadOnlyList<Hero>), "_list");
                 var heroes = fieldInfo.GetValue(roList) as List<Hero>;
                 heroes?.Remove(hero);
-                if (hero.CurrentSettlement != null)
+                if (hero.CurrentSettlement is not null)
                 {
                     var heroesWithoutParty = HeroesWithoutParty(hero.CurrentSettlement);
                     Traverse.Create(heroesWithoutParty).Field<List<Hero>>("_list").Value.Remove(hero);
@@ -354,7 +366,7 @@ namespace Bandit_Militias.Helpers
 
         internal static void ReHome()
         {
-            var tempList = PartyMilitiaMap.Values.Where(x => x?.Hero?.HomeSettlement == null).Select(x => x.Hero).ToList();
+            var tempList = PartyMilitiaMap.Values.Where(x => x?.Hero?.HomeSettlement is null).Select(x => x.Hero).ToList();
             Mod.Log($"Fixing {tempList.Count} null HomeSettlement heroes");
             tempList.Do(x => Traverse.Create(x).Field("_homeSettlement").SetValue(Hideouts.GetRandomElement()));
         }
@@ -390,8 +402,8 @@ namespace Bandit_Militias.Helpers
         private static void FlushHeroes()
         {
             var heroes = Hero.All.Where(x =>
-                    (x.PartyBelongedTo == null &&
-                     x.PartyBelongedToAsPrisoner == null ||
+                    (x.PartyBelongedTo is null &&
+                     x.PartyBelongedToAsPrisoner is null ||
                      x.HeroState == Hero.CharacterStates.Prisoner) &&
                     Clan.BanditFactions.Contains(x.MapFaction) &&
                     x.StringId.Contains("CharacterObject"))
@@ -408,7 +420,7 @@ namespace Bandit_Militias.Helpers
         {
             var parties = MobileParty.All.Where(x =>
                 x != MobileParty.MainParty &&
-                x.CurrentSettlement == null && x.MemberRoster.TotalManCount == 0).ToList();
+                x.CurrentSettlement is null && x.MemberRoster.TotalManCount == 0).ToList();
             for (var i = 0; i < parties.Count; i++)
             {
                 Mod.Log($">>> FLUSH party without a current settlement or any troops.");
@@ -452,7 +464,7 @@ namespace Bandit_Militias.Helpers
         private static void FlushNullPartyHeroes()
         {
             var heroes = Hero.All.Where(x =>
-                x.Name.ToString() == "Bandit Militia" && x.PartyBelongedTo == null).ToList();
+                x.Name.ToString() == "Bandit Militia" && x.PartyBelongedTo is null).ToList();
             var hasLogged = false;
             foreach (var hero in heroes)
             {
@@ -469,12 +481,12 @@ namespace Bandit_Militias.Helpers
 
         private static void FlushBadCharacterObjects()
         {
-            var badChars = CharacterObject.All.Where(x => x.HeroObject == null)
+            var badChars = CharacterObject.All.Where(x => x.HeroObject is null)
                 .Where(x =>
-                    x.Name == null ||
+                    x.Name is null ||
                     x.Occupation == Occupation.NotAssigned ||
                     x.Occupation == Occupation.Outlaw &&
-                    x.HeroObject?.CurrentSettlement != null)
+                    x.HeroObject?.CurrentSettlement is not null)
                 .Where(x =>
                     !x.StringId.Contains("template") &&
                     !x.StringId.Contains("char_creation") &&
@@ -490,7 +502,7 @@ namespace Bandit_Militias.Helpers
             var hasLogged = false;
             foreach (var badChar in badChars)
             {
-                if (badChar == null)
+                if (badChar is null)
                 {
                     continue;
                 }
@@ -536,7 +548,7 @@ namespace Bandit_Militias.Helpers
         {
             // game tries to redraw the PartyNamePlateVM after combat with multiple militias
             // and crashes because mobileParty.Party.LeaderHero?.FirstName.ToString() is null
-            if (input == null)
+            if (input is null)
             {
                 return null;
             }
@@ -711,7 +723,7 @@ namespace Bandit_Militias.Helpers
         {
             try
             {
-                var parties = MobileParty.All.Where(x => x.LeaderHero != null && !IsBM(x)).ToList();
+                var parties = MobileParty.All.Where(x => x.LeaderHero is not null && !IsBM(x)).ToList();
                 CalculatedMaxPartySize = Convert.ToInt32(parties.Select(x => x.Party.PartySizeLimit).Average() * Globals.Settings.MaxPartySizeFactor * Variance);
                 CalculatedMaxPartyStrength = Convert.ToInt32(parties.Select(x => x.Party.TotalStrength).Average() * Globals.Settings.PartyStrengthFactor * Variance);
                 CalculatedGlobalPowerLimit = Convert.ToInt32(parties.Select(x => x.Party.TotalStrength).Sum() * Variance);
@@ -758,8 +770,8 @@ namespace Bandit_Militias.Helpers
         // 1.5.9 this condition leads to a null ref in DoWait() so we hack it
         internal static void FixMapEventFuckery()
         {
-            if (PlayerEncounter.Battle != null &&
-                PartyBase.MainParty.MapEvent == null)
+            if (PlayerEncounter.Battle is not null &&
+                PartyBase.MainParty.MapEvent is null)
             {
                 var sides = Traverse.Create(PlayerEncounter.Battle).Field<MapEventSide[]>("_sides").Value;
                 var playerSide = sides.FirstOrDefault(x => x.LeaderParty.LeaderHero == Hero.MainHero);
@@ -773,7 +785,7 @@ namespace Bandit_Militias.Helpers
 
         internal static bool IsBM(MobileParty mobileParty)
         {
-            return mobileParty != null &&
+            return mobileParty is not null &&
                    PartyMilitiaMap.ContainsKey(mobileParty);
         }
     }

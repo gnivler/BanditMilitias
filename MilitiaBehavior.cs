@@ -45,7 +45,7 @@ namespace Bandit_Militias
             }
 
             Mod.Log($">>> OnMilitiaRemoved - {partyBase.Name}.");
-            if (partyBase.MobileParty.LeaderHero?.CurrentSettlement != null)
+            if (partyBase.MobileParty.LeaderHero?.CurrentSettlement is not null)
             {
                 Traverse.Create(HeroesWithoutParty(partyBase.MobileParty.LeaderHero?.CurrentSettlement)).Field<List<Hero>>("_list").Value.Remove(partyBase.MobileParty.LeaderHero);
                 Mod.Log($">>> FLUSH OnMilitiaRemoved bandit hero without party - {partyBase.MobileParty.LeaderHero.Name} at {partyBase.MobileParty.LeaderHero?.CurrentSettlement}.");
@@ -65,10 +65,11 @@ namespace Bandit_Militias
                     ((float) GlobalMilitiaPower / CalculatedGlobalPowerLimit < Globals.Settings.GrowthFactor ||
                      Rng.NextDouble() <= Globals.Settings.GrowthChance))
                 {
-                    var eligibleToGrow = mobileParty.MemberRoster.GetTroopRoster().Where(x =>
-                        x.Character.Tier < Globals.Settings.MaxTrainingTier &&
-                        !x.Character.IsHero &&
-                        mobileParty.ShortTermBehavior != AiBehavior.FleeToPoint).ToList();
+                    var eligibleToGrow = mobileParty.MemberRoster.GetTroopRoster().Where(rosterElement =>
+                        rosterElement.Character.Tier < Globals.Settings.MaxTrainingTier &&
+                        !rosterElement.Character.IsHero &&
+                        mobileParty.ShortTermBehavior != AiBehavior.FleeToPoint &&
+                        !mobileParty.IsVisible).ToList();
                     if (eligibleToGrow.Any())
                     {
                         Mod.Log($"TryGrowing {mobileParty.LeaderHero}, total: {mobileParty.MemberRoster.TotalManCount}");

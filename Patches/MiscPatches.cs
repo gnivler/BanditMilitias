@@ -27,10 +27,6 @@ namespace Bandit_Militias.Patches
             private static void Postfix()
             {
                 Mod.Log("MapScreen.OnInitialize");
-                //Mod.Log("Clans:");
-                //Clan.All.Do(x => Mod.Log($"Name: {x.Name} MapFaction: {x.MapFaction} Culture: {x.Culture}"));
-                //Mod.Log("Bandit Clans:");
-                //Clan.BanditFactions.Do(x => Mod.Log($"Name: {x.Name} MapFaction: {x.MapFaction} Culture: {x.Culture}"));
                 HeroCreatorCopy.VeteransRespect = PerkObject.All.First(x => x.StringId == "LeadershipVeteransRespect");
                 HeroCreatorCopy.Leadership = SkillObject.All.First(x => x.StringId == "Leadership");
                 EquipmentItems.Clear();
@@ -68,19 +64,19 @@ namespace Bandit_Militias.Patches
                 Hideouts = Settlement.FindAll(x => x.IsHideout()).ToList();
 
                 var militias = MobileParty.All.Where(x =>
-                    x != null && x.StringId.StartsWith("Bandit_Militia")).ToList();
+                    x is not null && x.StringId.StartsWith("Bandit_Militia")).ToList();
                 for (var i = 0; i < militias.Count; i++)
                 {
                     var militia = militias[i];
                     // this could be removed after 2.8.7 ish
-                    if (militia.CurrentSettlement != null)
+                    if (militia.CurrentSettlement is not null)
                     {
                         Mod.Log("Militia in hideout found and removed.");
                         Trash(militia);
                         continue;
                     }
 
-                    if (militia.LeaderHero == null)
+                    if (militia.LeaderHero is null)
                     {
                         Mod.Log("Leaderless militia found and removed.");
                         Trash(militia);
@@ -91,6 +87,12 @@ namespace Bandit_Militias.Patches
                         PartyMilitiaMap.Add(recreatedMilitia.MobileParty, recreatedMilitia);
                     }
                 }
+
+                PartyMilitiaMap.Keys.Do(mobileParty =>
+                {
+                    var settlement = Settlement.FindSettlementsAroundPosition(mobileParty.Position2D, 30).GetRandomElementInefficiently() ?? Settlement.All.GetRandomElement();
+                    mobileParty.SetMovePatrolAroundSettlement(settlement);
+                });
 
                 Mod.Log($"Militias: {militias.Count} (registered {PartyMilitiaMap.Count})");
                 // 1.5.8 is dropping the militia settlements at some point, I haven't figured out where
@@ -121,10 +123,10 @@ namespace Bandit_Militias.Patches
 
             private static void Postfix(MapEventSide __instance, PartyBase party, Hero __state)
             {
-                if (__state == null ||
-                    party?.MobileParty == null ||
+                if (__state is null ||
+                    party?.MobileParty is null ||
                     !IsBM(party.MobileParty) ||
-                    party.PrisonRoster != null &&
+                    party.PrisonRoster is not null &&
                     party.PrisonRoster.Contains(Hero.MainHero.CharacterObject))
                 {
                     return;
@@ -160,7 +162,7 @@ namespace Bandit_Militias.Patches
         // 1.5.9 throws a vanilla stack, ignoring it seems to be fine
         public static Exception wait_menu_prisoner_wait_on_tickFinalizer(Exception __exception)
         {
-            if (__exception != null)
+            if (__exception is not null)
             {
                 Mod.Log(__exception);
             }
@@ -174,21 +176,21 @@ namespace Bandit_Militias.Patches
         {
             public static Exception Finalizer(BanditPartyComponent __instance, Exception __exception)
             {
-                if (__exception != null)
+                if (__exception is not null)
                 {
                     Mod.Log(new string('-', 50));
                     Mod.Log("PING");
-                    if (__instance.Hideout == null)
+                    if (__instance.Hideout is null)
                     {
                         Mod.Log("Hideout is null.");
                     }
 
-                    if (__instance.Hideout?.MapFaction == null)
+                    if (__instance.Hideout?.MapFaction is null)
                     {
                         Mod.Log("MapFaction is null.");
                     }
 
-                    if (__instance.Hideout?.MapFaction?.Name == null)
+                    if (__instance.Hideout?.MapFaction?.Name is null)
                     {
                         Mod.Log("Name is null.");
                     }
@@ -208,28 +210,35 @@ namespace Bandit_Militias.Patches
         {
             private static void Prefix(InventoryLogic ____inventoryLogic)
             {
-                Mod.Log("InitializeInventory - removing invalid items.");
-                try
-                {
-                    for (var i = 0; i < 2; i++)
-                    {
-                        var roster = Traverse.Create(____inventoryLogic).Field<ItemRoster[]>("_rosters").Value[i];
-                        var replacement = new ItemRoster
-                        {
-                            roster.Where(item => item.EquipmentElement.Item?.Name?.ToString() != null).ToArray()
-                        };
-                        roster = replacement;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Mod.Log(ex);
-                }
+                // this would need to be honed to the stack providing  a null
+                //Mod.Log("InitializeInventory - removing any detected invalid items.");
+                //try
+                //{
+                //Mod.Log(new StackTrace());
+                //var rosters = Traverse.Create(____inventoryLogic).Field<ItemRoster[]>("_rosters").Value;
+                //for (var i = 0; i < rosters.Length; i++)
+                //{
+                //    rosters[i].Do(i => Mod.Log(i));
+                //    var replacement = new ItemRoster
+                //    {
+                //        rosters[i].Where(item => item.EquipmentElement.Item?.Name?.ToString() is not null).ToArray()
+                //    };
+                //    rosters[i] = replacement;
+                //    if (replacement.Count < rosters[i].Count)
+                //    {
+                //        Mod.Log("Removed items");
+                //    }
+                //}
+                //}
+                //catch (Exception ex)
+                //{
+                //    Mod.Log(ex);
+                //}
             }
 
             private static Exception Finalizer(Exception __exception)
             {
-                if (__exception != null)
+                if (__exception is not null)
                 {
                     Mod.Log(__exception);
                 }

@@ -17,7 +17,7 @@ namespace Bandit_Militias
                 return netChance;
             }
 
-            if (upgradeTarget.UpgradeTargets == null)
+            if (upgradeTarget.UpgradeTargets is null)
             {
                 return netChance * (float) (cavalryRatioAtParty * 2.0 + 0.100000001490116);
             }
@@ -36,7 +36,7 @@ namespace Bandit_Militias
         {
             var memberRoster = party.MemberRoster;
             var troopUpgradeModel = Campaign.Current.Models.PartyTroopUpgradeModel;
-            var cavalryRatioAtParty = party.MobileParty == null || party.MobileParty.IsGarrison || party.MobileParty.IsMilitia || party.MobileParty.IsVillager ? 1f : party.NumberOfMenWithHorse / (party.NumberOfAllMembers + 0.1f);
+            var cavalryRatioAtParty = party.MobileParty is null || party.MobileParty.IsGarrison || party.MobileParty.IsMilitia || party.MobileParty.IsVillager ? 1f : party.NumberOfMenWithHorse / (party.NumberOfAllMembers + 0.1f);
             for (var index1 = 0; index1 < memberRoster.Count; ++index1)
             {
                 var elementCopyAtIndex = memberRoster.GetElementCopyAtIndex(index1);
@@ -56,12 +56,12 @@ namespace Bandit_Militias
                         {
                             var upgradeTarget = elementCopyAtIndex.Character.UpgradeTargets[index2];
                             var upgradeGoldCost = elementCopyAtIndex.Character.UpgradeCost(party, index2);
-                            if (party.LeaderHero != null && upgradeGoldCost != 0 && numberReadyToUpgrade * upgradeGoldCost > party.LeaderHero.Gold)
+                            if (party.LeaderHero is not null && upgradeGoldCost != 0 && numberReadyToUpgrade * upgradeGoldCost > party.LeaderHero.Gold)
                             {
                                 numberReadyToUpgrade = party.LeaderHero.Gold / upgradeGoldCost;
                             }
 
-                            if (party.Owner != null && elementCopyAtIndex.Character.UpgradeTargets[index2].UpgradeRequiresItemFromCategory != null)
+                            if (party.Owner is not null && elementCopyAtIndex.Character.UpgradeTargets[index2].UpgradeRequiresItemFromCategory is not null)
                             {
                                 var flag = false;
                                 var itemCount = 0;
@@ -97,7 +97,7 @@ namespace Bandit_Militias
                         if (characterObjects.Count > 0)
                         {
                             var character = characterObjects.GetRandomElement();
-                            if (party.IsMobile && party.LeaderHero != null && cavalryRatioAtParty < 0.360000014305115)
+                            if (party.IsMobile && party.LeaderHero is not null && cavalryRatioAtParty < 0.360000014305115)
                             {
                                 var num2 = 0f;
                                 foreach (var tuple2 in characterObjects)
@@ -133,12 +133,12 @@ namespace Bandit_Militias
 
                             if (numberToUpgrade > 0)
                             {
-                                if (party.Owner != null)
+                                if (party.Owner is not null)
                                 {
                                     SkillLevelingManager.OnUpgradeTroops(party, characterObject, numberToUpgrade);
                                     GiveGoldAction.ApplyBetweenCharacters(party.Owner, null, upgradeGoldCost * numberToUpgrade, true);
                                 }
-                                else if (party.LeaderHero != null)
+                                else if (party.LeaderHero is not null)
                                 {
                                     SkillLevelingManager.OnUpgradeTroops(party, characterObject, numberToUpgrade);
                                     GiveGoldAction.ApplyBetweenCharacters(party.LeaderHero, null, upgradeGoldCost * numberToUpgrade, true);

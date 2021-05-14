@@ -56,7 +56,7 @@ namespace Bandit_Militias
             MobileParty.ActualClan = mostPrevalent;
             Hero = HeroCreatorCopy.CreateBanditHero(mostPrevalent, MobileParty);
             var faction = Clan.BanditFactions.FirstOrDefault(x => Hero.MapFaction.Name == x.Name);
-            Hero.Culture = faction == null ? Clan.BanditFactions.FirstOrDefault(x => x.Name.ToString() == "Looters")?.Culture : faction.Culture;
+            Hero.Culture = faction is null ? Clan.BanditFactions.FirstOrDefault(x => x.Name.ToString() == "Looters")?.Culture : faction.Culture;
             Name = (string) Traverse.Create(typeof(MBTextManager))
                 .Method("GetLocalizedText", $"{Possess(Hero.FirstName.ToString())} Bandit Militia").GetValue();
             MobileParty.SetCustomName(new TextObject(Name));
