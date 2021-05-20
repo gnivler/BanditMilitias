@@ -6,6 +6,7 @@
   "GoldReward": "NORMAL",
   "CooldownHours": 24,
   "MinPartySize": 30,
+  "MinPartySizeToMerge": 15,
   "RandomSplitChance": 0.25,
   "StrengthSplitFactor": 0.8,
   "SizeSplitFactor": 0.8,

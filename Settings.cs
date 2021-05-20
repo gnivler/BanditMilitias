@@ -13,6 +13,7 @@ namespace Bandit_Militias
         public string GoldReward = "NORMAL";
         public float CooldownHours = 24;
         public int MinPartySize = 20;
+        public int MinPartySizeToConsiderMerge = 1;
         public float RandomSplitChance = 0.25f;
         public float StrengthSplitFactor = 0.8f;
         public float SizeSplitFactor = 0.8f;
@@ -22,7 +23,7 @@ namespace Bandit_Militias
         public float GrowthFactor = 0.01f;
         public int MaxItemValue = 3000;
         public float LooterUpgradeFactor = 0.25f;
-        public int PartyStrengthDeltaPercent = 10;
+        public int MaxStrengthDeltaPercent = 10;
         public float UpgradeUnitsFactor = 0.25f;
         public float GlobalPowerFactor = 0.15f;
         public int MaxTrainingTier = 4;

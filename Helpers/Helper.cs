@@ -703,7 +703,7 @@ namespace Bandit_Militias.Helpers
             settings.GrowthFactor = settings.GrowthFactor.Clamp(0, 1); // todo fix dupe
             settings.MaxItemValue = settings.MaxItemValue.Clamp(1_000, int.MaxValue);
             settings.LooterUpgradeFactor = settings.LooterUpgradeFactor.Clamp(0, 1);
-            settings.PartyStrengthDeltaPercent = settings.PartyStrengthDeltaPercent.Clamp(0, 100);
+            settings.MaxStrengthDeltaPercent = settings.MaxStrengthDeltaPercent.Clamp(0, 100);
             settings.GlobalPowerFactor = settings.GlobalPowerFactor.Clamp(0, 1);
             settings.MaxTrainingTier = settings.MaxTrainingTier.Clamp(0, 6);
         }

@@ -25,24 +25,24 @@ namespace Bandit_Militias
         internal static int GlobalMilitiaPower;
 
         // misc
-        internal static readonly Random Rng = new Random();
-        internal static readonly Dictionary<MobileParty, Militia> PartyMilitiaMap = new Dictionary<MobileParty, Militia>();
-        internal static readonly Dictionary<ItemObject.ItemTypeEnum, List<ItemObject>> ItemTypes = new Dictionary<ItemObject.ItemTypeEnum, List<ItemObject>>();
-        internal static readonly List<EquipmentElement> EquipmentItems = new List<EquipmentElement>();
-        internal static List<Settlement> Hideouts = new List<Settlement>();
+        internal static readonly Random Rng = new();
+        internal static readonly Dictionary<MobileParty, Militia> PartyMilitiaMap = new();
+        internal static readonly Dictionary<ItemObject.ItemTypeEnum, List<ItemObject>> ItemTypes = new();
+        internal static readonly List<EquipmentElement> EquipmentItems = new();
+        internal static List<Settlement> Hideouts = new();
         internal static Settings Settings;
-        internal static List<ItemObject> Arrows = new List<ItemObject>();
-        internal static List<ItemObject> Bolts = new List<ItemObject>();
-        internal static readonly Stopwatch T = new Stopwatch();
-        internal static readonly List<Equipment> BanditEquipment = new List<Equipment>();
+        internal static List<ItemObject> Arrows = new();
+        internal static List<ItemObject> Bolts = new();
+        internal static readonly Stopwatch T = new();
+        internal static readonly List<Equipment> BanditEquipment = new();
         internal static IEnumerable<CharacterObject> Recruits;
-        internal static readonly List<Banner> Banners = new List<Banner>();
+        internal static readonly List<Banner> Banners = new();
         
         // FieldRefs
         internal static readonly AccessTools.FieldRef<Settlement, MBReadOnlyList<Hero>> HeroesWithoutParty =
             AccessTools.FieldRefAccess<Settlement, MBReadOnlyList<Hero>>("<HeroesWithoutParty>k__BackingField");
         
-        internal static readonly Dictionary<string, int> DifficultyXpMap = new Dictionary<string, int>
+        internal static readonly Dictionary<string, int> DifficultyXpMap = new()
         {
             {"OFF", 0},
             {"NORMAL", 300},
@@ -50,7 +50,7 @@ namespace Bandit_Militias
             {"HARDEST", 900},
         };
 
-        internal static readonly Dictionary<string, int> GoldMap = new Dictionary<string, int>
+        internal static readonly Dictionary<string, int> GoldMap = new()
         {
             {"LOW", 250},
             {"NORMAL", 500},

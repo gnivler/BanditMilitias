@@ -27,8 +27,6 @@ namespace Bandit_Militias.Patches
             private static void Postfix()
             {
                 Mod.Log("MapScreen.OnInitialize");
-                HeroCreatorCopy.VeteransRespect = PerkObject.All.First(x => x.StringId == "LeadershipVeteransRespect");
-                HeroCreatorCopy.Leadership = SkillObject.All.First(x => x.StringId == "Leadership");
                 EquipmentItems.Clear();
                 PopulateItems();
                 Recruits = CharacterObject.All.Where(x =>
@@ -55,7 +53,7 @@ namespace Bandit_Militias.Patches
 
                 // front-load
                 BanditEquipment.Clear();
-                for (var i = 0; i < 500; i++)
+                for (var i = 0; i < 1000; i++)
                 {
                     BanditEquipment.Add(BuildViableEquipmentSet());
                 }
@@ -205,38 +203,11 @@ namespace Bandit_Militias.Patches
             }
         }
 
+        // vanilla fix for 1.5.9?
         [HarmonyPatch(typeof(SPInventoryVM), "InitializeInventory")]
         public class SPInventoryVMInitializeInventoryVMPatch
         {
-            private static void Prefix(InventoryLogic ____inventoryLogic)
-            {
-                // this would need to be honed to the stack providing  a null
-                //Mod.Log("InitializeInventory - removing any detected invalid items.");
-                //try
-                //{
-                //Mod.Log(new StackTrace());
-                //var rosters = Traverse.Create(____inventoryLogic).Field<ItemRoster[]>("_rosters").Value;
-                //for (var i = 0; i < rosters.Length; i++)
-                //{
-                //    rosters[i].Do(i => Mod.Log(i));
-                //    var replacement = new ItemRoster
-                //    {
-                //        rosters[i].Where(item => item.EquipmentElement.Item?.Name?.ToString() is not null).ToArray()
-                //    };
-                //    rosters[i] = replacement;
-                //    if (replacement.Count < rosters[i].Count)
-                //    {
-                //        Mod.Log("Removed items");
-                //    }
-                //}
-                //}
-                //catch (Exception ex)
-                //{
-                //    Mod.Log(ex);
-                //}
-            }
-
-            private static Exception Finalizer(Exception __exception)
+            static Exception Finalizer(Exception __exception)
             {
                 if (__exception is not null)
                 {

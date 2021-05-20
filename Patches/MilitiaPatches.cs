@@ -40,12 +40,14 @@ namespace Bandit_Militias.Patches
                         return;
                     }
 
-                    var parties = MobileParty.All.Where(x =>
-                        x.Party.IsMobile &&
-                        x.CurrentSettlement is null &&
-                        !x.IsUsedByAQuest() &&
-                        x.IsBandit).Concat(PartyMilitiaMap.Keys).ToList(); // might cause duplicates if IsBandit returns differently in the future
-                    T.Restart();
+                    var parties = MobileParty.All.Where(m =>
+                            m.Party.IsMobile &&
+                            m.CurrentSettlement is null &&
+                            !m.IsUsedByAQuest() &&
+                            m.IsBandit &&
+                            m.MemberRoster.TotalManCount > Globals.Settings.MinPartySizeToConsiderMerge)
+                        .Concat(PartyMilitiaMap.Keys).ToList(); // might cause duplicates if IsBandit returns differently in the future
+                    //T.Restart();
                     for (var index = 0; index < parties.Count; index++)
                     {
                         var mobileParty = parties[index];
@@ -134,7 +136,7 @@ namespace Bandit_Militias.Patches
                         militia.MobileParty.Party.Visuals.SetMapIconAsDirty();
                         Trash(mobileParty);
                         Trash(targetParty.MobileParty);
-                        Mod.Log($">>> Finished all work: {T.ElapsedTicks / 10000F:F3}ms.");
+                        //Mod.Log($">>> Finished all work: {T.ElapsedTicks / 10000F:F3}ms.");
                     }
                     //Mod.Log($"Looped ==> {T.ElapsedTicks / 10000F:F3}ms");
                 }
@@ -272,7 +274,7 @@ namespace Bandit_Militias.Patches
 
         // blocks conversations with militias
         [HarmonyPatch(typeof(PlayerEncounter), "DoMeetingInternal")]
-        public class MissionConversationVMCtorPatch
+        public class PlayerEncounterDoMeetingInternalPatch
         {
             private static bool Prefix(PartyBase ____encounteredParty)
             {
@@ -286,40 +288,6 @@ namespace Bandit_Militias.Patches
             }
         }
 
-        // 1.4.3b vanilla issue?  have to replace the WeaponComponentData in some cases
-        // this causes naked militias when 'fixed' in this manner
-        // todo remove after a version or two... maybe solved it by changing/fixing CreateEquipment()
-        // commented out at 1.5.8
-        //[HarmonyPatch(typeof(PartyVisual), "WieldMeleeWeapon")]
-        //public class PartyVisualWieldMeleeWeaponPatch
-        //{
-        //    private static void Prefix(PartyBase party)
-        //    {
-        //        for (var i = 0; i < 5; ++i)
-        //        {
-        //            if (party?.Leader?.Equipment[i].Item is not null && party.Leader.Equipment[i].Item.PrimaryWeapon is null)
-        //            {
-        //                party.Leader.Equipment[i] = new EquipmentElement(ItemObject.All.First(x =>
-        //                    x.StringId == party.Leader.Equipment[i].Item.StringId));
-        //            }
-        //        }
-        //    }
-        //}
-
-        // prevents militias from being added to DynamicBodyCampaignBehavior._heroBehaviorsDictionary 
-        //[HarmonyPatch(typeof(DynamicBodyCampaignBehavior), "CanBeEffectedByProperties")]
-        //public class DynamicBodyCampaignBehaviorCanBeEffectedByPropertiesPatch
-        //{
-        //    private static void Postfix(Hero hero, ref bool __result)
-        //    {
-        //        if (hero.PartyBelongedTo is not null &&
-        //            hero.PartyBelongedTo.StringId.StartsWith("Bandit_Militia"))
-        //        {
-        //            __result = false;
-        //        }
-        //    }
-        //}
-
         // prevent militias from attacking parties they can destroy easily
         [HarmonyPatch(typeof(MobileParty), "CanAttack")]
         public class MobilePartyCanAttackPatch
@@ -331,7 +299,7 @@ namespace Bandit_Militias.Patches
                     var party1Strength = __instance.GetTotalStrengthWithFollowers();
                     var party2Strength = targetParty.GetTotalStrengthWithFollowers();
                     var delta = (party1Strength - party2Strength) / party1Strength * 100;
-                    __result = delta <= Globals.Settings.PartyStrengthDeltaPercent;
+                    __result = delta <= Globals.Settings.MaxStrengthDeltaPercent;
                 }
             }
         }
