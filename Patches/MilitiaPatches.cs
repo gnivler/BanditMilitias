@@ -136,6 +136,7 @@ namespace Bandit_Militias.Patches
                         militia.MobileParty.Party.Visuals.SetMapIconAsDirty();
                         Trash(mobileParty);
                         Trash(targetParty.MobileParty);
+                        DoPowerCalculations();
                         //Mod.Log($">>> Finished all work: {T.ElapsedTicks / 10000F:F3}ms.");
                     }
                     //Mod.Log($"Looped ==> {T.ElapsedTicks / 10000F:F3}ms");

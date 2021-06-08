@@ -48,7 +48,7 @@ namespace Bandit_Militias.Helpers
             specialHero.NeverBecomePrisoner = true;
             specialHero.AlwaysDie = true;
             var partyStrength = Traverse.Create(mobileParty.Party).Method("CalculateStrength").GetValue<float>();
-            specialHero.Gold = Convert.ToInt32(partyStrength * GoldMap[Globals.Settings.GoldReward]);
+            specialHero.Gold = Convert.ToInt32(partyStrength * GoldMap[Globals.Settings.GoldReward.SelectedValue]);
             //var hideout = Hideouts.Where(x => x.MapFaction != CampaignData.NeutralFaction).GetRandomElement();
             // home has to be set to a hideout to make party aggressive (see PartyBase.MapFaction)
             // 1.4.3b changed this now we also have to set ActualClan

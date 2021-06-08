@@ -19,10 +19,10 @@ namespace Bandit_Militias
         internal static float MinDistanceFromHideout = 8;
 
         // holders for criteria
-        internal static int CalculatedMaxPartyStrength;
-        internal static int CalculatedMaxPartySize;
-        internal static int CalculatedGlobalPowerLimit;
-        internal static int GlobalMilitiaPower;
+        internal static float CalculatedMaxPartyStrength;
+        internal static float CalculatedMaxPartySize;
+        internal static float CalculatedGlobalPowerLimit;
+        internal static float GlobalMilitiaPower;
 
         // misc
         internal static readonly Random Rng = new();
@@ -37,25 +37,26 @@ namespace Bandit_Militias
         internal static readonly List<Equipment> BanditEquipment = new();
         internal static IEnumerable<CharacterObject> Recruits;
         internal static readonly List<Banner> Banners = new();
-        
+        internal static double LastCalculated;
+
         // FieldRefs
         internal static readonly AccessTools.FieldRef<Settlement, MBReadOnlyList<Hero>> HeroesWithoutParty =
             AccessTools.FieldRefAccess<Settlement, MBReadOnlyList<Hero>>("<HeroesWithoutParty>k__BackingField");
-        
+
         internal static readonly Dictionary<string, int> DifficultyXpMap = new()
         {
-            {"OFF", 0},
-            {"NORMAL", 300},
-            {"HARD", 600},
-            {"HARDEST", 900},
+            {"Off", 0},
+            {"Normal", 300},
+            {"Hard", 600},
+            {"Hardest", 900},
         };
 
         internal static readonly Dictionary<string, int> GoldMap = new()
         {
-            {"LOW", 250},
-            {"NORMAL", 500},
-            {"RICH", 900},
-            {"RICHEST", 2000},
+            {"Low", 250},
+            {"Normal", 500},
+            {"Rich", 900},
+            {"Richest", 2000},
         };
     }
 }

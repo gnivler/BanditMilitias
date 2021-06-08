@@ -1,3 +1,8 @@
+//
+// THIS IS DEPRECATED IN v3.0 WITH ADDITION OF MCM
+// 
+//
+
 Note the syntax must be exactly right.  Use a site like https://jsonlint.com/ to verify accuracy.
 
 

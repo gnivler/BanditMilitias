@@ -95,7 +95,7 @@ namespace Bandit_Militias.Patches
                 Mod.Log($"Militias: {militias.Count} (registered {PartyMilitiaMap.Count})");
                 // 1.5.8 is dropping the militia settlements at some point, I haven't figured out where
                 ReHome();
-                DailyCalculations();
+                DoPowerCalculations(true);
 
                 // have to patch late because of static constructors (type initialization exception)
                 Mod.harmony.Patch(

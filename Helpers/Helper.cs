@@ -7,7 +7,6 @@ using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
 using TaleWorlds.ObjectSystem;
-using TaleWorlds.TwoDimension;
 using static Bandit_Militias.Globals;
 
 // ReSharper disable InconsistentNaming  
@@ -122,7 +121,7 @@ namespace Bandit_Militias.Helpers
             TroopRoster prisoners1, TroopRoster prisoners2, ItemRoster inventory1, ItemRoster inventory2)
         {
             try
-            {                                                                              
+            {
                 var militia1 = new Militia(original, party1, prisoners1);
                 var militia2 = new Militia(original, party2, prisoners2);
                 var settlements = Settlement.FindSettlementsAroundPosition(original.Position2D, 30).ToList();
@@ -134,6 +133,7 @@ namespace Bandit_Militias.Helpers
                 militia1.MobileParty.Party.Visuals.SetMapIconAsDirty();
                 militia2.MobileParty.Party.Visuals.SetMapIconAsDirty();
                 Trash(original);
+                DoPowerCalculations();
             }
             catch (Exception ex)
             {
@@ -285,7 +285,7 @@ namespace Bandit_Militias.Helpers
 
         internal static void Nuke()
         {
-            Mod.Log("Clearing mod data.", LogLevel.Info);
+            Mod.Log("Clearing mod data.");
             FlushDeadBanditRemnants();
             FlushBanditMilitias();
             FlushHeroes();
@@ -302,7 +302,7 @@ namespace Bandit_Militias.Helpers
             {
                 if (!hasLogged)
                 {
-                    Mod.Log($">>> FLUSH {partiesToRemove.Count} Bandit Militias", LogLevel.Info);
+                    Mod.Log($">>> FLUSH {partiesToRemove.Count} Bandit Militias");
                     hasLogged = true;
                 }
 
@@ -471,7 +471,7 @@ namespace Bandit_Militias.Helpers
                 if (!hasLogged)
                 {
                     hasLogged = true;
-                    Mod.Log($">>> FLUSH  {heroes.Count} null-party heroes.", LogLevel.Info);
+                    Mod.Log($">>> FLUSH  {heroes.Count} null-party heroes.");
                 }
 
                 Mod.Log(">>> FLUSH null party hero " + hero.Name);
@@ -510,7 +510,7 @@ namespace Bandit_Militias.Helpers
                 if (!hasLogged)
                 {
                     hasLogged = true;
-                    Mod.Log($">>> FLUSH  {badChars.Count} bad characters.", LogLevel.Info);
+                    Mod.Log($">>> FLUSH  {badChars.Count} bad characters.");
                 }
 
                 Mod.Log($">>> FLUSH mock Unregistering {badChar.StringId}");
@@ -525,7 +525,7 @@ namespace Bandit_Militias.Helpers
             var tempList = new List<MobileParty>();
             foreach (var mobileParty in PartyMilitiaMap.Values.Where(x => x.MobileParty.MapFaction == CampaignData.NeutralFaction))
             {
-                Mod.Log("This bandit shouldn't exist " + mobileParty.MobileParty + " size " + mobileParty.MobileParty.MemberRoster.TotalManCount, LogLevel.Info);
+                Mod.Log("This bandit shouldn't exist " + mobileParty.MobileParty + " size " + mobileParty.MobileParty.MemberRoster.TotalManCount);
                 tempList.Add(mobileParty.MobileParty);
             }
 
@@ -687,51 +687,18 @@ namespace Bandit_Militias.Helpers
             return gear.Clone();
         }
 
-        internal static void ClampSettingsValues(ref Settings settings)
+        internal static void DoPowerCalculations(bool force = false)
         {
-            settings.CooldownHours = settings.CooldownHours.Clamp(1, 168);
-            settings.GrowthFactor = settings.GrowthFactor.Clamp(0, 100);
-            settings.GrowthChance = settings.GrowthChance.Clamp(0, 1);
-            settings.MaxItemValue = settings.MaxItemValue.Clamp(1000, int.MaxValue);
-            settings.MinPartySize = settings.MinPartySize.Clamp(1, int.MaxValue);
-            settings.RandomSplitChance = settings.RandomSplitChance.Clamp(0, 1);
-            settings.StrengthSplitFactor = settings.StrengthSplitFactor.Clamp(0.25f, 1);
-            settings.SizeSplitFactor = settings.SizeSplitFactor.Clamp(0.25f, 1);
-            settings.PartyStrengthFactor = settings.PartyStrengthFactor.Clamp(0.25f, 2);
-            settings.MaxPartySizeFactor = settings.MaxPartySizeFactor.Clamp(0.25f, 2);
-            settings.GrowthChance = settings.GrowthChance.Clamp(0, 1);
-            settings.GrowthFactor = settings.GrowthFactor.Clamp(0, 1); // todo fix dupe
-            settings.MaxItemValue = settings.MaxItemValue.Clamp(1_000, int.MaxValue);
-            settings.LooterUpgradeFactor = settings.LooterUpgradeFactor.Clamp(0, 1);
-            settings.MaxStrengthDeltaPercent = settings.MaxStrengthDeltaPercent.Clamp(0, 100);
-            settings.GlobalPowerFactor = settings.GlobalPowerFactor.Clamp(0, 1);
-            settings.MaxTrainingTier = settings.MaxTrainingTier.Clamp(0, 6);
-        }
-
-        internal static void PrintValidatedSettings(Settings settings)
-        {
-            foreach (var value in settings.GetType().GetFields())
+            if (force
+                || LastCalculated < CampaignTime.Now.ToHours - 8)
             {
-                Mod.Log($"{value.Name}: {value.GetValue(settings)}");
-            }
-        }
-
-        private static int Clamp(this int number, int min, int max) => Mathf.Clamp(number, min, max);
-        private static float Clamp(this float number, float min, float max) => Mathf.Clamp(number, min, max);
-
-        internal static void DailyCalculations()
-        {
-            try
-            {
+                LastCalculated = CampaignTime.Now.ToHours;
                 var parties = MobileParty.All.Where(x => x.LeaderHero is not null && !IsBM(x)).ToList();
-                CalculatedMaxPartySize = Convert.ToInt32(parties.Select(x => x.Party.PartySizeLimit).Average() * Globals.Settings.MaxPartySizeFactor * Variance);
-                CalculatedMaxPartyStrength = Convert.ToInt32(parties.Select(x => x.Party.TotalStrength).Average() * Globals.Settings.PartyStrengthFactor * Variance);
-                CalculatedGlobalPowerLimit = Convert.ToInt32(parties.Select(x => x.Party.TotalStrength).Sum() * Variance);
-                GlobalMilitiaPower = Convert.ToInt32(PartyMilitiaMap.Keys.Select(x => x.Party.TotalStrength).Sum());
-            }
-            catch (Exception ex)
-            {
-                Mod.Log(ex);
+                CalculatedMaxPartySize = (float) parties.Select(x => x.Party.PartySizeLimit).Average() * Globals.Settings.MaxPartySizeFactor * Variance;
+                var totalStrength = parties.Select(x => x.Party.TotalStrength).Sum();
+                CalculatedMaxPartyStrength = totalStrength / parties.Count * Globals.Settings.PartyStrengthFactor * Variance;
+                CalculatedGlobalPowerLimit = totalStrength * Variance;
+                GlobalMilitiaPower = PartyMilitiaMap.Keys.Select(x => x.Party.TotalStrength).Sum();
             }
         }
 

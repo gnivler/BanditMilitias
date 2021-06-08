@@ -71,29 +71,29 @@ namespace Bandit_Militias
             {
                 if (MobileParty.MemberRoster.Count == 0)
                 {
-                    Mod.Log("Trying to configure militia with no troops, trashing", LogLevel.Info);
+                    Mod.Log("Trying to configure militia with no troops, trashing");
                     Trash(MobileParty);
                     return;
                 }
 
                 if (!Globals.Settings.CanTrain ||
-                    DifficultyXpMap[Globals.Settings.XpGift] == 0)
+                    DifficultyXpMap[Globals.Settings.XpGift.SelectedValue] == 0)
                 {
                     return;
                 }
 
                 int iterations = default;
-                switch (Globals.Settings.XpGift)
+                switch (Globals.Settings.XpGift.SelectedValue)
                 {
-                    case "OFF":
+                    case "Off":
                         break;
-                    case "NORMAL":
+                    case "Normal":
                         iterations = 1;
                         break;
-                    case "HARD":
+                    case "Hard":
                         iterations = 2;
                         break;
-                    case "HARDEST":
+                    case "Hardest":
                         iterations = 4;
                         break;
                 }
@@ -141,7 +141,7 @@ namespace Bandit_Militias
                     minNumberToUpgrade = Math.Max(1, minNumberToUpgrade);
                     numberToUpgrade = Convert.ToInt32(Rng.Next(minNumberToUpgrade, Convert.ToInt32((number + 1) / 2f)));
                     Mod.Log($"{MobileParty.LeaderHero.Name} is upgrading up to {numberToUpgrade} of {number} \"{troopToTrain.Character.Name}\".");
-                    var xpGain = numberToUpgrade * DifficultyXpMap[Globals.Settings.XpGift];
+                    var xpGain = numberToUpgrade * DifficultyXpMap[Globals.Settings.XpGift.SelectedValue];
                     MobileParty.MemberRoster.AddXpToTroop(xpGain, troopToTrain.Character);
                     PartyUpgraderCopy.UpgradeReadyTroops(MobileParty.Party);
                     // this is gross, not sure why it doesn't update itself, seems like the right way to call

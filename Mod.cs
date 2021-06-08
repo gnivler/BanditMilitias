@@ -3,7 +3,6 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using HarmonyLib;
-using Newtonsoft.Json;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
 using TaleWorlds.InputSystem;
@@ -31,37 +30,25 @@ namespace Bandit_Militias
 
     public class Mod : MBSubModuleBase
     {
-        internal const LogLevel logging = LogLevel.Disabled;
-        internal static readonly Harmony harmony = new Harmony("ca.gnivler.bannerlord.BanditMilitias");
+        internal static readonly Harmony harmony = new("ca.gnivler.bannerlord.BanditMilitias");
         private static readonly string modDirectory = new FileInfo(@"..\..\Modules\Bandit Militias\").DirectoryName;
+        private static StreamWriter streamWriter;
 
-        internal static void Log(object input, LogLevel logLevel = LogLevel.Debug)
+        internal static void Log(object input)
         {
-            if (Globals.Settings is null || !Globals.Settings.Debug)
+            if (Globals.Settings is null
+                || Globals.Settings is not null
+                && Globals.Settings.Debug is false)
             {
                 return;
             }
 
-            FileLog.Log($"[Bandit Militias] {input ?? "null"}");
-            using (var sw = new StreamWriter(Path.Combine(modDirectory, "mod.log"), true))
-            {
-                sw.WriteLine($"[{DateTime.Now:G}] {input ?? "null"}");
-            }
+            streamWriter ??= new StreamWriter(Path.Combine(modDirectory, "log.txt"), true);
+            streamWriter.WriteLine($"[{DateTime.Now:G}] {input ?? "null"}");
         }
 
         protected override void OnSubModuleLoad()
         {
-            try
-            {
-                ReadConfig();
-                Log($"Startup {DateTime.Now.ToShortTimeString()}", LogLevel.Info);
-            }
-            catch (Exception ex)
-            {
-                Log(ex, LogLevel.Error);
-                Globals.Settings = new Settings();
-            }
-
             CacheBanners();
             RunManualPatches();
             harmony.PatchAll(Assembly.GetExecutingAssembly());
@@ -77,31 +64,13 @@ namespace Bandit_Militias
             }
         }
 
-        private static void ReadConfig()
+        protected override void OnBeforeInitialModuleScreenSetAsRoot()
         {
-            try
-            {
-                var fileName = Path.Combine(modDirectory, "mod_settings.json");
-                if (File.Exists(fileName))
-                {
-                    Globals.Settings = JsonConvert.DeserializeObject<Settings>(File.ReadAllText(fileName));
-                    ClampSettingsValues(ref Globals.Settings);
-                    PrintValidatedSettings(Globals.Settings);
-                }
-                else
-                {
-                    Log($"Configuration file expected at {fileName} but not found, using default settings", LogLevel.Error);
-                    Globals.Settings = new Settings();
-                }
-
-                AdjustForLoadOrder();
-            }
-            catch (Exception ex)
-            {
-                FileLog.Log(ex.ToString());
-            }
+            Globals.Settings = Settings.Instance;
+            Log("Settings Loaded.");
         }
 
+        // Calradia Expanded: Kingdoms
         private static void AdjustForLoadOrder()
         {
             var assemblies = AppDomain.CurrentDomain.GetAssemblies();
@@ -125,12 +94,6 @@ namespace Bandit_Militias
             {
                 TestingMode = !TestingMode;
                 InformationManager.AddQuickInformation(new TextObject("Testing mode: " + TestingMode));
-            }
-
-            if (superKey && Input.IsKeyPressed(InputKey.C))
-            {
-                ReadConfig();
-                InformationManager.AddQuickInformation(new TextObject("Reloaded config"));
             }
 
             if (superKey && Input.IsKeyPressed(InputKey.F10))
@@ -167,7 +130,7 @@ namespace Bandit_Militias
                 }
                 catch (Exception ex)
                 {
-                    Log(ex, LogLevel.Error);
+                    Log(ex);
                 }
             }
         }
@@ -187,7 +150,7 @@ namespace Bandit_Militias
             }
             catch (Exception ex)
             {
-                Log(ex, LogLevel.Error);
+                Log(ex);
             }
         }
     }

@@ -13,11 +13,10 @@ namespace Bandit_Militias
 {
     public class MilitiaBehavior : CampaignBehaviorBase
     {
-        private static readonly bool Growth = Globals.Settings.GrowthFactor > 0;
+        private static readonly bool Growth = Globals.Settings.GrowthPercent > 0;
 
         public override void RegisterEvents()
         {
-            CampaignEvents.AfterDailyTickEvent.AddNonSerializedListener(this, DailyCalculations);
             CampaignEvents.DailyTickPartyEvent.AddNonSerializedListener(this, TryGrowing);
             CampaignEvents.OnPartyRemovedEvent.AddNonSerializedListener(this, OnMilitiaRemoved);
             CampaignEvents.DailyTickPartyEvent.AddNonSerializedListener(this, StopHoldingBehavior);
@@ -59,10 +58,10 @@ namespace Bandit_Militias
             try
             {
                 if (Growth &&
+                    IsBM(mobileParty) &&
                     mobileParty.ShortTermBehavior != AiBehavior.FleeToPoint &&
                     IsValidParty(mobileParty) &&
-                    IsBM(mobileParty) &&
-                    ((float) GlobalMilitiaPower / CalculatedGlobalPowerLimit < Globals.Settings.GrowthFactor ||
+                    (GlobalMilitiaPower / CalculatedGlobalPowerLimit * 100 < Globals.Settings.GrowthPercent ||
                      Rng.NextDouble() <= Globals.Settings.GrowthChance))
                 {
                     var eligibleToGrow = mobileParty.MemberRoster.GetTroopRoster().Where(rosterElement =>
@@ -73,10 +72,10 @@ namespace Bandit_Militias
                     if (eligibleToGrow.Any())
                     {
                         Mod.Log($"TryGrowing {mobileParty.LeaderHero}, total: {mobileParty.MemberRoster.TotalManCount}");
-                        var growthAmount = mobileParty.MemberRoster.TotalManCount * Globals.Settings.GrowthFactor;
+                        var growthAmount = mobileParty.MemberRoster.TotalManCount * Globals.Settings.GrowthPercent;
                         // bump up growth to reach GlobalPowerFactor (synthetic but it helps warm up militia population)
                         // (Growth cap % - current %) / 2 = additional
-                        growthAmount += (Globals.Settings.GlobalPowerFactor * 100 - (float) GlobalMilitiaPower / CalculatedGlobalPowerLimit * 100) / 2;
+                        growthAmount += (Globals.Settings.GlobalPowerFactor * 100 - GlobalMilitiaPower / CalculatedGlobalPowerLimit * 100) / 2;
                         growthAmount = Math.Max(1, growthAmount);
                         var growthRounded = Convert.ToInt32(growthAmount);
                         // last condition doesn't account for the size increase but who cares
@@ -104,6 +103,7 @@ namespace Bandit_Militias
                         var troopString = $"{mobileParty.Party.NumberOfAllMembers} troop" + (mobileParty.Party.NumberOfAllMembers > 1 ? "s" : "");
                         var strengthString = $"{Math.Round(mobileParty.Party.TotalStrength)} strength";
                         Mod.Log($"{$"Grown to",-70} | {troopString,10} | {strengthString,12} |");
+                        DoPowerCalculations();
                         // Mod.Log($"Grown to: {mobileParty.MemberRoster.TotalManCount}"); 
                     }
                 }
