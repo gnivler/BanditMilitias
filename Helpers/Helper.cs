@@ -127,7 +127,7 @@ namespace Bandit_Militias.Helpers
                 var settlements = Settlement.FindSettlementsAroundPosition(original.Position2D, 30).ToList();
                 militia1.MobileParty.SetMovePatrolAroundSettlement(settlements.GetRandomElement() ?? Settlement.All.GetRandomElement());
                 militia2.MobileParty.SetMovePatrolAroundSettlement(settlements.GetRandomElement() ?? Settlement.All.GetRandomElement());
-                Mod.Log($"{militia1.MobileParty.MapFaction.Name} <- Split -> {militia2.MobileParty.MapFaction.Name}");
+                Mod.Log($"{militia1.MobileParty.StringId} <- Split -> {militia2.MobileParty.StringId}");
                 Traverse.Create(militia1.MobileParty.Party).Property("ItemRoster").SetValue(inventory1);
                 Traverse.Create(militia2.MobileParty.Party).Property("ItemRoster").SetValue(inventory2);
                 militia1.MobileParty.Party.Visuals.SetMapIconAsDirty();
@@ -559,16 +559,29 @@ namespace Bandit_Militias.Helpers
 
         internal static void PopulateItems()
         {
+            var verboten = new[]
+            {
+                "Sparring Targe",
+                "Trash Item",
+                "Torch",
+                "Horse Whip",
+                "Push Fork",
+                "Bound Crossbow"
+            };
             var all = ItemObject.All.Where(x =>
-                !x.Name.Contains("Crafted") &&
-                !x.Name.Contains("Wooden") &&
-                !x.Name.Contains("Practice") &&
-                x.Name.ToString() != "Sparring Targe" &&
-                x.Name.ToString() != "Trash Item" &&
-                x.Name.ToString() != "Torch" &&
-                x.Name.ToString() != "Horse Whip" &&
-                x.Name.ToString() != "Push Fork" &&
-                x.Name.ToString() != "Bound Crossbow").ToList();
+                x.ItemType != ItemObject.ItemTypeEnum.Goods
+                && x.ItemType != ItemObject.ItemTypeEnum.Horse
+                && x.ItemType != ItemObject.ItemTypeEnum.HorseHarness
+                && x.ItemType != ItemObject.ItemTypeEnum.Animal
+                && x.ItemType != ItemObject.ItemTypeEnum.Banner
+                && x.ItemType != ItemObject.ItemTypeEnum.Book
+                && x.ItemType != ItemObject.ItemTypeEnum.Invalid
+                && x.Value > 1000
+                && x.Value <= Globals.Settings.MaxItemValue * Variance
+                && !x.Name.Contains("Crafted")
+                && !x.Name.Contains("Wooden")
+                && !x.Name.Contains("Practice")
+                && !verboten.Contains(x.Name.ToString())).ToList();
             Arrows = all.Where(x => x.ItemType == ItemObject.ItemTypeEnum.Arrows)
                 .Where(x => !x.Name.Contains("Ballista")).ToList();
             Bolts = all.Where(x => x.ItemType == ItemObject.ItemTypeEnum.Bolts).ToList();

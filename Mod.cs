@@ -19,32 +19,21 @@ using static Bandit_Militias.Globals;
 
 namespace Bandit_Militias
 {
-    // ReSharper disable once UnusedMember.Global
-    public enum LogLevel
-    {
-        Disabled,
-        Info,
-        Error,
-        Debug
-    }
-
     public class Mod : MBSubModuleBase
     {
         internal static readonly Harmony harmony = new("ca.gnivler.bannerlord.BanditMilitias");
-        private static readonly string modDirectory = new FileInfo(@"..\..\Modules\Bandit Militias\").DirectoryName;
-        private static StreamWriter streamWriter;
+        private static readonly string logFilename = Path.Combine(new FileInfo(@"..\..\Modules\Bandit Militias\").DirectoryName, "log.txt");
 
         internal static void Log(object input)
         {
             if (Globals.Settings is null
-                || Globals.Settings is not null
-                && Globals.Settings.Debug is false)
+                || Globals.Settings?.Debug is false)
             {
                 return;
             }
 
-            streamWriter ??= new StreamWriter(Path.Combine(modDirectory, "log.txt"), true);
-            streamWriter.WriteLine($"[{DateTime.Now:G}] {input ?? "null"}");
+            using var sw = new StreamWriter(logFilename, true);
+            sw.WriteLine(input.ToString());
         }
 
         protected override void OnSubModuleLoad()
@@ -67,7 +56,8 @@ namespace Bandit_Militias
         protected override void OnBeforeInitialModuleScreenSetAsRoot()
         {
             Globals.Settings = Settings.Instance;
-            Log("Settings Loaded.");
+            File.Delete(Path.Combine(logFilename));
+            Log($"Bandit Militias {Assembly.GetExecutingAssembly().GetName().Version.ToString(3)} starting up...");
         }
 
         // Calradia Expanded: Kingdoms

@@ -115,7 +115,7 @@ namespace Bandit_Militias
         [SettingPropertyGroup("Militia Adjustments")]
         public float UpgradeUnitsFactor { get; private set; } = 0.25f;
 
-        [SettingPropertyFloatingInteger("Global Power", 0, 1f, HintText = "\nThe total Militias power will remain under this factor of the world total strength.", Order = 11, RequireRestart = false)]
+        [SettingPropertyFloatingInteger("Global Power", 0, 10f, HintText = "\nThe total Militias power will remain under this factor of the world total strength.", Order = 11, RequireRestart = false)]
         [SettingPropertyGroup("Militia Adjustments")]
         public float GlobalPowerFactor { get; private set; } = 0.15f;
 
@@ -126,8 +126,17 @@ namespace Bandit_Militias
         [SettingPropertyBool("Random Banners", HintText = "\nBandit Militias will have unique banners, or basic bandit clan ones.", RequireRestart = false)]
         public bool RandomBanners { get; internal set; } = true;
 
+        private bool debug;
         [SettingPropertyBool("Debug Logging", HintText = "\nCreates output in the mod folder.", RequireRestart = false)]
-        public bool Debug { get; private set; }
+        public bool Debug
+        {
+            get => debug;
+            private set
+            {
+                Mod.Log("Debug " + !Debug);
+                debug = !debug;
+            }
+        }
 
         private string id = "BanditMilitias";
         private string displayName = $"Bandit Militias {typeof(Settings).Assembly.GetName().Version.ToString(3)}";
