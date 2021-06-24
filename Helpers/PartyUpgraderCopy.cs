@@ -6,7 +6,7 @@ using TaleWorlds.CampaignSystem.CharacterDevelopment.Managers;
 using TaleWorlds.Core;
 
 // 1.5.8
-namespace Bandit_Militias
+namespace Bandit_Militias.Helpers
 {
     public static class PartyUpgraderCopy
     {

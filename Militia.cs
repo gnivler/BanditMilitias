@@ -6,6 +6,7 @@ using Bandit_Militias.Helpers;
 using HarmonyLib;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
+using TaleWorlds.LinQuick;
 using TaleWorlds.Localization;
 using TaleWorlds.ObjectSystem;
 using static Bandit_Militias.Globals;
@@ -29,6 +30,11 @@ namespace Bandit_Militias
             Banner = Banners.GetRandomElement();
             BannerKey = Banner.Serialize();
             Hero = mobileParty.LeaderHero;
+            if (!MobileParty.Leader.StringId.EndsWith("_Bandit_Militia"))
+            {
+                MobileParty.Leader.StringId += "_Bandit_Militia";
+            }
+
             LogMilitiaFormed(MobileParty);
         }
 
@@ -55,14 +61,24 @@ namespace Bandit_Militias
             var mostPrevalent = (Clan) GetMostPrevalentFactionInParty(MobileParty) ?? Clan.BanditFactions.First();
             MobileParty.ActualClan = mostPrevalent;
             Hero = HeroCreatorCopy.CreateBanditHero(mostPrevalent, MobileParty);
+            //Hero = HeroCreator.CreateHeroAtOccupation(Occupation.Outlaw);
             var faction = Clan.BanditFactions.FirstOrDefault(x => Hero.MapFaction.Name == x.Name);
-            Hero.Culture = faction is null ? Clan.BanditFactions.FirstOrDefault(x => x.Name.ToString() == "Looters")?.Culture : faction.Culture;
+            Hero.Culture = faction is null ? Clan.BanditFactions.FirstOrDefault()?.Culture : faction.Culture;
             Name = (string) Traverse.Create(typeof(MBTextManager))
                 .Method("GetLocalizedText", $"{Possess(Hero.FirstName.ToString())} Bandit Militia").GetValue();
             MobileParty.SetCustomName(new TextObject(Name));
             MobileParty.Party.Owner = Hero;
             MobileParty.Leader.StringId += "_Bandit_Militia";
             MobileParty.ShouldJoinPlayerBattles = true;
+            var tracker = MobilePartyTrackerVM?.Trackers?.FirstOrDefaultQ(t => t.TrackedParty == MobileParty);
+            if (tracker is not null)
+            {
+                MobilePartyTrackerVM.Trackers.Remove(tracker);
+            }
+            else
+            {
+                FileLog.Log("tracker is null");
+            }
         }
 
         private void TrainMilitia()
@@ -148,7 +164,7 @@ namespace Bandit_Militias
                     Traverse.Create(MobileParty.MemberRoster).Field<List<TroopRosterElement>>("_troopRosterElements").Value
                         = MobileParty.MemberRoster.GetTroopRoster();
                     MobileParty.MemberRoster.UpdateVersion();
-                    if (TestingMode)
+                    if (Globals.Settings.TestingMode)
                     {
                         var party = Hero.MainHero.PartyBelongedTo ?? Hero.MainHero.PartyBelongedToAsPrisoner.MobileParty;
                         MobileParty.Position2D = party.Position2D;

@@ -28,9 +28,6 @@ namespace Bandit_Militias.Helpers
             return total;
         }
 
-        internal static float Variance => MBRandom.RandomFloatRanged(0.8f, 1.2f);
-        private static readonly int MinSplitSize = Globals.Settings.MinPartySize * 2;
-
         internal static void TrySplitParty(MobileParty mobileParty)
         {
             if (GlobalMilitiaPower + mobileParty.Party.TotalStrength > CalculatedGlobalPowerLimit ||
@@ -170,10 +167,6 @@ namespace Bandit_Militias.Helpers
             return false;
         }
 
-        internal static bool IsUsedByAQuest(this MobileParty mobileParty)
-        {
-            return Campaign.Current.VisualTrackerManager.CheckTracked(mobileParty);
-        }
 
         internal static TroopRoster[] MergeRosters(MobileParty sourceParty, PartyBase targetParty)
         {
@@ -230,18 +223,6 @@ namespace Bandit_Militias.Helpers
             }
         }
 
-        internal static bool IsTooBusyToMerge(this MobileParty mobileParty)
-        {
-            if (mobileParty == mobileParty?.MoveTargetParty?.MoveTargetParty)
-            {
-                return false;
-            }
-
-            return mobileParty.TargetParty is not null ||
-                   mobileParty.ShortTermTargetParty is not null ||
-                   mobileParty.ShortTermBehavior == AiBehavior.EngageParty ||
-                   mobileParty.ShortTermBehavior == AiBehavior.FleeToPoint;
-        }
 
         internal static void Trash(MobileParty mobileParty)
         {
@@ -252,35 +233,6 @@ namespace Bandit_Militias.Helpers
                 mobileParty.MemberRoster.GetTroopRoster().Count(x => x.Character is not null);
             mobileParty.MemberRoster.UpdateVersion();
             mobileParty.RemoveParty();
-        }
-
-
-        internal static void KillHero(this Hero hero)
-        {
-            try
-            {
-                // howitzer approach to lobotomize the game of any bandit heroes
-                hero.ChangeState(Hero.CharacterStates.Dead);
-                MBObjectManager.Instance.UnregisterObject(hero);
-                AccessTools.Method(typeof(CampaignEventDispatcher), "OnHeroKilled")
-                    .Invoke(CampaignEventDispatcher.Instance, new object[] {hero, hero, KillCharacterAction.KillCharacterActionDetail.None, false});
-                Traverse.Create(Campaign.Current.CampaignObjectManager).Field<List<Hero>>("_aliveHeroes").Value.Remove(hero);
-                Traverse.Create(Campaign.Current.CampaignObjectManager).Field<List<Hero>>("_deadAndDisabledHeroes").Value.Remove(hero);
-                Traverse.Create(Campaign.Current.CampaignObjectManager).Field<List<Hero>>("_allHeroes").Value.Remove(hero);
-                var roList = Traverse.Create(Campaign.Current.CampaignObjectManager).Property<MBReadOnlyList<Hero>>("Heroes").Value;
-                var fieldInfo = AccessTools.Field(typeof(MBReadOnlyList<Hero>), "_list");
-                var heroes = fieldInfo.GetValue(roList) as List<Hero>;
-                heroes?.Remove(hero);
-                if (hero.CurrentSettlement is not null)
-                {
-                    var heroesWithoutParty = HeroesWithoutParty(hero.CurrentSettlement);
-                    Traverse.Create(heroesWithoutParty).Field<List<Hero>>("_list").Value.Remove(hero);
-                }
-            }
-            catch (Exception ex)
-            {
-                Mod.Log(ex);
-            }
         }
 
         internal static void Nuke()
@@ -401,18 +353,18 @@ namespace Bandit_Militias.Helpers
         // kills heroes that leak
         private static void FlushHeroes()
         {
-            var heroes = Hero.All.Where(x =>
-                    (x.PartyBelongedTo is null &&
-                     x.PartyBelongedToAsPrisoner is null ||
-                     x.HeroState == Hero.CharacterStates.Prisoner) &&
-                    Clan.BanditFactions.Contains(x.MapFaction) &&
-                    x.StringId.Contains("CharacterObject"))
+            var heroes = Hero.FindAll(x =>
+                    (x.PartyBelongedTo is null
+                     && x.PartyBelongedToAsPrisoner is null
+                     || x.HeroState == Hero.CharacterStates.Prisoner)
+                    && Clan.BanditFactions.Contains(x.MapFaction)
+                    && x.StringId.Contains("CharacterObject"))
                 .ToList();
 
             for (var i = 0; i < heroes.Count; i++)
             {
-                Mod.Log(">>> FLUSH prisoner " + heroes[i].Name);
-                KillHero(heroes[i]);
+                Mod.Log(">>> FLUSH prisoner, or hero with no party or settlement: " + heroes[i].Name);
+                heroes[i].KillHero();
             }
         }
 
@@ -424,14 +376,14 @@ namespace Bandit_Militias.Helpers
             for (var i = 0; i < parties.Count; i++)
             {
                 Mod.Log($">>> FLUSH party without a current settlement or any troops.");
-                KillHero(parties[i].LeaderHero);
+                parties[i].LeaderHero.KillHero();
                 parties[i].RemoveParty();
             }
         }
 
         private static void FlushMapEvents()
         {
-            var mapEvents = Traverse.Create(Campaign.Current.MapEventManager).Field("mapEvents").GetValue<List<MapEvent>>();
+            var mapEvents = Traverse.Create(Campaign.Current.MapEventManager).Field("_mapEvents").GetValue<List<MapEvent>>();
             for (var index = 0; index < mapEvents.Count; index++)
             {
                 var mapEvent = mapEvents[index];
@@ -463,7 +415,7 @@ namespace Bandit_Militias.Helpers
 
         private static void FlushNullPartyHeroes()
         {
-            var heroes = Hero.All.Where(x =>
+            var heroes = Hero.FindAll(x =>
                 x.Name.ToString() == "Bandit Militia" && x.PartyBelongedTo is null).ToList();
             var hasLogged = false;
             foreach (var hero in heroes)
@@ -568,35 +520,35 @@ namespace Bandit_Militias.Helpers
                 "Push Fork",
                 "Bound Crossbow"
             };
-            var all = ItemObject.All.Where(x =>
-                x.ItemType != ItemObject.ItemTypeEnum.Goods
-                && x.ItemType != ItemObject.ItemTypeEnum.Horse
-                && x.ItemType != ItemObject.ItemTypeEnum.HorseHarness
-                && x.ItemType != ItemObject.ItemTypeEnum.Animal
-                && x.ItemType != ItemObject.ItemTypeEnum.Banner
-                && x.ItemType != ItemObject.ItemTypeEnum.Book
-                && x.ItemType != ItemObject.ItemTypeEnum.Invalid
-                && x.Value > 1000
-                && x.Value <= Globals.Settings.MaxItemValue * Variance
-                && !x.Name.Contains("Crafted")
-                && !x.Name.Contains("Wooden")
-                && !x.Name.Contains("Practice")
-                && !verboten.Contains(x.Name.ToString())).ToList();
-            Arrows = all.Where(x => x.ItemType == ItemObject.ItemTypeEnum.Arrows)
+
+            var all = ItemObject.All.Where(i =>
+                i.ItemType != ItemObject.ItemTypeEnum.Goods
+                && i.ItemType != ItemObject.ItemTypeEnum.Horse
+                && i.ItemType != ItemObject.ItemTypeEnum.HorseHarness
+                && i.ItemType != ItemObject.ItemTypeEnum.Animal
+                && i.ItemType != ItemObject.ItemTypeEnum.Banner
+                && i.ItemType != ItemObject.ItemTypeEnum.Book
+                && i.ItemType != ItemObject.ItemTypeEnum.Invalid
+                && i.Value <= Globals.Settings.MaxItemValue * Variance
+                && !i.Name.Contains("Crafted")
+                && !i.Name.Contains("Wooden")
+                && !i.Name.Contains("Practice")
+                && !verboten.Contains(i.Name.ToString())).ToList();
+            Arrows = all.Where(i => i.ItemType == ItemObject.ItemTypeEnum.Arrows)
                 .Where(x => !x.Name.Contains("Ballista")).ToList();
-            Bolts = all.Where(x => x.ItemType == ItemObject.ItemTypeEnum.Bolts).ToList();
-            all = all.Where(x => x.Value >= 1000 && x.Value <= Globals.Settings.MaxItemValue * Variance).ToList();
-            var oneHanded = all.Where(x => x.ItemType == ItemObject.ItemTypeEnum.OneHandedWeapon);
-            var twoHanded = all.Where(x => x.ItemType == ItemObject.ItemTypeEnum.TwoHandedWeapon);
-            var polearm = all.Where(x => x.ItemType == ItemObject.ItemTypeEnum.Polearm);
-            var thrown = all.Where(x => x.ItemType == ItemObject.ItemTypeEnum.Thrown &&
-                                        x.Name.ToString() != "Boulder" && x.Name.ToString() != "Fire Pot");
-            var shields = all.Where(x => x.ItemType == ItemObject.ItemTypeEnum.Shield);
-            var bows = all.Where(x =>
-                x.ItemType == ItemObject.ItemTypeEnum.Bow ||
-                x.ItemType == ItemObject.ItemTypeEnum.Crossbow);
+            Bolts = all.Where(i => i.ItemType == ItemObject.ItemTypeEnum.Bolts).ToList();
+            all = all.Where(i => i.Value >= 1000 && i.Value <= Globals.Settings.MaxItemValue * Variance).ToList();
+            var oneHanded = all.Where(i => i.ItemType == ItemObject.ItemTypeEnum.OneHandedWeapon);
+            var twoHanded = all.Where(i => i.ItemType == ItemObject.ItemTypeEnum.TwoHandedWeapon);
+            var polearm = all.Where(i => i.ItemType == ItemObject.ItemTypeEnum.Polearm);
+            var thrown = all.Where(i => i.ItemType == ItemObject.ItemTypeEnum.Thrown &&
+                                        i.Name.ToString() != "Boulder" && i.Name.ToString() != "Fire Pot");
+            var shields = all.Where(i => i.ItemType == ItemObject.ItemTypeEnum.Shield);
+            var bows = all.Where(i =>
+                i.ItemType == ItemObject.ItemTypeEnum.Bow ||
+                i.ItemType == ItemObject.ItemTypeEnum.Crossbow);
             var any = new List<ItemObject>(oneHanded.Concat(twoHanded).Concat(polearm).Concat(thrown).Concat(shields).Concat(bows).ToList());
-            any.Do(x => EquipmentItems.Add(new EquipmentElement(x)));
+            any.Do(i => EquipmentItems.Add(new EquipmentElement(i)));
         }
 
         // builds a set of 4 weapons that won't include more than 1 bow or shield, nor any lack of ammo
@@ -767,6 +719,34 @@ namespace Bandit_Militias.Helpers
         {
             return mobileParty is not null &&
                    PartyMilitiaMap.ContainsKey(mobileParty);
+        }
+
+        internal static void PrintInstructionsAroundInsertion(List<CodeInstruction> codes, int insertPoint, int insertSize, int adjacentNum = 5)
+        {
+            FileLog.Log($"Inserting {insertSize} at {insertPoint}.");
+
+            // in case insertPoint is near the start of the method's IL
+            var adjustedAdjacent = codes.Count - adjacentNum >= 0 ? adjacentNum : Math.Max(0, codes.Count - adjacentNum);
+            for (var i = 0; i < adjustedAdjacent; i++)
+            {
+                // codes[266 - 5 + 0].opcode
+                // codes[266 - 5 + 4].opcode
+                FileLog.Log($"{codes[insertPoint - adjustedAdjacent + i].opcode,-10}{codes[insertPoint - adjustedAdjacent + i].operand}");
+            }
+
+            for (var i = 0; i < insertSize; i++)
+            {
+                FileLog.Log($"{codes[insertPoint + i].opcode,-10}{codes[insertPoint + i].operand}");
+            }
+
+            // in case insertPoint is near the end of the method's IL
+            adjustedAdjacent = insertPoint + adjacentNum <= codes.Count ? adjacentNum : Math.Max(codes.Count, adjustedAdjacent);
+            for (var i = 0; i < adjustedAdjacent; i++)
+            {
+                // 266 + 2 - 5 + 0
+                // 266 + 2 - 5 + 4
+                FileLog.Log($"{codes[insertPoint + insertSize + adjustedAdjacent + i].opcode,-10}{codes[insertPoint + insertSize + adjustedAdjacent + i].operand}");
+            }
         }
     }
 }

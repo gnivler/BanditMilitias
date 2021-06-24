@@ -316,6 +316,7 @@
         </Reference>
     </ItemGroup>
     <ItemGroup>
+        <Compile Include="Extensions.cs" />
         <Compile Include="Globals.cs" />
         <Compile Include="Helpers\Helper.cs" />
         <Compile Include="Helpers\HeroCreatorCopy.cs" />

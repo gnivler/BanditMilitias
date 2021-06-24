@@ -1,16 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
-using System.Reflection.Emit;
 using HarmonyLib;
 using SandBox.View.Map;
+using SandBox.ViewModelCollection;
 using SandBox.ViewModelCollection.Nameplate;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.GameMenus;
 using TaleWorlds.CampaignSystem.SandBox.CampaignBehaviors.AiBehaviors;
-using TaleWorlds.CampaignSystem.SandBox.GameComponents.Map;
 using TaleWorlds.Core;
 using TaleWorlds.Localization;
 using static Bandit_Militias.Helpers.Helper;
@@ -71,9 +69,10 @@ namespace Bandit_Militias.Patches
                         }
 
                         var nearbyParties = MobileParty.FindPartiesAroundPosition(mobileParty.Position2D, FindRadius);
-                        var targetParty = nearbyParties.Where(x => x != mobileParty &&
-                                                                   IsValidParty(x) &&
-                                                                   x.MemberRoster.TotalManCount + mobileParty.MemberRoster.TotalManCount >= Globals.Settings.MinPartySize)
+                        var targetParty = nearbyParties.Where(x =>
+                                x != mobileParty
+                                && IsValidParty(x)
+                                && x.MemberRoster.TotalManCount + mobileParty.MemberRoster.TotalManCount >= Globals.Settings.MinPartySize)
                             .ToList().GetRandomElement()?.Party;
 
                         // "nobody" is a valid answer
@@ -128,7 +127,7 @@ namespace Bandit_Militias.Patches
                         var rosters = MergeRosters(mobileParty, targetParty);
                         var militia = new Militia(mobileParty, rosters[0], rosters[1]);
                         // teleport new militias near the player
-                        if (TestingMode)
+                        if (Globals.Settings.TestingMode)
                         {
                             // in case a prisoner
                             var party = Hero.MainHero.PartyBelongedTo ?? Hero.MainHero.PartyBelongedToAsPrisoner.MobileParty;
@@ -150,17 +149,11 @@ namespace Bandit_Militias.Patches
             }
         }
 
-        [HarmonyPatch(typeof(DefaultPartySpeedCalculatingModel), "CalculateFinalSpeed")]
-        public class DefaultPartySpeedCalculatingModelCalculateFinalSpeedPatch
+        internal static void DefaultPartySpeedCalculatingModelCalculateFinalSpeedPatch(MobileParty mobileParty, ref ExplainedNumber __result)
         {
-            private static float SpeedModifier = -0.15f;
-
-            private static void Postfix(MobileParty mobileParty, ref ExplainedNumber __result)
+            if (PartyMilitiaMap.ContainsKey(mobileParty))
             {
-                if (PartyMilitiaMap.ContainsKey(mobileParty))
-                {
-                    __result.AddFactor(SpeedModifier, new TextObject("Bandit Militia"));
-                }
+                __result.AddFactor(-0.15f, new TextObject("Bandit Militia"));
             }
         }
 
@@ -179,7 +172,7 @@ namespace Bandit_Militias.Patches
             }
         }
 
-        //// changes the little shield icon under the party
+        // changes the little shield icon under the party
         [HarmonyPatch(typeof(PartyBase), "Banner", MethodType.Getter)]
         public class PartyBaseBannerPatch
         {
@@ -313,6 +306,7 @@ namespace Bandit_Militias.Patches
         {
             if (mobileParty.IsMilitia || mobileParty.IsCaravan || (mobileParty.IsVillager || mobileParty.IsBandit) || !mobileParty.MapFaction.IsMinorFaction && !mobileParty.MapFaction.IsKingdomFaction && !mobileParty.MapFaction.Leader.IsNoble || (mobileParty.IsDeserterParty || mobileParty.CurrentSettlement is not null && mobileParty.CurrentSettlement.SiegeEvent is not null))
         */
+        // still needed in 1.6
         [HarmonyPatch(typeof(AiPatrollingBehavior), "AiHourlyTick")]
         public class AiPatrollingBehaviorAiHourlyTickPatch
         {
@@ -320,58 +314,28 @@ namespace Bandit_Militias.Patches
             {
                 if (mobileParty is not null
                     && p is not null
-                    && PartyMilitiaMap.ContainsKey(mobileParty)
-                    && mobileParty.ActualClan?.Leader is null)
+                    && mobileParty.ActualClan?.Leader is null
+                    && IsBM(mobileParty))
                 {
                     Traverse.Create(mobileParty.ActualClan).Field<Hero>("_leader").Value = mobileParty.LeaderHero;
                 }
             }
         }
 
-        // force Heroes to die in simulated combat
-        [HarmonyPatch(typeof(MapEventSide), "ApplySimulationDamageToSelectedTroop")]
-        public static class MapEventSideApplySimulationDamageToSelectedTroopPatch
+        // force Heroes to die in combat
+        // it's not IDEAL because a hero with 20hp (Wounded) will be killed
+        // I tried many other approaches that didn't come close
+        [HarmonyPriority(Priority.High)]
+        [HarmonyPatch(typeof(SPScoreboardVM), "TroopNumberChanged")]
+        public static class SPScoreboardVMTroopNumberChangedPatch
         {
-            private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+            private static void Prefix(BasicCharacterObject character, ref int numberDead, ref int numberWounded)
             {
-                var codes = instructions.ToList();
-
-                // strategy: come in after AddHeroDamage.  Feed the helper `this`.  NOP out the original if {} completely.
-                var insertPoint = codes.FindIndex(c => c?.operand is MethodInfo mi
-                                                       && mi == AccessTools.Method(typeof(MapEventSide), "AddHeroDamage"));
-                insertPoint++;
-                var callStack = new List<CodeInstruction>
+                if (IsBM(((CharacterObject) character)?.HeroObject?.PartyBelongedTo)
+                    && numberWounded > 0)
                 {
-                    new(OpCodes.Ldarg_0),
-                    new(OpCodes.Call, AccessTools.Method(typeof(MapEventSideApplySimulationDamageToSelectedTroopPatch), nameof(HandleHeroWounding)))
-                };
-
-                for (var i = 0; i < 32; i++)
-                {
-                    codes[insertPoint + i].opcode = OpCodes.Nop;
-                }
-
-                codes.InsertRange(insertPoint, callStack);
-                //codes.Do(c => FileLog.Log($"{c.opcode,-10}\t{c.operand}"));
-                return codes.AsEnumerable();
-            }
-
-            private static void HandleHeroWounding(MapEventSide mapEventSide)
-            {
-                var BattleObserver = Traverse.Create(mapEventSide).Property<IBattleObserver>("BattleObserver").Value;
-                var MissionSide = mapEventSide.MissionSide;
-                var _selectedSimulationTroopDescriptor = Traverse.Create(mapEventSide).Field<UniqueTroopDescriptor>("_selectedSimulationTroopDescriptor").Value;
-                var _selectedSimulationTroop = Traverse.Create(mapEventSide).Field<CharacterObject>("_selectedSimulationTroop").Value;
-                if (_selectedSimulationTroop.HeroObject.HitPoints <= 0
-                    && _selectedSimulationTroop.StringId.EndsWith("_Bandit_Militia"))
-                {
-                    Traverse.Create(_selectedSimulationTroop.HeroObject).Field("CharacterStates").SetValue(3);
-                    BattleObserver?.TroopNumberChanged(MissionSide, mapEventSide.GetAllocatedTroopParty(_selectedSimulationTroopDescriptor), _selectedSimulationTroop, -1, 1, 0);
-                }
-                else if (!_selectedSimulationTroop.StringId.EndsWith("_Bandit_Militia"))
-                {
-                    Traverse.Create(_selectedSimulationTroop.HeroObject).Field("CharacterStates").SetValue(2);
-                    BattleObserver?.TroopNumberChanged(MissionSide, mapEventSide.GetAllocatedTroopParty(_selectedSimulationTroopDescriptor), _selectedSimulationTroop, -1, 0, 1);
+                    numberDead = 1;
+                    numberWounded = 0;
                 }
             }
         }

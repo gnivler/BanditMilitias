@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using HarmonyLib;
+using SandBox.ViewModelCollection.MobilePartyTracker;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
@@ -10,9 +11,6 @@ namespace Bandit_Militias
 {
     public static class Globals
     {
-        // dev
-        internal static bool TestingMode;
-
         // how close before merging
         internal const float MergeDistance = 2;
         internal static float FindRadius = 7;
@@ -38,6 +36,10 @@ namespace Bandit_Militias
         internal static IEnumerable<CharacterObject> Recruits;
         internal static readonly List<Banner> Banners = new();
         internal static double LastCalculated;
+        internal static float Variance => MBRandom.RandomFloatRanged(0.8f, 1.2f);
+        internal static int MinSplitSize = 0;
+        // ReSharper disable once InconsistentNaming
+        internal static MobilePartyTrackerVM MobilePartyTrackerVM;
 
         // FieldRefs
         internal static readonly AccessTools.FieldRef<Settlement, MBReadOnlyList<Hero>> HeroesWithoutParty =
@@ -58,5 +60,6 @@ namespace Bandit_Militias
             {"Rich", 900},
             {"Richest", 2000},
         };
+
     }
 }

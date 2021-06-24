@@ -3,11 +3,14 @@ using System.Linq;
 using Bandit_Militias.Helpers;
 using HarmonyLib;
 using SandBox.View.Map;
+using SandBox.ViewModelCollection.MobilePartyTracker;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.SandBox.CampaignBehaviors;
 using TaleWorlds.CampaignSystem.SandBox.CampaignBehaviors.Towns;
+using TaleWorlds.CampaignSystem.SandBox.GameComponents.Map;
 using TaleWorlds.CampaignSystem.ViewModelCollection;
 using TaleWorlds.Core;
+using TaleWorlds.Library;
 using static Bandit_Militias.Helpers.Helper;
 using static Bandit_Militias.Globals;
 
@@ -27,6 +30,7 @@ namespace Bandit_Militias.Patches
             private static void Postfix()
             {
                 Mod.Log("MapScreen.OnInitialize");
+                MinSplitSize = Globals.Settings.MinPartySize * 2;
                 EquipmentItems.Clear();
                 PopulateItems();
                 Recruits = CharacterObject.All.Where(x =>
@@ -47,7 +51,7 @@ namespace Bandit_Militias.Patches
                 // used for armour
                 foreach (ItemObject.ItemTypeEnum value in Enum.GetValues(typeof(ItemObject.ItemTypeEnum)))
                 {
-                    ItemTypes[value] = Items.FindAll(x =>
+                    ItemTypes[value] = ItemObject.All.Where(x =>
                         x.Type == value && x.Value >= 1000 && x.Value <= Globals.Settings.MaxItemValue * Variance).ToList();
                 }
 
@@ -105,6 +109,10 @@ namespace Bandit_Militias.Patches
                 Mod.harmony.Patch(AccessTools.Method(typeof(PlayerTownVisitCampaignBehavior), "wait_menu_prisoner_wait_on_tick")
                     , null, null, null,
                     new HarmonyMethod(AccessTools.Method(typeof(MiscPatches), nameof(wait_menu_prisoner_wait_on_tickFinalizer))));
+
+                var original = AccessTools.Method(typeof(DefaultPartySpeedCalculatingModel), "CalculateFinalSpeed");
+                var postfix = AccessTools.Method(typeof(MilitiaPatches), nameof(MilitiaPatches.DefaultPartySpeedCalculatingModelCalculateFinalSpeedPatch));
+                Mod.harmony.Patch(original, null, new HarmonyMethod(postfix));
             }
         }
 
@@ -204,6 +212,7 @@ namespace Bandit_Militias.Patches
         }
 
         // vanilla fix for 1.5.9?
+        // maybe actually the chickens et al?
         [HarmonyPatch(typeof(SPInventoryVM), "InitializeInventory")]
         public class SPInventoryVMInitializeInventoryVMPatch
         {
@@ -212,6 +221,47 @@ namespace Bandit_Militias.Patches
                 if (__exception is not null)
                 {
                     Mod.Log(__exception);
+                }
+
+                return null;
+            }
+        }
+
+        [HarmonyPatch(typeof(ViewModel), MethodType.Constructor)]
+        public class ViewModelCtorPatch
+        {
+            private static void Postfix(ViewModel __instance)
+            {
+                if (Globals.MobilePartyTrackerVM is null&&
+                    __instance is MobilePartyTrackerVM trackerVm)
+                {
+                    Globals.MobilePartyTrackerVM = trackerVm;
+                }
+            }
+        }
+        
+        // wtaf
+        [HarmonyPatch(typeof(CaravansCampaignBehavior), "UpdateAverageValues")]
+        public class wtaf
+        {
+            public static Exception Finalizer(Exception __exception)
+            {
+                if (__exception is not null)
+                {
+                    FileLog.Log(__exception.ToString());
+                }
+
+                return null;
+            }
+        }       
+        [HarmonyPatch(typeof(CaravansCampaignBehavior), "CreateFactionPriceData")]
+        public class wtaf2
+        {
+            public static Exception Finalizer(Exception __exception)
+            {
+                if (__exception is not null)
+                {
+                    FileLog.Log(__exception.ToString());
                 }
 
                 return null;

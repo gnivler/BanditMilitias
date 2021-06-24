@@ -126,17 +126,11 @@ namespace Bandit_Militias
         [SettingPropertyBool("Random Banners", HintText = "\nBandit Militias will have unique banners, or basic bandit clan ones.", RequireRestart = false)]
         public bool RandomBanners { get; internal set; } = true;
 
-        private bool debug;
-        [SettingPropertyBool("Debug Logging", HintText = "\nCreates output in the mod folder.", RequireRestart = false)]
-        public bool Debug
-        {
-            get => debug;
-            private set
-            {
-                Mod.Log("Debug " + !Debug);
-                debug = !debug;
-            }
-        }
+        [SettingPropertyBool("Debug Logging", HintText = "\nCreates output in the mod folder.", Order = 0, RequireRestart = false)]
+        public bool Debug { get; set; }
+
+        [SettingPropertyBool("Testing Mode", HintText = "Teleports BMs to you", Order = 1, RequireRestart = false)]
+        public bool TestingMode { get; set; }
 
         private string id = "BanditMilitias";
         private string displayName = $"Bandit Militias {typeof(Settings).Assembly.GetName().Version.ToString(3)}";
