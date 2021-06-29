@@ -22,11 +22,12 @@ using static Bandit_Militias.Globals;
 
 namespace Bandit_Militias.Patches
 {
-    public class MilitiaPatches
+    public static class MilitiaPatches
     {
         [HarmonyPatch(typeof(Campaign), "Tick")]
-        public class CampaignTickPatch
+        public static class CampaignTickPatch
         {
+            // main merge method
             private static void Postfix()
             {
                 try
@@ -58,7 +59,7 @@ namespace Bandit_Militias.Patches
                         }
 
                         CampaignTime? lastChangeDate = null;
-                        if (PartyMilitiaMap.ContainsKey(mobileParty))
+                        if (mobileParty.IsBM())
                         {
                             lastChangeDate = PartyMilitiaMap[mobileParty].LastMergedOrSplitDate;
                         }
@@ -72,7 +73,7 @@ namespace Bandit_Militias.Patches
                         var targetParty = nearbyParties.Where(x =>
                                 x != mobileParty
                                 && IsValidParty(x)
-                                && x.MemberRoster.TotalManCount + mobileParty.MemberRoster.TotalManCount >= Globals.Settings.MinPartySize)
+                                && x.MemberRoster.TotalManCount + mobileParty.MemberRoster.TotalManCount >= Globals.Settings.MinPartySizeToConsiderMerge)
                             .ToList().GetRandomElement()?.Party;
 
                         // "nobody" is a valid answer
@@ -82,7 +83,7 @@ namespace Bandit_Militias.Patches
                         }
 
                         CampaignTime? targetLastChangeDate = null;
-                        if (PartyMilitiaMap.ContainsKey(targetParty.MobileParty))
+                        if (targetParty.MobileParty.IsBM())
                         {
                             targetLastChangeDate = PartyMilitiaMap[targetParty.MobileParty].LastMergedOrSplitDate;
                         }
@@ -93,7 +94,7 @@ namespace Bandit_Militias.Patches
                         }
 
                         var militiaTotalCount = mobileParty.MemberRoster.TotalManCount + targetParty.MemberRoster.TotalManCount;
-                        if (militiaTotalCount < Globals.Settings.MinPartySize ||
+                        if (militiaTotalCount <= Globals.Settings.MinPartySize ||
                             militiaTotalCount > CalculatedMaxPartySize ||
                             mobileParty.Party.TotalStrength > CalculatedMaxPartyStrength ||
                             NumMountedTroops(mobileParty.MemberRoster) + NumMountedTroops(targetParty.MemberRoster) > militiaTotalCount / 2)
@@ -149,9 +150,10 @@ namespace Bandit_Militias.Patches
             }
         }
 
+        // slows down BM parties a bit
         internal static void DefaultPartySpeedCalculatingModelCalculateFinalSpeedPatch(MobileParty mobileParty, ref ExplainedNumber __result)
         {
-            if (PartyMilitiaMap.ContainsKey(mobileParty))
+            if (mobileParty.IsBM())
             {
                 __result.AddFactor(-0.15f, new TextObject("Bandit Militia"));
             }
@@ -159,13 +161,13 @@ namespace Bandit_Militias.Patches
 
         // changes the flag
         [HarmonyPatch(typeof(PartyVisual), "AddCharacterToPartyIcon")]
-        public class PartyVisualAddCharacterToPartyIconPatch
+        public static class PartyVisualAddCharacterToPartyIconPatch
         {
             private static void Prefix(CharacterObject characterObject, ref string bannerKey)
             {
                 if (Globals.Settings.RandomBanners &&
                     characterObject.HeroObject?.PartyBelongedTo is not null &&
-                    IsBM(characterObject.HeroObject.PartyBelongedTo))
+                    characterObject.HeroObject.PartyBelongedTo.IsBM())
                 {
                     bannerKey = PartyMilitiaMap[characterObject.HeroObject.PartyBelongedTo].BannerKey;
                 }
@@ -174,29 +176,29 @@ namespace Bandit_Militias.Patches
 
         // changes the little shield icon under the party
         [HarmonyPatch(typeof(PartyBase), "Banner", MethodType.Getter)]
-        public class PartyBaseBannerPatch
+        public static class PartyBaseBannerPatch
         {
             private static void Postfix(PartyBase __instance, ref Banner __result)
             {
                 if (Globals.Settings.RandomBanners &&
                     __instance.MobileParty is not null &&
-                    IsBM(__instance.MobileParty))
+                    __instance.MobileParty.IsBM())
                 {
                     __result = PartyMilitiaMap[__instance.MobileParty].Banner;
                 }
             }
         }
 
-        //// changes the shields in combat
+        // changes the shields in combat
         [HarmonyPatch(typeof(PartyGroupAgentOrigin), "Banner", MethodType.Getter)]
-        public class PartyGroupAgentOriginBannerGetterPatch
+        public static class PartyGroupAgentOriginBannerGetterPatch
         {
             private static void Postfix(IAgentOriginBase __instance, ref Banner __result)
             {
                 var party = (PartyBase) __instance.BattleCombatant;
                 if (Globals.Settings.RandomBanners &&
                     party.MobileParty is not null &&
-                    IsBM(party.MobileParty))
+                    party.MobileParty.IsBM())
                 {
                     __result = PartyMilitiaMap[party.MobileParty]?.Banner;
                 }
@@ -219,11 +221,11 @@ namespace Bandit_Militias.Patches
         }
 
         [HarmonyPatch(typeof(EnterSettlementAction), "ApplyInternal")]
-        public class EnterSettlementActionApplyInternalPatch
+        public static class EnterSettlementActionApplyInternalPatch
         {
             private static bool Prefix(MobileParty mobileParty, Settlement settlement)
             {
-                if (IsBM(mobileParty))
+                if (mobileParty.IsBM())
                 {
                     Mod.Log($"Preventing {mobileParty} from entering {settlement}");
                     mobileParty.SetMovePatrolAroundSettlement(settlement);
@@ -236,7 +238,7 @@ namespace Bandit_Militias.Patches
 
         // changes the name on the campaign map (hot path)
         [HarmonyPatch(typeof(PartyNameplateVM), "RefreshDynamicProperties")]
-        public class PartyNameplateVMRefreshDynamicPropertiesPatch
+        public static class PartyNameplateVMRefreshDynamicPropertiesPatch
         {
             private static readonly Dictionary<MobileParty, string> Map = new Dictionary<MobileParty, string>();
 
@@ -257,7 +259,7 @@ namespace Bandit_Militias.Patches
                     return;
                 }
 
-                if (!IsBM(__instance.Party))
+                if (!__instance.Party.IsBM())
                 {
                     return;
                 }
@@ -270,11 +272,11 @@ namespace Bandit_Militias.Patches
 
         // blocks conversations with militias
         [HarmonyPatch(typeof(PlayerEncounter), "DoMeetingInternal")]
-        public class PlayerEncounterDoMeetingInternalPatch
+        public static class PlayerEncounterDoMeetingInternalPatch
         {
             private static bool Prefix(PartyBase ____encounteredParty)
             {
-                if (IsBM(____encounteredParty.MobileParty))
+                if (____encounteredParty.MobileParty.IsBM())
                 {
                     GameMenu.SwitchToMenu("encounter");
                     return false;
@@ -286,11 +288,11 @@ namespace Bandit_Militias.Patches
 
         // prevent militias from attacking parties they can destroy easily
         [HarmonyPatch(typeof(MobileParty), "CanAttack")]
-        public class MobilePartyCanAttackPatch
+        public static class MobilePartyCanAttackPatch
         {
             private static void Postfix(MobileParty __instance, MobileParty targetParty, ref bool __result)
             {
-                if (__result && PartyMilitiaMap.ContainsKey(__instance))
+                if (__result && __instance.IsBM())
                 {
                     var party1Strength = __instance.GetTotalStrengthWithFollowers();
                     var party2Strength = targetParty.GetTotalStrengthWithFollowers();
@@ -308,21 +310,21 @@ namespace Bandit_Militias.Patches
         */
         // still needed in 1.6
         [HarmonyPatch(typeof(AiPatrollingBehavior), "AiHourlyTick")]
-        public class AiPatrollingBehaviorAiHourlyTickPatch
+        public static class AiPatrollingBehaviorAiHourlyTickPatch
         {
             private static void Prefix(MobileParty mobileParty, PartyThinkParams p)
             {
                 if (mobileParty is not null
                     && p is not null
                     && mobileParty.ActualClan?.Leader is null
-                    && IsBM(mobileParty))
+                    && mobileParty.IsBM())
                 {
                     Traverse.Create(mobileParty.ActualClan).Field<Hero>("_leader").Value = mobileParty.LeaderHero;
                 }
             }
         }
 
-        // force Heroes to die in combat
+        // force Heroes to appear to die in combat
         // it's not IDEAL because a hero with 20hp (Wounded) will be killed
         // I tried many other approaches that didn't come close
         [HarmonyPriority(Priority.High)]
@@ -331,12 +333,29 @@ namespace Bandit_Militias.Patches
         {
             private static void Prefix(BasicCharacterObject character, ref int numberDead, ref int numberWounded)
             {
-                if (IsBM(((CharacterObject) character)?.HeroObject?.PartyBelongedTo)
-                    && numberWounded > 0)
+                var c = (CharacterObject) character;
+                if (numberWounded > 0
+                    && c.HeroObject?.PartyBelongedTo is not null
+                    && c.HeroObject.PartyBelongedTo.IsBM())
                 {
                     numberDead = 1;
                     numberWounded = 0;
                 }
+            }
+        }
+
+        // throws with Heroes Must Die
+        [HarmonyPatch(typeof(TroopRoster), "AddToCountsAtIndex")]
+        public static class TroopRosterAddToCountsAtIndexPatch
+        {
+            private static Exception Finalizer(Exception __exception)
+            {
+                if (__exception is IndexOutOfRangeException)
+                {
+                    Mod.Log("Squelching IndexOutOfRangeException at TroopRoster.AddToCountsAtIndex");
+                }
+
+                return null;
             }
         }
     }

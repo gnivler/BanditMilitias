@@ -3,7 +3,6 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using HarmonyLib;
-using SandBox.ViewModelCollection.MobilePartyTracker;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
 using TaleWorlds.InputSystem;
@@ -23,6 +22,7 @@ namespace Bandit_Militias
     public class Mod : MBSubModuleBase
     {
         internal static readonly Harmony harmony = new("ca.gnivler.bannerlord.BanditMilitias");
+        // ReSharper disable once AssignNullToNotNullAttribute
         private static readonly string logFilename = Path.Combine(new FileInfo(@"..\..\Modules\Bandit Militias\").DirectoryName, "log.txt");
 
         internal static void Log(object input)
@@ -83,7 +83,7 @@ namespace Bandit_Militias
                            (Input.IsKeyDown(InputKey.LeftShift) || Input.IsKeyDown(InputKey.RightShift));
             if (superKey && Input.IsKeyPressed(InputKey.F11))
             {
-              Globals.Settings.TestingMode = !Globals.Settings.TestingMode;
+                Globals.Settings.TestingMode = !Globals.Settings.TestingMode;
                 InformationManager.AddQuickInformation(new TextObject("Testing mode: " + Globals.Settings.TestingMode));
             }
 
@@ -138,27 +138,11 @@ namespace Bandit_Militias
         {
             try
             {
-                var original = AccessTools.Constructor(typeof(MobilePartyTrackerVM));
-                var postfix = AccessTools.Method(typeof(Mod), "Foo");
-                FileLog.Log(original.ToString());
-                FileLog.Log(postfix.ToString());
-                harmony.Patch(original, null, new HarmonyMethod(postfix));
             }
             catch (Exception ex)
             {
                 Log(ex);
             }
         }
-
-        private static void Foo(MobilePartyTrackerVM foo)
-        {
-            FileLog.Log(foo.ToString());
-        }
-
-        //private static void Prefux()
-        //{
-        //    var cunty = AccessTools.TypeByName("RealisticBattleCombatModule.MeleeHitCallbackPatch");
-        //    var agent = Traverse.Create(cunty).Method("Prefix")
-        //}
     }
 }

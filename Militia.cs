@@ -75,10 +75,6 @@ namespace Bandit_Militias
             {
                 MobilePartyTrackerVM.Trackers.Remove(tracker);
             }
-            else
-            {
-                FileLog.Log("tracker is null");
-            }
         }
 
         private void TrainMilitia()

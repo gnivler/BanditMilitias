@@ -22,7 +22,7 @@ using static Bandit_Militias.Globals;
 
 namespace Bandit_Militias.Patches
 {
-    public class MiscPatches
+    public static class MiscPatches
     {
         [HarmonyPatch(typeof(MapScreen), "OnInitialize")]
         public static class MapScreenOnInitializePatch
@@ -119,7 +119,7 @@ namespace Bandit_Militias.Patches
         // just disperse small militias
         // todo prevent this unless the militia has lost or retreated from combat
         [HarmonyPatch(typeof(MapEventSide), "HandleMapEventEndForParty")]
-        public class MapEventSideHandleMapEventEndForPartyPatch
+        public static class MapEventSideHandleMapEventEndForPartyPatch
         {
             // the method purges the party data so we capture the hero for use in Postfix
             private static void Prefix(PartyBase party, ref Hero __state)
@@ -131,7 +131,7 @@ namespace Bandit_Militias.Patches
             {
                 if (__state is null ||
                     party?.MobileParty is null ||
-                    !IsBM(party.MobileParty) ||
+                    !party.MobileParty.IsBM() ||
                     party.PrisonRoster is not null &&
                     party.PrisonRoster.Contains(Hero.MainHero.CharacterObject))
                 {
@@ -151,7 +151,7 @@ namespace Bandit_Militias.Patches
         }
 
         [HarmonyPatch(typeof(HeroCreator), "CreateRelativeNotableHero")]
-        public class HeroCreatorCreateRelativeNotableHeroPatch
+        public static class HeroCreatorCreateRelativeNotableHeroPatch
         {
             private static bool Prefix(Hero relative)
             {
@@ -170,7 +170,7 @@ namespace Bandit_Militias.Patches
         {
             if (__exception is not null)
             {
-                Mod.Log(__exception);
+                Mod.Log($"Squelching exception at HeroCreator.CreateRelativeNotableHero");
             }
 
             return null;
@@ -178,14 +178,13 @@ namespace Bandit_Militias.Patches
 
         // possibly related to Separatism and new kingdoms, ignoring it seems fine...
         [HarmonyPatch(typeof(BanditPartyComponent), "Name", MethodType.Getter)]
-        public class BanditPartyComponentGetNamePatch
+        public static class BanditPartyComponentGetNamePatch
         {
             public static Exception Finalizer(BanditPartyComponent __instance, Exception __exception)
             {
                 if (__exception is not null)
                 {
-                    Mod.Log(new string('-', 50));
-                    Mod.Log("PING");
+                    Mod.Log($"Squelching exception at BanditPartyComponent.get_Name");
                     if (__instance.Hideout is null)
                     {
                         Mod.Log("Hideout is null.");
@@ -201,10 +200,8 @@ namespace Bandit_Militias.Patches
                         Mod.Log("Name is null.");
                     }
 
-                    Mod.Log($"Party {__instance.MobileParty.Name} is throwing.");
                     Mod.Log($"MapFaction {__instance.Hideout?.MapFaction}.");
                     Mod.Log($"MapFaction.Name {__instance.Hideout?.MapFaction?.Name}.");
-                    Mod.Log(__exception);
                 }
 
                 return null;
@@ -214,13 +211,13 @@ namespace Bandit_Militias.Patches
         // vanilla fix for 1.5.9?
         // maybe actually the chickens et al?
         [HarmonyPatch(typeof(SPInventoryVM), "InitializeInventory")]
-        public class SPInventoryVMInitializeInventoryVMPatch
+        public static class SPInventoryVMInitializeInventoryVMPatch
         {
-            static Exception Finalizer(Exception __exception)
+            private static Exception Finalizer(Exception __exception)
             {
                 if (__exception is not null)
                 {
-                    Mod.Log(__exception);
+                    Mod.Log($"Squelching exception at SPInventoryVM.InitializeInventory");
                 }
 
                 return null;
@@ -228,43 +225,15 @@ namespace Bandit_Militias.Patches
         }
 
         [HarmonyPatch(typeof(ViewModel), MethodType.Constructor)]
-        public class ViewModelCtorPatch
+        public static class ViewModelCtorPatch
         {
             private static void Postfix(ViewModel __instance)
             {
-                if (Globals.MobilePartyTrackerVM is null&&
-                    __instance is MobilePartyTrackerVM trackerVm)
+                if (Globals.MobilePartyTrackerVM is null
+                    && __instance is MobilePartyTrackerVM trackerVm)
                 {
                     Globals.MobilePartyTrackerVM = trackerVm;
                 }
-            }
-        }
-        
-        // wtaf
-        [HarmonyPatch(typeof(CaravansCampaignBehavior), "UpdateAverageValues")]
-        public class wtaf
-        {
-            public static Exception Finalizer(Exception __exception)
-            {
-                if (__exception is not null)
-                {
-                    FileLog.Log(__exception.ToString());
-                }
-
-                return null;
-            }
-        }       
-        [HarmonyPatch(typeof(CaravansCampaignBehavior), "CreateFactionPriceData")]
-        public class wtaf2
-        {
-            public static Exception Finalizer(Exception __exception)
-            {
-                if (__exception is not null)
-                {
-                    FileLog.Log(__exception.ToString());
-                }
-
-                return null;
             }
         }
     }

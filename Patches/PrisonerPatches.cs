@@ -14,12 +14,12 @@ using static Bandit_Militias.Helpers.Helper;
 
 namespace Bandit_Militias.Patches
 {
-    public class PrisonerPatches
+    public static class PrisonerPatches
     {
         // both patches appear to be needed in 1.5.8
         // blocks NPC battles from taking prisoners
         [HarmonyPatch(typeof(TakePrisonerAction), "ApplyInternal")]
-        public class TakePrisonerActionApplyInternalPatch
+        public static class TakePrisonerActionApplyInternalPatch
         {
             private static bool Prefix(Hero prisonerCharacter)
             {
@@ -28,13 +28,13 @@ namespace Bandit_Militias.Patches
                     return true;
                 }
 
-                return !IsBM(prisonerCharacter.PartyBelongedTo);
+                return !prisonerCharacter.PartyBelongedTo.IsBM();
             }
         }
 
         // prevents BM hero prisoners being taken after battle
         [HarmonyPatch(typeof(MapEvent), "LootDefeatedParties")]
-        public class MapEventFinishBattlePatch
+        public static class MapEventFinishBattlePatch
         {
             private static void Prefix(MapEvent __instance)
             {
@@ -61,9 +61,9 @@ namespace Bandit_Militias.Patches
                 var loser = __instance.BattleState != BattleState.AttackerVictory
                     ? __instance.AttackerSide
                     : __instance.DefenderSide;
-                var parties = loser.Parties.Where(x => Globals.PartyMilitiaMap.Keys.Any(y => y == x.Party.MobileParty)).ToList();
+                var parties = loser.Parties.Where(p => p.Party.MobileParty.IsBM()).ToList();
                 if (loser.LeaderParty?.MobileParty is not null &&
-                    !parties.Any(x => Globals.PartyMilitiaMap.Keys.Any(y => y == x.Party.MobileParty)))
+                    !parties.Any(p => p.Party.MobileParty.IsBM()))
                 {
                     return parties;
                 }
@@ -75,11 +75,11 @@ namespace Bandit_Militias.Patches
 
         // still blocks prisoners but apparently works with bandits reinforcing militias
         [HarmonyPatch(typeof(MapEventSide), "CaptureWoundedHeroes")]
-        public class MapEventSideCaptureWoundedHeroesPatch
+        public static class MapEventSideCaptureWoundedHeroesPatch
         {
             private static bool Prefix(PartyBase defeatedParty)
             {
-                return !IsBM(defeatedParty.MobileParty);
+                return !defeatedParty.MobileParty.IsBM();
             }
         }
     }

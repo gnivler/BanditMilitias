@@ -22,23 +22,23 @@ namespace Bandit_Militias
             CampaignEvents.DailyTickPartyEvent.AddNonSerializedListener(this, StopHoldingBehavior);
         }
 
-        // kludge to unstick stuck militias
+        // todo un-kludge to unstick stuck militias  
         private static void StopHoldingBehavior(MobileParty mobileParty)
         {
-            if (IsBM(mobileParty) &&
+            if (mobileParty.IsBM() &&
                 (mobileParty.ShortTermBehavior == AiBehavior.Hold ||
                  mobileParty.ShortTermBehavior == AiBehavior.None ||
                  mobileParty.DefaultBehavior == AiBehavior.Hold ||
                  mobileParty.DefaultBehavior == AiBehavior.None))
             {
-                Traverse.Create(mobileParty).Property<AiBehavior>("ShortTermBehavior").Value = AiBehavior.PatrolAroundPoint;
-                Traverse.Create(mobileParty).Property<AiBehavior>("DefaultBehavior").Value = AiBehavior.PatrolAroundPoint;
+                var nearbySettlement = Settlement.FindSettlementsAroundPosition(mobileParty.Position2D, 30)?.ToList().GetRandomElement();
+                mobileParty.SetMovePatrolAroundSettlement(nearbySettlement ?? Settlement.All.GetRandomElement());
             }
         }
 
         private static void OnMilitiaRemoved(PartyBase partyBase)
         {
-            if (!IsBM(partyBase.MobileParty))
+            if (!partyBase.MobileParty.IsBM())
             {
                 return;
             }
@@ -57,18 +57,17 @@ namespace Bandit_Militias
         {
             try
             {
-                if (Growth &&
-                    IsBM(mobileParty) &&
-                    mobileParty.ShortTermBehavior != AiBehavior.FleeToPoint &&
-                    IsValidParty(mobileParty) &&
-                    (GlobalMilitiaPower / CalculatedGlobalPowerLimit * 100 < Globals.Settings.GrowthPercent ||
-                     Rng.NextDouble() <= Globals.Settings.GrowthChance))
+                if (Growth
+                    && mobileParty.IsBM()
+                    && mobileParty.ShortTermBehavior != AiBehavior.FleeToPoint
+                    && IsValidParty(mobileParty)
+                    && Rng.NextDouble() <= Globals.Settings.GrowthChance)
                 {
                     var eligibleToGrow = mobileParty.MemberRoster.GetTroopRoster().Where(rosterElement =>
-                        rosterElement.Character.Tier < Globals.Settings.MaxTrainingTier &&
-                        !rosterElement.Character.IsHero &&
-                        mobileParty.ShortTermBehavior != AiBehavior.FleeToPoint &&
-                        !mobileParty.IsVisible).ToList();
+                        rosterElement.Character.Tier < Globals.Settings.MaxTrainingTier
+                        && !rosterElement.Character.IsHero
+                        && mobileParty.ShortTermBehavior != AiBehavior.FleeToPoint
+                        && !mobileParty.IsVisible).ToList();
                     if (eligibleToGrow.Any())
                     {
                         Mod.Log($"TryGrowing {mobileParty.LeaderHero}, total: {mobileParty.MemberRoster.TotalManCount}");
