@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Bandit_Militias.Helpers;
 using HarmonyLib;
 using SandBox.View.Map;
 using SandBox.ViewModelCollection;
@@ -70,10 +71,10 @@ namespace Bandit_Militias.Patches
                         }
 
                         var nearbyParties = MobileParty.FindPartiesAroundPosition(mobileParty.Position2D, FindRadius);
-                        var targetParty = nearbyParties.Where(x =>
-                                x != mobileParty
-                                && IsValidParty(x)
-                                && x.MemberRoster.TotalManCount + mobileParty.MemberRoster.TotalManCount >= Globals.Settings.MinPartySizeToConsiderMerge)
+                        var targetParty = nearbyParties.Where(m =>
+                                m != mobileParty
+                                && IsValidParty(m)
+                                && m.MemberRoster.TotalManCount + mobileParty.MemberRoster.TotalManCount >= Globals.Settings.MinPartySize)
                             .ToList().GetRandomElement()?.Party;
 
                         // "nobody" is a valid answer
@@ -211,6 +212,8 @@ namespace Bandit_Militias.Patches
         {
             private static void Postfix(MobileParty __instance)
             {
+                // HACK to deal with the leak
+                FlushMilitiaCharacterObjects();
                 if (!IsValidParty(__instance))
                 {
                     return;
@@ -352,7 +355,7 @@ namespace Bandit_Militias.Patches
             {
                 if (__exception is IndexOutOfRangeException)
                 {
-                    Mod.Log("Squelching IndexOutOfRangeException at TroopRoster.AddToCountsAtIndex");
+                    Mod.Log("HACK Squelching IndexOutOfRangeException at TroopRoster.AddToCountsAtIndex");
                 }
 
                 return null;

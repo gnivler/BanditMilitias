@@ -6,6 +6,7 @@ using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
 using static Bandit_Militias.Globals;
 using static Bandit_Militias.Helpers.Helper;
+using Extensions = Bandit_Militias.Helpers.Extensions;
 
 // ReSharper disable InconsistentNaming
 
@@ -20,6 +21,7 @@ namespace Bandit_Militias
             CampaignEvents.DailyTickPartyEvent.AddNonSerializedListener(this, TryGrowing);
             CampaignEvents.OnPartyRemovedEvent.AddNonSerializedListener(this, OnMilitiaRemoved);
             CampaignEvents.DailyTickPartyEvent.AddNonSerializedListener(this, StopHoldingBehavior);
+            CampaignEvents.HeroWounded.AddNonSerializedListener(this, Extensions.RemoveMilitiaHero);
         }
 
         // todo un-kludge to unstick stuck militias  

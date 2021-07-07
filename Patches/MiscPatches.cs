@@ -1,7 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Bandit_Militias.Helpers;
 using HarmonyLib;
+using SandBox;
 using SandBox.View.Map;
 using SandBox.ViewModelCollection.MobilePartyTracker;
 using TaleWorlds.CampaignSystem;
@@ -10,7 +12,9 @@ using TaleWorlds.CampaignSystem.SandBox.CampaignBehaviors.Towns;
 using TaleWorlds.CampaignSystem.SandBox.GameComponents.Map;
 using TaleWorlds.CampaignSystem.ViewModelCollection;
 using TaleWorlds.Core;
+using TaleWorlds.Engine;
 using TaleWorlds.Library;
+using TaleWorlds.MountAndBlade;
 using static Bandit_Militias.Helpers.Helper;
 using static Bandit_Militias.Globals;
 
@@ -33,20 +37,18 @@ namespace Bandit_Militias.Patches
                 MinSplitSize = Globals.Settings.MinPartySize * 2;
                 EquipmentItems.Clear();
                 PopulateItems();
-                Recruits = CharacterObject.All.Where(x =>
-                    x.Level == 11 &&
-                    x.Occupation == Occupation.Soldier &&
-                    !x.StringId.StartsWith("regular_fighter") &&
-                    !x.StringId.StartsWith("veteran_borrowed_troop") &&
-                    !x.StringId.EndsWith("_tier_1") &&
-                    !x.StringId.Contains("_militia_") &&
-                    !x.StringId.Equals("sturgian_warrior_son") &&
-                    !x.StringId.Equals("khuzait_noble_son") &&
-                    !x.StringId.Equals("imperial_vigla_recruit") &&
-                    !x.StringId.Equals("battanian_highborn_youth") &&
-                    !x.StringId.Equals("vlandian_squire") &&
-                    !x.StringId.Equals("aserai_youth") &&
-                    !x.StringId.Equals("poacher"));
+
+                var filter = new List<string>
+                {
+                    "regular_fighter",
+                    "veteran_borrowed_troop",
+                };
+
+                Recruits = CharacterObject.All.Where(c =>
+                    c.Level == 11
+                    && c.Occupation == Occupation.Soldier
+                    && !filter.Contains(c.StringId)
+                    && !c.StringId.EndsWith("_tier_1"));
 
                 // used for armour
                 foreach (ItemObject.ItemTypeEnum value in Enum.GetValues(typeof(ItemObject.ItemTypeEnum)))
@@ -67,6 +69,8 @@ namespace Bandit_Militias.Patches
 
                 var militias = MobileParty.All.Where(x =>
                     x is not null && x.StringId.StartsWith("Bandit_Militia")).ToList();
+                
+                // vestigial, remove at BL v1.6
                 for (var i = 0; i < militias.Count; i++)
                 {
                     var militia = militias[i];
@@ -97,7 +101,7 @@ namespace Bandit_Militias.Patches
                 });
 
                 Mod.Log($"Militias: {militias.Count} (registered {PartyMilitiaMap.Count})");
-                // 1.5.8 is dropping the militia settlements at some point, I haven't figured out where
+                // 1.5.10 is dropping the militia settlements at some point, I haven't figured out where
                 ReHome();
                 DoPowerCalculations(true);
 
@@ -121,12 +125,6 @@ namespace Bandit_Militias.Patches
         [HarmonyPatch(typeof(MapEventSide), "HandleMapEventEndForParty")]
         public static class MapEventSideHandleMapEventEndForPartyPatch
         {
-            // the method purges the party data so we capture the hero for use in Postfix
-            private static void Prefix(PartyBase party, ref Hero __state)
-            {
-                __state = party.LeaderHero;
-            }
-
             private static void Postfix(MapEventSide __instance, PartyBase party, Hero __state)
             {
                 if (__state is null ||
@@ -144,12 +142,13 @@ namespace Bandit_Militias.Patches
                     __instance.Casualties > party.MemberRoster?.TotalHealthyCount * 2)
                 {
                     Mod.Log($">>> Dispersing {party.Name} of {party.MemberRoster.TotalHealthyCount}+{party.MemberRoster.TotalWounded}w+{party.PrisonRoster?.Count}p");
-                    __state.KillHero();
+                    //party.MobileParty.LeaderHero.RemoveCharacterObject();
                     Trash(party.MobileParty);
                 }
             }
         }
 
+        // not firing in 1.5.10
         [HarmonyPatch(typeof(HeroCreator), "CreateRelativeNotableHero")]
         public static class HeroCreatorCreateRelativeNotableHeroPatch
         {
@@ -170,7 +169,7 @@ namespace Bandit_Militias.Patches
         {
             if (__exception is not null)
             {
-                Mod.Log($"Squelching exception at HeroCreator.CreateRelativeNotableHero");
+                Mod.Log($"HACK Squelching exception at HeroCreator.CreateRelativeNotableHero");
             }
 
             return null;
@@ -184,7 +183,7 @@ namespace Bandit_Militias.Patches
             {
                 if (__exception is not null)
                 {
-                    Mod.Log($"Squelching exception at BanditPartyComponent.get_Name");
+                    Mod.Log($"HACK Squelching exception at BanditPartyComponent.get_Name");
                     if (__instance.Hideout is null)
                     {
                         Mod.Log("Hideout is null.");
@@ -210,6 +209,7 @@ namespace Bandit_Militias.Patches
 
         // vanilla fix for 1.5.9?
         // maybe actually the chickens et al?
+        // not happening on 3.0.3 for 1.5.9/10
         [HarmonyPatch(typeof(SPInventoryVM), "InitializeInventory")]
         public static class SPInventoryVMInitializeInventoryVMPatch
         {
@@ -217,22 +217,46 @@ namespace Bandit_Militias.Patches
             {
                 if (__exception is not null)
                 {
-                    Mod.Log($"Squelching exception at SPInventoryVM.InitializeInventory");
+                    Mod.Log($"HACK Squelching exception at SPInventoryVM.InitializeInventory");
                 }
 
                 return null;
             }
         }
 
-        [HarmonyPatch(typeof(ViewModel), MethodType.Constructor)]
-        public static class ViewModelCtorPatch
+        [HarmonyPatch(typeof(MobilePartyTrackerVM), MethodType.Constructor, typeof(Camera), typeof(Action<Vec2>))]
+        public static class MobilePartyTrackerVMCtorPatch
         {
-            private static void Postfix(ViewModel __instance)
+            private static void Postfix(MobilePartyTrackerVM __instance)
             {
-                if (Globals.MobilePartyTrackerVM is null
-                    && __instance is MobilePartyTrackerVM trackerVm)
+                Globals.MobilePartyTrackerVM ??= __instance;
+            }
+        }
+         
+        // the 2nd one at least
+        // seems to make the skulls red in combat, eg kill
+        [HarmonyPatch(typeof(BattleAgentLogic), "OnAgentRemoved")]
+        public static class BattleAgentLogicOnAgentRemovedPatch
+        {
+            private static void Prefix(Agent affectedAgent, ref AgentState agentState)
+            {
+                if (affectedAgent.Character is not null
+                    && affectedAgent.Character.StringId.EndsWith("Bandit_Militia"))
                 {
-                    Globals.MobilePartyTrackerVM = trackerVm;
+                    agentState = AgentState.Killed;
+                }
+            }
+        }
+        
+        [HarmonyPatch(typeof(Mission), "OnAgentRemoved")]
+        public static class MissionOnAgentRemovedPatch
+        {
+            private static void Prefix(Agent affectedAgent, ref AgentState agentState)
+            {
+                if (affectedAgent.Character is not null
+                    && affectedAgent.Character.StringId.EndsWith("Bandit_Militia"))
+                {
+                    agentState = AgentState.Killed;
                 }
             }
         }

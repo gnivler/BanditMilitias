@@ -6,7 +6,6 @@ using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
-using TaleWorlds.LinQuick;
 using TaleWorlds.ObjectSystem;
 using static Bandit_Militias.Globals;
 
@@ -139,27 +138,32 @@ namespace Bandit_Militias.Helpers
             }
         }
 
+        private static List<string> verboten = new List<string>
+        {
+            "ebdi_deserters_party",
+            "caravan_ambush_quest",
+            "arzagos_banner_piece_quest_raider_party",
+            "istiana_banner_piece_quest_raider_party",
+            "rescue_family_quest_raider_party",
+            "destroy_raiders_conspiracy_quest",
+            "radagos_raider_party",
+            "locate_and_rescue_traveller_quest_raider_party",
+            "company_of_trouble",
+            "villagers_of_landlord_needs_access_to_village_common_quest",
+            //Calradia Expanded Kingdoms in 3.0.2
+            "manhunter"
+        };
+
         // todo more robust solution
         internal static bool IsValidParty(MobileParty __instance)
         {
-            if (__instance.IsBandit 
-                || __instance.IsBM() 
-                && __instance.Party.IsMobile 
-                && __instance.CurrentSettlement is null 
-                && __instance.Party.MemberRoster.TotalManCount > 0 
-                && !__instance.IsUsedByAQuest() 
-                && !__instance.StringId.StartsWith("ebdi_deserters_party_") 
-                && !__instance.StringId.StartsWith("caravan_ambush_quest_") 
-                && !__instance.StringId.StartsWith("arzagos_banner_piece_quest_raider_party_") 
-                && !__instance.StringId.StartsWith("istiana_banner_piece_quest_raider_party_") 
-                && !__instance.StringId.StartsWith("rescue_family_quest_raider_party_") 
-                && !__instance.StringId.StartsWith("destroy_raiders_conspiracy_quest_") 
-                && !__instance.StringId.StartsWith("radagos_raider_party_") 
-                && !__instance.StringId.StartsWith("locate_and_rescue_traveller_quest_raider_party_") 
-                && !__instance.StringId.StartsWith("company_of_trouble_") 
-                && !__instance.StringId.StartsWith("villagers_of_landlord_needs_access_to_village_common_quest") 
-                 // Calradia Expanded Kingdoms
-                && !__instance.Name.Contains("manhunter")
+            if (__instance.IsBandit
+                || __instance.IsBM()
+                && __instance.Party.IsMobile
+                && __instance.CurrentSettlement is null
+                && __instance.Party.MemberRoster.TotalManCount > 0
+                && !__instance.IsUsedByAQuest()
+                && !verboten.Contains(__instance.StringId)
                 && !__instance.IsTooBusyToMerge())
             {
                 return true;
@@ -167,7 +171,6 @@ namespace Bandit_Militias.Helpers
 
             return false;
         }
-
 
         internal static TroopRoster[] MergeRosters(MobileParty sourceParty, PartyBase targetParty)
         {
@@ -228,19 +231,17 @@ namespace Bandit_Militias.Helpers
         {
             Mod.Log("Trashing " + mobileParty.Name);
             PartyMilitiaMap.Remove(mobileParty);
-            // added as workaround/fix for issue seen in 1.5.9 where TroopRoster.Count is wrong and TroopRoster.Clear() throws
-            Traverse.Create(mobileParty.MemberRoster).Field<int>("_count").Value =
-                mobileParty.MemberRoster.GetTroopRoster().Count(x => x.Character is not null);
-            mobileParty.MemberRoster.UpdateVersion();
             mobileParty.RemoveParty();
+            mobileParty.LeaderHero.RemoveMilitiaHero();
         }
 
         internal static void Nuke()
         {
             Mod.Log("Clearing mod data.");
-            FlushDeadBanditRemnants();
             FlushBanditMilitias();
+            FlushDeadBanditRemnants();
             FlushHeroes();
+            FlushMilitiaCharacterObjects();
             FlushMapEvents();
             Flush();
         }
@@ -262,38 +263,41 @@ namespace Bandit_Militias.Helpers
             }
         }
 
-        // clean-up for older version
-        // DRY :(
+        // still needed 1.5.10
         private static void FlushDeadBanditRemnants()
         {
-            foreach (var settlement in Settlement.All.Where(x => x.Party.PrisonRoster.TotalManCount > 0))
+            // prisoners somehow of settlements
+            foreach (var settlement in Settlement.All)
             {
-                var count = Traverse.Create(settlement.Party.PrisonRoster).Field<int>("_count").Value;
-                if (count < 0)
+                var count = settlement.Parties.Sum(p => p.PrisonRoster.Count);
+                if (count <= 0)
                 {
                     continue;
                 }
 
-                for (var i = 0; i < count; i++)
+                foreach (var party in settlement.Parties)
                 {
-                    try
+                    for (var i = 0; i < party.PrisonRoster.Count; i++)
                     {
-                        var prisoner = settlement.Party.PrisonRoster.GetCharacterAtIndex(i);
-                        if (prisoner.IsHero &&
-                            !prisoner.HeroObject.IsAlive)
+                        try
                         {
-                            Mod.Log($">>> FLUSH dead bandit hero prisoner {prisoner.HeroObject.Name} at {settlement.Name}.");
-                            settlement.Party.PrisonRoster.AddToCounts(prisoner, -1);
-                            MBObjectManager.Instance.UnregisterObject(prisoner);
+                            var prisoner = party.PrisonRoster.GetCharacterAtIndex(i);
+                            if (prisoner.StringId.EndsWith("Bandit_Militia"))
+                            {
+                                Mod.Log($">>> FLUSH dead bandit hero prisoner {prisoner.HeroObject.Name} at {settlement.Name}.");
+                                party.PrisonRoster.AddToCounts(prisoner, -1);
+                                MBObjectManager.Instance.UnregisterObject(prisoner);
+                            }
                         }
-                    }
-                    catch (Exception ex)
-                    {
-                        Mod.Log(ex);
+                        catch (Exception ex)
+                        {
+                            Mod.Log(ex);
+                        }
                     }
                 }
             }
 
+            // prisoners somehow of parties
             foreach (var mobileParty in MobileParty.All.Where(x => x.Party.PrisonRoster.TotalManCount > 0))
             {
                 // GetCharacterAtIndex() throws, if 0...
@@ -314,20 +318,22 @@ namespace Bandit_Militias.Helpers
                     }
                 }
             }
+        }
 
-            for (var i = 0; i < CharacterObject.All.Count; i++)
+        internal static void FlushMilitiaCharacterObjects()
+        {
+            // these are leaking somewhere, somehow... maybe.  maybe not.  3.0.3 on 1.5.10
+            var BMs = CharacterObject.All.Where(c => c.StringId.EndsWith("Bandit_Militia")
+                                                     && c.HeroObject?.PartyBelongedTo is null).ToList();
+            if (BMs.Any())
             {
-                var co = CharacterObject.All[i];
-                if (!co.StringId.EndsWith("_Bandit_Militia"))
-                {
-                    continue;
-                }
-
-                Mod.Log($">>> NUKING {co}");
+                Mod.Log($">>> FLUSH {BMs.Count} BM CharacterObject{(BMs.Count > 1 ? "s" : "")}");
+                BMs.Do(c => Mod.Log(c.ToString()));
+                BMs.Do(c => MBObjectManager.Instance.UnregisterObject(c));
                 var charactersField = Traverse.Create(Campaign.Current).Field<MBReadOnlyList<CharacterObject>>("_characters");
-                var tempCharacterObjectList = new List<CharacterObject>(charactersField.Value.ToListQ());
-                tempCharacterObjectList.Remove(co);
-                charactersField.Value = new MBReadOnlyList<CharacterObject>(tempCharacterObjectList);                
+                var tempCharacterObjectList = new List<CharacterObject>(charactersField.Value);
+                tempCharacterObjectList = tempCharacterObjectList.Except(BMs).ToList();
+                charactersField.Value = new MBReadOnlyList<CharacterObject>(tempCharacterObjectList);
             }
         }
 
@@ -350,7 +356,7 @@ namespace Bandit_Militias.Helpers
             Mod.Log(">>> FLUSHED.");
         }
 
-        // kills heroes that leaked before being fixed in 2.8.0
+        // not needed after 2.8.0
         private static void FlushSettlementHeroesWithoutParty()
         {
             // ~~fixed in 2.8.0, leaving in for now~~
@@ -364,8 +370,8 @@ namespace Bandit_Militias.Helpers
                 }
             }
         }
-        
-        // a bunch of flush hacks to dispose of heroes that leak somewhere
+
+        // a bunch of hacks to dispose of leak(s) somewhere
         private static void FlushHeroes()
         {
             var heroes = Hero.FindAll(hero =>
@@ -373,7 +379,7 @@ namespace Bandit_Militias.Helpers
                      && hero.PartyBelongedToAsPrisoner is null
                      || hero.HeroState == Hero.CharacterStates.Prisoner)
                     && Clan.BanditFactions.Contains(hero.MapFaction)
-                    && hero.StringId.EndsWith("_Bandit_Militia"))
+                    && hero.StringId.EndsWith("Bandit_Militia"))
                 .ToList();
 
             for (var i = 0; i < heroes.Count; i++)
@@ -381,11 +387,11 @@ namespace Bandit_Militias.Helpers
                 Mod.Log(">>> FLUSH prisoner, or hero with no party or settlement: " + heroes[i].Name);
                 try
                 {
-                    heroes[i].KillHero();
+                    heroes[i].RemoveMilitiaHero();
                 }
                 catch (NullReferenceException)
                 {
-                    // throws with Heroes Must Die
+                    // 3.0.2 throws with Heroes Must Die
                     Mod.Log("Squelching NRE at Helper.FlushHeroes");
                 }
             }
@@ -393,13 +399,13 @@ namespace Bandit_Militias.Helpers
 
         private static void FlushZeroParties()
         {
-            var parties = MobileParty.All.Where(x =>
-                x != MobileParty.MainParty &&
-                x.CurrentSettlement is null && x.MemberRoster.TotalManCount == 0).ToList();
+            var parties = MobileParty.All.Where(m =>
+                m != MobileParty.MainParty &&
+                m.CurrentSettlement is null && m.MemberRoster.TotalManCount == 0).ToList();
             for (var i = 0; i < parties.Count; i++)
             {
                 Mod.Log($">>> FLUSH party without a current settlement or any troops.");
-                parties[i].LeaderHero.KillHero();
+                parties[i].LeaderHero.RemoveMilitiaHero();
                 parties[i].RemoveParty();
             }
         }
@@ -410,8 +416,8 @@ namespace Bandit_Militias.Helpers
             for (var index = 0; index < mapEvents.Count; index++)
             {
                 var mapEvent = mapEvents[index];
-                if (mapEvent.InvolvedParties.Any(x =>
-                    x.MobileParty.IsBM()))
+                if (mapEvent.InvolvedParties.Any(p =>
+                    p.MobileParty.IsBM()))
                 {
                     Mod.Log(">>> FLUSH MapEvent.");
                     mapEvent.FinalizeEvent();
@@ -421,7 +427,7 @@ namespace Bandit_Militias.Helpers
 
         private static void FlushHideoutsOfMilitias()
         {
-            foreach (var hideout in Settlement.All.Where(x => x.IsHideout()).ToList())
+            foreach (var hideout in Settlement.All.Where(s => s.IsHideout()).ToList())
             {
                 for (var index = 0; index < hideout.Parties.Count; index++)
                 {
@@ -450,7 +456,7 @@ namespace Bandit_Militias.Helpers
                 }
 
                 Mod.Log(">>> FLUSH null party hero " + hero.Name);
-                hero.KillHero();
+                hero.RemoveMilitiaHero();
             }
         }
 
@@ -772,16 +778,13 @@ namespace Bandit_Militias.Helpers
                 FileLog.Log($"{codes[insertPoint + insertSize + adjustedAdjacent + i].opcode,-10}{codes[insertPoint + insertSize + adjustedAdjacent + i].operand}");
             }
         }
-        
-        
+
         // this is a bit wasteful, if doing a list of heroes since it replaces the whole list each time
         // but it only takes 1000 ticks so whatever?
         internal static void RemoveHeroFromReadOnlyList(Hero hero)
         {
             var charactersField = Traverse.Create(Campaign.Current).Field<MBReadOnlyList<CharacterObject>>("_characters");
-            var tempCharacterObjectList = new List<CharacterObject>(charactersField.Value.ToListQ());
-            tempCharacterObjectList.Remove(hero.CharacterObject);
-            charactersField.Value = new MBReadOnlyList<CharacterObject>(tempCharacterObjectList);
+            charactersField.Value = new MBReadOnlyList<CharacterObject>(charactersField.Value.Except(new[] {hero.CharacterObject}).ToList());
         }
     }
 }

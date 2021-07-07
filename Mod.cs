@@ -22,6 +22,7 @@ namespace Bandit_Militias
     public class Mod : MBSubModuleBase
     {
         internal static readonly Harmony harmony = new("ca.gnivler.bannerlord.BanditMilitias");
+
         // ReSharper disable once AssignNullToNotNullAttribute
         private static readonly string logFilename = Path.Combine(new FileInfo(@"..\..\Modules\Bandit Militias\").DirectoryName, "log.txt");
 
@@ -87,6 +88,17 @@ namespace Bandit_Militias
                 InformationManager.AddQuickInformation(new TextObject("Testing mode: " + Globals.Settings.TestingMode));
             }
 
+            if (superKey && Input.IsKeyPressed(InputKey.F))
+            {
+                try
+                {
+                }
+                catch (Exception ex)
+                {
+                    Log(ex.ToString());
+                }
+            }
+
             if (superKey && Input.IsKeyPressed(InputKey.F10))
             {
                 foreach (var militia in PartyMilitiaMap)
@@ -100,9 +112,13 @@ namespace Bandit_Militias
                 foreach (var militia in PartyMilitiaMap.Values.OrderByDescending(x => x.MobileParty.MemberRoster.TotalManCount))
                 {
                     Log($">> {militia.Hero.Name,-30}: {militia.MobileParty.MemberRoster.TotalManCount}/{militia.MobileParty.Party.TotalStrength:0}");
-                    for (int tier = 0; tier <= 6; tier++)
+                    for (int tier = 1; tier <= 6; tier++)
                     {
-                        Log($"  Tier {tier}: {militia.MobileParty.MemberRoster.GetTroopRoster().Where(x => x.Character.Tier == tier).Sum(x => x.Number)}.");
+                        var count = militia.MobileParty.MemberRoster.GetTroopRoster().Where(x => x.Character.Tier == tier).Sum(x => x.Number);
+                        if (count > 0)
+                        {
+                            Log($"  Tier {tier}: {count}.");
+                        }
                     }
                 }
 
@@ -115,6 +131,7 @@ namespace Bandit_Militias
             {
                 try
                 {
+                    Nuke();
                     Nuke();
                     Nuke();
                     InformationManager.AddQuickInformation(new TextObject("BANDIT MILITIAS CLEARED"));
@@ -134,14 +151,17 @@ namespace Bandit_Militias
             }
         }
 
+        
         private static void RunManualPatches()
         {
             try
             {
+
+
             }
             catch (Exception ex)
             {
-                Log(ex);
+                Log(ex.ToString());
             }
         }
     }

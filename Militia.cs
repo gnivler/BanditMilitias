@@ -6,7 +6,6 @@ using Bandit_Militias.Helpers;
 using HarmonyLib;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
-using TaleWorlds.LinQuick;
 using TaleWorlds.Localization;
 using TaleWorlds.ObjectSystem;
 using static Bandit_Militias.Globals;
@@ -30,9 +29,9 @@ namespace Bandit_Militias
             Banner = Banners.GetRandomElement();
             BannerKey = Banner.Serialize();
             Hero = mobileParty.LeaderHero;
-            if (!MobileParty.Leader.StringId.EndsWith("_Bandit_Militia"))
+            if (!MobileParty.Leader.StringId.EndsWith("Bandit_Militia"))
             {
-                MobileParty.Leader.StringId += "_Bandit_Militia";
+                MobileParty.Leader.StringId += "Bandit_Militia";
             }
 
             LogMilitiaFormed(MobileParty);
@@ -68,9 +67,9 @@ namespace Bandit_Militias
                 .Method("GetLocalizedText", $"{Possess(Hero.FirstName.ToString())} Bandit Militia").GetValue();
             MobileParty.SetCustomName(new TextObject(Name));
             MobileParty.Party.Owner = Hero;
-            MobileParty.Leader.StringId += "_Bandit_Militia";
+            MobileParty.Leader.StringId += "Bandit_Militia";
             MobileParty.ShouldJoinPlayerBattles = true;
-            var tracker = MobilePartyTrackerVM?.Trackers?.FirstOrDefaultQ(t => t.TrackedParty == MobileParty);
+            var tracker = MobilePartyTrackerVM?.Trackers?.FirstOrDefault(t => t.TrackedParty == MobileParty);
             if (tracker is not null)
             {
                 MobilePartyTrackerVM.Trackers.Remove(tracker);
