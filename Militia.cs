@@ -3,11 +3,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using Bandit_Militias.Helpers;
-using HarmonyLib;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
 using TaleWorlds.Localization;
-using TaleWorlds.ObjectSystem;
 using static Bandit_Militias.Globals;
 using static Bandit_Militias.Helpers.Helper;
 using Debug = TaleWorlds.Library.Debug;
@@ -44,14 +42,15 @@ namespace Bandit_Militias
             Spawn(mobileParty, party, prisoners);
             TrainMilitia();
             PartyMilitiaMap.Add(MobileParty, this);
-            var nearbySettlement = Settlement.FindSettlementsAroundPosition(MobileParty.Position2D, 30)?.ToList().GetRandomElement();
-            MobileParty.SetMovePatrolAroundSettlement(nearbySettlement ?? Settlement.All.GetRandomElement());
+            SetMilitiaPatrol(MobileParty);
+            //var nearbySettlement = Settlement.FindSettlementsAroundPosition(MobileParty.Position2D, 30)?.ToList().GetRandomElement();
+            //MobileParty.SetMovePatrolAroundSettlement(nearbySettlement ?? Settlement.All.GetRandomElement());
             LogMilitiaFormed(MobileParty);
         }
 
         private void Spawn(IMapPoint mobileParty, TroopRoster party, TroopRoster prisoners)
         {
-            MobileParty = MBObjectManager.Instance.CreateObject<MobileParty>("Bandit_Militia");
+            MobileParty = MobileParty.CreateParty("Bandit_Militia");
             MobileParty.InitializeMobileParty(
                 party,
                 prisoners,
@@ -63,8 +62,11 @@ namespace Bandit_Militias
             //Hero = HeroCreator.CreateHeroAtOccupation(Occupation.Outlaw);
             var faction = Clan.BanditFactions.FirstOrDefault(x => Hero.MapFaction.Name == x.Name);
             Hero.Culture = faction is null ? Clan.BanditFactions.FirstOrDefault()?.Culture : faction.Culture;
-            Name = (string) Traverse.Create(typeof(MBTextManager))
-                .Method("GetLocalizedText", $"{Possess(Hero.FirstName.ToString())} Bandit Militia").GetValue();
+
+            var getLocalizedText = AccessTools.Method(typeof(MBTextManager), "GetLocalizedText");
+            Name = MountAndWarcraftMod is null
+                ? (string) getLocalizedText.Invoke(null, new object[] {$"{Possess(Hero.FirstName.ToString())} Bandit Militia"})
+                : (string) getLocalizedText.Invoke(null, new object[] {"Scourge Horde"});
             MobileParty.SetCustomName(new TextObject(Name));
             MobileParty.Party.Owner = Hero;
             MobileParty.Leader.StringId += "Bandit_Militia";

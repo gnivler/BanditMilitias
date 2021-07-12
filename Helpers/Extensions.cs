@@ -1,9 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using HarmonyLib;
 using TaleWorlds.CampaignSystem;
-using TaleWorlds.Library;
 using TaleWorlds.ObjectSystem;
 
 namespace Bandit_Militias.Helpers
@@ -54,25 +51,6 @@ namespace Bandit_Militias.Helpers
             catch (Exception ex)
             {
                 Mod.Log(ex);
-            }
-        }
-
-        private static AccessTools.FieldRef<Campaign, MBReadOnlyList<CharacterObject>> _characters =
-            AccessTools.FieldRefAccess<Campaign, MBReadOnlyList<CharacterObject>>("_characters");
-
-        // unfortunately around 1ms even with FieldRef
-        internal static void RemoveCharacterObject(this Hero hero)
-        {
-            try
-            {
-                var characters = _characters(Campaign.Current);
-                var tempList = new List<CharacterObject>(characters.Except(new[] {hero.CharacterObject}));
-                _characters(Campaign.Current) = new MBReadOnlyList<CharacterObject>(tempList);
-                MBObjectManager.Instance.UnregisterObject(hero.CharacterObject);
-            }
-            catch (Exception ex)
-            {
-                FileLog.Log(ex.ToString());
             }
         }
     }

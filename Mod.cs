@@ -2,7 +2,6 @@
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using HarmonyLib;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
 using TaleWorlds.InputSystem;
@@ -87,18 +86,12 @@ namespace Bandit_Militias
                 Globals.Settings.TestingMode = !Globals.Settings.TestingMode;
                 InformationManager.AddQuickInformation(new TextObject("Testing mode: " + Globals.Settings.TestingMode));
             }
-
+            
             if (superKey && Input.IsKeyPressed(InputKey.F))
             {
-                try
-                {
-                }
-                catch (Exception ex)
-                {
-                    Log(ex.ToString());
-                }
-            }
 
+            }
+            
             if (superKey && Input.IsKeyPressed(InputKey.F10))
             {
                 foreach (var militia in PartyMilitiaMap)
@@ -106,7 +99,7 @@ namespace Bandit_Militias
                     Log($"{militia.Key.Name}.  {militia.Value.Hero.MapFaction}.");
                 }
             }
-
+            
             if (superKey && Input.IsKeyPressed(InputKey.F12))
             {
                 foreach (var militia in PartyMilitiaMap.Values.OrderByDescending(x => x.MobileParty.MemberRoster.TotalManCount))
@@ -121,10 +114,10 @@ namespace Bandit_Militias
                         }
                     }
                 }
-
+            
                 Log($">> Total {PartyMilitiaMap.Values.Count} = {PartyMilitiaMap.Values.Select(x => x.MobileParty.MemberRoster.TotalManCount).Sum()}");
             }
-
+            
             if ((Input.IsKeyDown(InputKey.LeftControl) || Input.IsKeyDown(InputKey.RightControl)) &&
                 (Input.IsKeyDown(InputKey.LeftAlt) || Input.IsKeyDown(InputKey.RightAlt)) &&
                 Input.IsKeyPressed(InputKey.N))

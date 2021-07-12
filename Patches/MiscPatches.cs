@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Bandit_Militias.Helpers;
-using HarmonyLib;
 using SandBox;
 using SandBox.View.Map;
 using SandBox.ViewModelCollection.MobilePartyTracker;
@@ -53,7 +52,7 @@ namespace Bandit_Militias.Patches
                 // used for armour
                 foreach (ItemObject.ItemTypeEnum value in Enum.GetValues(typeof(ItemObject.ItemTypeEnum)))
                 {
-                    ItemTypes[value] = ItemObject.All.Where(x =>
+                    ItemTypes[value] = Items.All.Where(x =>
                         x.Type == value && x.Value >= 1000 && x.Value <= Globals.Settings.MaxItemValue * Variance).ToList();
                 }
 
@@ -94,11 +93,7 @@ namespace Bandit_Militias.Patches
                     }
                 }
 
-                PartyMilitiaMap.Keys.Do(mobileParty =>
-                {
-                    var settlement = Settlement.FindSettlementsAroundPosition(mobileParty.Position2D, 30).GetRandomElementInefficiently() ?? Settlement.All.GetRandomElement();
-                    mobileParty.SetMovePatrolAroundSettlement(settlement);
-                });
+                PartyMilitiaMap.Keys.Do(SetMilitiaPatrol);
 
                 Mod.Log($"Militias: {militias.Count} (registered {PartyMilitiaMap.Count})");
                 // 1.5.10 is dropping the militia settlements at some point, I haven't figured out where
@@ -122,13 +117,12 @@ namespace Bandit_Militias.Patches
 
         // just disperse small militias
         // todo prevent this unless the militia has lost or retreated from combat
-        [HarmonyPatch(typeof(MapEventSide), "HandleMapEventEndForParty")]
+        [HarmonyPatch(typeof(MapEventSide), "HandleMapEventEndForPartyInternal", typeof(PartyBase))]
         public static class MapEventSideHandleMapEventEndForPartyPatch
         {
-            private static void Postfix(MapEventSide __instance, PartyBase party, Hero __state)
+            private static void Postfix(MapEventSide __instance, PartyBase party)
             {
-                if (__state is null ||
-                    party?.MobileParty is null ||
+                if (party?.MobileParty is null ||
                     !party.MobileParty.IsBM() ||
                     party.PrisonRoster is not null &&
                     party.PrisonRoster.Contains(Hero.MainHero.CharacterObject))

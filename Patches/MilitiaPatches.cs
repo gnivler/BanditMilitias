@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Bandit_Militias.Helpers;
-using HarmonyLib;
 using SandBox.View.Map;
 using SandBox.ViewModelCollection;
 using SandBox.ViewModelCollection.Nameplate;
@@ -231,7 +230,8 @@ namespace Bandit_Militias.Patches
                 if (mobileParty.IsBM())
                 {
                     Mod.Log($"Preventing {mobileParty} from entering {settlement}");
-                    mobileParty.SetMovePatrolAroundSettlement(settlement);
+                    SetMilitiaPatrol(mobileParty);
+                    //mobileParty.SetMovePatrolAroundSettlement(settlement);
                     return false;
                 }
 

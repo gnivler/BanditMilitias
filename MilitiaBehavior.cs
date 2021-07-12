@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using HarmonyLib;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
 using static Bandit_Militias.Globals;
@@ -33,8 +32,9 @@ namespace Bandit_Militias
                  mobileParty.DefaultBehavior == AiBehavior.Hold ||
                  mobileParty.DefaultBehavior == AiBehavior.None))
             {
-                var nearbySettlement = Settlement.FindSettlementsAroundPosition(mobileParty.Position2D, 30)?.ToList().GetRandomElement();
-                mobileParty.SetMovePatrolAroundSettlement(nearbySettlement ?? Settlement.All.GetRandomElement());
+                SetMilitiaPatrol(mobileParty);
+                //var nearbySettlement = Settlement.FindSettlementsAroundPosition(mobileParty.Position2D, 30)?.ToList().GetRandomElement();
+                //mobileParty.SetMovePatrolAroundSettlement(nearbySettlement ?? Settlement.All.GetRandomElement());
             }
         }
 

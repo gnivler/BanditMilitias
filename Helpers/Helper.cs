@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using HarmonyLib;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.Core;
@@ -121,9 +120,11 @@ namespace Bandit_Militias.Helpers
             {
                 var militia1 = new Militia(original, party1, prisoners1);
                 var militia2 = new Militia(original, party2, prisoners2);
-                var settlements = Settlement.FindSettlementsAroundPosition(original.Position2D, 30).ToList();
-                militia1.MobileParty.SetMovePatrolAroundSettlement(settlements.GetRandomElement() ?? Settlement.All.GetRandomElement());
-                militia2.MobileParty.SetMovePatrolAroundSettlement(settlements.GetRandomElement() ?? Settlement.All.GetRandomElement());
+                SetMilitiaPatrol(militia1.MobileParty);
+                SetMilitiaPatrol(militia2.MobileParty);
+                //var settlements = Settlement.FindSettlementsAroundPosition(original.Position2D, 30).ToList();
+                //militia1.MobileParty.SetMovePatrolAroundSettlement(settlements.GetRandomElement() ?? Settlement.All.GetRandomElement());
+                //militia2.MobileParty.SetMovePatrolAroundSettlement(settlements.GetRandomElement() ?? Settlement.All.GetRandomElement());
                 Mod.Log($"{militia1.MobileParty.StringId} <- Split -> {militia2.MobileParty.StringId}");
                 Traverse.Create(militia1.MobileParty.Party).Property("ItemRoster").SetValue(inventory1);
                 Traverse.Create(militia2.MobileParty.Party).Property("ItemRoster").SetValue(inventory2);
@@ -412,7 +413,7 @@ namespace Bandit_Militias.Helpers
 
         private static void FlushMapEvents()
         {
-            var mapEvents = Traverse.Create(Campaign.Current.MapEventManager).Field("mapEvents").GetValue<List<MapEvent>>();
+            var mapEvents = Traverse.Create(Campaign.Current.MapEventManager).Field("_mapEvents").GetValue<List<MapEvent>>();
             for (var index = 0; index < mapEvents.Count; index++)
             {
                 var mapEvent = mapEvents[index];
@@ -436,7 +437,7 @@ namespace Bandit_Militias.Helpers
                     {
                         Mod.Log(">>> FLUSH Hideout.");
                         LeaveSettlementAction.ApplyForParty(party);
-                        party.SetMovePatrolAroundSettlement(hideout);
+                        SetMilitiaPatrol(party);
                     }
                 }
             }
@@ -550,7 +551,7 @@ namespace Bandit_Militias.Helpers
                 "Bound Crossbow"
             };
 
-            var all = ItemObject.All.Where(i =>
+            var all = Items.All.Where(i =>
                 i.ItemType != ItemObject.ItemTypeEnum.Goods
                 && i.ItemType != ItemObject.ItemTypeEnum.Horse
                 && i.ItemType != ItemObject.ItemTypeEnum.HorseHarness
@@ -689,11 +690,11 @@ namespace Bandit_Militias.Helpers
             {
                 LastCalculated = CampaignTime.Now.ToHours;
                 var parties = MobileParty.All.Where(p => p.LeaderHero is not null && !p.IsBM()).ToList();
-                CalculatedMaxPartySize = (float) parties.Select(p => p.Party.PartySizeLimit).Average() * Globals.Settings.MaxPartySizeFactor * Variance;
-                var totalStrength = parties.Select(p => p.Party.TotalStrength).Sum();
+                CalculatedMaxPartySize = (float) parties.Average(p => p.Party.PartySizeLimit) * Globals.Settings.MaxPartySizeFactor * Variance;
+                var totalStrength = parties.Sum(p => p.Party.TotalStrength);
                 CalculatedMaxPartyStrength = totalStrength / parties.Count * Globals.Settings.PartyStrengthFactor * Variance;
                 CalculatedGlobalPowerLimit = totalStrength * Variance;
-                GlobalMilitiaPower = PartyMilitiaMap.Keys.Select(p => p.Party.TotalStrength).Sum();
+                GlobalMilitiaPower = PartyMilitiaMap.Keys.Sum(p => p.Party.TotalStrength);
             }
         }
 
@@ -785,6 +786,21 @@ namespace Bandit_Militias.Helpers
         {
             var charactersField = Traverse.Create(Campaign.Current).Field<MBReadOnlyList<CharacterObject>>("_characters");
             charactersField.Value = new MBReadOnlyList<CharacterObject>(charactersField.Value.Except(new[] {hero.CharacterObject}).ToList());
+        }
+
+        // anti-congregation, seems like circumstances can lead to a positive feedback loop in 3.0.3 (and a ton of BMs in one area)
+        internal static void SetMilitiaPatrol(MobileParty mobileParty)
+        {
+            var nearbyMilitias = MobileParty.FindPartiesAroundPosition(mobileParty.Position2D, 30, m => m.IsBM()).Count();
+            if (nearbyMilitias > 5)
+            {
+                mobileParty.SetMovePatrolAroundSettlement(Settlement.All.GetRandomElement());
+            }
+            else
+            {
+                var nearbySettlement = Settlement.FindSettlementsAroundPosition(mobileParty.Position2D, 30)?.ToList().GetRandomElement();
+                mobileParty.SetMovePatrolAroundSettlement(nearbySettlement ?? Settlement.All.GetRandomElement());
+            }
         }
     }
 }

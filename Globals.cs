@@ -1,25 +1,26 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using HarmonyLib;
 using SandBox.ViewModelCollection.MobilePartyTracker;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
+using TaleWorlds.ModuleManager;
 
 namespace Bandit_Militias
 {
     public static class Globals
     {
-        // how close before merging
+        // merge/split criteria
         internal const float MergeDistance = 2;
         internal static float FindRadius = 7;
         internal static float MinDistanceFromHideout = 8;
+        internal static int MinSplitSize = 0;
 
         // holders for criteria
         internal static float CalculatedMaxPartyStrength;
         internal static float CalculatedMaxPartySize;
-        internal static float CalculatedGlobalPowerLimit;
+        internal static float CalculatedGlobalPowerLimit;   // TODO verify purpose
         internal static float GlobalMilitiaPower;
 
         // misc
@@ -37,7 +38,8 @@ namespace Bandit_Militias
         internal static readonly List<Banner> Banners = new();
         internal static double LastCalculated;
         internal static float Variance => MBRandom.RandomFloatRanged(0.8f, 1.2f);
-        internal static int MinSplitSize = 0;
+        internal static readonly object MountAndWarcraftMod = ModuleHelper.GetModuleInfo("Mount&Warcraft");
+
         // ReSharper disable once InconsistentNaming
         internal static MobilePartyTrackerVM MobilePartyTrackerVM;
 
