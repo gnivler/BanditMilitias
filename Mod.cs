@@ -2,6 +2,7 @@
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using HarmonyLib;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
 using TaleWorlds.InputSystem;
@@ -57,7 +58,11 @@ namespace Bandit_Militias
         protected override void OnBeforeInitialModuleScreenSetAsRoot()
         {
             Globals.Settings = Settings.Instance;
-            File.Delete(Path.Combine(logFilename));
+            if (File.Exists(logFilename))
+            {
+                File.Delete(logFilename);
+            }
+
             Log($"Bandit Militias {Assembly.GetExecutingAssembly().GetName().Version.ToString(3)} starting up...");
         }
 
@@ -86,12 +91,11 @@ namespace Bandit_Militias
                 Globals.Settings.TestingMode = !Globals.Settings.TestingMode;
                 InformationManager.AddQuickInformation(new TextObject("Testing mode: " + Globals.Settings.TestingMode));
             }
-            
+
             if (superKey && Input.IsKeyPressed(InputKey.F))
             {
-
             }
-            
+
             if (superKey && Input.IsKeyPressed(InputKey.F10))
             {
                 foreach (var militia in PartyMilitiaMap)
@@ -99,7 +103,7 @@ namespace Bandit_Militias
                     Log($"{militia.Key.Name}.  {militia.Value.Hero.MapFaction}.");
                 }
             }
-            
+
             if (superKey && Input.IsKeyPressed(InputKey.F12))
             {
                 foreach (var militia in PartyMilitiaMap.Values.OrderByDescending(x => x.MobileParty.MemberRoster.TotalManCount))
@@ -114,10 +118,10 @@ namespace Bandit_Militias
                         }
                     }
                 }
-            
+
                 Log($">> Total {PartyMilitiaMap.Values.Count} = {PartyMilitiaMap.Values.Select(x => x.MobileParty.MemberRoster.TotalManCount).Sum()}");
             }
-            
+
             if ((Input.IsKeyDown(InputKey.LeftControl) || Input.IsKeyDown(InputKey.RightControl)) &&
                 (Input.IsKeyDown(InputKey.LeftAlt) || Input.IsKeyDown(InputKey.RightAlt)) &&
                 Input.IsKeyPressed(InputKey.N))
@@ -144,13 +148,11 @@ namespace Bandit_Militias
             }
         }
 
-        
+
         private static void RunManualPatches()
         {
             try
             {
-
-
             }
             catch (Exception ex)
             {

@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using HarmonyLib;
 using SandBox.ViewModelCollection.MobilePartyTracker;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
-using TaleWorlds.ModuleManager;
 
 namespace Bandit_Militias
 {
@@ -38,7 +38,7 @@ namespace Bandit_Militias
         internal static readonly List<Banner> Banners = new();
         internal static double LastCalculated;
         internal static float Variance => MBRandom.RandomFloatRanged(0.8f, 1.2f);
-        internal static readonly object MountAndWarcraftMod = ModuleHelper.GetModuleInfo("Mount&Warcraft");
+        //internal static readonly bool MountAndWarcraftMod = ModuleHelper.GetModuleInfo("Mount&Warcraft").IsSelected;
 
         // ReSharper disable once InconsistentNaming
         internal static MobilePartyTrackerVM MobilePartyTrackerVM;

@@ -1,11 +1,9 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
 using static Bandit_Militias.Globals;
 using static Bandit_Militias.Helpers.Helper;
-using Extensions = Bandit_Militias.Helpers.Extensions;
 
 // ReSharper disable InconsistentNaming
 
@@ -18,13 +16,12 @@ namespace Bandit_Militias
         public override void RegisterEvents()
         {
             CampaignEvents.DailyTickPartyEvent.AddNonSerializedListener(this, TryGrowing);
-            CampaignEvents.OnPartyRemovedEvent.AddNonSerializedListener(this, OnMilitiaRemoved);
-            CampaignEvents.DailyTickPartyEvent.AddNonSerializedListener(this, StopHoldingBehavior);
-            CampaignEvents.HeroWounded.AddNonSerializedListener(this, Extensions.RemoveMilitiaHero);
+            CampaignEvents.DailyTickPartyEvent.AddNonSerializedListener(this, DailyTickParty);
+            CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, FlushMilitiaCharacterObjects);
         }
 
         // todo un-kludge to unstick stuck militias  
-        private static void StopHoldingBehavior(MobileParty mobileParty)
+        private static void DailyTickParty(MobileParty mobileParty)
         {
             if (mobileParty.IsBM() &&
                 (mobileParty.ShortTermBehavior == AiBehavior.Hold ||
@@ -36,23 +33,13 @@ namespace Bandit_Militias
                 //var nearbySettlement = Settlement.FindSettlementsAroundPosition(mobileParty.Position2D, 30)?.ToList().GetRandomElement();
                 //mobileParty.SetMovePatrolAroundSettlement(nearbySettlement ?? Settlement.All.GetRandomElement());
             }
-        }
 
-        private static void OnMilitiaRemoved(PartyBase partyBase)
-        {
-            if (!partyBase.MobileParty.IsBM())
+            if (!IsValidParty(mobileParty))
             {
                 return;
             }
 
-            Mod.Log($">>> OnMilitiaRemoved - {partyBase.Name}.");
-            if (partyBase.MobileParty.LeaderHero?.CurrentSettlement is not null)
-            {
-                Traverse.Create(HeroesWithoutParty(partyBase.MobileParty.LeaderHero?.CurrentSettlement)).Field<List<Hero>>("_list").Value.Remove(partyBase.MobileParty.LeaderHero);
-                Mod.Log($">>> FLUSH OnMilitiaRemoved bandit hero without party - {partyBase.MobileParty.LeaderHero.Name} at {partyBase.MobileParty.LeaderHero?.CurrentSettlement}.");
-            }
-
-            PartyMilitiaMap.Remove(partyBase.MobileParty);
+            TrySplitParty(mobileParty);
         }
 
         private static void TryGrowing(MobileParty mobileParty)

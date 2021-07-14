@@ -3,9 +3,12 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using Bandit_Militias.Helpers;
+using HarmonyLib;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
+using TaleWorlds.Library;
 using TaleWorlds.Localization;
+using TaleWorlds.ObjectSystem;
 using static Bandit_Militias.Globals;
 using static Bandit_Militias.Helpers.Helper;
 using Debug = TaleWorlds.Library.Debug;
@@ -35,26 +38,24 @@ namespace Bandit_Militias
             LogMilitiaFormed(MobileParty);
         }
 
-        public Militia(MobileParty mobileParty, TroopRoster party, TroopRoster prisoners)
+        public Militia(Vec2 position, TroopRoster party, TroopRoster prisoners)
         {
             Banner = Banners.GetRandomElement();
             BannerKey = Banner.Serialize();
-            Spawn(mobileParty, party, prisoners);
+            Spawn(position, party, prisoners);
             TrainMilitia();
             PartyMilitiaMap.Add(MobileParty, this);
             SetMilitiaPatrol(MobileParty);
-            //var nearbySettlement = Settlement.FindSettlementsAroundPosition(MobileParty.Position2D, 30)?.ToList().GetRandomElement();
-            //MobileParty.SetMovePatrolAroundSettlement(nearbySettlement ?? Settlement.All.GetRandomElement());
             LogMilitiaFormed(MobileParty);
         }
 
-        private void Spawn(IMapPoint mobileParty, TroopRoster party, TroopRoster prisoners)
+        private void Spawn(Vec2 position, TroopRoster party, TroopRoster prisoners)
         {
-            MobileParty = MobileParty.CreateParty("Bandit_Militia");
+            MobileParty = MBObjectManager.Instance.CreateObject<MobileParty>("Bandit_Militia");
             MobileParty.InitializeMobileParty(
                 party,
                 prisoners,
-                mobileParty.Position2D,
+                position,
                 0);
             var mostPrevalent = (Clan) GetMostPrevalentFactionInParty(MobileParty) ?? Clan.BanditFactions.First();
             MobileParty.ActualClan = mostPrevalent;
@@ -64,9 +65,9 @@ namespace Bandit_Militias
             Hero.Culture = faction is null ? Clan.BanditFactions.FirstOrDefault()?.Culture : faction.Culture;
 
             var getLocalizedText = AccessTools.Method(typeof(MBTextManager), "GetLocalizedText");
-            Name = MountAndWarcraftMod is null
-                ? (string) getLocalizedText.Invoke(null, new object[] {$"{Possess(Hero.FirstName.ToString())} Bandit Militia"})
-                : (string) getLocalizedText.Invoke(null, new object[] {"Scourge Horde"});
+            Name = /*MountAndWarcraftMod
+                ? (string) getLocalizedText.Invoke(null, new object[] {"Scourge Horde"})              
+                : */(string) getLocalizedText.Invoke(null, new object[] {$"{Possess(Hero.FirstName.ToString())} Bandit Militia"});
             MobileParty.SetCustomName(new TextObject(Name));
             MobileParty.Party.Owner = Hero;
             MobileParty.Leader.StringId += "Bandit_Militia";

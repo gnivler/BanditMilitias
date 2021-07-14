@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using HarmonyLib;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.Core;
@@ -118,8 +119,8 @@ namespace Bandit_Militias.Helpers
         {
             try
             {
-                var militia1 = new Militia(original, party1, prisoners1);
-                var militia2 = new Militia(original, party2, prisoners2);
+                var militia1 = new Militia(original.Position2D, party1, prisoners1);
+                var militia2 = new Militia(original.Position2D, party2, prisoners2);
                 SetMilitiaPatrol(militia1.MobileParty);
                 SetMilitiaPatrol(militia2.MobileParty);
                 //var settlements = Settlement.FindSettlementsAroundPosition(original.Position2D, 30).ToList();
@@ -232,8 +233,7 @@ namespace Bandit_Militias.Helpers
         {
             Mod.Log("Trashing " + mobileParty.Name);
             PartyMilitiaMap.Remove(mobileParty);
-            mobileParty.RemoveParty();
-            mobileParty.LeaderHero.RemoveMilitiaHero();
+            DestroyPartyAction.Apply(null, mobileParty);
         }
 
         internal static void Nuke()
@@ -323,13 +323,16 @@ namespace Bandit_Militias.Helpers
 
         internal static void FlushMilitiaCharacterObjects()
         {
-            // these are leaking somewhere, somehow... maybe.  maybe not.  3.0.3 on 1.5.10
-            var BMs = CharacterObject.All.Where(c => c.StringId.EndsWith("Bandit_Militia")
-                                                     && c.HeroObject?.PartyBelongedTo is null).ToList();
+            // leak from CampaignTickPatch, trashing parties there doesn't get rid of all remnants...
+            // many hours trying to find proper solution
+            // 2-4 ms
+            var COs = new List<CharacterObject>();
+            MBObjectManager.Instance.GetAllInstancesOfObjectType(ref COs);
+            var BMs = COs.Where(c => c.HeroObject?.PartyBelongedTo is null
+                                     && c.StringId.EndsWith("Bandit_Militia")).ToList();
             if (BMs.Any())
             {
-                Mod.Log($">>> FLUSH {BMs.Count} BM CharacterObject{(BMs.Count > 1 ? "s" : "")}");
-                BMs.Do(c => Mod.Log(c.ToString()));
+                Mod.Log($">>> FLUSH {BMs.Count} BM CharacterObjects");
                 BMs.Do(c => MBObjectManager.Instance.UnregisterObject(c));
                 var charactersField = Traverse.Create(Campaign.Current).Field<MBReadOnlyList<CharacterObject>>("_characters");
                 var tempCharacterObjectList = new List<CharacterObject>(charactersField.Value);
@@ -413,7 +416,7 @@ namespace Bandit_Militias.Helpers
 
         private static void FlushMapEvents()
         {
-            var mapEvents = Traverse.Create(Campaign.Current.MapEventManager).Field("_mapEvents").GetValue<List<MapEvent>>();
+            var mapEvents = Traverse.Create(Campaign.Current.MapEventManager).Field("mapEvents").GetValue<List<MapEvent>>();
             for (var index = 0; index < mapEvents.Count; index++)
             {
                 var mapEvent = mapEvents[index];
@@ -551,7 +554,7 @@ namespace Bandit_Militias.Helpers
                 "Bound Crossbow"
             };
 
-            var all = Items.All.Where(i =>
+            var all = ItemObject.All.Where(i =>
                 i.ItemType != ItemObject.ItemTypeEnum.Goods
                 && i.ItemType != ItemObject.ItemTypeEnum.Horse
                 && i.ItemType != ItemObject.ItemTypeEnum.HorseHarness
@@ -782,10 +785,10 @@ namespace Bandit_Militias.Helpers
 
         // this is a bit wasteful, if doing a list of heroes since it replaces the whole list each time
         // but it only takes 1000 ticks so whatever?
-        internal static void RemoveHeroFromReadOnlyList(Hero hero)
+        internal static void RemoveCharacterFromReadOnlyList(CharacterObject hero)
         {
             var charactersField = Traverse.Create(Campaign.Current).Field<MBReadOnlyList<CharacterObject>>("_characters");
-            charactersField.Value = new MBReadOnlyList<CharacterObject>(charactersField.Value.Except(new[] {hero.CharacterObject}).ToList());
+            charactersField.Value = new MBReadOnlyList<CharacterObject>(charactersField.Value.Except(new[] {hero}).ToList());
         }
 
         // anti-congregation, seems like circumstances can lead to a positive feedback loop in 3.0.3 (and a ton of BMs in one area)

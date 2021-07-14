@@ -1,7 +1,7 @@
+using Bandit_Militias.Helpers;
 using HarmonyLib;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
-using static Bandit_Militias.Helpers.Helper;
 
 // ReSharper disable UnusedMember.Global 
 // ReSharper disable UnusedType.Global 
@@ -20,12 +20,15 @@ namespace Bandit_Militias.Patches
         {
             private static bool Prefix(Hero prisonerCharacter)
             {
-                if (prisonerCharacter?.PartyBelongedTo is null)
+                if (prisonerCharacter?.PartyBelongedTo is null
+                    || !prisonerCharacter.PartyBelongedTo.IsBM())
                 {
                     return true;
                 }
 
-                return !prisonerCharacter.PartyBelongedTo.IsBM();
+                Mod.Log("TakePrisonerActionApplyInternalPatch");
+                prisonerCharacter.RemoveMilitiaHero();
+                return false;
             }
         }
 
@@ -35,7 +38,14 @@ namespace Bandit_Militias.Patches
         {
             private static bool Prefix(PartyBase defeatedParty)
             {
-                return !defeatedParty.MobileParty.IsBM();
+                if (defeatedParty?.MobileParty is not null
+                    && defeatedParty.MobileParty.IsBM())
+                {
+                    defeatedParty.LeaderHero?.RemoveMilitiaHero();
+                    return false;
+                }
+
+                return true;
             }
         }
     }

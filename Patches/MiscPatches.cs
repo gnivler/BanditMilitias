@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Bandit_Militias.Helpers;
+using HarmonyLib;
 using SandBox;
 using SandBox.View.Map;
 using SandBox.ViewModelCollection.MobilePartyTracker;
@@ -52,7 +53,7 @@ namespace Bandit_Militias.Patches
                 // used for armour
                 foreach (ItemObject.ItemTypeEnum value in Enum.GetValues(typeof(ItemObject.ItemTypeEnum)))
                 {
-                    ItemTypes[value] = Items.All.Where(x =>
+                    ItemTypes[value] = ItemObject.All.Where(x =>
                         x.Type == value && x.Value >= 1000 && x.Value <= Globals.Settings.MaxItemValue * Variance).ToList();
                 }
 
@@ -66,9 +67,9 @@ namespace Bandit_Militias.Patches
                 PartyMilitiaMap.Clear();
                 Hideouts = Settlement.FindAll(x => x.IsHideout()).ToList();
 
-                var militias = MobileParty.All.Where(x =>
-                    x is not null && x.StringId.StartsWith("Bandit_Militia")).ToList();
-                
+                var militias = MobileParty.All.Where(m =>
+                    m is not null && m.StringId.StartsWith("Bandit_Militia")).ToList();
+
                 // vestigial, remove at BL v1.6
                 for (var i = 0; i < militias.Count; i++)
                 {
@@ -89,12 +90,12 @@ namespace Bandit_Militias.Patches
                     else
                     {
                         var recreatedMilitia = new Militia(militia);
+                        SetMilitiaPatrol(recreatedMilitia.MobileParty);
                         PartyMilitiaMap.Add(recreatedMilitia.MobileParty, recreatedMilitia);
                     }
                 }
 
-                PartyMilitiaMap.Keys.Do(SetMilitiaPatrol);
-
+                FlushMilitiaCharacterObjects();
                 Mod.Log($"Militias: {militias.Count} (registered {PartyMilitiaMap.Count})");
                 // 1.5.10 is dropping the militia settlements at some point, I haven't figured out where
                 ReHome();
@@ -115,29 +116,37 @@ namespace Bandit_Militias.Patches
             }
         }
 
-        // just disperse small militias
-        // todo prevent this unless the militia has lost or retreated from combat
-        [HarmonyPatch(typeof(MapEventSide), "HandleMapEventEndForPartyInternal", typeof(PartyBase))]
+        // just disperse loser militias
+        [HarmonyPatch(typeof(MapEventSide), "HandleMapEventEndForParty", typeof(PartyBase))]
         public static class MapEventSideHandleMapEventEndForPartyPatch
         {
-            private static void Postfix(MapEventSide __instance, PartyBase party)
+            private static void Postfix(PartyBase party, MapEvent ____mapEvent, string __state)
             {
-                if (party?.MobileParty is null ||
-                    !party.MobileParty.IsBM() ||
-                    party.PrisonRoster is not null &&
-                    party.PrisonRoster.Contains(Hero.MainHero.CharacterObject))
+                if (party?.MobileParty is null
+                    || !party.MobileParty.IsBM()
+                    || party.PrisonRoster is not null
+                    && party.PrisonRoster.Contains(Hero.MainHero.CharacterObject))
                 {
                     return;
                 }
 
-                if (party.MemberRoster?.TotalHealthyCount == 0 ||
-                    party.MemberRoster?.TotalHealthyCount < Globals.Settings.MinPartySize &&
-                    party.PrisonRoster?.Count < Globals.Settings.MinPartySize &&
-                    __instance.Casualties > party.MemberRoster?.TotalHealthyCount * 2)
+                if (party.MobileParty.IsBM()
+                    && ____mapEvent.Winner != party.MapEventSide)
                 {
                     Mod.Log($">>> Dispersing {party.Name} of {party.MemberRoster.TotalHealthyCount}+{party.MemberRoster.TotalWounded}w+{party.PrisonRoster?.Count}p");
-                    //party.MobileParty.LeaderHero.RemoveCharacterObject();
                     Trash(party.MobileParty);
+                }
+            }
+        }
+
+        [HarmonyPatch(typeof(MobileParty), "RemoveParty")]
+        public static class MobilePartyRemovePartyPatch
+        {
+            private static void Prefix(MobileParty __instance)
+            {
+                if (__instance.IsBM())
+                {
+                    __instance.LeaderHero.RemoveMilitiaHero();
                 }
             }
         }
@@ -226,7 +235,7 @@ namespace Bandit_Militias.Patches
                 Globals.MobilePartyTrackerVM ??= __instance;
             }
         }
-         
+
         // the 2nd one at least
         // seems to make the skulls red in combat, eg kill
         [HarmonyPatch(typeof(BattleAgentLogic), "OnAgentRemoved")]
@@ -241,7 +250,7 @@ namespace Bandit_Militias.Patches
                 }
             }
         }
-        
+
         [HarmonyPatch(typeof(Mission), "OnAgentRemoved")]
         public static class MissionOnAgentRemovedPatch
         {

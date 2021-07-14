@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Bandit_Militias.Helpers;
+using HarmonyLib;
 using SandBox.View.Map;
 using SandBox.ViewModelCollection;
 using SandBox.ViewModelCollection.Nameplate;
@@ -126,7 +127,7 @@ namespace Bandit_Militias.Patches
 
                         // create a new party merged from the two
                         var rosters = MergeRosters(mobileParty, targetParty);
-                        var militia = new Militia(mobileParty, rosters[0], rosters[1]);
+                        var militia = new Militia(mobileParty.Position2D, rosters[0], rosters[1]);
                         // teleport new militias near the player
                         if (Globals.Settings.TestingMode)
                         {
@@ -136,6 +137,10 @@ namespace Bandit_Militias.Patches
                         }
 
                         militia.MobileParty.Party.Visuals.SetMapIconAsDirty();
+                        // BUG... so many hours.  parties don't actually get trashed, BM hero character leaks
+                        // MilitiaBehavior.cs registers a daily tick event to remove them
+                        mobileParty.IsDisbanding = true;
+                        targetParty.MobileParty.IsDisbanding = true;
                         Trash(mobileParty);
                         Trash(targetParty.MobileParty);
                         DoPowerCalculations();
@@ -205,23 +210,6 @@ namespace Bandit_Militias.Patches
             }
         }
 
-        // check daily each bandit party against the size factor and a random chance to split up
-        [HarmonyPatch(typeof(MobileParty), "DailyTick")]
-        public static class MobilePartyDailyTickPatch
-        {
-            private static void Postfix(MobileParty __instance)
-            {
-                // HACK to deal with the leak
-                FlushMilitiaCharacterObjects();
-                if (!IsValidParty(__instance))
-                {
-                    return;
-                }
-
-                TrySplitParty(__instance);
-            }
-        }
-
         [HarmonyPatch(typeof(EnterSettlementAction), "ApplyInternal")]
         public static class EnterSettlementActionApplyInternalPatch
         {
@@ -229,9 +217,8 @@ namespace Bandit_Militias.Patches
             {
                 if (mobileParty.IsBM())
                 {
-                    Mod.Log($"Preventing {mobileParty} from entering {settlement}");
+                    Mod.Log($"Preventing {mobileParty} from entering {settlement.Name}");
                     SetMilitiaPatrol(mobileParty);
-                    //mobileParty.SetMovePatrolAroundSettlement(settlement);
                     return false;
                 }
 
@@ -322,7 +309,8 @@ namespace Bandit_Militias.Patches
                     && mobileParty.ActualClan?.Leader is null
                     && mobileParty.IsBM())
                 {
-                    Traverse.Create(mobileParty.ActualClan).Field<Hero>("_leader").Value = mobileParty.LeaderHero;
+                    var hero = HeroCreator.CreateHeroAtOccupation(Occupation.Outlaw);
+                    mobileParty.ActualClan?.SetLeader(hero);
                 }
             }
         }
@@ -359,6 +347,23 @@ namespace Bandit_Militias.Patches
                 }
 
                 return null;
+            }
+        }
+
+        [HarmonyPatch(typeof(MapEvent), "FinishBattle")]
+        public static class MapEventFinishBattlePatch
+        {
+            private static bool Prefix(MapEvent __instance)
+            {
+                var loserParties = __instance.InvolvedParties.Where(p => p.Side == __instance.DefeatedSide).ToList();
+                //if (loserParties.Any(p => p.Leader is not null
+                //                          && p.Leader.StringId.EndsWith("Bandit_Militia")))
+                //{
+                //    loserParties.Do(p => p.LeaderHero.RemoveMilitiaHero());
+                //    return false;
+                //}
+
+                return true;
             }
         }
     }
