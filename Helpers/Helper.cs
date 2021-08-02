@@ -140,7 +140,7 @@ namespace Bandit_Militias.Helpers
             }
         }
 
-        private static List<string> verboten = new List<string>
+        private static readonly List<string> verbotenParties = new()
         {
             "ebdi_deserters_party",
             "caravan_ambush_quest",
@@ -165,7 +165,7 @@ namespace Bandit_Militias.Helpers
                 && __instance.CurrentSettlement is null
                 && __instance.Party.MemberRoster.TotalManCount > 0
                 && !__instance.IsUsedByAQuest()
-                && !verboten.Contains(__instance.StringId)
+                && !verbotenParties.Contains(__instance.StringId)
                 && !__instance.IsTooBusyToMerge())
             {
                 return true;
@@ -416,7 +416,7 @@ namespace Bandit_Militias.Helpers
 
         private static void FlushMapEvents()
         {
-            var mapEvents = Traverse.Create(Campaign.Current.MapEventManager).Field("mapEvents").GetValue<List<MapEvent>>();
+            var mapEvents = Traverse.Create(Campaign.Current.MapEventManager).Field("_mapEvents").GetValue<List<MapEvent>>();
             for (var index = 0; index < mapEvents.Count; index++)
             {
                 var mapEvent = mapEvents[index];
@@ -544,7 +544,7 @@ namespace Bandit_Militias.Helpers
 
         internal static void PopulateItems()
         {
-            var verboten = new[]
+            var verbotenItems = new[]
             {
                 "Sparring Targe",
                 "Trash Item",
@@ -554,7 +554,7 @@ namespace Bandit_Militias.Helpers
                 "Bound Crossbow"
             };
 
-            var all = ItemObject.All.Where(i =>
+            var all = Items.All.Where(i =>
                 i.ItemType != ItemObject.ItemTypeEnum.Goods
                 && i.ItemType != ItemObject.ItemTypeEnum.Horse
                 && i.ItemType != ItemObject.ItemTypeEnum.HorseHarness
@@ -566,7 +566,7 @@ namespace Bandit_Militias.Helpers
                 && !i.Name.Contains("Crafted")
                 && !i.Name.Contains("Wooden")
                 && !i.Name.Contains("Practice")
-                && !verboten.Contains(i.Name.ToString())).ToList();
+                && !verbotenItems.Contains(i.Name.ToString())).ToList();
             Arrows = all.Where(i => i.ItemType == ItemObject.ItemTypeEnum.Arrows)
                 .Where(x => !x.Name.Contains("Ballista")).ToList();
             Bolts = all.Where(i => i.ItemType == ItemObject.ItemTypeEnum.Bolts).ToList();

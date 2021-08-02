@@ -350,21 +350,21 @@ namespace Bandit_Militias.Patches
             }
         }
 
-        [HarmonyPatch(typeof(MapEvent), "FinishBattle")]
-        public static class MapEventFinishBattlePatch
-        {
-            private static bool Prefix(MapEvent __instance)
-            {
-                var loserParties = __instance.InvolvedParties.Where(p => p.Side == __instance.DefeatedSide).ToList();
-                //if (loserParties.Any(p => p.Leader is not null
-                //                          && p.Leader.StringId.EndsWith("Bandit_Militia")))
-                //{
-                //    loserParties.Do(p => p.LeaderHero.RemoveMilitiaHero());
-                //    return false;
-                //}
-
-                return true;
-            }
-        }
+        //[HarmonyPatch(typeof(MapEvent), "FinishBattle")]
+        //public static class MapEventFinishBattlePatch
+        //{
+        //    private static bool Prefix(MapEvent __instance)
+        //    {
+        //        var loserParties = __instance.InvolvedParties.Where(p => p.Side == __instance.DefeatedSide).ToList();
+        //        //if (loserParties.Any(p => p.Leader is not null
+        //        //                          && p.Leader.StringId.EndsWith("Bandit_Militia")))
+        //        //{
+        //        //    loserParties.Do(p => p.LeaderHero.RemoveMilitiaHero());
+        //        //    return false;
+        //        //}
+        //
+        //        return true;
+        //    }
+        //}
     }
 }

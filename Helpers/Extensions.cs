@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using HarmonyLib;
 using TaleWorlds.CampaignSystem;
@@ -52,9 +51,9 @@ namespace Bandit_Militias.Helpers
                 MBObjectManager.Instance.UnregisterObject(hero.CharacterObject);
                 MBObjectManager.Instance.UnregisterObject(hero);
             }
-            catch (Exception ex)
+            catch// (Exception ex)
             {
-                Mod.Log(ex);
+                //ignore Mod.Log(ex);
             }
         }
     }

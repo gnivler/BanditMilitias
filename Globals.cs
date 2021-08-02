@@ -9,7 +9,8 @@ using TaleWorlds.Library;
 
 namespace Bandit_Militias
 {
-    public static class Globals
+    // ReSharper disable once ClassNeverInstantiated.Global
+    internal class Globals
     {
         // merge/split criteria
         internal const float MergeDistance = 2;
@@ -20,7 +21,7 @@ namespace Bandit_Militias
         // holders for criteria
         internal static float CalculatedMaxPartyStrength;
         internal static float CalculatedMaxPartySize;
-        internal static float CalculatedGlobalPowerLimit;   // TODO verify purpose
+        internal static float CalculatedGlobalPowerLimit;// TODO verify purpose
         internal static float GlobalMilitiaPower;
 
         // misc
@@ -38,7 +39,6 @@ namespace Bandit_Militias
         internal static readonly List<Banner> Banners = new();
         internal static double LastCalculated;
         internal static float Variance => MBRandom.RandomFloatRanged(0.8f, 1.2f);
-        //internal static readonly bool MountAndWarcraftMod = ModuleHelper.GetModuleInfo("Mount&Warcraft").IsSelected;
 
         // ReSharper disable once InconsistentNaming
         internal static MobilePartyTrackerVM MobilePartyTrackerVM;

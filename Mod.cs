@@ -60,7 +60,14 @@ namespace Bandit_Militias
             Globals.Settings = Settings.Instance;
             if (File.Exists(logFilename))
             {
-                File.Delete(logFilename);
+                try
+                {
+                    File.Delete(logFilename);
+                }
+                catch (Exception ex)
+                {
+                    Log(ex);
+                }
             }
 
             Log($"Bandit Militias {Assembly.GetExecutingAssembly().GetName().Version.ToString(3)} starting up...");

@@ -53,7 +53,7 @@ namespace Bandit_Militias.Patches
                 // used for armour
                 foreach (ItemObject.ItemTypeEnum value in Enum.GetValues(typeof(ItemObject.ItemTypeEnum)))
                 {
-                    ItemTypes[value] = ItemObject.All.Where(x =>
+                    ItemTypes[value] = Items.All.Where(x =>
                         x.Type == value && x.Value >= 1000 && x.Value <= Globals.Settings.MaxItemValue * Variance).ToList();
                 }
 
@@ -117,27 +117,28 @@ namespace Bandit_Militias.Patches
         }
 
         // just disperse loser militias
-        [HarmonyPatch(typeof(MapEventSide), "HandleMapEventEndForParty", typeof(PartyBase))]
-        public static class MapEventSideHandleMapEventEndForPartyPatch
-        {
-            private static void Postfix(PartyBase party, MapEvent ____mapEvent, string __state)
-            {
-                if (party?.MobileParty is null
-                    || !party.MobileParty.IsBM()
-                    || party.PrisonRoster is not null
-                    && party.PrisonRoster.Contains(Hero.MainHero.CharacterObject))
-                {
-                    return;
-                }
-
-                if (party.MobileParty.IsBM()
-                    && ____mapEvent.Winner != party.MapEventSide)
-                {
-                    Mod.Log($">>> Dispersing {party.Name} of {party.MemberRoster.TotalHealthyCount}+{party.MemberRoster.TotalWounded}w+{party.PrisonRoster?.Count}p");
-                    Trash(party.MobileParty);
-                }
-            }
-        }
+        //[HarmonyPatch(typeof(MapEventSide), "HandleMapEventEndForParty", typeof(PartyBase))]
+        //public static class MapEventSideHandleMapEventEndForPartyPatch
+        //{
+        //    private static void Postfix(PartyBase party, MapEvent ____mapEvent)
+        //    {
+        //        if (party?.MobileParty is null
+        //            || !party.MobileParty.IsBM()
+        //            || party.PrisonRoster is not null
+        //            && party.PrisonRoster.Contains(Hero.MainHero.CharacterObject))
+        //        {
+        //            return;
+        //        }
+        //
+        //        var wonBattle = party.MapEventSide == null || ____mapEvent.Winner == party.MapEventSide;
+        //        if (!wonBattle
+        //            && party.MobileParty.IsBM())
+        //        {
+        //            Mod.Log($">>> Dispersing {party.Name} of {party.MemberRoster.TotalHealthyCount}+{party.MemberRoster.TotalWounded}w+{party.PrisonRoster?.Count}p");
+        //            Trash(party.MobileParty);
+        //        }
+        //    }
+        //}
 
         [HarmonyPatch(typeof(MobileParty), "RemoveParty")]
         public static class MobilePartyRemovePartyPatch
