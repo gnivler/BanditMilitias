@@ -264,6 +264,17 @@ namespace Bandit_Militias.Helpers
             }
         }
 
+        // needed apparently to clean up after 3.0.6 allowing prisoners
+        internal static void FlushSettlementsOfBM()
+        {
+            foreach (var settlement in Settlement.All)
+            {
+                foreach (var party in settlement.Parties)
+                {
+                }
+            }
+        }
+
         // still needed 1.5.10
         private static void FlushDeadBanditRemnants()
         {
@@ -350,7 +361,8 @@ namespace Bandit_Militias.Helpers
 
         internal static void Flush()
         {
-            FlushSettlementHeroesWithoutParty();
+            RemoveIllCreatedTemporaryBanditFactionLeadersThatWereMissingButNowAreTaggedProperly();
+            //FlushSettlementHeroesWithoutParty();
             FlushHideoutsOfMilitias();
             FlushNullPartyHeroes();
             FlushEmptyMilitiaParties();
@@ -360,20 +372,49 @@ namespace Bandit_Militias.Helpers
             Mod.Log(">>> FLUSHED.");
         }
 
-        // not needed after 2.8.0
-        private static void FlushSettlementHeroesWithoutParty()
+        private static void RemoveIllCreatedTemporaryBanditFactionLeadersThatWereMissingButNowAreTaggedProperly()
         {
-            // ~~fixed in 2.8.0, leaving in for now~~
-            foreach (var settlement in Settlement.All.Where(x => x.HeroesWithoutParty.Count > 0))
+            for (var i = 0; i < Hero.AllAliveHeroes.Count; i++)
             {
-                var militiaHeroes = settlement.HeroesWithoutParty.Intersect(PartyMilitiaMap.Values.Select(x => x.Hero)).ToList();
-                for (var i = 0; i < militiaHeroes.Count; i++)
+                var hero = Hero.AllAliveHeroes[i];
+                if (hero.IsOutlaw
+                    && hero.IsFactionLeader
+                    && hero.CurrentSettlement != null)
                 {
-                    Traverse.Create(HeroesWithoutParty(settlement)).Field<List<Hero>>("_list").Value.Remove(militiaHeroes[i]);
-                    Mod.Log($">>> FLUSH Removing bandit hero without party {militiaHeroes[i].Name} at {settlement}.");
+                    Mod.Log("Removing " + hero.Name);
+                    hero.RemoveMilitiaHero();
                 }
             }
         }
+
+        // screwed up the 3.0.6 release by allowing prisoners and they leaked to settlements
+        // or possibly only related to a mod conflict (unidentified) since my testing didn't repro this
+        // need to keep around for a couple versions
+        //private static void FlushSettlementHeroesWithoutParty()
+        //{
+            //foreach (var settlement in Settlement.All.Where(x => x.HeroesWithoutParty.Count > 0))
+            //{
+            //    for (var i = 0; i < settlement.HeroesWithoutParty.Count; i++)
+            //    {
+            //        var hero = settlement.HeroesWithoutParty[i];
+            //        if (hero.CharacterObject.StringId.Contains("CharacterObject")
+            //        && hero.Level == 21
+            //        && hero.IsFactionLeader)
+            //        {
+            //            //Traverse.Create(HeroesWithoutParty(settlement)).Field<List<Hero>>("_list").Value.Remove(settlement.HeroesWithoutParty[i]);
+            //            settlement.HeroesWithoutParty[i].RemoveMilitiaHero();
+            //            Mod.Log($">>> FLUSH Removing bandit hero without party {settlement.HeroesWithoutParty[i].Name} at {settlement}.");
+            //        }
+            //    }
+                //var militiaHeroes = settlement.HeroesWithoutParty.Intersect(PartyMilitiaMap.Values.Select(x => x.Hero)).ToList();
+                //
+                //for (var i = 0; i < militiaHeroes.Count; i++)
+                //{
+                //    Traverse.Create(HeroesWithoutParty(settlement)).Field<List<Hero>>("_list").Value.Remove(militiaHeroes[i]);
+                //    Mod.Log($">>> FLUSH Removing bandit hero without party {militiaHeroes[i].Name} at {settlement}.");
+                //}
+            //}
+        //}
 
         // a bunch of hacks to dispose of leak(s) somewhere
         private static void FlushHeroes()
@@ -495,13 +536,16 @@ namespace Bandit_Militias.Helpers
                 if (!hasLogged)
                 {
                     hasLogged = true;
-                    Mod.Log($">>> FLUSH  {badChars.Count} bad characters.");
+                    Mod.Log($">>> FLUSH {badChars.Count} bad characters.");
                 }
 
-                Mod.Log($">>> FLUSH mock Unregistering {badChar.StringId}");
-                //Traverse.Create(badChar.HeroObject?.CurrentSettlement)
-                //    .Field("_heroesWithoutParty").Method("Remove", badChar.HeroObject).GetValue();
-                //MBObjectManager.Instance.UnregisterObject(badChar);
+                Mod.Log($">>> Unregistering {badChar.Name}");
+                MBObjectManager.Instance.UnregisterObject(badChar);
+                if (badChar.HeroObject is not null)
+                {
+                    Mod.Log("wtf");
+                    badChar.HeroObject.RemoveMilitiaHero();
+                }
             }
         }
 
@@ -757,7 +801,7 @@ namespace Bandit_Militias.Helpers
 
         internal static void PrintInstructionsAroundInsertion(List<CodeInstruction> codes, int insertPoint, int insertSize, int adjacentNum = 5)
         {
-            FileLog.Log($"Inserting {insertSize} at {insertPoint}.");
+            Mod.Log($"Inserting {insertSize} at {insertPoint}.");
 
             // in case insertPoint is near the start of the method's IL
             var adjustedAdjacent = codes.Count - adjacentNum >= 0 ? adjacentNum : Math.Max(0, codes.Count - adjacentNum);
@@ -765,12 +809,12 @@ namespace Bandit_Militias.Helpers
             {
                 // codes[266 - 5 + 0].opcode
                 // codes[266 - 5 + 4].opcode
-                FileLog.Log($"{codes[insertPoint - adjustedAdjacent + i].opcode,-10}{codes[insertPoint - adjustedAdjacent + i].operand}");
+                Mod.Log($"{codes[insertPoint - adjustedAdjacent + i].opcode,-10}{codes[insertPoint - adjustedAdjacent + i].operand}");
             }
 
             for (var i = 0; i < insertSize; i++)
             {
-                FileLog.Log($"{codes[insertPoint + i].opcode,-10}{codes[insertPoint + i].operand}");
+                Mod.Log($"{codes[insertPoint + i].opcode,-10}{codes[insertPoint + i].operand}");
             }
 
             // in case insertPoint is near the end of the method's IL
@@ -779,7 +823,7 @@ namespace Bandit_Militias.Helpers
             {
                 // 266 + 2 - 5 + 0
                 // 266 + 2 - 5 + 4
-                FileLog.Log($"{codes[insertPoint + insertSize + adjustedAdjacent + i].opcode,-10}{codes[insertPoint + insertSize + adjustedAdjacent + i].operand}");
+                Mod.Log($"{codes[insertPoint + insertSize + adjustedAdjacent + i].opcode,-10}{codes[insertPoint + insertSize + adjustedAdjacent + i].operand}");
             }
         }
 

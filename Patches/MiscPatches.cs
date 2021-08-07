@@ -117,40 +117,48 @@ namespace Bandit_Militias.Patches
         }
 
         // just disperse loser militias
-        //[HarmonyPatch(typeof(MapEventSide), "HandleMapEventEndForParty", typeof(PartyBase))]
-        //public static class MapEventSideHandleMapEventEndForPartyPatch
-        //{
-        //    private static void Postfix(PartyBase party, MapEvent ____mapEvent)
-        //    {
-        //        if (party?.MobileParty is null
-        //            || !party.MobileParty.IsBM()
-        //            || party.PrisonRoster is not null
-        //            && party.PrisonRoster.Contains(Hero.MainHero.CharacterObject))
-        //        {
-        //            return;
-        //        }
-        //
-        //        var wonBattle = party.MapEventSide == null || ____mapEvent.Winner == party.MapEventSide;
-        //        if (!wonBattle
-        //            && party.MobileParty.IsBM())
-        //        {
-        //            Mod.Log($">>> Dispersing {party.Name} of {party.MemberRoster.TotalHealthyCount}+{party.MemberRoster.TotalWounded}w+{party.PrisonRoster?.Count}p");
-        //            Trash(party.MobileParty);
-        //        }
-        //    }
-        //}
-
-        [HarmonyPatch(typeof(MobileParty), "RemoveParty")]
-        public static class MobilePartyRemovePartyPatch
+        [HarmonyPatch(typeof(MapEventSide), "HandleMapEventEndForPartyInternal", typeof(PartyBase))]
+        public static class MapEventSideHandleMapEventEndForPartyPatch
         {
-            private static void Prefix(MobileParty __instance)
+            private static void Prefix(MapEventSide __instance, PartyBase party, ref bool __state)
             {
-                if (__instance.IsBM())
+                __state = Traverse.Create(__instance.MapEvent).Method("IsWinnerSide", party.Side).GetValue<bool>();
+            }
+
+            private static void Postfix(MapEventSide __instance, PartyBase party, ref bool __state)
+            {
+                if (party?.MobileParty is null
+                    || !party.MobileParty.IsBM()
+                    || party.PrisonRoster is not null
+                    && party.PrisonRoster.Contains(Hero.MainHero.CharacterObject))
                 {
-                    __instance.LeaderHero.RemoveMilitiaHero();
+                    return;
+                }
+
+                var wonBattle = __state;
+                var isBM = party.MobileParty.IsBM();
+                if (__instance.MapEvent.HasWinner
+                    && !wonBattle
+                    && isBM
+                    && party.MemberRoster.TotalManCount <= Globals.Settings.MinPartySize)
+                {
+                    Mod.Log($">>> Dispersing {party.Name} of {party.MemberRoster.TotalHealthyCount}+{party.MemberRoster.TotalWounded}w+{party.PrisonRoster?.Count}p");
+                    Trash(party.MobileParty);
                 }
             }
         }
+
+        //[HarmonyPatch(typeof(MobileParty), "RemoveParty")]
+        //public static class MobilePartyRemovePartyPatch
+        //{
+        //    private static void Prefix(MobileParty __instance)
+        //    {
+        //        if (__instance.IsBM())
+        //        {
+        //            __instance.LeaderHero.RemoveMilitiaHero();
+        //        }
+        //    }
+        //}
 
         // not firing in 1.5.10
         [HarmonyPatch(typeof(HeroCreator), "CreateRelativeNotableHero")]

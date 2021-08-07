@@ -29,12 +29,6 @@ namespace Bandit_Militias.Helpers
         {
             try
             {
-                if (hero?.CharacterObject is null
-                    || !hero.CharacterObject.StringId.EndsWith("Bandit_Militia"))
-                {
-                    return;
-                }
-
                 hero.PartyBelongedTo?.MemberRoster.RemoveTroop(hero.CharacterObject);
                 Traverse.Create(hero).Field<Hero.CharacterStates>("_heroState").Value = Hero.CharacterStates.Dead;
                 LocationComplex.Current?.RemoveCharacterIfExists(hero);

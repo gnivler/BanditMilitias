@@ -309,7 +309,7 @@ namespace Bandit_Militias.Patches
                     && mobileParty.ActualClan?.Leader is null
                     && mobileParty.IsBM())
                 {
-                    var hero = HeroCreator.CreateHeroAtOccupation(Occupation.Outlaw);
+                    var hero = HeroCreatorCopy.CreateBanditHero(mobileParty.ActualClan, mobileParty);
                     mobileParty.ActualClan?.SetLeader(hero);
                 }
             }
