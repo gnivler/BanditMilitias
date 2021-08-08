@@ -53,7 +53,7 @@ namespace Bandit_Militias.Patches
                 // used for armour
                 foreach (ItemObject.ItemTypeEnum value in Enum.GetValues(typeof(ItemObject.ItemTypeEnum)))
                 {
-                    ItemTypes[value] = Items.All.Where(x =>
+                    ItemTypes[value] = ItemObject.All.Where(x =>
                         x.Type == value && x.Value >= 1000 && x.Value <= Globals.Settings.MaxItemValue * Variance).ToList();
                 }
 
@@ -67,37 +67,21 @@ namespace Bandit_Militias.Patches
                 PartyMilitiaMap.Clear();
                 Hideouts = Settlement.FindAll(x => x.IsHideout()).ToList();
 
+                // considers leaderless militias
                 var militias = MobileParty.All.Where(m =>
-                    m is not null && m.StringId.StartsWith("Bandit_Militia")).ToList();
-
-                // vestigial, remove at BL v1.6
+                    m.LeaderHero is not null && m.StringId.StartsWith("Bandit_Militia")).ToList();
+                
                 for (var i = 0; i < militias.Count; i++)
                 {
                     var militia = militias[i];
-                    // this could be removed after 2.8.7 ish
-                    if (militia.CurrentSettlement is not null)
-                    {
-                        Mod.Log("Militia in hideout found and removed.");
-                        Trash(militia);
-                        continue;
-                    }
-
-                    if (militia.LeaderHero is null)
-                    {
-                        Mod.Log("Leaderless militia found and removed.");
-                        Trash(militia);
-                    }
-                    else
-                    {
-                        var recreatedMilitia = new Militia(militia);
-                        SetMilitiaPatrol(recreatedMilitia.MobileParty);
-                        PartyMilitiaMap.Add(recreatedMilitia.MobileParty, recreatedMilitia);
-                    }
+                    var recreatedMilitia = new Militia(militia);
+                    SetMilitiaPatrol(recreatedMilitia.MobileParty);
+                    PartyMilitiaMap.Add(recreatedMilitia.MobileParty, recreatedMilitia);
                 }
 
                 FlushMilitiaCharacterObjects();
                 Mod.Log($"Militias: {militias.Count} (registered {PartyMilitiaMap.Count})");
-                // 1.5.10 is dropping the militia settlements at some point, I haven't figured out where
+                // 1.6 is dropping the militia settlements at some point, I haven't figured out where
                 ReHome();
                 DoPowerCalculations(true);
 
@@ -117,7 +101,7 @@ namespace Bandit_Militias.Patches
         }
 
         // just disperse loser militias
-        [HarmonyPatch(typeof(MapEventSide), "HandleMapEventEndForPartyInternal", typeof(PartyBase))]
+        [HarmonyPatch(typeof(MapEventSide), "HandleMapEventEndForParty", typeof(PartyBase))]
         public static class MapEventSideHandleMapEventEndForPartyPatch
         {
             private static void Prefix(MapEventSide __instance, PartyBase party, ref bool __state)
@@ -136,10 +120,9 @@ namespace Bandit_Militias.Patches
                 }
 
                 var wonBattle = __state;
-                var isBM = party.MobileParty.IsBM();
                 if (__instance.MapEvent.HasWinner
                     && !wonBattle
-                    && isBM
+                    && party.MobileParty.IsBM()
                     && party.MemberRoster.TotalManCount <= Globals.Settings.MinPartySize)
                 {
                     Mod.Log($">>> Dispersing {party.Name} of {party.MemberRoster.TotalHealthyCount}+{party.MemberRoster.TotalWounded}w+{party.PrisonRoster?.Count}p");
@@ -241,7 +224,7 @@ namespace Bandit_Militias.Patches
         {
             private static void Postfix(MobilePartyTrackerVM __instance)
             {
-                Globals.MobilePartyTrackerVM ??= __instance;
+                Globals.MobilePartyTrackerVM = __instance;
             }
         }
 

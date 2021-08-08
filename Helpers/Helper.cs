@@ -374,9 +374,9 @@ namespace Bandit_Militias.Helpers
 
         private static void RemoveIllCreatedTemporaryBanditFactionLeadersThatWereMissingButNowAreTaggedProperly()
         {
-            for (var i = 0; i < Hero.AllAliveHeroes.Count; i++)
+            for (var i = 0; i < Hero.All.Count; i++)
             {
-                var hero = Hero.AllAliveHeroes[i];
+                var hero = Hero.All[i];
                 if (hero.IsOutlaw
                     && hero.IsFactionLeader
                     && hero.CurrentSettlement != null)
@@ -392,28 +392,28 @@ namespace Bandit_Militias.Helpers
         // need to keep around for a couple versions
         //private static void FlushSettlementHeroesWithoutParty()
         //{
-            //foreach (var settlement in Settlement.All.Where(x => x.HeroesWithoutParty.Count > 0))
-            //{
-            //    for (var i = 0; i < settlement.HeroesWithoutParty.Count; i++)
-            //    {
-            //        var hero = settlement.HeroesWithoutParty[i];
-            //        if (hero.CharacterObject.StringId.Contains("CharacterObject")
-            //        && hero.Level == 21
-            //        && hero.IsFactionLeader)
-            //        {
-            //            //Traverse.Create(HeroesWithoutParty(settlement)).Field<List<Hero>>("_list").Value.Remove(settlement.HeroesWithoutParty[i]);
-            //            settlement.HeroesWithoutParty[i].RemoveMilitiaHero();
-            //            Mod.Log($">>> FLUSH Removing bandit hero without party {settlement.HeroesWithoutParty[i].Name} at {settlement}.");
-            //        }
-            //    }
-                //var militiaHeroes = settlement.HeroesWithoutParty.Intersect(PartyMilitiaMap.Values.Select(x => x.Hero)).ToList();
-                //
-                //for (var i = 0; i < militiaHeroes.Count; i++)
-                //{
-                //    Traverse.Create(HeroesWithoutParty(settlement)).Field<List<Hero>>("_list").Value.Remove(militiaHeroes[i]);
-                //    Mod.Log($">>> FLUSH Removing bandit hero without party {militiaHeroes[i].Name} at {settlement}.");
-                //}
-            //}
+        //foreach (var settlement in Settlement.All.Where(x => x.HeroesWithoutParty.Count > 0))
+        //{
+        //    for (var i = 0; i < settlement.HeroesWithoutParty.Count; i++)
+        //    {
+        //        var hero = settlement.HeroesWithoutParty[i];
+        //        if (hero.CharacterObject.StringId.Contains("CharacterObject")
+        //        && hero.Level == 21
+        //        && hero.IsFactionLeader)
+        //        {
+        //            //Traverse.Create(HeroesWithoutParty(settlement)).Field<List<Hero>>("_list").Value.Remove(settlement.HeroesWithoutParty[i]);
+        //            settlement.HeroesWithoutParty[i].RemoveMilitiaHero();
+        //            Mod.Log($">>> FLUSH Removing bandit hero without party {settlement.HeroesWithoutParty[i].Name} at {settlement}.");
+        //        }
+        //    }
+        //var militiaHeroes = settlement.HeroesWithoutParty.Intersect(PartyMilitiaMap.Values.Select(x => x.Hero)).ToList();
+        //
+        //for (var i = 0; i < militiaHeroes.Count; i++)
+        //{
+        //    Traverse.Create(HeroesWithoutParty(settlement)).Field<List<Hero>>("_list").Value.Remove(militiaHeroes[i]);
+        //    Mod.Log($">>> FLUSH Removing bandit hero without party {militiaHeroes[i].Name} at {settlement}.");
+        //}
+        //}
         //}
 
         // a bunch of hacks to dispose of leak(s) somewhere
@@ -457,7 +457,7 @@ namespace Bandit_Militias.Helpers
 
         private static void FlushMapEvents()
         {
-            var mapEvents = Traverse.Create(Campaign.Current.MapEventManager).Field("_mapEvents").GetValue<List<MapEvent>>();
+            var mapEvents = Traverse.Create(Campaign.Current.MapEventManager).Field("mapEvents").GetValue<List<MapEvent>>();
             for (var index = 0; index < mapEvents.Count; index++)
             {
                 var mapEvent = mapEvents[index];
@@ -598,7 +598,7 @@ namespace Bandit_Militias.Helpers
                 "Bound Crossbow"
             };
 
-            var all = Items.All.Where(i =>
+            var all = ItemObject.All.Where(i =>
                 i.ItemType != ItemObject.ItemTypeEnum.Goods
                 && i.ItemType != ItemObject.ItemTypeEnum.Horse
                 && i.ItemType != ItemObject.ItemTypeEnum.HorseHarness
@@ -792,11 +792,6 @@ namespace Bandit_Militias.Helpers
                 var initialize = AccessTools.Method(typeof(MapEvent), "Initialize", new[] {typeof(PartyBase), typeof(PartyBase), typeof(MapEvent.BattleTypes)});
                 initialize.Invoke(PartyBase.MainParty.MapEvent, new object[] {attacker, defender, MapEvent.BattleTypes.None});
             }
-        }
-
-        internal static bool IsBM(this MobileParty mobileParty)
-        {
-            return mobileParty is not null && PartyMilitiaMap.ContainsKey(mobileParty);
         }
 
         internal static void PrintInstructionsAroundInsertion(List<CodeInstruction> codes, int insertPoint, int insertSize, int adjacentNum = 5)

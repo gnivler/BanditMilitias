@@ -45,10 +45,16 @@ namespace Bandit_Militias.Helpers
                 MBObjectManager.Instance.UnregisterObject(hero.CharacterObject);
                 MBObjectManager.Instance.UnregisterObject(hero);
             }
-            catch// (Exception ex)
+            catch // (Exception ex)
             {
                 //ignore Mod.Log(ex);
             }
+        }
+
+        internal static bool IsBM(this MobileParty mobileParty)
+        {
+            return mobileParty?.LeaderHero is not null
+                   && Globals.PartyMilitiaMap.ContainsKey(mobileParty);
         }
     }
 }

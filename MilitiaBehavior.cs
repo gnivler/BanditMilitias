@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using Bandit_Militias.Helpers;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
 using static Bandit_Militias.Globals;
