@@ -35,7 +35,7 @@ namespace Bandit_Militias
                 //mobileParty.SetMovePatrolAroundSettlement(nearbySettlement ?? Settlement.All.GetRandomElement());
             }
 
-            if (!IsValidParty(mobileParty))
+            if (!IsAvailableBanditParty(mobileParty))
             {
                 return;
             }
@@ -50,7 +50,7 @@ namespace Bandit_Militias
                 if (Growth
                     && mobileParty.IsBM()
                     && mobileParty.ShortTermBehavior != AiBehavior.FleeToPoint
-                    && IsValidParty(mobileParty)
+                    && IsAvailableBanditParty(mobileParty)
                     && Rng.NextDouble() <= Globals.Settings.GrowthChance)
                 {
                     var eligibleToGrow = mobileParty.MemberRoster.GetTroopRoster().Where(rosterElement =>

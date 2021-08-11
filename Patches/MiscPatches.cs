@@ -53,7 +53,7 @@ namespace Bandit_Militias.Patches
                 // used for armour
                 foreach (ItemObject.ItemTypeEnum value in Enum.GetValues(typeof(ItemObject.ItemTypeEnum)))
                 {
-                    ItemTypes[value] = ItemObject.All.Where(x =>
+                    ItemTypes[value] = Items.All.Where(x =>
                         x.Type == value && x.Value >= 1000 && x.Value <= Globals.Settings.MaxItemValue * Variance).ToList();
                 }
 
@@ -70,7 +70,7 @@ namespace Bandit_Militias.Patches
                 // considers leaderless militias
                 var militias = MobileParty.All.Where(m =>
                     m.LeaderHero is not null && m.StringId.StartsWith("Bandit_Militia")).ToList();
-                
+
                 for (var i = 0; i < militias.Count; i++)
                 {
                     var militia = militias[i];
@@ -84,6 +84,12 @@ namespace Bandit_Militias.Patches
                 // 1.6 is dropping the militia settlements at some point, I haven't figured out where
                 ReHome();
                 DoPowerCalculations(true);
+                // workaround for mobileParty.MapFaction.Leader is null, still needed in 1.6 
+                //public void AiHourlyTick(MobileParty mobileParty, PartyThinkParams p)
+                //{
+                //    if (mobileParty.IsMilitia || mobileParty.IsCaravan || (mobileParty.IsVillager || mobileParty.IsBandit) || !mobileParty.MapFaction.IsMinorFaction && !mobileParty.MapFaction.IsKingdomFaction && !mobileParty.MapFaction.Leader.IsNoble || (mobileParty.IsDeserterParty || mobileParty.CurrentSettlement is not null && mobileParty.CurrentSettlement.SiegeEvent is not null))
+
+                AddMissingBanditClanLeaders();
 
                 // have to patch late because of static constructors (type initialization exception)
                 Mod.harmony.Patch(
@@ -101,7 +107,7 @@ namespace Bandit_Militias.Patches
         }
 
         // just disperse loser militias
-        [HarmonyPatch(typeof(MapEventSide), "HandleMapEventEndForParty", typeof(PartyBase))]
+        [HarmonyPatch(typeof(MapEventSide), "HandleMapEventEndForPartyInternal", typeof(PartyBase))]
         public static class MapEventSideHandleMapEventEndForPartyPatch
         {
             private static void Prefix(MapEventSide __instance, PartyBase party, ref bool __state)
@@ -130,18 +136,6 @@ namespace Bandit_Militias.Patches
                 }
             }
         }
-
-        //[HarmonyPatch(typeof(MobileParty), "RemoveParty")]
-        //public static class MobilePartyRemovePartyPatch
-        //{
-        //    private static void Prefix(MobileParty __instance)
-        //    {
-        //        if (__instance.IsBM())
-        //        {
-        //            __instance.LeaderHero.RemoveMilitiaHero();
-        //        }
-        //    }
-        //}
 
         // not firing in 1.5.10
         [HarmonyPatch(typeof(HeroCreator), "CreateRelativeNotableHero")]

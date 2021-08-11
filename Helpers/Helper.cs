@@ -15,19 +15,6 @@ namespace Bandit_Militias.Helpers
 {
     public static class Helper
     {
-        internal static int NumMountedTroops(TroopRoster troopRoster)
-        {
-            var mountedTroops = troopRoster.GetTroopRoster().Where(x => x.Character.IsMounted);
-            var mountedTroopTypeCount = mountedTroops.Count();
-            var total = 0;
-            for (var i = 0; i < mountedTroopTypeCount; i++)
-            {
-                total += troopRoster.GetElementNumber(i);
-            }
-
-            return total;
-        }
-
         internal static void TrySplitParty(MobileParty mobileParty)
         {
             if (GlobalMilitiaPower + mobileParty.Party.TotalStrength > CalculatedGlobalPowerLimit ||
@@ -123,9 +110,6 @@ namespace Bandit_Militias.Helpers
                 var militia2 = new Militia(original.Position2D, party2, prisoners2);
                 SetMilitiaPatrol(militia1.MobileParty);
                 SetMilitiaPatrol(militia2.MobileParty);
-                //var settlements = Settlement.FindSettlementsAroundPosition(original.Position2D, 30).ToList();
-                //militia1.MobileParty.SetMovePatrolAroundSettlement(settlements.GetRandomElement() ?? Settlement.All.GetRandomElement());
-                //militia2.MobileParty.SetMovePatrolAroundSettlement(settlements.GetRandomElement() ?? Settlement.All.GetRandomElement());
                 Mod.Log($"{militia1.MobileParty.StringId} <- Split -> {militia2.MobileParty.StringId}");
                 Traverse.Create(militia1.MobileParty.Party).Property("ItemRoster").SetValue(inventory1);
                 Traverse.Create(militia2.MobileParty.Party).Property("ItemRoster").SetValue(inventory2);
@@ -157,16 +141,16 @@ namespace Bandit_Militias.Helpers
         };
 
         // todo more robust solution
-        internal static bool IsValidParty(MobileParty __instance)
+        internal static bool IsAvailableBanditParty(MobileParty __instance)
         {
             if (__instance.IsBandit
                 || __instance.IsBM()
                 && __instance.Party.IsMobile
                 && __instance.CurrentSettlement is null
                 && __instance.Party.MemberRoster.TotalManCount > 0
+                && !__instance.IsTooBusyToMerge()
                 && !__instance.IsUsedByAQuest()
-                && !verbotenParties.Contains(__instance.StringId)
-                && !__instance.IsTooBusyToMerge())
+                && !verbotenParties.Contains(__instance.StringId))
             {
                 return true;
             }
@@ -374,9 +358,9 @@ namespace Bandit_Militias.Helpers
 
         private static void RemoveIllCreatedTemporaryBanditFactionLeadersThatWereMissingButNowAreTaggedProperly()
         {
-            for (var i = 0; i < Hero.All.Count; i++)
+            for (var i = 0; i < Hero.AllAliveHeroes.Count; i++)
             {
-                var hero = Hero.All[i];
+                var hero = Hero.AllAliveHeroes[i];
                 if (hero.IsOutlaw
                     && hero.IsFactionLeader
                     && hero.CurrentSettlement != null)
@@ -457,7 +441,7 @@ namespace Bandit_Militias.Helpers
 
         private static void FlushMapEvents()
         {
-            var mapEvents = Traverse.Create(Campaign.Current.MapEventManager).Field("mapEvents").GetValue<List<MapEvent>>();
+            var mapEvents = Traverse.Create(Campaign.Current.MapEventManager).Field("_mapEvents").GetValue<List<MapEvent>>();
             for (var index = 0; index < mapEvents.Count; index++)
             {
                 var mapEvent = mapEvents[index];
@@ -598,7 +582,7 @@ namespace Bandit_Militias.Helpers
                 "Bound Crossbow"
             };
 
-            var all = ItemObject.All.Where(i =>
+            var all = Items.All.Where(i =>
                 i.ItemType != ItemObject.ItemTypeEnum.Goods
                 && i.ItemType != ItemObject.ItemTypeEnum.Horse
                 && i.ItemType != ItemObject.ItemTypeEnum.HorseHarness
@@ -737,7 +721,7 @@ namespace Bandit_Militias.Helpers
             {
                 LastCalculated = CampaignTime.Now.ToHours;
                 var parties = MobileParty.All.Where(p => p.LeaderHero is not null && !p.IsBM()).ToList();
-                CalculatedMaxPartySize = (float) parties.Average(p => p.Party.PartySizeLimit) * Globals.Settings.MaxPartySizeFactor * Variance;
+                CalculatedMaxPartySize = (float)parties.Average(p => p.Party.PartySizeLimit) * Globals.Settings.MaxPartySizeFactor * Variance;
                 var totalStrength = parties.Sum(p => p.Party.TotalStrength);
                 CalculatedMaxPartyStrength = totalStrength / parties.Count * Globals.Settings.PartyStrengthFactor * Variance;
                 CalculatedGlobalPowerLimit = totalStrength * Variance;
@@ -789,8 +773,8 @@ namespace Bandit_Militias.Helpers
                 var attacker = sides.FirstOrDefault(x => x.MissionSide == BattleSideEnum.Attacker)?.LeaderParty;
                 var defender = sides.FirstOrDefault(x => x.MissionSide == BattleSideEnum.Defender)?.LeaderParty;
                 PartyBase.MainParty.MapEventSide = playerSide;
-                var initialize = AccessTools.Method(typeof(MapEvent), "Initialize", new[] {typeof(PartyBase), typeof(PartyBase), typeof(MapEvent.BattleTypes)});
-                initialize.Invoke(PartyBase.MainParty.MapEvent, new object[] {attacker, defender, MapEvent.BattleTypes.None});
+                var initialize = AccessTools.Method(typeof(MapEvent), "Initialize", new[] { typeof(PartyBase), typeof(PartyBase), typeof(MapEvent.BattleTypes) });
+                initialize.Invoke(PartyBase.MainParty.MapEvent, new object[] { attacker, defender, MapEvent.BattleTypes.None });
             }
         }
 
@@ -827,7 +811,7 @@ namespace Bandit_Militias.Helpers
         internal static void RemoveCharacterFromReadOnlyList(CharacterObject hero)
         {
             var charactersField = Traverse.Create(Campaign.Current).Field<MBReadOnlyList<CharacterObject>>("_characters");
-            charactersField.Value = new MBReadOnlyList<CharacterObject>(charactersField.Value.Except(new[] {hero}).ToList());
+            charactersField.Value = new MBReadOnlyList<CharacterObject>(charactersField.Value.Except(new[] { hero }).ToList());
         }
 
         // anti-congregation, seems like circumstances can lead to a positive feedback loop in 3.0.3 (and a ton of BMs in one area)
@@ -842,6 +826,18 @@ namespace Bandit_Militias.Helpers
             {
                 var nearbySettlement = Settlement.FindSettlementsAroundPosition(mobileParty.Position2D, 30)?.ToList().GetRandomElement();
                 mobileParty.SetMovePatrolAroundSettlement(nearbySettlement ?? Settlement.All.GetRandomElement());
+            }
+        }
+
+        internal static void AddMissingBanditClanLeaders()
+        {
+            foreach (var clan in Clan.BanditFactions)
+            {
+                if (clan.Leader is null)
+                {
+                    var hero = HeroCreatorCopy.CreateBanditHero(clan, null);
+                    clan.SetLeader(hero);
+                }
             }
         }
     }

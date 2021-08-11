@@ -8,7 +8,6 @@ using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
 using TaleWorlds.Localization;
-using TaleWorlds.ObjectSystem;
 using static Bandit_Militias.Globals;
 using static Bandit_Militias.Helpers.Helper;
 using Debug = TaleWorlds.Library.Debug;
@@ -51,7 +50,7 @@ namespace Bandit_Militias
 
         private void Spawn(Vec2 position, TroopRoster party, TroopRoster prisoners)
         {
-            MobileParty = MBObjectManager.Instance.CreateObject<MobileParty>("Bandit_Militia");
+            MobileParty = MobileParty.CreateParty("Bandit_Militia");
             MobileParty.InitializeMobileParty(
                 party,
                 prisoners,

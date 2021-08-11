@@ -9,8 +9,8 @@ using SandBox.ViewModelCollection.Nameplate;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.GameMenus;
-using TaleWorlds.CampaignSystem.SandBox.CampaignBehaviors.AiBehaviors;
 using TaleWorlds.Core;
+using TaleWorlds.LinQuick;
 using TaleWorlds.Localization;
 using static Bandit_Militias.Helpers.Helper;
 using static Bandit_Militias.Globals;
@@ -25,6 +25,8 @@ namespace Bandit_Militias.Patches
 {
     public static class MilitiaPatches
     {
+        private static float lastChecked;
+
         [HarmonyPatch(typeof(Campaign), "Tick")]
         public static class CampaignTickPatch
         {
@@ -42,19 +44,46 @@ namespace Bandit_Militias.Patches
                         return;
                     }
 
-                    var parties = MobileParty.All.Where(m =>
+                    if (lastChecked > Campaign.CurrentTime + 0.25f)
+                    {
+                        return;
+                    }
+
+                    lastChecked = Campaign.CurrentTime;
+                    var hideouts = Settlement.All.WhereQ(s => s.IsHideout()).ToList();
+                    var parties = MobileParty.All.WhereQ(m =>
                             m.Party.IsMobile &&
                             m.CurrentSettlement is null &&
                             !m.IsUsedByAQuest() &&
                             m.IsBandit &&
-                            m.MemberRoster.TotalManCount > Globals.Settings.MinPartySizeToConsiderMerge)
+                            m.MemberRoster.TotalManCount >= Globals.Settings.MinPartySizeToConsiderMerge)
                         .Concat(PartyMilitiaMap.Keys).ToList(); // might cause duplicates if IsBandit returns differently in the future
-                    //T.Restart();
                     for (var index = 0; index < parties.Count; index++)
                     {
+                        T.Restart();
                         var mobileParty = parties[index];
-                        if (mobileParty.IsTooBusyToMerge() ||
-                            mobileParty.ToString().Contains("manhunter")) // Calradia Expanded Kingdoms
+
+                        if (hideouts.AnyQ(s => s.Position2D.Distance(mobileParty.Position2D) < MinDistanceFromHideout))
+                        {
+                            continue;
+                        }
+
+                        if (mobileParty.IsTooBusyToMerge())
+                        {
+                            continue;
+                        }
+
+                        var nearbyParties = MobileParty.FindPartiesAroundPosition(mobileParty.Position2D, FindRadius)
+                            .Intersect(parties)
+                            .Except(new[] { mobileParty })
+                            .ToList();
+
+                        if (!nearbyParties.Any())
+                        {
+                            continue;
+                        }
+
+                        if (mobileParty.ToString().Contains("manhunter")) // Calradia Expanded Kingdoms
                         {
                             continue;
                         }
@@ -70,13 +99,13 @@ namespace Bandit_Militias.Patches
                             continue;
                         }
 
-                        var nearbyParties = MobileParty.FindPartiesAroundPosition(mobileParty.Position2D, FindRadius);
                         var targetParty = nearbyParties.Where(m =>
                                 m != mobileParty
-                                && IsValidParty(m)
+                                && IsAvailableBanditParty(m)
                                 && m.MemberRoster.TotalManCount + mobileParty.MemberRoster.TotalManCount >= Globals.Settings.MinPartySize)
                             .ToList().GetRandomElement()?.Party;
 
+                        //Mod.Log($">T targetParty {T.ElapsedTicks / 10000F:F3}ms.");
                         // "nobody" is a valid answer
                         if (targetParty is null)
                         {
@@ -95,24 +124,25 @@ namespace Bandit_Militias.Patches
                         }
 
                         var militiaTotalCount = mobileParty.MemberRoster.TotalManCount + targetParty.MemberRoster.TotalManCount;
-                        if (militiaTotalCount <= Globals.Settings.MinPartySize ||
-                            militiaTotalCount > CalculatedMaxPartySize ||
-                            mobileParty.Party.TotalStrength > CalculatedMaxPartyStrength ||
-                            NumMountedTroops(mobileParty.MemberRoster) + NumMountedTroops(targetParty.MemberRoster) > militiaTotalCount / 2)
+                        if (militiaTotalCount <= Globals.Settings.MinPartySize * 2
+                            || militiaTotalCount > CalculatedMaxPartySize
+                            || mobileParty.Party.TotalStrength > CalculatedMaxPartyStrength
+                            || mobileParty.Party.NumberOfMenWithHorse + targetParty.NumberOfMenWithHorse > militiaTotalCount / 2)
                         {
                             continue;
                         }
 
+                        //Mod.Log($"==> counted {T.ElapsedTicks / 10000F:F3}ms.");
                         if (mobileParty != targetParty.MobileParty.MoveTargetParty &&
                             Campaign.Current.Models.MapDistanceModel.GetDistance(targetParty.MobileParty, mobileParty) > MergeDistance)
                         {
-                            Mod.Log($"{mobileParty} seeking > {targetParty.MobileParty}");
+                            //Mod.Log($"{mobileParty} seeking > {targetParty.MobileParty}");
                             mobileParty.SetMoveEscortParty(targetParty.MobileParty);
                             //Mod.Log($"SetNavigationModeParty ==> {T.ElapsedTicks / 10000F:F3}ms");
 
                             if (targetParty.MobileParty.MoveTargetParty != mobileParty)
                             {
-                                Mod.Log($"{targetParty.MobileParty} seeking back > {mobileParty}");
+                                //Mod.Log($"{targetParty.MobileParty} seeking back > {mobileParty}");
                                 targetParty.MobileParty.SetMoveEscortParty(mobileParty);
                                 //Mod.Log($"SetNavigationModeTargetParty ==> {T.ElapsedTicks / 10000F:F3}ms");
                             }
@@ -120,10 +150,7 @@ namespace Bandit_Militias.Patches
                             continue;
                         }
 
-                        if (Settlement.FindSettlementsAroundPosition(mobileParty.Position2D, MinDistanceFromHideout, x => x.IsHideout()).Any())
-                        {
-                            continue;
-                        }
+                        //Mod.Log($"==> found settlement {T.ElapsedTicks / 10000F:F3}ms.");
 
                         // create a new party merged from the two
                         var rosters = MergeRosters(mobileParty, targetParty);
@@ -144,8 +171,9 @@ namespace Bandit_Militias.Patches
                         Trash(mobileParty);
                         Trash(targetParty.MobileParty);
                         DoPowerCalculations();
-                        //Mod.Log($">>> Finished all work: {T.ElapsedTicks / 10000F:F3}ms.");
+                        //Mod.Log($"==> Finished all work: {T.ElapsedTicks / 10000F:F3}ms.");
                     }
+
                     //Mod.Log($"Looped ==> {T.ElapsedTicks / 10000F:F3}ms");
                 }
                 catch (Exception ex)
@@ -154,6 +182,7 @@ namespace Bandit_Militias.Patches
                 }
             }
         }
+
 
         // slows down BM parties a bit
         internal static void DefaultPartySpeedCalculatingModelCalculateFinalSpeedPatch(MobileParty mobileParty, ref ExplainedNumber __result)
@@ -200,7 +229,7 @@ namespace Bandit_Militias.Patches
         {
             private static void Postfix(IAgentOriginBase __instance, ref Banner __result)
             {
-                var party = (PartyBase) __instance.BattleCombatant;
+                var party = (PartyBase)__instance.BattleCombatant;
                 if (Globals.Settings.RandomBanners &&
                     party.MobileParty is not null &&
                     party.MobileParty.IsBM())
@@ -292,29 +321,6 @@ namespace Bandit_Militias.Patches
             }
         }
 
-        // workaround for mobileParty.MapFaction.Leader is null
-        /*
-        public void AiHourlyTick(MobileParty mobileParty, PartyThinkParams p)
-        {
-            if (mobileParty.IsMilitia || mobileParty.IsCaravan || (mobileParty.IsVillager || mobileParty.IsBandit) || !mobileParty.MapFaction.IsMinorFaction && !mobileParty.MapFaction.IsKingdomFaction && !mobileParty.MapFaction.Leader.IsNoble || (mobileParty.IsDeserterParty || mobileParty.CurrentSettlement is not null && mobileParty.CurrentSettlement.SiegeEvent is not null))
-        */
-        // still needed in 1.6
-        [HarmonyPatch(typeof(AiPatrollingBehavior), "AiHourlyTick")]
-        public static class AiPatrollingBehaviorAiHourlyTickPatch
-        {
-            private static void Prefix(MobileParty mobileParty, PartyThinkParams p)
-            {
-                if (mobileParty is not null
-                    && p is not null
-                    && mobileParty.ActualClan?.Leader is null
-                    && mobileParty.IsBM())
-                {
-                    var hero = HeroCreatorCopy.CreateBanditHero(mobileParty.ActualClan, mobileParty);
-                    mobileParty.ActualClan?.SetLeader(hero);
-                }
-            }
-        }
-
         // force Heroes to appear to die in combat
         // it's not IDEAL because a hero with 20hp (Wounded) will be killed
         // I tried many other approaches that didn't come close
@@ -324,7 +330,7 @@ namespace Bandit_Militias.Patches
         {
             private static void Prefix(BasicCharacterObject character, ref int numberDead, ref int numberWounded)
             {
-                var c = (CharacterObject) character;
+                var c = (CharacterObject)character;
                 if (numberWounded > 0
                     && c.HeroObject?.PartyBelongedTo is not null
                     && c.HeroObject.PartyBelongedTo.IsBM())
@@ -349,22 +355,5 @@ namespace Bandit_Militias.Patches
                 return null;
             }
         }
-
-        //[HarmonyPatch(typeof(MapEvent), "FinishBattle")]
-        //public static class MapEventFinishBattlePatch
-        //{
-        //    private static bool Prefix(MapEvent __instance)
-        //    {
-        //        var loserParties = __instance.InvolvedParties.Where(p => p.Side == __instance.DefeatedSide).ToList();
-        //        //if (loserParties.Any(p => p.Leader is not null
-        //        //                          && p.Leader.StringId.EndsWith("Bandit_Militia")))
-        //        //{
-        //        //    loserParties.Do(p => p.LeaderHero.RemoveMilitiaHero());
-        //        //    return false;
-        //        //}
-        //
-        //        return true;
-        //    }
-        //}
     }
 }

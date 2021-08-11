@@ -32,7 +32,7 @@ namespace Bandit_Militias.Helpers
             }
 
             CharacterObject characterObject1 = null;
-            var num3 = 1 + (int) (settlement.Random.GetValueNormalized(settlement.Notables.Count) * (double) (num1 - 1));
+            var num3 = 1 + (int)(settlement.Random.GetValueNormalized(settlement.Notables.Count) * (double)(num1 - 1));
             foreach (var characterObject2 in Outlaws)
             {
                 var num2 = characterObject2.GetTraitLevel(DefaultTraits.Frequency) * 10;
@@ -47,8 +47,15 @@ namespace Bandit_Militias.Helpers
             var specialHero = HeroCreator.CreateSpecialHero(characterObject1, settlement);
             specialHero.SupporterOf = Clan.BanditFactions.ToList().GetRandomElement();
             Traverse.Create(typeof(HeroCreator)).Method("AddRandomVarianceToTraits", specialHero).GetValue();
-            var partyStrength = Traverse.Create(mobileParty.Party).Method("CalculateStrength").GetValue<float>();
-            specialHero.Gold = Convert.ToInt32(partyStrength * GoldMap[Globals.Settings.GoldReward.SelectedValue]);
+            if (mobileParty is not null)
+            {
+                var partyStrength = Traverse.Create(mobileParty.Party).Method("CalculateStrength").GetValue<float>();
+                specialHero.Gold = Convert.ToInt32(partyStrength * GoldMap[Globals.Settings.GoldReward.SelectedValue]);
+                Traverse.Create(specialHero).Field("_homeSettlement").SetValue(settlement);
+                Traverse.Create(specialHero.Clan).Field("_warParties").Method("Add", mobileParty).GetValue();
+                mobileParty.MemberRoster.AddToCounts(specialHero.CharacterObject, 1, false, 0, 0, true, 0);
+            }
+
             //var hideout = Hideouts.Where(x => x.MapFaction != CampaignData.NeutralFaction).GetRandomElement();
             // home has to be set to a hideout to make party aggressive (see PartyBase.MapFaction)
             // 1.4.3b changed this now we also have to set ActualClan
@@ -57,9 +64,8 @@ namespace Bandit_Militias.Helpers
             heroLastSeenInformation.LastSeenPlace = settlement;
             Traverse.Create(specialHero).Field<Hero.HeroLastSeenInformation>("_lastSeenInformationKnownToPlayer").Value = heroLastSeenInformation;
             EquipmentHelper.AssignHeroEquipmentFromEquipment(specialHero, BanditEquipment.GetRandomElement());
-            Traverse.Create(specialHero).Field("_homeSettlement").SetValue(settlement);
-            Traverse.Create(specialHero.Clan).Field("_warParties").Method("Add", mobileParty).GetValue();
-            mobileParty.MemberRoster.AddToCounts(specialHero.CharacterObject, 1, false, 0, 0, true, 0);
+
+
             if (Globals.Settings.CanTrain)
             {
                 Traverse.Create(specialHero).Method("SetSkillValueInternal", DefaultSkills.Leadership, 150).GetValue();
