@@ -44,7 +44,7 @@ namespace Bandit_Militias.Patches
                         return;
                     }
 
-                    if (lastChecked > Campaign.CurrentTime + 0.25f)
+                    if (Campaign.CurrentTime - lastChecked < 0.25f)
                     {
                         return;
                     }
@@ -52,15 +52,15 @@ namespace Bandit_Militias.Patches
                     lastChecked = Campaign.CurrentTime;
                     var hideouts = Settlement.All.WhereQ(s => s.IsHideout()).ToList();
                     var parties = MobileParty.All.WhereQ(m =>
-                            m.Party.IsMobile &&
-                            m.CurrentSettlement is null &&
-                            !m.IsUsedByAQuest() &&
-                            m.IsBandit &&
-                            m.MemberRoster.TotalManCount >= Globals.Settings.MinPartySizeToConsiderMerge)
+                            m.Party.IsMobile
+                            && m.CurrentSettlement is null
+                            && !m.IsUsedByAQuest()
+                            && m.IsBandit
+                            && m.MemberRoster.TotalManCount >= Globals.Settings.MinPartySizeToConsiderMerge)
                         .Concat(PartyMilitiaMap.Keys).ToList(); // might cause duplicates if IsBandit returns differently in the future
                     for (var index = 0; index < parties.Count; index++)
                     {
-                        T.Restart();
+                        //T.Restart();
                         var mobileParty = parties[index];
 
                         if (hideouts.AnyQ(s => s.Position2D.Distance(mobileParty.Position2D) < MinDistanceFromHideout))
@@ -76,7 +76,7 @@ namespace Bandit_Militias.Patches
                         var nearbyParties = MobileParty.FindPartiesAroundPosition(mobileParty.Position2D, FindRadius)
                             .Intersect(parties)
                             .Except(new[] { mobileParty })
-                            .ToList();
+                            .ToListQ();
 
                         if (!nearbyParties.Any())
                         {
@@ -103,7 +103,7 @@ namespace Bandit_Militias.Patches
                                 m != mobileParty
                                 && IsAvailableBanditParty(m)
                                 && m.MemberRoster.TotalManCount + mobileParty.MemberRoster.TotalManCount >= Globals.Settings.MinPartySize)
-                            .ToList().GetRandomElement()?.Party;
+                            .ToListQ().GetRandomElement()?.Party;
 
                         //Mod.Log($">T targetParty {T.ElapsedTicks / 10000F:F3}ms.");
                         // "nobody" is a valid answer
@@ -124,7 +124,7 @@ namespace Bandit_Militias.Patches
                         }
 
                         var militiaTotalCount = mobileParty.MemberRoster.TotalManCount + targetParty.MemberRoster.TotalManCount;
-                        if (militiaTotalCount <= Globals.Settings.MinPartySize * 2
+                        if (militiaTotalCount < Globals.Settings.MinPartySize
                             || militiaTotalCount > CalculatedMaxPartySize
                             || mobileParty.Party.TotalStrength > CalculatedMaxPartyStrength
                             || mobileParty.Party.NumberOfMenWithHorse + targetParty.NumberOfMenWithHorse > militiaTotalCount / 2)
