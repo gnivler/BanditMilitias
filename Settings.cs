@@ -26,19 +26,19 @@ namespace Bandit_Militias
                 GoldReward = new DropdownDefault<string>(Globals.GoldMap.Keys, 2),
                 CooldownHours = 8,
                 MinPartySize = 30,
-                RandomSplitChance = 0.5f,
-                StrengthSplitFactor = 0,
-                SizeSplitFactor = 0,
-                PartyStrengthFactor = 1.25f,
-                MaxPartySizeFactor = 1.25f,
+                RandomSplitChance = 50,
+                SplitStrengthPercent = 0,
+                SplitSizePercent = 0,
+                PartyStrengthPercent = 125,
+                MaxPartySizePercent = 125,
                 MinPartySizeToConsiderMerge = 30,
-                GrowthChance = 1,
-                GrowthPercent = 0.03f,
+                GrowthChancePercent = 100,
+                GrowthPercent = 3,
                 MaxItemValue = 8000,
-                LooterUpgradeFactor = 0.66f,
+                LooterUpgradePercent = 66,
                 MaxStrengthDeltaPercent = 100,
-                UpgradeUnitsFactor = 0.33f,
-                GlobalPowerFactor = 0.25f,
+                UpgradeUnitsPercent = 33,
+                GlobalPowerPercent = 25,
                 MaxTrainingTier = 5
             });
             return basePresets;
@@ -55,13 +55,13 @@ namespace Bandit_Militias
         [SettingPropertyGroup("Primary Settings")]
         public DropdownDefault<string> XpGift { get; private set; } = new(Globals.DifficultyXpMap.Keys, 1);
 
-        [SettingPropertyFloatingInteger("Growth Chance", 0, 1, HintText = "\nChance per day that the militia will gain more troops (0 for off).", Order = 2, RequireRestart = false)]
+        [SettingPropertyInteger("Growth Chance Percent", 0, 100, HintText = "\nChance per day that the militia will gain more troops (0 for off).", Order = 2, RequireRestart = false)]
         [SettingPropertyGroup("Primary Settings")]
-        public float GrowthChance { get; private set; } = 0.5f;
+        public int GrowthChancePercent { get; private set; } = 50;
 
-        [SettingPropertyInteger("Growth Percent", 1, 100, HintText = "\nGrow by this percent when growth occurs.", Order = 3, RequireRestart = false)]
+        [SettingPropertyInteger("Growth Percent", 0, 1000, HintText = "\nGrow by this percent when growth occurs.", Order = 3, RequireRestart = false)]
         [SettingPropertyGroup("Primary Settings")]
-        public float GrowthPercent { get; private set; } = 1;
+        public int GrowthPercent { get; private set; } = 3;
 
         [SettingPropertyInteger("Change Cooldown", 0, 168, HintText = "\nAfter merging or splitting, a militia will not change again until this much time passes.", Order = 4, RequireRestart = false)]
         [SettingPropertyGroup("Primary Settings")]
@@ -71,53 +71,53 @@ namespace Bandit_Militias
         [SettingPropertyGroup("Primary Settings")]
         public DropdownDefault<string> GoldReward { get; private set; } = new(Globals.GoldMap.Keys, 1);
 
-        [SettingPropertyInteger("Minimum Militia Size", 0, 100, HintText = "\nMilitias defeated with fewer than this many remaining troops will be dispersed.", Order = 0, RequireRestart = false)]
+        [SettingPropertyInteger("Minimum Militia Size", 10, 100, HintText = "\nMilitias defeated with fewer than this many remaining troops will be dispersed.", Order = 0, RequireRestart = false)]
         [SettingPropertyGroup("Size Adjustments", GroupOrder = 2)]
         public int MinPartySize { get; private set; } = 20;
 
-        [SettingPropertyInteger("Minimum Size To Merge", 1, 100, HintText = "\nBandit groups smaller than this will not form militias.", Order = 1, RequireRestart = false)]
+        [SettingPropertyInteger("Minimum Size To Merge", 10, 100, HintText = "\nBandit groups smaller than this will not form militias.", Order = 1, RequireRestart = false)]
         [SettingPropertyGroup("Size Adjustments")]
         public int MinPartySizeToConsiderMerge { get; private set; } = 20;
 
-        [SettingPropertyFloatingInteger("Random Split Chance", 0, 1, HintText = "\nChance per day that any given militia will split in half when requirements are met.", Order = 2, RequireRestart = false)]
+        [SettingPropertyInteger("Random Split Chance", 0, 100, HintText = "\nChance per day that any given militia will split in half when requirements are met.", Order = 2, RequireRestart = false)]
         [SettingPropertyGroup("Militia Adjustments", GroupOrder = 1)]
-        public float RandomSplitChance { get; private set; } = 0.25f;
+        public int RandomSplitChance { get; private set; } = 25;
 
-        [SettingPropertyFloatingInteger("Strength Split", 0, 1, HintText = "\nMilitias won't consider splitting until this factor of the world average strength.", Order = 3, RequireRestart = false)]
+        [SettingPropertyInteger("Strength Split", 0, 100, HintText = "\nMilitias won't consider splitting until reaching this percentage of the world average strength.", Order = 3, RequireRestart = false)]
         [SettingPropertyGroup("Militia Adjustments")]
-        public float StrengthSplitFactor { get; private set; } = 0.8f;
+        public int SplitStrengthPercent { get; private set; } = 80;
 
-        [SettingPropertyFloatingInteger("Size Split", 0, 1, HintText = "\nMilitias won't consider splitting until this factor of the world average party size.", Order = 4, RequireRestart = false)]
+        [SettingPropertyInteger("Size Split", 0, 100, HintText = "\nMilitias won't consider splitting until reaching this percentage of the world average party size.", Order = 4, RequireRestart = false)]
         [SettingPropertyGroup("Militia Adjustments")]
-        public float SizeSplitFactor { get; private set; } = 0.8f;
+        public int SplitSizePercent { get; private set; } = 80;
 
-        [SettingPropertyFloatingInteger("Max Party Strength", 0, 10, HintText = "\nMilitia's won't merge into something more powerful, than this factor of the world average strength.", Order = 5, RequireRestart = false)]
+        [SettingPropertyInteger("Max Party Strength", 30, 1000, HintText = "\nMilitia's won't merge into something more powerful than this percentage of the world average strength.", Order = 5, RequireRestart = false)]
         [SettingPropertyGroup("Militia Adjustments")]
-        public float PartyStrengthFactor { get; private set; } = 0.9f;
+        public int PartyStrengthPercent { get; private set; } = 90;
 
-        [SettingPropertyFloatingInteger("Max Party Size", 0, 10, HintText = "\nMilitia's won't merge into something larger, than this factor of the main party's size.", Order = 6, RequireRestart = false)]
+        [SettingPropertyInteger("Max Party Size", 1, 1000, HintText = "\nMilitia's won't merge into something larger than this percentage of the main party's size.", Order = 6, RequireRestart = false)]
         [SettingPropertyGroup("Militia Adjustments")]
-        public float MaxPartySizeFactor { get; private set; } = 0.9f;
+        public int MaxPartySizePercent { get; private set; } = 90;
 
         [SettingPropertyInteger("Max Item Value", 3000, 1000000, HintText = "\nLimit the per-piece value of equipment given to the Heroes.\nMostly for when other mods give you Hero loot.", Order = 7, RequireRestart = false)]
         [SettingPropertyGroup("Militia Adjustments")]
         public int MaxItemValue { get; private set; } = 3000;
 
-        [SettingPropertyFloatingInteger("Looter Conversions", 0, 1f, HintText = "\nThis factor of all looters are converted to the most-prevalent local faction's basic troops, when training occurs.", Order = 8, RequireRestart = false)]
+        [SettingPropertyInteger("Looter Conversions", 0, 100, HintText = "\nThis percentage of all looters are converted to the most-prevalent local faction's basic troops, when training occurs.", Order = 8, RequireRestart = false)]
         [SettingPropertyGroup("Militia Adjustments")]
-        public float LooterUpgradeFactor { get; private set; } = 0.25f;
+        public int LooterUpgradePercent { get; private set; } = 25;
 
         [SettingPropertyInteger("Limit Militia Engagements", 0, 100, HintText = "\nPercentage of strength difference that will make Militias ignore targets.\n100 removes the limit.", Order = 9, RequireRestart = false)]
         [SettingPropertyGroup("Militia Adjustments")]
         public int MaxStrengthDeltaPercent { get; private set; } = 10;
 
-        [SettingPropertyFloatingInteger("Upgrade Units", 0, 1f, HintText = "\nUpgrade at most this factor of any given troop type quantity when training occurs.", Order = 10, RequireRestart = false)]
+        [SettingPropertyInteger("Upgrade Units", 0, 100, HintText = "\nUpgrade at most this percentage of any given troop type quantity when training occurs.", Order = 10, RequireRestart = false)]
         [SettingPropertyGroup("Militia Adjustments")]
-        public float UpgradeUnitsFactor { get; private set; } = 0.25f;
+        public int UpgradeUnitsPercent { get; private set; } = 25;
 
-        [SettingPropertyFloatingInteger("Global Power", 0, 10f, HintText = "\nThe total Militias power will remain under this factor of the world total strength.", Order = 11, RequireRestart = false)]
+        [SettingPropertyInteger("Global Power", 0, 1000, HintText = "\nThe total Militias power will remain under this percentage of the world total strength.", Order = 11, RequireRestart = false)]
         [SettingPropertyGroup("Militia Adjustments")]
-        public float GlobalPowerFactor { get; private set; } = 0.15f;
+        public int GlobalPowerPercent { get; private set; } = 15;
 
         [SettingPropertyInteger("Max Training Tier", 1, 6, HintText = "\nDon't train any units past this tier.", Order = 12, RequireRestart = false)]
         [SettingPropertyGroup("Militia Adjustments")]
@@ -129,7 +129,7 @@ namespace Bandit_Militias
         [SettingPropertyBool("Debug Logging", HintText = "\nCreates output in the mod folder.", Order = 0, RequireRestart = false)]
         public bool Debug { get; set; }
 
-        [SettingPropertyBool("Testing Mode", HintText = "Teleports BMs to you", Order = 1, RequireRestart = false)]
+        [SettingPropertyBool("Testing Mode", HintText = "Teleports BMs to you.", Order = 1, RequireRestart = false)]
         public bool TestingMode { get; set; }
 
         private string id = "BanditMilitias";

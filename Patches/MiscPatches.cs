@@ -14,6 +14,7 @@ using TaleWorlds.CampaignSystem.ViewModelCollection;
 using TaleWorlds.Core;
 using TaleWorlds.Engine;
 using TaleWorlds.Library;
+using TaleWorlds.Localization;
 using TaleWorlds.MountAndBlade;
 using static Bandit_Militias.Helpers.Helper;
 using static Bandit_Militias.Globals;
@@ -125,6 +126,12 @@ namespace Bandit_Militias.Patches
                     return;
                 }
 
+                // has yet to fire, needs adjustment if in fact any exist
+                if (party.MobileParty.LeaderHero is null)
+                {
+                    party.MobileParty.SetCustomName(new TextObject("Leaderless Bandit Militia"));
+                }
+                
                 var wonBattle = __state;
                 if (__instance.MapEvent.HasWinner
                     && !wonBattle

@@ -25,11 +25,11 @@ namespace Bandit_Militias.Helpers
                 return;
             }
 
-            var roll = Rng.NextDouble();
+            var roll = Rng.Next(0, 101);
             if (roll <= Globals.Settings.RandomSplitChance ||
                 !mobileParty.IsBM() ||
-                mobileParty.Party.TotalStrength <= CalculatedMaxPartyStrength * Globals.Settings.StrengthSplitFactor * Variance ||
-                mobileParty.Party.MemberRoster.TotalManCount <= CalculatedMaxPartySize * Globals.Settings.SizeSplitFactor * Variance)
+                mobileParty.Party.TotalStrength <= CalculatedMaxPartyStrength * (1 + Globals.Settings.SplitStrengthPercent / 100) * Variance ||
+                mobileParty.Party.MemberRoster.TotalManCount <= CalculatedMaxPartySize * Globals.Settings.SplitSizePercent * Variance)
             {
                 return;
             }
@@ -248,17 +248,6 @@ namespace Bandit_Militias.Helpers
             }
         }
 
-        // needed apparently to clean up after 3.0.6 allowing prisoners
-        internal static void FlushSettlementsOfBM()
-        {
-            foreach (var settlement in Settlement.All)
-            {
-                foreach (var party in settlement.Parties)
-                {
-                }
-            }
-        }
-
         // still needed 1.5.10
         private static void FlushDeadBanditRemnants()
         {
@@ -351,7 +340,7 @@ namespace Bandit_Militias.Helpers
             FlushNullPartyHeroes();
             FlushEmptyMilitiaParties();
             FlushNeutralBanditParties();
-            FlushBadCharacterObjects();
+            //FlushBadCharacterObjects();
             FlushZeroParties();
             Mod.Log(">>> FLUSHED.");
         }
@@ -488,50 +477,7 @@ namespace Bandit_Militias.Helpers
                 hero.RemoveMilitiaHero();
             }
         }
-
-        private static void FlushBadCharacterObjects()
-        {
-            var badChars = CharacterObject.All.Where(x => x.HeroObject is null)
-                .Where(x =>
-                    x.Name is null ||
-                    x.Occupation == Occupation.NotAssigned ||
-                    x.Occupation == Occupation.Outlaw &&
-                    x.HeroObject?.CurrentSettlement is not null)
-                .Where(x =>
-                    !x.StringId.Contains("template") &&
-                    !x.StringId.Contains("char_creation") &&
-                    !x.StringId.Contains("equipment") &&
-                    !x.StringId.Contains("for_perf") &&
-                    !x.StringId.Contains("dummy") &&
-                    !x.StringId.Contains("npc_") &&
-                    // Calradia Expanded Kingdoms
-                    !x.StringId.Contains("vlandian_balestrieri_veterani") &&
-                    !x.StringId.Contains("unarmed_ai"))
-                .ToList();
-
-            var hasLogged = false;
-            foreach (var badChar in badChars)
-            {
-                if (badChar is null)
-                {
-                    continue;
-                }
-
-                if (!hasLogged)
-                {
-                    hasLogged = true;
-                    Mod.Log($">>> FLUSH {badChars.Count} bad characters.");
-                }
-
-                Mod.Log($">>> Unregistering {badChar.Name}");
-                MBObjectManager.Instance.UnregisterObject(badChar);
-                if (badChar.HeroObject is not null)
-                {
-                    Mod.Log("wtf");
-                    badChar.HeroObject.RemoveMilitiaHero();
-                }
-            }
-        }
+        
 
         private static void FlushNeutralBanditParties()
         {
@@ -721,9 +667,9 @@ namespace Bandit_Militias.Helpers
             {
                 LastCalculated = CampaignTime.Now.ToHours;
                 var parties = MobileParty.All.Where(p => p.LeaderHero is not null && !p.IsBM()).ToList();
-                CalculatedMaxPartySize = (float)parties.Average(p => p.Party.PartySizeLimit) * Globals.Settings.MaxPartySizeFactor * Variance;
+                CalculatedMaxPartySize = (float)parties.Average(p => p.Party.PartySizeLimit) * Globals.Settings.MaxPartySizePercent / 100 * Variance;
                 var totalStrength = parties.Sum(p => p.Party.TotalStrength);
-                CalculatedMaxPartyStrength = totalStrength / parties.Count * Globals.Settings.PartyStrengthFactor * Variance;
+                CalculatedMaxPartyStrength = totalStrength / parties.Count * (1 + Globals.Settings.PartyStrengthPercent / 100) * Variance;
                 CalculatedGlobalPowerLimit = totalStrength * Variance;
                 GlobalMilitiaPower = PartyMilitiaMap.Keys.Sum(p => p.Party.TotalStrength);
             }
@@ -836,6 +782,7 @@ namespace Bandit_Militias.Helpers
                 if (clan.Leader is null)
                 {
                     var hero = HeroCreatorCopy.CreateBanditHero(clan, null);
+                    hero.StringId += "Bandit_Militia";
                     clan.SetLeader(hero);
                 }
             }

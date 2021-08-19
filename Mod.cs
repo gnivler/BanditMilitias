@@ -70,7 +70,7 @@ namespace Bandit_Militias
                 }
             }
 
-            Log($"Bandit Militias {Assembly.GetExecutingAssembly().GetName().Version.ToString(3)} starting up...");
+            Log($"{Globals.Settings?.DisplayName} starting up...");
         }
 
         // Calradia Expanded: Kingdoms
@@ -154,7 +154,6 @@ namespace Bandit_Militias
                 gameStarter.AddBehavior(new MilitiaBehavior());
             }
         }
-
 
         private static void RunManualPatches()
         {

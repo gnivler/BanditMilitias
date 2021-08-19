@@ -26,6 +26,7 @@ namespace Bandit_Militias.Patches
     public static class MilitiaPatches
     {
         private static float lastChecked;
+        private static float lastDelta;
 
         [HarmonyPatch(typeof(Campaign), "Tick")]
         public static class CampaignTickPatch

@@ -51,7 +51,7 @@ namespace Bandit_Militias
                     && mobileParty.IsBM()
                     && mobileParty.ShortTermBehavior != AiBehavior.FleeToPoint
                     && IsAvailableBanditParty(mobileParty)
-                    && Rng.NextDouble() <= Globals.Settings.GrowthChance)
+                    && Rng.NextDouble() <= 1 + Globals.Settings.GrowthChancePercent / 100)
                 {
                     var eligibleToGrow = mobileParty.MemberRoster.GetTroopRoster().Where(rosterElement =>
                         rosterElement.Character.Tier < Globals.Settings.MaxTrainingTier
@@ -61,10 +61,10 @@ namespace Bandit_Militias
                     if (eligibleToGrow.Any())
                     {
                         Mod.Log($"TryGrowing {mobileParty.LeaderHero}, total: {mobileParty.MemberRoster.TotalManCount}");
-                        var growthAmount = mobileParty.MemberRoster.TotalManCount * Globals.Settings.GrowthPercent;
-                        // bump up growth to reach GlobalPowerFactor (synthetic but it helps warm up militia population)
+                        var growthAmount = mobileParty.MemberRoster.TotalManCount * Globals.Settings.GrowthPercent / 100f;
+                        // bump up growth to reach GlobalPowerPercent (synthetic but it helps warm up militia population)
                         // (Growth cap % - current %) / 2 = additional
-                        growthAmount += (Globals.Settings.GlobalPowerFactor * 100 - GlobalMilitiaPower / CalculatedGlobalPowerLimit * 100) / 2;
+                        growthAmount += (Globals.Settings.GlobalPowerPercent - GlobalMilitiaPower / CalculatedGlobalPowerLimit * 100) / 2;
                         growthAmount = Math.Max(1, growthAmount);
                         var growthRounded = Convert.ToInt32(growthAmount);
                         // last condition doesn't account for the size increase but who cares

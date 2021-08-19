@@ -7,6 +7,7 @@ using HarmonyLib;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
+using TaleWorlds.LinQuick;
 using TaleWorlds.Localization;
 using static Bandit_Militias.Globals;
 using static Bandit_Militias.Helpers.Helper;
@@ -56,16 +57,16 @@ namespace Bandit_Militias
                 prisoners,
                 position,
                 0);
-            var mostPrevalent = (Clan) GetMostPrevalentFactionInParty(MobileParty) ?? Clan.BanditFactions.First();
+            var mostPrevalent = (Clan)GetMostPrevalentFactionInParty(MobileParty) ?? Clan.BanditFactions.First();
             MobileParty.ActualClan = mostPrevalent;
             Hero = HeroCreatorCopy.CreateBanditHero(mostPrevalent, MobileParty);
             var faction = Clan.BanditFactions.FirstOrDefault(x => Hero.MapFaction.Name == x.Name);
             Hero.Culture = faction is null ? Clan.BanditFactions.FirstOrDefault()?.Culture : faction.Culture;
 
             var getLocalizedText = AccessTools.Method(typeof(MBTextManager), "GetLocalizedText");
-            Name = (string) getLocalizedText.Invoke(null, new object[] {$"{Possess(Hero.FirstName.ToString())} Bandit Militia"});
+            Name = (string)getLocalizedText.Invoke(null, new object[] { $"{Possess(Hero.FirstName.ToString())} Bandit Militia" });
             MobileParty.SetCustomName(new TextObject(Name));
-            MobileParty.Party.Owner = Hero;
+            MobileParty.Party.SetCustomOwner(Hero);
             MobileParty.Leader.StringId += "Bandit_Militia";
             MobileParty.ShouldJoinPlayerBattles = true;
             var tracker = MobilePartyTrackerVM?.Trackers?.FirstOrDefault(t => t.TrackedParty == MobileParty);
@@ -109,7 +110,7 @@ namespace Bandit_Militias
                 }
 
                 int number, numberToUpgrade;
-                if (Globals.Settings.LooterUpgradeFactor > float.Epsilon)
+                if (Globals.Settings.LooterUpgradePercent > 0)
                 {
                     // upgrade any looters first, then go back over and iterate further upgrades
                     var looters = MobileParty.MemberRoster.GetTroopRoster().Where(x =>
@@ -120,7 +121,7 @@ namespace Bandit_Militias
                         foreach (var looter in looters)
                         {
                             number = MobileParty.MemberRoster.GetElementCopyAtIndex(MobileParty.MemberRoster.FindIndexOfTroop(looter.Character)).Number;
-                            numberToUpgrade = Convert.ToInt32(number * Globals.Settings.LooterUpgradeFactor);
+                            numberToUpgrade = Convert.ToInt32(number * Globals.Settings.LooterUpgradePercent / 100);
                             if (numberToUpgrade == 0)
                             {
                                 continue;
@@ -137,9 +138,10 @@ namespace Bandit_Militias
                 for (var i = 0; i < iterations; i++)
                 {
                     var validTroops = MobileParty.MemberRoster.GetTroopRoster().Where(x =>
-                        x.Character.Tier < Globals.Settings.MaxTrainingTier &&
-                        !x.Character.IsHero &&
-                        troopUpgradeModel.IsTroopUpgradeable(MobileParty.Party, x.Character));
+                            x.Character.Tier < Globals.Settings.MaxTrainingTier &&
+                            !x.Character.IsHero &&
+                            troopUpgradeModel.IsTroopUpgradeable(MobileParty.Party, x.Character))
+                        .ToListQ();
                     var troopToTrain = validTroops.ToList().GetRandomElement();
                     number = troopToTrain.Number;
                     if (number < 1)
@@ -147,7 +149,7 @@ namespace Bandit_Militias
                         continue;
                     }
 
-                    var minNumberToUpgrade = Convert.ToInt32(Globals.Settings.UpgradeUnitsFactor * number * Rng.NextDouble());
+                    var minNumberToUpgrade = Convert.ToInt32(Globals.Settings.UpgradeUnitsPercent / 100 * number * Rng.NextDouble());
                     minNumberToUpgrade = Math.Max(1, minNumberToUpgrade);
                     numberToUpgrade = Convert.ToInt32(Rng.Next(minNumberToUpgrade, Convert.ToInt32((number + 1) / 2f)));
                     Mod.Log($"{MobileParty.LeaderHero.Name} is upgrading up to {numberToUpgrade} of {number} \"{troopToTrain.Character.Name}\".");
