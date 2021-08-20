@@ -89,10 +89,10 @@ namespace Bandit_Militias
         }
 
         protected override void OnApplicationTick(float dt)
-        {
+        { 
             var superKey = (Input.IsKeyDown(InputKey.LeftControl) || Input.IsKeyDown(InputKey.RightControl)) &&
-                           (Input.IsKeyDown(InputKey.LeftAlt) || Input.IsKeyDown(InputKey.RightAlt)) &&
-                           (Input.IsKeyDown(InputKey.LeftShift) || Input.IsKeyDown(InputKey.RightShift));
+                         (Input.IsKeyDown(InputKey.LeftAlt) || Input.IsKeyDown(InputKey.RightAlt)) &&
+                         (Input.IsKeyDown(InputKey.LeftShift) || Input.IsKeyDown(InputKey.RightShift));
             if (superKey && Input.IsKeyPressed(InputKey.F11))
             {
                 Globals.Settings.TestingMode = !Globals.Settings.TestingMode;
@@ -101,6 +101,7 @@ namespace Bandit_Militias
 
             if (superKey && Input.IsKeyPressed(InputKey.F))
             {
+                //
             }
 
             if (superKey && Input.IsKeyPressed(InputKey.F10))

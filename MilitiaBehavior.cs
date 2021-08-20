@@ -3,6 +3,7 @@ using System.Linq;
 using Bandit_Militias.Helpers;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
+using TaleWorlds.TwoDimension;
 using static Bandit_Militias.Globals;
 using static Bandit_Militias.Helpers.Helper;
 
@@ -19,6 +20,12 @@ namespace Bandit_Militias
             CampaignEvents.DailyTickPartyEvent.AddNonSerializedListener(this, TryGrowing);
             CampaignEvents.DailyTickPartyEvent.AddNonSerializedListener(this, DailyTickParty);
             CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, FlushMilitiaCharacterObjects);
+            CampaignEvents.OnPartyRemovedEvent.AddNonSerializedListener(this, OnPartyRemoved);
+        }
+
+        private static void OnPartyRemoved(PartyBase party)
+        {
+            PartyMilitiaMap.Remove(party.MobileParty);
         }
 
         // todo un-kludge to unstick stuck militias  
@@ -31,8 +38,6 @@ namespace Bandit_Militias
                  mobileParty.DefaultBehavior == AiBehavior.None))
             {
                 SetMilitiaPatrol(mobileParty);
-                //var nearbySettlement = Settlement.FindSettlementsAroundPosition(mobileParty.Position2D, 30)?.ToList().GetRandomElement();
-                //mobileParty.SetMovePatrolAroundSettlement(nearbySettlement ?? Settlement.All.GetRandomElement());
             }
 
             if (!IsAvailableBanditParty(mobileParty))
@@ -51,7 +56,7 @@ namespace Bandit_Militias
                     && mobileParty.IsBM()
                     && mobileParty.ShortTermBehavior != AiBehavior.FleeToPoint
                     && IsAvailableBanditParty(mobileParty)
-                    && Rng.NextDouble() <= 1 + Globals.Settings.GrowthChancePercent / 100)
+                    && Rng.NextDouble() <= 1 + Globals.Settings.GrowthChance / 100)
                 {
                     var eligibleToGrow = mobileParty.MemberRoster.GetTroopRoster().Where(rosterElement =>
                         rosterElement.Character.Tier < Globals.Settings.MaxTrainingTier
@@ -64,20 +69,21 @@ namespace Bandit_Militias
                         var growthAmount = mobileParty.MemberRoster.TotalManCount * Globals.Settings.GrowthPercent / 100f;
                         // bump up growth to reach GlobalPowerPercent (synthetic but it helps warm up militia population)
                         // (Growth cap % - current %) / 2 = additional
-                        growthAmount += (Globals.Settings.GlobalPowerPercent - GlobalMilitiaPower / CalculatedGlobalPowerLimit * 100) / 2;
-                        growthAmount = Math.Max(1, growthAmount);
+                        // thanks Erythion!
+                        growthAmount += Globals.Settings.GlobalPowerPercent * CalculatedGlobalPowerLimit / GlobalMilitiaPower;
+                        growthAmount = Mathf.Clamp(growthAmount, 1, 50);
                         var growthRounded = Convert.ToInt32(growthAmount);
                         // last condition doesn't account for the size increase but who cares
-                        if (mobileParty.MemberRoster.TotalManCount + growthRounded > CalculatedMaxPartySize ||
+                        if (mobileParty.MemberRoster.TotalManCount + growthRounded > Globals.CalculatedMaxPartySize ||
                             GlobalMilitiaPower + mobileParty.Party.TotalStrength > CalculatedGlobalPowerLimit)
                         {
                             return;
                         }
 
-                        var iterations = Convert.ToInt32((float) growthRounded / eligibleToGrow.Count);
+                        var iterations = Convert.ToInt32((float)growthRounded / eligibleToGrow.Count);
                         for (var i = 0; i < iterations; i++)
                         {
-                            var amount = Convert.ToInt32((float) growthRounded / iterations);
+                            var amount = Convert.ToInt32((float)growthRounded / iterations);
                             if (iterations % 2 != 0 && i + 1 == iterations)
                             {
                                 // final loop, add the leftover troop randomly

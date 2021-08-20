@@ -1,9 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Bandit_Militias.Patches;
 using HarmonyLib;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
+using TaleWorlds.CampaignSystem.SandBox.CampaignBehaviors;
+using TaleWorlds.CampaignSystem.SandBox.CampaignBehaviors.Towns;
+using TaleWorlds.CampaignSystem.SandBox.GameComponents.Map;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
 using TaleWorlds.ObjectSystem;
@@ -25,13 +29,16 @@ namespace Bandit_Militias.Helpers
                 return;
             }
 
-            var roll = Rng.Next(0, 101);
-            if (roll <= Globals.Settings.RandomSplitChance ||
-                !mobileParty.IsBM() ||
-                mobileParty.Party.TotalStrength <= CalculatedMaxPartyStrength * (1 + Globals.Settings.SplitStrengthPercent / 100) * Variance ||
-                mobileParty.Party.MemberRoster.TotalManCount <= CalculatedMaxPartySize * Globals.Settings.SplitSizePercent * Variance)
+            if (CalculatedMaxPartySize * Globals.Settings.SplitSizePercent * Variance != 0)
             {
-                return;
+                var roll = Rng.Next(0, 101);
+                if (roll <= Globals.Settings.RandomSplitChance
+                    && !mobileParty.IsBM()
+                    || mobileParty.Party.TotalStrength > CalculatedMaxPartyStrength * (1 + Globals.Settings.SplitStrengthPercent / 100) * Variance
+                    || mobileParty.Party.MemberRoster.TotalManCount > CalculatedMaxPartySize * Globals.Settings.SplitSizePercent * Variance)
+                {
+                    return;
+                }
             }
 
             var party1 = TroopRoster.CreateDummyTroopRoster();
@@ -217,6 +224,7 @@ namespace Bandit_Militias.Helpers
         {
             Mod.Log("Trashing " + mobileParty.Name);
             PartyMilitiaMap.Remove(mobileParty);
+            mobileParty.LeaderHero?.RemoveMilitiaHero();
             DestroyPartyAction.Apply(null, mobileParty);
         }
 
@@ -235,7 +243,7 @@ namespace Bandit_Militias.Helpers
         {
             PartyMilitiaMap.Clear();
             var hasLogged = false;
-            var partiesToRemove = MobileParty.All.Where(x => x.StringId.StartsWith("Bandit_Militia")).ToList();
+            var partiesToRemove = MobileParty.All.Where(m => m.StringId.Contains("Bandit_Militia")).ToList();
             foreach (var mobileParty in partiesToRemove)
             {
                 if (!hasLogged)
@@ -267,7 +275,7 @@ namespace Bandit_Militias.Helpers
                         try
                         {
                             var prisoner = party.PrisonRoster.GetCharacterAtIndex(i);
-                            if (prisoner.StringId.EndsWith("Bandit_Militia"))
+                            if (prisoner.StringId.Contains("Bandit_Militia"))
                             {
                                 Mod.Log($">>> FLUSH dead bandit hero prisoner {prisoner.HeroObject.Name} at {settlement.Name}.");
                                 party.PrisonRoster.AddToCounts(prisoner, -1);
@@ -313,7 +321,9 @@ namespace Bandit_Militias.Helpers
             var COs = new List<CharacterObject>();
             MBObjectManager.Instance.GetAllInstancesOfObjectType(ref COs);
             var BMs = COs.Where(c => c.HeroObject?.PartyBelongedTo is null
-                                     && c.StringId.EndsWith("Bandit_Militia")).ToList();
+                                     && c.StringId.EndsWith("Bandit_Militia")
+                                     && c.HeroObject is not null
+                                     && !c.HeroObject.IsFactionLeader).ToList();
             if (BMs.Any())
             {
                 Mod.Log($">>> FLUSH {BMs.Count} BM CharacterObjects");
@@ -334,78 +344,37 @@ namespace Bandit_Militias.Helpers
 
         internal static void Flush()
         {
-            RemoveIllCreatedTemporaryBanditFactionLeadersThatWereMissingButNowAreTaggedProperly();
-            //FlushSettlementHeroesWithoutParty();
             FlushHideoutsOfMilitias();
             FlushNullPartyHeroes();
             FlushEmptyMilitiaParties();
             FlushNeutralBanditParties();
-            //FlushBadCharacterObjects();
             FlushZeroParties();
+            RemoveBMHeroesFromClanLeaderships();
             Mod.Log(">>> FLUSHED.");
         }
 
-        private static void RemoveIllCreatedTemporaryBanditFactionLeadersThatWereMissingButNowAreTaggedProperly()
+        internal static void RemoveBMHeroesFromClanLeaderships()
         {
-            for (var i = 0; i < Hero.AllAliveHeroes.Count; i++)
+            foreach (var clan in Clan.BanditFactions)
             {
-                var hero = Hero.AllAliveHeroes[i];
-                if (hero.IsOutlaw
-                    && hero.IsFactionLeader
-                    && hero.CurrentSettlement != null)
+                if (clan.Leader is not null &&
+                    clan.Leader.StringId.EndsWith("Bandit_Militia"))
                 {
-                    Mod.Log("Removing " + hero.Name);
-                    hero.RemoveMilitiaHero();
+                    clan.SetLeader(null);
                 }
             }
         }
 
-        // screwed up the 3.0.6 release by allowing prisoners and they leaked to settlements
-        // or possibly only related to a mod conflict (unidentified) since my testing didn't repro this
-        // need to keep around for a couple versions
-        //private static void FlushSettlementHeroesWithoutParty()
-        //{
-        //foreach (var settlement in Settlement.All.Where(x => x.HeroesWithoutParty.Count > 0))
-        //{
-        //    for (var i = 0; i < settlement.HeroesWithoutParty.Count; i++)
-        //    {
-        //        var hero = settlement.HeroesWithoutParty[i];
-        //        if (hero.CharacterObject.StringId.Contains("CharacterObject")
-        //        && hero.Level == 21
-        //        && hero.IsFactionLeader)
-        //        {
-        //            //Traverse.Create(HeroesWithoutParty(settlement)).Field<List<Hero>>("_list").Value.Remove(settlement.HeroesWithoutParty[i]);
-        //            settlement.HeroesWithoutParty[i].RemoveMilitiaHero();
-        //            Mod.Log($">>> FLUSH Removing bandit hero without party {settlement.HeroesWithoutParty[i].Name} at {settlement}.");
-        //        }
-        //    }
-        //var militiaHeroes = settlement.HeroesWithoutParty.Intersect(PartyMilitiaMap.Values.Select(x => x.Hero)).ToList();
-        //
-        //for (var i = 0; i < militiaHeroes.Count; i++)
-        //{
-        //    Traverse.Create(HeroesWithoutParty(settlement)).Field<List<Hero>>("_list").Value.Remove(militiaHeroes[i]);
-        //    Mod.Log($">>> FLUSH Removing bandit hero without party {militiaHeroes[i].Name} at {settlement}.");
-        //}
-        //}
-        //}
-
         // a bunch of hacks to dispose of leak(s) somewhere
         private static void FlushHeroes()
         {
-            var heroes = Hero.FindAll(hero =>
-                    (hero.PartyBelongedTo is null
-                     && hero.PartyBelongedToAsPrisoner is null
-                     || hero.HeroState == Hero.CharacterStates.Prisoner)
-                    && Clan.BanditFactions.Contains(hero.MapFaction)
-                    && hero.StringId.EndsWith("Bandit_Militia"))
-                .ToList();
-
-            for (var i = 0; i < heroes.Count; i++)
+            var BMHeroes = Hero.AllAliveHeroes.Where(h => h.CharacterObject.StringId.EndsWith("Bandit_Militia")).ToList();
+            for (var i = 0; i < BMHeroes.Count; i++)
             {
-                Mod.Log(">>> FLUSH prisoner, or hero with no party or settlement: " + heroes[i].Name);
+                Mod.Log(">>> FLUSH hero: " + BMHeroes[i].Name);
                 try
                 {
-                    heroes[i].RemoveMilitiaHero();
+                    BMHeroes[i].RemoveMilitiaHero();
                 }
                 catch (NullReferenceException)
                 {
@@ -418,8 +387,10 @@ namespace Bandit_Militias.Helpers
         private static void FlushZeroParties()
         {
             var parties = MobileParty.All.Where(m =>
-                m != MobileParty.MainParty &&
-                m.CurrentSettlement is null && m.MemberRoster.TotalManCount == 0).ToList();
+                    m != MobileParty.MainParty
+                    && m.CurrentSettlement is null
+                    && m.MemberRoster.TotalManCount == 0)
+                .ToList();
             for (var i = 0; i < parties.Count; i++)
             {
                 Mod.Log($">>> FLUSH party without a current settlement or any troops.");
@@ -462,22 +433,25 @@ namespace Bandit_Militias.Helpers
 
         private static void FlushNullPartyHeroes()
         {
-            var heroes = Hero.FindAll(x =>
-                x.Name.ToString() == "Bandit Militia" && x.PartyBelongedTo is null).ToList();
+            var heroes = Hero.AllAliveHeroes.Where(h =>
+                    h.StringId.Contains("Bandit_Militia")
+                    && h.PartyBelongedTo is null)
+                .ToList();
+
             var hasLogged = false;
             foreach (var hero in heroes)
             {
                 if (!hasLogged)
                 {
                     hasLogged = true;
-                    Mod.Log($">>> FLUSH  {heroes.Count} null-party heroes.");
+                    Mod.Log($">>> FLUSH {heroes.Count} null-party heroes.");
                 }
 
-                Mod.Log(">>> FLUSH null party hero " + hero.Name);
+                Mod.Log($">>> FLUSH {hero.StringId}");
                 hero.RemoveMilitiaHero();
             }
         }
-        
+
 
         private static void FlushNeutralBanditParties()
         {
@@ -667,7 +641,7 @@ namespace Bandit_Militias.Helpers
             {
                 LastCalculated = CampaignTime.Now.ToHours;
                 var parties = MobileParty.All.Where(p => p.LeaderHero is not null && !p.IsBM()).ToList();
-                CalculatedMaxPartySize = (float)parties.Average(p => p.Party.PartySizeLimit) * Globals.Settings.MaxPartySizePercent / 100 * Variance;
+                CalculatedMaxPartySize = (float)parties.Average(p => p.Party.PartySizeLimit) * Variance;
                 var totalStrength = parties.Sum(p => p.Party.TotalStrength);
                 CalculatedMaxPartyStrength = totalStrength / parties.Count * (1 + Globals.Settings.PartyStrengthPercent / 100) * Variance;
                 CalculatedGlobalPowerLimit = totalStrength * Variance;
@@ -757,7 +731,10 @@ namespace Bandit_Militias.Helpers
         internal static void RemoveCharacterFromReadOnlyList(CharacterObject hero)
         {
             var charactersField = Traverse.Create(Campaign.Current).Field<MBReadOnlyList<CharacterObject>>("_characters");
-            charactersField.Value = new MBReadOnlyList<CharacterObject>(charactersField.Value.Except(new[] { hero }).ToList());
+            if (charactersField.Value.Contains(hero))
+            {
+                charactersField.Value = new MBReadOnlyList<CharacterObject>(charactersField.Value.Except(new[] { hero }).ToList());
+            }
         }
 
         // anti-congregation, seems like circumstances can lead to a positive feedback loop in 3.0.3 (and a ton of BMs in one area)
@@ -775,17 +752,20 @@ namespace Bandit_Militias.Helpers
             }
         }
 
-        internal static void AddMissingBanditClanLeaders()
+        internal static void RunLateManualPatches()
         {
-            foreach (var clan in Clan.BanditFactions)
-            {
-                if (clan.Leader is null)
-                {
-                    var hero = HeroCreatorCopy.CreateBanditHero(clan, null);
-                    hero.StringId += "Bandit_Militia";
-                    clan.SetLeader(hero);
-                }
-            }
+            // have to patch late because of static constructors (type initialization exception)
+            Mod.harmony.Patch(
+                AccessTools.Method(typeof(EncounterGameMenuBehavior), "game_menu_encounter_on_init"),
+                new HarmonyMethod(AccessTools.Method(typeof(Helper), nameof(FixMapEventFuckery))));
+
+            Mod.harmony.Patch(AccessTools.Method(typeof(PlayerTownVisitCampaignBehavior), "wait_menu_prisoner_wait_on_tick")
+                , null, null, null,
+                new HarmonyMethod(AccessTools.Method(typeof(MiscPatches), nameof(MiscPatches.wait_menu_prisoner_wait_on_tickFinalizer))));
+
+            var original = AccessTools.Method(typeof(DefaultPartySpeedCalculatingModel), "CalculateFinalSpeed");
+            var postfix = AccessTools.Method(typeof(MilitiaPatches), nameof(MilitiaPatches.DefaultPartySpeedCalculatingModelCalculateFinalSpeedPatch));
+            Mod.harmony.Patch(original, null, new HarmonyMethod(postfix));
         }
     }
 }

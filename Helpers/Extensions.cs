@@ -30,18 +30,16 @@ namespace Bandit_Militias.Helpers
             try
             {
                 hero.PartyBelongedTo?.MemberRoster.RemoveTroop(hero.CharacterObject);
-                Traverse.Create(hero).Field<Hero.CharacterStates>("_heroState").Value = Hero.CharacterStates.Dead;
+                Traverse.Create(hero).Field<Hero.CharacterStates>("_heroState").Value = Hero.CharacterStates.NotSpawned;
                 LocationComplex.Current?.RemoveCharacterIfExists(hero);
                 Helper.RemoveCharacterFromReadOnlyList(hero.CharacterObject);
                 Traverse.Create(Campaign.Current.CampaignObjectManager).Field<List<Hero>>("_aliveHeroes").Value.Remove(hero);
-                Traverse.Create(Campaign.Current.CampaignObjectManager).Field<List<Hero>>("_allHeroes").Value.Remove(hero);
                 if (hero.CurrentSettlement is not null)
                 {
                     var heroesWithoutParty = Globals.HeroesWithoutParty(hero.CurrentSettlement);
                     Traverse.Create(heroesWithoutParty).Field<List<Hero>>("_list").Value.Remove(hero);
                 }
 
-                Traverse.Create(hero.Clan).Method("RemoveHeroInternal", hero).GetValue();
                 MBObjectManager.Instance.UnregisterObject(hero.CharacterObject);
                 MBObjectManager.Instance.UnregisterObject(hero);
             }
@@ -51,6 +49,7 @@ namespace Bandit_Militias.Helpers
             }
         }
 
+        // ReSharper disable once InconsistentNaming
         internal static bool IsBM(this MobileParty mobileParty)
         {
             return mobileParty?.LeaderHero is not null

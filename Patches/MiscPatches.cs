@@ -7,9 +7,7 @@ using SandBox;
 using SandBox.View.Map;
 using SandBox.ViewModelCollection.MobilePartyTracker;
 using TaleWorlds.CampaignSystem;
-using TaleWorlds.CampaignSystem.SandBox.CampaignBehaviors;
-using TaleWorlds.CampaignSystem.SandBox.CampaignBehaviors.Towns;
-using TaleWorlds.CampaignSystem.SandBox.GameComponents.Map;
+using TaleWorlds.CampaignSystem.SandBox.CampaignBehaviors.AiBehaviors;
 using TaleWorlds.CampaignSystem.ViewModelCollection;
 using TaleWorlds.Core;
 using TaleWorlds.Engine;
@@ -85,25 +83,30 @@ namespace Bandit_Militias.Patches
                 // 1.6 is dropping the militia settlements at some point, I haven't figured out where
                 ReHome();
                 DoPowerCalculations(true);
-                // workaround for mobileParty.MapFaction.Leader is null, still needed in 1.6 
-                //public void AiHourlyTick(MobileParty mobileParty, PartyThinkParams p)
-                //{
-                //    if (mobileParty.IsMilitia || mobileParty.IsCaravan || (mobileParty.IsVillager || mobileParty.IsBandit) || !mobileParty.MapFaction.IsMinorFaction && !mobileParty.MapFaction.IsKingdomFaction && !mobileParty.MapFaction.Leader.IsNoble || (mobileParty.IsDeserterParty || mobileParty.CurrentSettlement is not null && mobileParty.CurrentSettlement.SiegeEvent is not null))
+                RunLateManualPatches();
+            }
+        }
 
-                AddMissingBanditClanLeaders();
-
-                // have to patch late because of static constructors (type initialization exception)
-                Mod.harmony.Patch(
-                    AccessTools.Method(typeof(EncounterGameMenuBehavior), "game_menu_encounter_on_init"),
-                    new HarmonyMethod(AccessTools.Method(typeof(Helper), nameof(FixMapEventFuckery))));
-
-                Mod.harmony.Patch(AccessTools.Method(typeof(PlayerTownVisitCampaignBehavior), "wait_menu_prisoner_wait_on_tick")
-                    , null, null, null,
-                    new HarmonyMethod(AccessTools.Method(typeof(MiscPatches), nameof(wait_menu_prisoner_wait_on_tickFinalizer))));
-
-                var original = AccessTools.Method(typeof(DefaultPartySpeedCalculatingModel), "CalculateFinalSpeed");
-                var postfix = AccessTools.Method(typeof(MilitiaPatches), nameof(MilitiaPatches.DefaultPartySpeedCalculatingModelCalculateFinalSpeedPatch));
-                Mod.harmony.Patch(original, null, new HarmonyMethod(postfix));
+        // workaround for mobileParty.MapFaction.Leader is null, still needed in 1.6 
+        //public void AiHourlyTick(MobileParty mobileParty, PartyThinkParams p)
+        //{
+        //    if (mobileParty.IsMilitia || mobileParty.IsCaravan || (mobileParty.IsVillager || mobileParty.IsBandit) || !mobileParty.MapFaction.IsMinorFaction && !mobileParty.MapFaction.IsKingdomFaction && !mobileParty.MapFaction.Leader.IsNoble || (mobileParty.IsDeserterParty || mobileParty.CurrentSettlement is not null && mobileParty.CurrentSettlement.SiegeEvent is not null))
+        [HarmonyPatch(typeof(AiPatrollingBehavior), "AiHourlyTick")]
+        public static class AiPatrollingBehaviorAiHourlyTickPatch
+        {
+            public static void Prefix(MobileParty mobileParty)
+            {
+                if (mobileParty.ActualClan is not null
+                    && mobileParty.ActualClan.Leader is null)
+                {
+                    var hero = HeroCreatorCopy.CreateBanditHero(mobileParty.ActualClan, null);
+                    hero.SetName(new TextObject($"{mobileParty.ActualClan.Culture} Leader"));
+                    hero.StringId += "Bandit_Militia";
+                    hero.CharacterObject.StringId += "Bandit_Militia";
+                    mobileParty.StringId += "Bandit_Militia";
+                    mobileParty.ActualClan?.SetLeader(hero);
+                    Mod.Log($"Added new Leader for {mobileParty.ActualClan.Culture}: {hero.CharacterObject?.StringId}");
+                }
             }
         }
 
@@ -131,7 +134,7 @@ namespace Bandit_Militias.Patches
                 {
                     party.MobileParty.SetCustomName(new TextObject("Leaderless Bandit Militia"));
                 }
-                
+
                 var wonBattle = __state;
                 if (__instance.MapEvent.HasWinner
                     && !wonBattle

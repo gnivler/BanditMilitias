@@ -7,7 +7,6 @@ using HarmonyLib;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
-using TaleWorlds.LinQuick;
 using TaleWorlds.Localization;
 using static Bandit_Militias.Globals;
 using static Bandit_Militias.Helpers.Helper;
@@ -62,7 +61,6 @@ namespace Bandit_Militias
             Hero = HeroCreatorCopy.CreateBanditHero(mostPrevalent, MobileParty);
             var faction = Clan.BanditFactions.FirstOrDefault(x => Hero.MapFaction.Name == x.Name);
             Hero.Culture = faction is null ? Clan.BanditFactions.FirstOrDefault()?.Culture : faction.Culture;
-
             var getLocalizedText = AccessTools.Method(typeof(MBTextManager), "GetLocalizedText");
             Name = (string)getLocalizedText.Invoke(null, new object[] { $"{Possess(Hero.FirstName.ToString())} Bandit Militia" });
             MobileParty.SetCustomName(new TextObject(Name));
@@ -140,8 +138,7 @@ namespace Bandit_Militias
                     var validTroops = MobileParty.MemberRoster.GetTroopRoster().Where(x =>
                             x.Character.Tier < Globals.Settings.MaxTrainingTier &&
                             !x.Character.IsHero &&
-                            troopUpgradeModel.IsTroopUpgradeable(MobileParty.Party, x.Character))
-                        .ToListQ();
+                            troopUpgradeModel.IsTroopUpgradeable(MobileParty.Party, x.Character));
                     var troopToTrain = validTroops.ToList().GetRandomElement();
                     number = troopToTrain.Number;
                     if (number < 1)

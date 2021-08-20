@@ -26,7 +26,6 @@ namespace Bandit_Militias.Patches
     public static class MilitiaPatches
     {
         private static float lastChecked;
-        private static float lastDelta;
 
         [HarmonyPatch(typeof(Campaign), "Tick")]
         public static class CampaignTickPatch
@@ -36,11 +35,10 @@ namespace Bandit_Militias.Patches
             {
                 try
                 {
-                    if (Campaign.Current.TimeControlMode == CampaignTimeControlMode.Stop ||
-                        Campaign.Current.TimeControlMode == CampaignTimeControlMode.UnstoppableFastForwardForPartyWaitTime ||
-                        Campaign.Current.TimeControlMode == CampaignTimeControlMode.FastForwardStop ||
-                        Campaign.Current.TimeControlMode == CampaignTimeControlMode.StoppableFastForward ||
-                        GlobalMilitiaPower > CalculatedGlobalPowerLimit)
+                    if (Campaign.Current.TimeControlMode == CampaignTimeControlMode.Stop
+                        || Campaign.Current.TimeControlMode == CampaignTimeControlMode.UnstoppableFastForwardForPartyWaitTime
+                        || Campaign.Current.TimeControlMode == CampaignTimeControlMode.FastForwardStop
+                        || Campaign.Current.TimeControlMode == CampaignTimeControlMode.StoppableFastForward)
                     {
                         return;
                     }
@@ -124,8 +122,10 @@ namespace Bandit_Militias.Patches
                             continue;
                         }
 
+
                         var militiaTotalCount = mobileParty.MemberRoster.TotalManCount + targetParty.MemberRoster.TotalManCount;
-                        if (militiaTotalCount < Globals.Settings.MinPartySize
+                        if (GlobalMilitiaPower > CalculatedGlobalPowerLimit
+                            || militiaTotalCount < Globals.Settings.MinPartySize
                             || militiaTotalCount > CalculatedMaxPartySize
                             || mobileParty.Party.TotalStrength > CalculatedMaxPartyStrength
                             || mobileParty.Party.NumberOfMenWithHorse + targetParty.NumberOfMenWithHorse > militiaTotalCount / 2)

@@ -10,7 +10,7 @@ using TaleWorlds.Library;
 namespace Bandit_Militias
 {
     // ReSharper disable once ClassNeverInstantiated.Global
-    internal class Globals
+    internal static class Globals
     {
         // merge/split criteria
         internal const float MergeDistance = 2;
