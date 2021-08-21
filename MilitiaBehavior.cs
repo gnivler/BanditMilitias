@@ -1,7 +1,9 @@
 using System;
 using System.Linq;
 using Bandit_Militias.Helpers;
+using HarmonyLib;
 using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.SandBox.CampaignBehaviors;
 using TaleWorlds.Core;
 using TaleWorlds.TwoDimension;
 using static Bandit_Militias.Globals;
@@ -53,11 +55,17 @@ namespace Bandit_Militias
             try
             {
                 if (Growth
+                    && MilitiaPowerPercent < Globals.Settings.GlobalPowerPercent
                     && mobileParty.IsBM()
                     && mobileParty.ShortTermBehavior != AiBehavior.FleeToPoint
                     && IsAvailableBanditParty(mobileParty)
-                    && Rng.NextDouble() <= 1 + Globals.Settings.GrowthChance / 100)
+                    && Rng.NextDouble() <= Globals.Settings.GrowthChance / 100f)
                 {
+                    var behavior = Campaign.Current.GetCampaignBehavior<BanditsCampaignBehavior>();
+                    if (MilitiaPowerPercent < Globals.Settings.GlobalPowerPercent / 2f)
+                    {
+                        Traverse.Create(behavior).Method("SpawnBanditOrLooterPartiesAroundAHideoutOrSettlement", 3).GetValue();
+                    }
                     var eligibleToGrow = mobileParty.MemberRoster.GetTroopRoster().Where(rosterElement =>
                         rosterElement.Character.Tier < Globals.Settings.MaxTrainingTier
                         && !rosterElement.Character.IsHero
@@ -65,33 +73,27 @@ namespace Bandit_Militias
                         && !mobileParty.IsVisible).ToList();
                     if (eligibleToGrow.Any())
                     {
-                        Mod.Log($"TryGrowing {mobileParty.LeaderHero}, total: {mobileParty.MemberRoster.TotalManCount}");
                         var growthAmount = mobileParty.MemberRoster.TotalManCount * Globals.Settings.GrowthPercent / 100f;
                         // bump up growth to reach GlobalPowerPercent (synthetic but it helps warm up militia population)
                         // (Growth cap % - current %) / 2 = additional
                         // thanks Erythion!
-                        growthAmount += Globals.Settings.GlobalPowerPercent * CalculatedGlobalPowerLimit / GlobalMilitiaPower;
+                        var boost = CalculatedGlobalPowerLimit / GlobalMilitiaPower;
+                        growthAmount += Globals.Settings.GlobalPowerPercent / 100f * boost;
                         growthAmount = Mathf.Clamp(growthAmount, 1, 50);
                         var growthRounded = Convert.ToInt32(growthAmount);
                         // last condition doesn't account for the size increase but who cares
-                        if (mobileParty.MemberRoster.TotalManCount + growthRounded > Globals.CalculatedMaxPartySize ||
-                            GlobalMilitiaPower + mobileParty.Party.TotalStrength > CalculatedGlobalPowerLimit)
+                        if (mobileParty.MemberRoster.TotalManCount + growthRounded > CalculatedMaxPartySize)
                         {
                             return;
                         }
 
-                        var iterations = Convert.ToInt32((float)growthRounded / eligibleToGrow.Count);
-                        for (var i = 0; i < iterations; i++)
+                        Mod.Log($"Growing {mobileParty.Name}, total: {mobileParty.MemberRoster.TotalManCount}");
+                        for (var i = 0; i < eligibleToGrow.Count; i++)
                         {
-                            var amount = Convert.ToInt32((float)growthRounded / iterations);
-                            if (iterations % 2 != 0 && i + 1 == iterations)
+                            var troop = eligibleToGrow.GetRandomElement().Character;
+                            if (GlobalMilitiaPower + troop.GetPower() < CalculatedGlobalPowerLimit)
                             {
-                                // final loop, add the leftover troop randomly
-                                mobileParty.MemberRoster.AddToCounts(eligibleToGrow.GetRandomElement().Character, amount + 1);
-                            }
-                            else
-                            {
-                                mobileParty.MemberRoster.AddToCounts(eligibleToGrow.GetRandomElement().Character, amount);
+                                mobileParty.MemberRoster.AddToCounts(troop, 1);
                             }
                         }
 
@@ -99,7 +101,7 @@ namespace Bandit_Militias
                         var strengthString = $"{Math.Round(mobileParty.Party.TotalStrength)} strength";
                         Mod.Log($"{$"Grown to",-70} | {troopString,10} | {strengthString,12} |");
                         DoPowerCalculations();
-                        // Mod.Log($"Grown to: {mobileParty.MemberRoster.TotalManCount}"); 
+                        // Mod.Log($"Grown to: {mobileParty.MemberRoster.TotalManCount}");
                     }
                 }
             }

@@ -21,8 +21,9 @@ namespace Bandit_Militias
         // holders for criteria
         internal static float CalculatedMaxPartyStrength;
         internal static float CalculatedMaxPartySize;
-        internal static float CalculatedGlobalPowerLimit;// TODO verify purpose
+        internal static float CalculatedGlobalPowerLimit;
         internal static float GlobalMilitiaPower;
+        internal static float MilitiaPowerPercent;
 
         // misc
         internal static readonly Random Rng = new();

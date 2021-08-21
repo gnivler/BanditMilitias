@@ -54,6 +54,8 @@ namespace Bandit_Militias.Patches
                         heroes[i].Character.HeroObject.RemoveMilitiaHero();
                     }
                 }
+
+                Helper.DoPowerCalculations();
             }
         }
 

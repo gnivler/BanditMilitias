@@ -124,7 +124,7 @@ namespace Bandit_Militias.Patches
 
 
                         var militiaTotalCount = mobileParty.MemberRoster.TotalManCount + targetParty.MemberRoster.TotalManCount;
-                        if (GlobalMilitiaPower > CalculatedGlobalPowerLimit
+                        if (MilitiaPowerPercent > Globals.Settings.GlobalPowerPercent
                             || militiaTotalCount < Globals.Settings.MinPartySize
                             || militiaTotalCount > CalculatedMaxPartySize
                             || mobileParty.Party.TotalStrength > CalculatedMaxPartyStrength

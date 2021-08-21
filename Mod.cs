@@ -101,7 +101,7 @@ namespace Bandit_Militias
 
             if (superKey && Input.IsKeyPressed(InputKey.F))
             {
-                //
+                Mod.Log("F");
             }
 
             if (superKey && Input.IsKeyPressed(InputKey.F10))
@@ -139,6 +139,7 @@ namespace Bandit_Militias
                     Nuke();
                     Nuke();
                     Nuke();
+                    DoPowerCalculations();
                     InformationManager.AddQuickInformation(new TextObject("BANDIT MILITIAS CLEARED"));
                 }
                 catch (Exception ex)

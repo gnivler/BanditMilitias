@@ -21,24 +21,20 @@ namespace Bandit_Militias.Helpers
     {
         internal static void TrySplitParty(MobileParty mobileParty)
         {
-            if (GlobalMilitiaPower + mobileParty.Party.TotalStrength > CalculatedGlobalPowerLimit ||
-                mobileParty.MemberRoster.TotalManCount < MinSplitSize ||
-                !mobileParty.IsBM() ||
-                mobileParty.IsTooBusyToMerge())
+            if (MilitiaPowerPercent > Globals.Settings.GlobalPowerPercent
+                || mobileParty.MemberRoster.TotalManCount < MinSplitSize
+                || !mobileParty.IsBM()
+                || mobileParty.IsTooBusyToMerge())
             {
                 return;
             }
 
-            if (CalculatedMaxPartySize * Globals.Settings.SplitSizePercent * Variance != 0)
+            var roll = Rng.Next(0, 101);
+            if (roll > Globals.Settings.RandomSplitChance
+                || mobileParty.Party.TotalStrength > CalculatedMaxPartyStrength * (1 + Globals.Settings.SplitStrengthPercent / 100) * Variance
+                || mobileParty.Party.MemberRoster.TotalManCount > Math.Max(1, CalculatedMaxPartySize * Globals.Settings.SplitSizePercent * Variance))
             {
-                var roll = Rng.Next(0, 101);
-                if (roll <= Globals.Settings.RandomSplitChance
-                    && !mobileParty.IsBM()
-                    || mobileParty.Party.TotalStrength > CalculatedMaxPartyStrength * (1 + Globals.Settings.SplitStrengthPercent / 100) * Variance
-                    || mobileParty.Party.MemberRoster.TotalManCount > CalculatedMaxPartySize * Globals.Settings.SplitSizePercent * Variance)
-                {
-                    return;
-                }
+                return;
             }
 
             var party1 = TroopRoster.CreateDummyTroopRoster();
@@ -333,6 +329,11 @@ namespace Bandit_Militias.Helpers
                 tempCharacterObjectList = tempCharacterObjectList.Except(BMs).ToList();
                 charactersField.Value = new MBReadOnlyList<CharacterObject>(tempCharacterObjectList);
             }
+
+            Mod.Log("");
+            Mod.Log($"{new string('=', 80)}\n{PartyMilitiaMap.Count}: {GlobalMilitiaPower} / {CalculatedGlobalPowerLimit} = {GlobalMilitiaPower / CalculatedGlobalPowerLimit}");
+            Mod.Log("");
+            //Campaign.Current.TimeControlMode = CampaignTimeControlMode.Stop;
         }
 
         internal static void ReHome()
@@ -646,6 +647,7 @@ namespace Bandit_Militias.Helpers
                 CalculatedMaxPartyStrength = totalStrength / parties.Count * (1 + Globals.Settings.PartyStrengthPercent / 100) * Variance;
                 CalculatedGlobalPowerLimit = totalStrength * Variance;
                 GlobalMilitiaPower = PartyMilitiaMap.Keys.Sum(p => p.Party.TotalStrength);
+                MilitiaPowerPercent = GlobalMilitiaPower / CalculatedGlobalPowerLimit * 100;
             }
         }
 
