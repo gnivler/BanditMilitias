@@ -7,8 +7,6 @@ using SandBox;
 using SandBox.View.Map;
 using SandBox.ViewModelCollection.MobilePartyTracker;
 using TaleWorlds.CampaignSystem;
-using TaleWorlds.CampaignSystem.SandBox.CampaignBehaviors.AiBehaviors;
-using TaleWorlds.CampaignSystem.ViewModelCollection;
 using TaleWorlds.Core;
 using TaleWorlds.Engine;
 using TaleWorlds.Library;
@@ -78,35 +76,12 @@ namespace Bandit_Militias.Patches
                     PartyMilitiaMap.Add(recreatedMilitia.MobileParty, recreatedMilitia);
                 }
 
+                DoPowerCalculations(true);
                 FlushMilitiaCharacterObjects();
-                Mod.Log($"Militias: {militias.Count} (registered {PartyMilitiaMap.Count})");
                 // 1.6 is dropping the militia settlements at some point, I haven't figured out where
                 ReHome();
-                DoPowerCalculations(true);
+                Mod.Log($"Militias: {militias.Count} (registered {PartyMilitiaMap.Count})");
                 RunLateManualPatches();
-            }
-        }
-
-        // workaround for mobileParty.MapFaction.Leader is null, still needed in 1.6 
-        //public void AiHourlyTick(MobileParty mobileParty, PartyThinkParams p)
-        //{
-        //    if (mobileParty.IsMilitia || mobileParty.IsCaravan || (mobileParty.IsVillager || mobileParty.IsBandit) || !mobileParty.MapFaction.IsMinorFaction && !mobileParty.MapFaction.IsKingdomFaction && !mobileParty.MapFaction.Leader.IsNoble || (mobileParty.IsDeserterParty || mobileParty.CurrentSettlement is not null && mobileParty.CurrentSettlement.SiegeEvent is not null))
-        [HarmonyPatch(typeof(AiPatrollingBehavior), "AiHourlyTick")]
-        public static class AiPatrollingBehaviorAiHourlyTickPatch
-        {
-            public static void Prefix(MobileParty mobileParty)
-            {
-                if (mobileParty.ActualClan is not null
-                    && mobileParty.ActualClan.Leader is null)
-                {
-                    var hero = HeroCreatorCopy.CreateBanditHero(mobileParty.ActualClan, null);
-                    hero.SetName(new TextObject($"{mobileParty.ActualClan.Culture} Leader"));
-                    hero.StringId += "Bandit_Militia";
-                    hero.CharacterObject.StringId += "Bandit_Militia";
-                    mobileParty.StringId += "Bandit_Militia";
-                    mobileParty.ActualClan?.SetLeader(hero);
-                    Mod.Log($"Added new Leader for {mobileParty.ActualClan.Culture}: {hero.CharacterObject?.StringId}");
-                }
             }
         }
 
@@ -147,33 +122,6 @@ namespace Bandit_Militias.Patches
             }
         }
 
-        // not firing in 1.5.10
-        [HarmonyPatch(typeof(HeroCreator), "CreateRelativeNotableHero")]
-        public static class HeroCreatorCreateRelativeNotableHeroPatch
-        {
-            private static bool Prefix(Hero relative)
-            {
-                if (PartyMilitiaMap.Values.Any(x => x.Hero == relative))
-                {
-                    Mod.Log("Not creating relative of Bandit Militia hero");
-                    return false;
-                }
-
-                return true;
-            }
-        }
-
-        // 1.5.9 throws a vanilla stack, ignoring it seems to be fine
-        public static Exception wait_menu_prisoner_wait_on_tickFinalizer(Exception __exception)
-        {
-            if (__exception is not null)
-            {
-                Mod.Log($"HACK Squelching exception at HeroCreator.CreateRelativeNotableHero");
-            }
-
-            return null;
-        }
-
         // possibly related to Separatism and new kingdoms, ignoring it seems fine...
         [HarmonyPatch(typeof(BanditPartyComponent), "Name", MethodType.Getter)]
         public static class BanditPartyComponentGetNamePatch
@@ -200,23 +148,6 @@ namespace Bandit_Militias.Patches
 
                     Mod.Log($"MapFaction {__instance.Hideout?.MapFaction}.");
                     Mod.Log($"MapFaction.Name {__instance.Hideout?.MapFaction?.Name}.");
-                }
-
-                return null;
-            }
-        }
-
-        // vanilla fix for 1.5.9?
-        // maybe actually the chickens et al?
-        // not happening on 3.0.3 for 1.5.9/10
-        [HarmonyPatch(typeof(SPInventoryVM), "InitializeInventory")]
-        public static class SPInventoryVMInitializeInventoryVMPatch
-        {
-            private static Exception Finalizer(Exception __exception)
-            {
-                if (__exception is not null)
-                {
-                    Mod.Log($"HACK Squelching exception at SPInventoryVM.InitializeInventory");
                 }
 
                 return null;

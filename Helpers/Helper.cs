@@ -6,7 +6,6 @@ using HarmonyLib;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.SandBox.CampaignBehaviors;
-using TaleWorlds.CampaignSystem.SandBox.CampaignBehaviors.Towns;
 using TaleWorlds.CampaignSystem.SandBox.GameComponents.Map;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
@@ -69,9 +68,8 @@ namespace Bandit_Militias.Helpers
             {
                 if (string.IsNullOrEmpty(item.EquipmentElement.Item?.Name?.ToString()))
                 {
-                    Mod.Log("Bad item: " + item);
+                    Mod.Log("Bad item: " + item.EquipmentElement);
                     continue;
-                    //Traverse.Create(PartyBase.MainParty).Property<ItemRoster>("ItemRoster").Value.Remove(item);
                 }
 
                 var half = Math.Max(1, item.Amount / 2);
@@ -86,7 +84,7 @@ namespace Bandit_Militias.Helpers
             // toss a coin (to your Witcher)
             if (rosterElement.Number == 1)
             {
-                if (Rng.Next(0, 1) == 0)
+                if (Rng.Next(0, 2) == 0)
                 {
                     troops1.AddToCounts(rosterElement.Character, 1);
                 }
@@ -218,7 +216,7 @@ namespace Bandit_Militias.Helpers
 
         internal static void Trash(MobileParty mobileParty)
         {
-            Mod.Log("Trashing " + mobileParty.Name);
+            //Mod.Log("Trashing " + mobileParty.Name);
             PartyMilitiaMap.Remove(mobileParty);
             mobileParty.LeaderHero?.RemoveMilitiaHero();
             DestroyPartyAction.Apply(null, mobileParty);
@@ -233,6 +231,7 @@ namespace Bandit_Militias.Helpers
             FlushMilitiaCharacterObjects();
             FlushMapEvents();
             Flush();
+            DoPowerCalculations(true);
         }
 
         private static void FlushBanditMilitias()
@@ -331,7 +330,7 @@ namespace Bandit_Militias.Helpers
             }
 
             Mod.Log("");
-            Mod.Log($"{new string('=', 80)}\n{PartyMilitiaMap.Count}: {GlobalMilitiaPower} / {CalculatedGlobalPowerLimit} = {GlobalMilitiaPower / CalculatedGlobalPowerLimit}");
+            Mod.Log($"{new string('=', 80)}\nBMs: {PartyMilitiaMap.Count,-4} Power: {GlobalMilitiaPower} / Power Limit: {CalculatedGlobalPowerLimit} = {GlobalMilitiaPower / CalculatedGlobalPowerLimit * 100:f2}% (limit {Globals.Settings.GlobalPowerPercent}%)");
             Mod.Log("");
             //Campaign.Current.TimeControlMode = CampaignTimeControlMode.Stop;
         }
@@ -742,16 +741,12 @@ namespace Bandit_Militias.Helpers
         // anti-congregation, seems like circumstances can lead to a positive feedback loop in 3.0.3 (and a ton of BMs in one area)
         internal static void SetMilitiaPatrol(MobileParty mobileParty)
         {
-            var nearbyMilitias = MobileParty.FindPartiesAroundPosition(mobileParty.Position2D, 30, m => m.IsBM()).Count();
-            if (nearbyMilitias > 5)
-            {
-                mobileParty.SetMovePatrolAroundSettlement(Settlement.All.GetRandomElement());
-            }
-            else
-            {
-                var nearbySettlement = Settlement.FindSettlementsAroundPosition(mobileParty.Position2D, 30)?.ToList().GetRandomElement();
-                mobileParty.SetMovePatrolAroundSettlement(nearbySettlement ?? Settlement.All.GetRandomElement());
-            }
+
+            var settlement = Settlement.All.GetRandomElement();
+            mobileParty.SetMovePatrolAroundPoint(settlement.Position2D);
+            Traverse.Create(mobileParty).Property<Settlement>("TargetSettlement").Value = settlement;
+            mobileParty.ResetTargetParty();
+
         }
 
         internal static void RunLateManualPatches()
@@ -760,10 +755,6 @@ namespace Bandit_Militias.Helpers
             Mod.harmony.Patch(
                 AccessTools.Method(typeof(EncounterGameMenuBehavior), "game_menu_encounter_on_init"),
                 new HarmonyMethod(AccessTools.Method(typeof(Helper), nameof(FixMapEventFuckery))));
-
-            Mod.harmony.Patch(AccessTools.Method(typeof(PlayerTownVisitCampaignBehavior), "wait_menu_prisoner_wait_on_tick")
-                , null, null, null,
-                new HarmonyMethod(AccessTools.Method(typeof(MiscPatches), nameof(MiscPatches.wait_menu_prisoner_wait_on_tickFinalizer))));
 
             var original = AccessTools.Method(typeof(DefaultPartySpeedCalculatingModel), "CalculateFinalSpeed");
             var postfix = AccessTools.Method(typeof(MilitiaPatches), nameof(MilitiaPatches.DefaultPartySpeedCalculatingModelCalculateFinalSpeedPatch));

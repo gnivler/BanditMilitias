@@ -77,11 +77,11 @@ namespace Bandit_Militias
         private static void AdjustForLoadOrder()
         {
             var assemblies = AppDomain.CurrentDomain.GetAssemblies();
-            var BMidx = assemblies.First(a => a.FullName.StartsWith("Bandit Militias"));
-            var CAKidx = assemblies.FirstOrDefault(x => x.FullName.StartsWith("CalradiaExpandedKingdoms"));
-            if (CAKidx is not null)
+            var BM = assemblies.First(a => a.FullName.StartsWith("Bandit Militias"));
+            var CAK = assemblies.FirstOrDefault(x => x.FullName.StartsWith("CalradiaExpandedKingdoms"));
+            if (CAK is not null)
             {
-                if (assemblies.FindIndex(a => a == BMidx) > assemblies.FindIndex(a => a == CAKidx))
+                if (assemblies.FindIndex(a => a == BM) > assemblies.FindIndex(a => a == CAK))
                 {
                     Globals.Settings.RandomBanners = false;
                 }
@@ -89,10 +89,11 @@ namespace Bandit_Militias
         }
 
         protected override void OnApplicationTick(float dt)
-        { 
-            var superKey = (Input.IsKeyDown(InputKey.LeftControl) || Input.IsKeyDown(InputKey.RightControl)) &&
-                         (Input.IsKeyDown(InputKey.LeftAlt) || Input.IsKeyDown(InputKey.RightAlt)) &&
-                         (Input.IsKeyDown(InputKey.LeftShift) || Input.IsKeyDown(InputKey.RightShift));
+        {
+            var superKey = Campaign.Current != null
+                           && (Input.IsKeyDown(InputKey.LeftControl) || Input.IsKeyDown(InputKey.RightControl)) &&
+                           (Input.IsKeyDown(InputKey.LeftAlt) || Input.IsKeyDown(InputKey.RightAlt)) &&
+                           (Input.IsKeyDown(InputKey.LeftShift) || Input.IsKeyDown(InputKey.RightShift));
             if (superKey && Input.IsKeyPressed(InputKey.F11))
             {
                 Globals.Settings.TestingMode = !Globals.Settings.TestingMode;
@@ -101,7 +102,7 @@ namespace Bandit_Militias
 
             if (superKey && Input.IsKeyPressed(InputKey.F))
             {
-                Mod.Log("F");
+                Log("");
             }
 
             if (superKey && Input.IsKeyPressed(InputKey.F10))
@@ -114,7 +115,7 @@ namespace Bandit_Militias
 
             if (superKey && Input.IsKeyPressed(InputKey.F12))
             {
-                foreach (var militia in PartyMilitiaMap.Values.OrderByDescending(x => x.MobileParty.MemberRoster.TotalManCount))
+                foreach (var militia in PartyMilitiaMap.Values.OrderBy(x => x.MobileParty.MemberRoster.TotalManCount))
                 {
                     Log($">> {militia.Hero.Name,-30}: {militia.MobileParty.MemberRoster.TotalManCount}/{militia.MobileParty.Party.TotalStrength:0}");
                     for (int tier = 1; tier <= 6; tier++)
@@ -139,7 +140,7 @@ namespace Bandit_Militias
                     Nuke();
                     Nuke();
                     Nuke();
-                    DoPowerCalculations();
+                    DoPowerCalculations(true);
                     InformationManager.AddQuickInformation(new TextObject("BANDIT MILITIAS CLEARED"));
                 }
                 catch (Exception ex)

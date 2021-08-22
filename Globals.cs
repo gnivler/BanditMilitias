@@ -24,6 +24,7 @@ namespace Bandit_Militias
         internal static float CalculatedGlobalPowerLimit;
         internal static float GlobalMilitiaPower;
         internal static float MilitiaPowerPercent;
+        
 
         // misc
         internal static readonly Random Rng = new();

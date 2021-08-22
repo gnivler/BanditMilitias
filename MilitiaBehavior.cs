@@ -1,9 +1,7 @@
 using System;
 using System.Linq;
 using Bandit_Militias.Helpers;
-using HarmonyLib;
 using TaleWorlds.CampaignSystem;
-using TaleWorlds.CampaignSystem.SandBox.CampaignBehaviors;
 using TaleWorlds.Core;
 using TaleWorlds.TwoDimension;
 using static Bandit_Militias.Globals;
@@ -23,6 +21,46 @@ namespace Bandit_Militias
             CampaignEvents.DailyTickPartyEvent.AddNonSerializedListener(this, DailyTickParty);
             CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, FlushMilitiaCharacterObjects);
             CampaignEvents.OnPartyRemovedEvent.AddNonSerializedListener(this, OnPartyRemoved);
+            CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, OnDailyTickEvent);
+        }
+
+        private static void OnDailyTickEvent()
+        {
+            if (!Globals.Settings.MilitiaSpawn)
+            {
+                return;
+            }
+
+            for (var i = 0; i < Math.Abs(Globals.Settings.GlobalPowerPercent - MilitiaPowerPercent); i++)
+            {
+                try
+                {
+                    SynthesizeBM();
+                }
+                catch (Exception ex)
+                {
+                    Mod.Log(ex);
+                }
+            }
+        }
+
+        private static void SynthesizeBM()
+        {
+            var settlement = Settlement.All.Where(s => !s.IsVisible).GetRandomElementInefficiently();
+            var clan = Clan.BanditFactions.ToList()[Rng.Next(0, Clan.BanditFactions.Count())];
+            var mobileParty = settlement.IsHideout()
+                ? BanditPartyComponent.CreateBanditParty("Bandit_Militia", clan, settlement.Hideout, false)
+                : BanditPartyComponent.CreateLooterParty("Bandit_Militia", clan, settlement, false);
+            mobileParty.InitializeMobileParty(clan.DefaultPartyTemplate, settlement.GatePosition, 5, 2);
+            var simulatedMergedRoster = TroopRoster.CreateDummyTroopRoster();
+            while (simulatedMergedRoster.TotalManCount < Globals.Settings.MinPartySize * Rng.Next(1, Globals.Settings.SpawnSizeMultiplier + 1)) 
+            {
+                simulatedMergedRoster.Add(mobileParty.MemberRoster);
+            }
+
+            new Militia(mobileParty.Position2D, simulatedMergedRoster, TroopRoster.CreateDummyTroopRoster());
+            mobileParty.RemoveParty();
+            DoPowerCalculations(true);
         }
 
         private static void OnPartyRemoved(PartyBase party)
@@ -30,14 +68,9 @@ namespace Bandit_Militias
             PartyMilitiaMap.Remove(party.MobileParty);
         }
 
-        // todo un-kludge to unstick stuck militias  
         private static void DailyTickParty(MobileParty mobileParty)
         {
-            if (mobileParty.IsBM() &&
-                (mobileParty.ShortTermBehavior == AiBehavior.Hold ||
-                 mobileParty.ShortTermBehavior == AiBehavior.None ||
-                 mobileParty.DefaultBehavior == AiBehavior.Hold ||
-                 mobileParty.DefaultBehavior == AiBehavior.None))
+            if (mobileParty.IsBM())
             {
                 SetMilitiaPatrol(mobileParty);
             }
@@ -61,11 +94,6 @@ namespace Bandit_Militias
                     && IsAvailableBanditParty(mobileParty)
                     && Rng.NextDouble() <= Globals.Settings.GrowthChance / 100f)
                 {
-                    var behavior = Campaign.Current.GetCampaignBehavior<BanditsCampaignBehavior>();
-                    if (MilitiaPowerPercent < Globals.Settings.GlobalPowerPercent / 2f)
-                    {
-                        Traverse.Create(behavior).Method("SpawnBanditOrLooterPartiesAroundAHideoutOrSettlement", 3).GetValue();
-                    }
                     var eligibleToGrow = mobileParty.MemberRoster.GetTroopRoster().Where(rosterElement =>
                         rosterElement.Character.Tier < Globals.Settings.MaxTrainingTier
                         && !rosterElement.Character.IsHero

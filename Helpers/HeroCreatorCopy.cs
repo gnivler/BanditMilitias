@@ -20,6 +20,7 @@ namespace Bandit_Militias.Helpers
         {
             if (!Outlaws.Any())
             {
+                Mod.Log(">>> Critical Error - No Outlaw CharacterObject Templates in game.");
                 return null;
             }
 

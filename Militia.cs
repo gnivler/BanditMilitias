@@ -50,7 +50,7 @@ namespace Bandit_Militias
 
         private void Spawn(Vec2 position, TroopRoster party, TroopRoster prisoners)
         {
-            MobileParty = MobileParty.CreateParty("Bandit_Militia");
+            MobileParty = BanditPartyComponent.CreateBanditParty("Bandit_Militia", Clan.BanditFactions.First(), Hideouts.GetRandomElement().Hideout, false);
             MobileParty.InitializeMobileParty(
                 party,
                 prisoners,
@@ -67,11 +67,15 @@ namespace Bandit_Militias
             MobileParty.Party.SetCustomOwner(Hero);
             MobileParty.Leader.StringId += "Bandit_Militia";
             MobileParty.ShouldJoinPlayerBattles = true;
-            var tracker = MobilePartyTrackerVM?.Trackers?.FirstOrDefault(t => t.TrackedParty == MobileParty);
+            var tracker = Globals.MobilePartyTrackerVM?.Trackers?.FirstOrDefault(t => t.TrackedParty == MobileParty);
             if (tracker is not null)
             {
-                MobilePartyTrackerVM.Trackers.Remove(tracker);
+                Globals.MobilePartyTrackerVM.Trackers.Remove(tracker);
             }
+            //else
+            //{
+            //    Globals.MobilePartyTrackerVM?.Trackers.Add(new MobilePartyTrackItemVM(MobileParty, MapScreen.Instance.MapCamera, null));
+            //}
         }
 
         private void TrainMilitia()

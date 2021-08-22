@@ -43,7 +43,7 @@ namespace Bandit_Militias.Patches
                         return;
                     }
 
-                    if (Campaign.CurrentTime - lastChecked < 0.25f)
+                    if (Campaign.CurrentTime - lastChecked < 1f)
                     {
                         return;
                     }
@@ -54,9 +54,9 @@ namespace Bandit_Militias.Patches
                             m.Party.IsMobile
                             && m.CurrentSettlement is null
                             && !m.IsUsedByAQuest()
-                            && m.IsBandit
+                            && m.IsBandit  // as of BM 3.1.1 they are classified as Bandits
                             && m.MemberRoster.TotalManCount >= Globals.Settings.MinPartySizeToConsiderMerge)
-                        .Concat(PartyMilitiaMap.Keys).ToList(); // might cause duplicates if IsBandit returns differently in the future
+                        .ToListQ();
                     for (var index = 0; index < parties.Count; index++)
                     {
                         //T.Restart();
@@ -99,8 +99,7 @@ namespace Bandit_Militias.Patches
                         }
 
                         var targetParty = nearbyParties.Where(m =>
-                                m != mobileParty
-                                && IsAvailableBanditParty(m)
+                                IsAvailableBanditParty(m)
                                 && m.MemberRoster.TotalManCount + mobileParty.MemberRoster.TotalManCount >= Globals.Settings.MinPartySize)
                             .ToListQ().GetRandomElement()?.Party;
 

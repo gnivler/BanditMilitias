@@ -33,6 +33,8 @@ namespace Bandit_Militias
                 MinPartySizeToConsiderMerge = 30,
                 GrowthChance = 100,
                 GrowthPercent = 3,
+                MilitiaSpawn = true,
+                SpawnSizeMultiplier = 5,
                 MaxItemValue = 8000,
                 LooterUpgradePercent = 66,
                 MaxStrengthDeltaPercent = 100,
@@ -62,11 +64,19 @@ namespace Bandit_Militias
         [SettingPropertyGroup("Primary Settings")]
         public int GrowthPercent { get; private set; } = 1;
 
-        [SettingPropertyInteger("Change Cooldown", 1, 168, HintText = "\nAfter merging or splitting, a militia will not change again until this much time passes.", Order = 5, RequireRestart = false)]
+        [SettingPropertyBool("BM Spawn", HintText = "\nNew Bandit Militias will form spontaneously as well as by merging together normally.", Order = 5, RequireRestart = false)]
+        [SettingPropertyGroup("Primary Settings")]
+        public bool MilitiaSpawn { get; private set; } = true;
+
+        [SettingPropertyInteger("Spawned BM Size Multiplier", 1, 5, HintText = "\nSpawned BMs sizes will be UP TO this multiple of Minimum Militia Size.", Order = 6, RequireRestart = false)]
+        [SettingPropertyGroup("Primary Settings")]
+        public int SpawnSizeMultiplier { get; private set; } = 4;
+
+        [SettingPropertyInteger("Change Cooldown", 1, 168, HintText = "\nAfter merging or splitting, a militia will not change again until this much time passes.", Order = 7, RequireRestart = false)]
         [SettingPropertyGroup("Primary Settings")]
         public int CooldownHours { get; private set; } = 24;
 
-        [SettingPropertyDropdown("Bandit Hero Gold Reward", Order = 6, RequireRestart = false)]
+        [SettingPropertyDropdown("Bandit Hero Gold Reward", Order = 8, RequireRestart = false)]
         [SettingPropertyGroup("Primary Settings")]
         public DropdownDefault<string> GoldReward { get; private set; } = new(Globals.GoldMap.Keys, 1);
 
