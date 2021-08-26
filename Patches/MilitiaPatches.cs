@@ -5,6 +5,7 @@ using Bandit_Militias.Helpers;
 using HarmonyLib;
 using SandBox.View.Map;
 using SandBox.ViewModelCollection;
+using SandBox.ViewModelCollection.MobilePartyTracker;
 using SandBox.ViewModelCollection.Nameplate;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
@@ -353,6 +354,15 @@ namespace Bandit_Militias.Patches
                 }
 
                 return null;
+            }
+        }
+
+        [HarmonyPatch(typeof(MobilePartyTrackItemVM), "UpdateProperties")]
+        public static class MobilePartyTrackItemVMUpdatePropertiesPatch
+        {
+            public static void Postfix(MobilePartyTrackItemVM __instance, ref ImageIdentifierVM ____factionVisualBind)
+            {
+                ____factionVisualBind = PartyImageMap[__instance.TrackedParty];
             }
         }
     }

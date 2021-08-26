@@ -29,6 +29,7 @@ namespace Bandit_Militias
         // misc
         internal static readonly Random Rng = new();
         internal static readonly Dictionary<MobileParty, Militia> PartyMilitiaMap = new();
+        internal static readonly Dictionary<MobileParty, ImageIdentifierVM> PartyImageMap = new();
         internal static readonly Dictionary<ItemObject.ItemTypeEnum, List<ItemObject>> ItemTypes = new();
         internal static readonly List<EquipmentElement> EquipmentItems = new();
         internal static List<Settlement> Hideouts = new();

@@ -4,6 +4,8 @@ using System.Diagnostics;
 using System.Linq;
 using Bandit_Militias.Helpers;
 using HarmonyLib;
+using SandBox.View.Map;
+using SandBox.ViewModelCollection.MobilePartyTracker;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
@@ -34,6 +36,11 @@ namespace Bandit_Militias
                 MobileParty.Leader.StringId += "Bandit_Militia";
             }
 
+            if (!PartyImageMap.ContainsKey(MobileParty))
+            {
+                PartyImageMap.Add(MobileParty, new ImageIdentifierVM(Banner));
+            }
+
             LogMilitiaFormed(MobileParty);
         }
 
@@ -42,8 +49,12 @@ namespace Bandit_Militias
             Banner = Banners.GetRandomElement();
             BannerKey = Banner.Serialize();
             Spawn(position, party, prisoners);
+            if (!PartyImageMap.ContainsKey(MobileParty))
+            {
+                PartyImageMap.Add(MobileParty, new ImageIdentifierVM(Banner));
+            }
+
             TrainMilitia();
-            PartyMilitiaMap.Add(MobileParty, this);
             SetMilitiaPatrol(MobileParty);
             LogMilitiaFormed(MobileParty);
         }
@@ -56,6 +67,8 @@ namespace Bandit_Militias
                 prisoners,
                 position,
                 0);
+            PartyMilitiaMap.Add(MobileParty, this);
+            PartyImageMap.Add(MobileParty, new ImageIdentifierVM(Banner));
             var mostPrevalent = (Clan)GetMostPrevalentFactionInParty(MobileParty) ?? Clan.BanditFactions.First();
             MobileParty.ActualClan = mostPrevalent;
             Hero = HeroCreatorCopy.CreateBanditHero(mostPrevalent, MobileParty);
@@ -68,14 +81,24 @@ namespace Bandit_Militias
             MobileParty.Leader.StringId += "Bandit_Militia";
             MobileParty.ShouldJoinPlayerBattles = true;
             var tracker = Globals.MobilePartyTrackerVM?.Trackers?.FirstOrDefault(t => t.TrackedParty == MobileParty);
-            if (tracker is not null)
+            try
             {
-                Globals.MobilePartyTrackerVM.Trackers.Remove(tracker);
+                if (Globals.Settings.Trackers
+                    && tracker is null
+                    && MobileParty.MemberRoster.TotalManCount >= Globals.Settings.TrackedSizeMinimum)
+                {
+                    tracker = new MobilePartyTrackItemVM(MobileParty, MapScreen.Instance.MapCamera, null);
+                    Globals.MobilePartyTrackerVM.Trackers.Add(tracker);
+                }
+                else if (tracker is not null)
+                {
+                    Globals.MobilePartyTrackerVM.Trackers.Remove(tracker);
+                }
             }
-            //else
-            //{
-            //    Globals.MobilePartyTrackerVM?.Trackers.Add(new MobilePartyTrackItemVM(MobileParty, MapScreen.Instance.MapCamera, null));
-            //}
+            catch (Exception ex)
+            {
+                Mod.Log(ex);
+            }
         }
 
         private void TrainMilitia()
@@ -140,9 +163,9 @@ namespace Bandit_Militias
                 for (var i = 0; i < iterations; i++)
                 {
                     var validTroops = MobileParty.MemberRoster.GetTroopRoster().Where(x =>
-                            x.Character.Tier < Globals.Settings.MaxTrainingTier &&
-                            !x.Character.IsHero &&
-                            troopUpgradeModel.IsTroopUpgradeable(MobileParty.Party, x.Character));
+                        x.Character.Tier < Globals.Settings.MaxTrainingTier &&
+                        !x.Character.IsHero &&
+                        troopUpgradeModel.IsTroopUpgradeable(MobileParty.Party, x.Character));
                     var troopToTrain = validTroops.ToList().GetRandomElement();
                     number = troopToTrain.Number;
                     if (number < 1)

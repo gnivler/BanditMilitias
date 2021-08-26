@@ -128,17 +128,24 @@ namespace Bandit_Militias
         [SettingPropertyGroup("Militia Adjustments")]
         public int MaxTrainingTier { get; private set; } = 4;
 
-        [SettingPropertyBool("Random Banners", HintText = "\nBandit Militias will have unique banners, or basic bandit clan ones.", RequireRestart = false)]
+        [SettingPropertyBool("Militia Map Markers", HintText = "\nHave omniscient view of all BM parties.", Order = 0, RequireRestart = false)]
+        public bool Trackers { get; private set; } = true;
+
+        [SettingPropertyInteger("Minimum BM Size To Track", 1, 500, HintText = "Any BM smaller won't be tracked.", Order = 1, RequireRestart = false)]
+        public int TrackedSizeMinimum { get; internal set; }
+
+        [SettingPropertyBool("Random Banners", HintText = "\nBandit Militias will have unique banners, or basic bandit clan ones.", Order = 1, RequireRestart = false)]
         public bool RandomBanners { get; internal set; } = true;
 
-        [SettingPropertyBool("Debug Logging", HintText = "\nCreates output in the mod folder.", Order = 0, RequireRestart = false)]
+        [SettingPropertyBool("Debug Logging", HintText = "\nCreates output in the mod folder.", Order = 3, RequireRestart = false)]
         public bool Debug { get; set; }
 
-        [SettingPropertyBool("Testing Mode", HintText = "Teleports BMs to you.", Order = 1, RequireRestart = false)]
+        [SettingPropertyBool("Testing Mode", HintText = "Teleports BMs to you.", Order = 4, RequireRestart = false)]
         public bool TestingMode { get; set; }
 
         private string id = "BanditMilitias";
         private string displayName = $"Bandit Militias {typeof(Settings).Assembly.GetName().Version.ToString(3)}";
+        
         public override string Id => id;
         public override string DisplayName => displayName;
     }

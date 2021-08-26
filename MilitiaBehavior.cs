@@ -53,7 +53,8 @@ namespace Bandit_Militias
                 : BanditPartyComponent.CreateLooterParty("Bandit_Militia", clan, settlement, false);
             mobileParty.InitializeMobileParty(clan.DefaultPartyTemplate, settlement.GatePosition, 5, 2);
             var simulatedMergedRoster = TroopRoster.CreateDummyTroopRoster();
-            while (simulatedMergedRoster.TotalManCount < Globals.Settings.MinPartySize * Rng.Next(1, Globals.Settings.SpawnSizeMultiplier + 1)) 
+            while (mobileParty.MemberRoster.TotalManCount != 0
+                   && simulatedMergedRoster.TotalManCount < Globals.Settings.MinPartySize * Rng.Next(1, Globals.Settings.SpawnSizeMultiplier + 1))
             {
                 simulatedMergedRoster.Add(mobileParty.MemberRoster);
             }

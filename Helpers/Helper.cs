@@ -743,9 +743,7 @@ namespace Bandit_Militias.Helpers
         {
 
             var settlement = Settlement.All.GetRandomElement();
-            mobileParty.SetMovePatrolAroundPoint(settlement.Position2D);
-            Traverse.Create(mobileParty).Property<Settlement>("TargetSettlement").Value = settlement;
-            mobileParty.ResetTargetParty();
+            mobileParty.SetMovePatrolAroundSettlement(settlement);
 
         }
 
