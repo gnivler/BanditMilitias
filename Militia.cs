@@ -2,8 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using Bandit_Militias.Helpers;
 using HarmonyLib;
+using Helpers;
 using SandBox.View.Map;
 using SandBox.ViewModelCollection.MobilePartyTracker;
 using TaleWorlds.CampaignSystem;
@@ -71,9 +71,7 @@ namespace Bandit_Militias
             PartyImageMap.Add(MobileParty, new ImageIdentifierVM(Banner));
             var mostPrevalent = (Clan)GetMostPrevalentFactionInParty(MobileParty) ?? Clan.BanditFactions.First();
             MobileParty.ActualClan = mostPrevalent;
-            Hero = HeroCreatorCopy.CreateBanditHero(mostPrevalent, MobileParty);
-            var faction = Clan.BanditFactions.FirstOrDefault(x => Hero.MapFaction.Name == x.Name);
-            Hero.Culture = faction is null ? Clan.BanditFactions.FirstOrDefault()?.Culture : faction.Culture;
+            CreateHero(mostPrevalent);
             var getLocalizedText = AccessTools.Method(typeof(MBTextManager), "GetLocalizedText");
             Name = (string)getLocalizedText.Invoke(null, new object[] { $"{Possess(Hero.FirstName.ToString())} Bandit Militia" });
             MobileParty.SetCustomName(new TextObject(Name));
@@ -81,24 +79,38 @@ namespace Bandit_Militias
             MobileParty.Leader.StringId += "Bandit_Militia";
             MobileParty.ShouldJoinPlayerBattles = true;
             var tracker = Globals.MobilePartyTrackerVM?.Trackers?.FirstOrDefault(t => t.TrackedParty == MobileParty);
-            try
+            if (Globals.Settings.Trackers
+                && tracker is null
+                && MobileParty.MemberRoster.TotalManCount >= Globals.Settings.TrackedSizeMinimum)
             {
-                if (Globals.Settings.Trackers
-                    && tracker is null
-                    && MobileParty.MemberRoster.TotalManCount >= Globals.Settings.TrackedSizeMinimum)
-                {
-                    tracker = new MobilePartyTrackItemVM(MobileParty, MapScreen.Instance.MapCamera, null);
-                    Globals.MobilePartyTrackerVM.Trackers.Add(tracker);
-                }
-                else if (tracker is not null)
-                {
-                    Globals.MobilePartyTrackerVM.Trackers.Remove(tracker);
-                }
+                tracker = new MobilePartyTrackItemVM(MobileParty, MapScreen.Instance.MapCamera, null);
+                Globals.MobilePartyTrackerVM?.Trackers?.Add(tracker);
             }
-            catch (Exception ex)
+            else if (tracker is not null)
             {
-                Mod.Log(ex);
+                Globals.MobilePartyTrackerVM.Trackers.Remove(tracker);
             }
+        }
+
+        private void CreateHero(Clan mostPrevalent)
+        {
+            //Hero = HeroCreatorCopy.CreateBanditHero(mostPrevalent, MobileParty);
+            Hero = HeroCreator.CreateHeroAtOccupation(Occupation.Outlaw);
+            Hero.Clan = mostPrevalent;
+            var partyStrength = Traverse.Create(MobileParty.Party).Method("CalculateStrength").GetValue<float>();
+            Hero.Gold = Convert.ToInt32(partyStrength * GoldMap[Globals.Settings.GoldReward.SelectedValue]);
+            //Traverse.Create(specialHero).Field("_homeSettlement").SetValue(settlement);
+            //Traverse.Create(specialHero.Clan).Field("_warParties").Method("Add", mobileParty).GetValue();
+            MobileParty.MemberRoster.AddToCounts(Hero.CharacterObject, 1, false, 0, 0, true, 0);
+            EquipmentHelper.AssignHeroEquipmentFromEquipment(Hero, BanditEquipment.GetRandomElement());
+            if (Globals.Settings.CanTrain)
+            {
+                Traverse.Create(Hero).Method("SetSkillValueInternal", DefaultSkills.Leadership, 150).GetValue();
+                Traverse.Create(Hero).Method("SetPerkValueInternal", DefaultPerks.Leadership.VeteransRespect, true).GetValue();
+            }
+
+            var faction = Clan.BanditFactions.FirstOrDefault(x => Hero.MapFaction.Name == x.Name);
+            Hero.Culture = faction is null ? Clan.BanditFactions.FirstOrDefault()?.Culture : faction.Culture;
         }
 
         private void TrainMilitia()
@@ -179,7 +191,7 @@ namespace Bandit_Militias
                     Mod.Log($"{MobileParty.LeaderHero.Name} is upgrading up to {numberToUpgrade} of {number} \"{troopToTrain.Character.Name}\".");
                     var xpGain = numberToUpgrade * DifficultyXpMap[Globals.Settings.XpGift.SelectedValue];
                     MobileParty.MemberRoster.AddXpToTroop(xpGain, troopToTrain.Character);
-                    PartyUpgraderCopy.UpgradeReadyTroops(MobileParty.Party);
+                    Campaign.Current._partyUpgrader.UpgradeReadyTroops(MobileParty.Party);
                     // this is gross, not sure why it doesn't update itself, seems like the right way to call
                     Traverse.Create(MobileParty.MemberRoster).Field<List<TroopRosterElement>>("_troopRosterElements").Value
                         = MobileParty.MemberRoster.GetTroopRoster();

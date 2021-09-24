@@ -31,16 +31,10 @@ namespace Bandit_Militias
                 return;
             }
 
-            for (var i = 0; i < Math.Abs(Globals.Settings.GlobalPowerPercent - MilitiaPowerPercent); i++)
+            // ReSharper disable once PossibleLossOfFraction
+            for (var i = 0; i < Globals.Settings.GlobalPowerPercent - MilitiaPowerPercent; i++)
             {
-                try
-                {
-                    SynthesizeBM();
-                }
-                catch (Exception ex)
-                {
-                    Mod.Log(ex);
-                }
+                SynthesizeBM();
             }
         }
 
@@ -51,7 +45,7 @@ namespace Bandit_Militias
             var mobileParty = settlement.IsHideout()
                 ? BanditPartyComponent.CreateBanditParty("Bandit_Militia", clan, settlement.Hideout, false)
                 : BanditPartyComponent.CreateLooterParty("Bandit_Militia", clan, settlement, false);
-            mobileParty.InitializeMobileParty(clan.DefaultPartyTemplate, settlement.GatePosition, 5, 2);
+            mobileParty.InitializeMobileParty(clan.DefaultPartyTemplate, settlement.GatePosition, 0);
             var simulatedMergedRoster = TroopRoster.CreateDummyTroopRoster();
             while (mobileParty.MemberRoster.TotalManCount != 0
                    && simulatedMergedRoster.TotalManCount < Globals.Settings.MinPartySize * Rng.Next(1, Globals.Settings.SpawnSizeMultiplier + 1))
@@ -59,9 +53,10 @@ namespace Bandit_Militias
                 simulatedMergedRoster.Add(mobileParty.MemberRoster);
             }
 
+            // ReSharper disable once ObjectCreationAsStatement
             new Militia(mobileParty.Position2D, simulatedMergedRoster, TroopRoster.CreateDummyTroopRoster());
             mobileParty.RemoveParty();
-            DoPowerCalculations(true);
+            DoPowerCalculations();
         }
 
         private static void OnPartyRemoved(PartyBase party)

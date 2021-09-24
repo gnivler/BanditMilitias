@@ -40,7 +40,8 @@ namespace Bandit_Militias
                 MaxStrengthDeltaPercent = 100,
                 UpgradeUnitsPercent = 33,
                 GlobalPowerPercent = 25,
-                MaxTrainingTier = 5
+                MaxTrainingTier = 5,
+                //CreateChance = 100,
             });
             return basePresets;
         }
@@ -120,11 +121,15 @@ namespace Bandit_Militias
         [SettingPropertyGroup("Militia Adjustments")]
         public int UpgradeUnitsPercent { get; private set; } = 25;
 
-        [SettingPropertyInteger("Global Power", 0, 1000, HintText = "\nThe total Militias power will remain under this percentage of the world total strength.", Order = 11, RequireRestart = false)]
+        [SettingPropertyInteger("Global Power", 0, 1000, HintText = "\nThe total BM power will remain under this percentage of the world total strength.", Order = 11, RequireRestart = false)]
         [SettingPropertyGroup("Militia Adjustments")]
         public int GlobalPowerPercent { get; private set; } = 15;
 
-        [SettingPropertyInteger("Max Training Tier", 1, 6, HintText = "\nDon't train any units past this tier.", Order = 12, RequireRestart = false)]
+        //[SettingPropertyInteger("Spawn Chance", 1, 100, HintText = "\nThere is this chance every game hour of spawning new BMs.  Higher values reach global max power faster.", Order = 12, RequireRestart = false)]
+        //[SettingPropertyGroup("Militia Adjustments")]
+        //public int CreateChance { get; internal set; } = 2;
+
+        [SettingPropertyInteger("Max Training Tier", 1, 6, HintText = "\nDon't train any units past this tier.", Order = 13, RequireRestart = false)]
         [SettingPropertyGroup("Militia Adjustments")]
         public int MaxTrainingTier { get; private set; } = 4;
 

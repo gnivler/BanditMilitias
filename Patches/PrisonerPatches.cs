@@ -2,7 +2,8 @@ using System.Linq;
 using Bandit_Militias.Helpers;
 using HarmonyLib;
 using TaleWorlds.CampaignSystem;
-using TaleWorlds.CampaignSystem.Actions;
+using TaleWorlds.Core;
+using TaleWorlds.Localization;
 
 
 // ReSharper disable UnusedMember.Global 
@@ -15,29 +16,44 @@ namespace Bandit_Militias.Patches
 {
     public static class PrisonerPatches
     {
-        // both patches necessary in 3.0.3 for 1.5.10
-        // blocks NPC battles from taking prisoners
-        [HarmonyPatch(typeof(TakePrisonerAction), "ApplyInternal")]
-        public static class TakePrisonerActionApplyInternalPatch
+        // prevents BM hero prisoners being taken after battle
+        [HarmonyPatch(typeof(MapEvent), "FinishBattle")]
+        public static class MapEventFinishBattlePatch
         {
-            private static bool Prefix(Hero prisonerCharacter)
+            private static void Prefix(MapEvent __instance)
             {
-                if (prisonerCharacter?.PartyBelongedTo is null
-                    || !prisonerCharacter.PartyBelongedTo.IsBM())
+                if (__instance.DefeatedSide is BattleSideEnum.None)
                 {
-                    //Mod.Log(">>> early TakePrisonerActionApplyInternalPatch");
-                    return true;
+                    return;
                 }
 
-                //Mod.Log(">>> late TakePrisonerActionApplyInternalPatch");
-                prisonerCharacter.RemoveMilitiaHero();
-                return false;
+                var loserBMs = __instance.PartiesOnSide(__instance.DefeatedSide)
+                    .Where(p => p.Party?.MobileParty?.LeaderHero?.CharacterObject is not null
+                                && p.Party.MobileParty.LeaderHero.CharacterObject.StringId.EndsWith("Bandit_Militia")).ToList();
+                foreach (var party in loserBMs)
+                {
+                    var heroes = party.Party.MemberRoster.RemoveIf(t => t.Character.IsHero)
+                        .Where(h => h.Character.StringId.EndsWith("Bandit_Militia")).ToList();
+                    for (var i = 0; i < heroes.Count; i++)
+                    {
+                        Mod.Log($">>> Killing {heroes[i].Character.Name} at FinishBattle.");
+                        heroes[i].Character.HeroObject.RemoveMilitiaHero();
+                    }
+
+                    // has yet to fire, needs adjustment if in fact any exist
+                    if (party.Party.MobileParty.LeaderHero is null)
+                    {
+                        party.Party.MobileParty.SetCustomName(new TextObject("Leaderless Bandit Militia"));
+                    }
+                }
+
+                Helper.DoPowerCalculations();
             }
         }
 
         // prevents BM hero prisoners being taken after battle
         [HarmonyPatch(typeof(MapEvent), "LootDefeatedParties")]
-        public static class MapEventFinishBattlePatch
+        public static class MapEventLootDefeatedPartiesPatch
         {
             private static void Prefix(MapEvent __instance)
             {
@@ -56,23 +72,6 @@ namespace Bandit_Militias.Patches
                 }
 
                 Helper.DoPowerCalculations();
-            }
-        }
-
-        // still blocks prisoners but apparently works with bandits reinforcing militias
-        [HarmonyPatch(typeof(MapEventSide), "CaptureWoundedHeroes")]
-        public static class MapEventSideCaptureWoundedHeroesPatch
-        {
-            private static bool Prefix(PartyBase defeatedParty)
-            {
-                if (defeatedParty?.MobileParty is not null
-                    && defeatedParty.MobileParty.IsBM())
-                {
-                    defeatedParty.LeaderHero?.RemoveMilitiaHero();
-                    return false;
-                }
-
-                return true;
             }
         }
     }

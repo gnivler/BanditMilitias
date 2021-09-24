@@ -10,7 +10,6 @@ using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
 using TaleWorlds.Engine;
 using TaleWorlds.Library;
-using TaleWorlds.Localization;
 using TaleWorlds.MountAndBlade;
 using static Bandit_Militias.Helpers.Helper;
 using static Bandit_Militias.Globals;
@@ -51,7 +50,7 @@ namespace Bandit_Militias.Patches
                 foreach (ItemObject.ItemTypeEnum value in Enum.GetValues(typeof(ItemObject.ItemTypeEnum)))
                 {
                     ItemTypes[value] = Items.All.Where(x =>
-                        x.Type == value && x.Value >= 1000 && x.Value <= Globals.Settings.MaxItemValue * Variance).ToList();
+                        x.Type == value && x.Value >= 1000 && x.Value <= Globals.Settings.MaxItemValue).ToList();
                 }
 
                 // front-load
@@ -102,12 +101,6 @@ namespace Bandit_Militias.Patches
                     && party.PrisonRoster.Contains(Hero.MainHero.CharacterObject))
                 {
                     return;
-                }
-
-                // has yet to fire, needs adjustment if in fact any exist
-                if (party.MobileParty.LeaderHero is null)
-                {
-                    party.MobileParty.SetCustomName(new TextObject("Leaderless Bandit Militia"));
                 }
 
                 var wonBattle = __state;

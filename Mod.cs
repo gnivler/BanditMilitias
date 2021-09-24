@@ -62,6 +62,7 @@ namespace Bandit_Militias
             {
                 try
                 {
+                    File.Copy(logFilename, $"{logFilename}.old", true);
                     File.Delete(logFilename);
                 }
                 catch (Exception ex)
@@ -100,9 +101,9 @@ namespace Bandit_Militias
                 InformationManager.AddQuickInformation(new TextObject("Testing mode: " + Globals.Settings.TestingMode));
             }
 
-            if (superKey && Input.IsKeyPressed(InputKey.F))
+            if (superKey && Input.IsKeyPressed(InputKey.P))
             {
-                Log("");
+
             }
 
             if (superKey && Input.IsKeyPressed(InputKey.F10))

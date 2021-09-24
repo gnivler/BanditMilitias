@@ -334,8 +334,6 @@
         <Compile Include="Globals.cs" />
         <Compile Include="Helpers\Extensions.cs" />
         <Compile Include="Helpers\Helper.cs" />
-        <Compile Include="Helpers\HeroCreatorCopy.cs" />
-        <Compile Include="Helpers\PartyUpgraderCopy.cs" />
         <Compile Include="Militia.cs" />
         <Compile Include="MilitiaBehavior.cs" />
         <Compile Include="Mod.cs" />
@@ -347,9 +345,6 @@
     </ItemGroup>
     <ItemGroup>
         <Content Include="LICENSE" />
-        <Content Include="Old docs\HOW TO CONFIGURE.TXT" />
-        <Content Include="Old docs\mod_settings.json" />
-        <Content Include="Old docs\mod_settings_hardmode.json" />
         <Content Include="SubModule.xml" />
     </ItemGroup>
     <ItemGroup>

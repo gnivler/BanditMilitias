@@ -9,6 +9,7 @@ using TaleWorlds.CampaignSystem.SandBox.CampaignBehaviors;
 using TaleWorlds.CampaignSystem.SandBox.GameComponents.Map;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
+using TaleWorlds.LinQuick;
 using TaleWorlds.ObjectSystem;
 using static Bandit_Militias.Globals;
 
@@ -109,8 +110,6 @@ namespace Bandit_Militias.Helpers
             {
                 var militia1 = new Militia(original.Position2D, party1, prisoners1);
                 var militia2 = new Militia(original.Position2D, party2, prisoners2);
-                SetMilitiaPatrol(militia1.MobileParty);
-                SetMilitiaPatrol(militia2.MobileParty);
                 Mod.Log($"{militia1.MobileParty.StringId} <- Split -> {militia2.MobileParty.StringId}");
                 Traverse.Create(militia1.MobileParty.Party).Property("ItemRoster").SetValue(inventory1);
                 Traverse.Create(militia2.MobileParty.Party).Property("ItemRoster").SetValue(inventory2);
@@ -313,26 +312,25 @@ namespace Bandit_Militias.Helpers
             // leak from CampaignTickPatch, trashing parties there doesn't get rid of all remnants...
             // many hours trying to find proper solution
             // 2-4 ms
-            var COs = new List<CharacterObject>();
-            MBObjectManager.Instance.GetAllInstancesOfObjectType(ref COs);
-            var BMs = COs.Where(c => c.HeroObject?.PartyBelongedTo is null
-                                     && c.StringId.EndsWith("Bandit_Militia")
-                                     && c.HeroObject is not null
-                                     && !c.HeroObject.IsFactionLeader).ToList();
+            //var COs = new List<CharacterObject>();
+            var COs = MBObjectManager.Instance.GetObjectTypeList<CharacterObject>();
+            var BMs = COs.WhereQ(c => c.HeroObject?.PartyBelongedTo is null
+                                      && c.StringId.EndsWith("Bandit_Militia")
+                                      && c.HeroObject is not null
+                                      && !c.HeroObject.IsFactionLeader).ToList();
             if (BMs.Any())
             {
                 Mod.Log($">>> FLUSH {BMs.Count} BM CharacterObjects");
                 BMs.Do(c => MBObjectManager.Instance.UnregisterObject(c));
                 var charactersField = Traverse.Create(Campaign.Current).Field<MBReadOnlyList<CharacterObject>>("_characters");
                 var tempCharacterObjectList = new List<CharacterObject>(charactersField.Value);
-                tempCharacterObjectList = tempCharacterObjectList.Except(BMs).ToList();
+                tempCharacterObjectList = tempCharacterObjectList.Except(BMs).ToListQ();
                 charactersField.Value = new MBReadOnlyList<CharacterObject>(tempCharacterObjectList);
             }
 
             Mod.Log("");
             Mod.Log($"{new string('=', 80)}\nBMs: {PartyMilitiaMap.Count,-4} Power: {GlobalMilitiaPower} / Power Limit: {CalculatedGlobalPowerLimit} = {GlobalMilitiaPower / CalculatedGlobalPowerLimit * 100:f2}% (limit {Globals.Settings.GlobalPowerPercent}%)");
             Mod.Log("");
-            //Campaign.Current.TimeControlMode = CampaignTimeControlMode.Stop;
         }
 
         internal static void ReHome()
@@ -406,8 +404,8 @@ namespace Bandit_Militias.Helpers
             {
                 var mapEvent = mapEvents[index];
                 if (mapEvent.InvolvedParties.Any(p =>
-                    p.MobileParty.IsBM()))
-                {
+                    p.Id.Contains("Bandit_Militia")))
+                {            
                     Mod.Log(">>> FLUSH MapEvent.");
                     mapEvent.FinalizeEvent();
                 }
@@ -510,7 +508,7 @@ namespace Bandit_Militias.Helpers
                 && i.ItemType != ItemObject.ItemTypeEnum.Banner
                 && i.ItemType != ItemObject.ItemTypeEnum.Book
                 && i.ItemType != ItemObject.ItemTypeEnum.Invalid
-                && i.Value <= Globals.Settings.MaxItemValue * Variance
+                && i.Value <= Globals.Settings.MaxItemValue
                 && !i.Name.Contains("Crafted")
                 && !i.Name.Contains("Wooden")
                 && !i.Name.Contains("Practice")
@@ -727,24 +725,10 @@ namespace Bandit_Militias.Helpers
             }
         }
 
-        // this is a bit wasteful, if doing a list of heroes since it replaces the whole list each time
-        // but it only takes 1000 ticks so whatever?
-        internal static void RemoveCharacterFromReadOnlyList(CharacterObject hero)
-        {
-            var charactersField = Traverse.Create(Campaign.Current).Field<MBReadOnlyList<CharacterObject>>("_characters");
-            if (charactersField.Value.Contains(hero))
-            {
-                charactersField.Value = new MBReadOnlyList<CharacterObject>(charactersField.Value.Except(new[] { hero }).ToList());
-            }
-        }
-
-        // anti-congregation, seems like circumstances can lead to a positive feedback loop in 3.0.3 (and a ton of BMs in one area)
         internal static void SetMilitiaPatrol(MobileParty mobileParty)
         {
-
             var settlement = Settlement.All.GetRandomElement();
             mobileParty.SetMovePatrolAroundSettlement(settlement);
-
         }
 
         internal static void RunLateManualPatches()

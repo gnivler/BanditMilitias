@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using HarmonyLib;
 using TaleWorlds.CampaignSystem;
+using TaleWorlds.Library;
 using TaleWorlds.ObjectSystem;
 
 namespace Bandit_Militias.Helpers
@@ -24,6 +25,9 @@ namespace Bandit_Militias.Helpers
                    || mobileParty.ShortTermBehavior is AiBehavior.EngageParty or AiBehavior.FleeToPoint;
         }
 
+        internal static readonly AccessTools.FieldRef<Campaign, MBReadOnlyList<CharacterObject>> Characters 
+            = AccessTools.FieldRefAccess<Campaign, MBReadOnlyList<CharacterObject>>("_characters");
+
         // howitzer approach to lobotomize the game of bandit heroes
         internal static void RemoveMilitiaHero(this Hero hero)
         {
@@ -32,7 +36,7 @@ namespace Bandit_Militias.Helpers
                 hero.PartyBelongedTo?.MemberRoster.RemoveTroop(hero.CharacterObject);
                 Traverse.Create(hero).Field<Hero.CharacterStates>("_heroState").Value = Hero.CharacterStates.NotSpawned;
                 LocationComplex.Current?.RemoveCharacterIfExists(hero);
-                Helper.RemoveCharacterFromReadOnlyList(hero.CharacterObject);
+                //Helper.RemoveCharacterFromReadOnlyList(hero.CharacterObject);
                 Traverse.Create(Campaign.Current.CampaignObjectManager).Field<List<Hero>>("_aliveHeroes").Value.Remove(hero);
                 if (hero.CurrentSettlement is not null)
                 {
@@ -40,6 +44,9 @@ namespace Bandit_Militias.Helpers
                     Traverse.Create(heroesWithoutParty).Field<List<Hero>>("_list").Value.Remove(hero);
                 }
 
+                var tempCharacterObjectList = new List<CharacterObject>(Characters(Campaign.Current));
+                tempCharacterObjectList.Remove(hero.CharacterObject);
+                Characters(Campaign.Current) = new MBReadOnlyList<CharacterObject>(tempCharacterObjectList);
                 MBObjectManager.Instance.UnregisterObject(hero.CharacterObject);
                 MBObjectManager.Instance.UnregisterObject(hero);
             }
