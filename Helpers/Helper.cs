@@ -405,7 +405,7 @@ namespace Bandit_Militias.Helpers
                 var mapEvent = mapEvents[index];
                 if (mapEvent.InvolvedParties.Any(p =>
                     p.Id.Contains("Bandit_Militia")))
-                {            
+                {
                     Mod.Log(">>> FLUSH MapEvent.");
                     mapEvent.FinalizeEvent();
                 }
@@ -741,6 +741,26 @@ namespace Bandit_Militias.Helpers
             var original = AccessTools.Method(typeof(DefaultPartySpeedCalculatingModel), "CalculateFinalSpeed");
             var postfix = AccessTools.Method(typeof(MilitiaPatches), nameof(MilitiaPatches.DefaultPartySpeedCalculatingModelCalculateFinalSpeedPatch));
             Mod.harmony.Patch(original, null, new HarmonyMethod(postfix));
+        }
+
+        internal static void RemoveUndersizedTracker(PartyBase party)
+        {
+            if (party.MemberRoster.TotalManCount < Globals.Settings.TrackedSizeMinimum)
+            {
+                try
+                {
+                    var tracker = MobilePartyTrackerVM?.Trackers?.FirstOrDefault(t => t.TrackedParty == party.MobileParty);
+                    if (tracker is not null)
+                    {
+                        Mod.Log("Removing small BM tracker.");
+                        MobilePartyTrackerVM.Trackers.Remove(tracker);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Mod.Log(ex);
+                }
+            }
         }
     }
 }

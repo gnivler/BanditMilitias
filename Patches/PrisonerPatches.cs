@@ -40,11 +40,12 @@ namespace Bandit_Militias.Patches
                         heroes[i].Character.HeroObject.RemoveMilitiaHero();
                     }
 
-                    // has yet to fire, needs adjustment if in fact any exist
                     if (party.Party.MobileParty.LeaderHero is null)
                     {
                         party.Party.MobileParty.SetCustomName(new TextObject("Leaderless Bandit Militia"));
                     }
+
+                    Helper.RemoveUndersizedTracker(party.Party);
                 }
 
                 Helper.DoPowerCalculations();

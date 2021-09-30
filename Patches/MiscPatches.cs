@@ -10,6 +10,7 @@ using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
 using TaleWorlds.Engine;
 using TaleWorlds.Library;
+using TaleWorlds.Localization;
 using TaleWorlds.MountAndBlade;
 using static Bandit_Militias.Helpers.Helper;
 using static Bandit_Militias.Globals;
@@ -84,15 +85,10 @@ namespace Bandit_Militias.Patches
             }
         }
 
-        // just disperse loser militias
+        // just disperse small militias
         [HarmonyPatch(typeof(MapEventSide), "HandleMapEventEndForPartyInternal", typeof(PartyBase))]
         public static class MapEventSideHandleMapEventEndForPartyPatch
         {
-            private static void Prefix(MapEventSide __instance, PartyBase party, ref bool __state)
-            {
-                __state = Traverse.Create(__instance.MapEvent).Method("IsWinnerSide", party.Side).GetValue<bool>();
-            }
-
             private static void Postfix(MapEventSide __instance, PartyBase party, ref bool __state)
             {
                 if (party?.MobileParty is null
@@ -103,15 +99,19 @@ namespace Bandit_Militias.Patches
                     return;
                 }
 
-                var wonBattle = __state;
-                if (__instance.MapEvent.HasWinner
-                    && !wonBattle
-                    && party.MobileParty.IsBM()
-                    && party.MemberRoster.TotalManCount <= Globals.Settings.MinPartySize)
+                if (party.MemberRoster.TotalManCount <= Globals.Settings.MinPartySize)
                 {
                     Mod.Log($">>> Dispersing {party.Name} of {party.MemberRoster.TotalHealthyCount}+{party.MemberRoster.TotalWounded}w+{party.PrisonRoster?.Count}p");
                     Trash(party.MobileParty);
+                    return;
                 }
+
+                if (party.MobileParty.LeaderHero is null)
+                {
+                    party.MobileParty.SetCustomName(new TextObject("Leaderless Bandit Militia"));
+                }
+
+                RemoveUndersizedTracker(party);
             }
         }
 

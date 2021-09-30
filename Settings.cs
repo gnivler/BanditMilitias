@@ -134,10 +134,10 @@ namespace Bandit_Militias
         public int MaxTrainingTier { get; private set; } = 4;
 
         [SettingPropertyBool("Militia Map Markers", HintText = "\nHave omniscient view of all BM parties.", Order = 0, RequireRestart = false)]
-        public bool Trackers { get; private set; } = true;
+        public bool Trackers { get; private set; } = false;
 
         [SettingPropertyInteger("Minimum BM Size To Track", 1, 500, HintText = "Any BM smaller won't be tracked.", Order = 1, RequireRestart = false)]
-        public int TrackedSizeMinimum { get; internal set; }
+        public int TrackedSizeMinimum { get; internal set; } = 50;
 
         [SettingPropertyBool("Random Banners", HintText = "\nBandit Militias will have unique banners, or basic bandit clan ones.", Order = 1, RequireRestart = false)]
         public bool RandomBanners { get; internal set; } = true;
