@@ -42,7 +42,7 @@ namespace Bandit_Militias
         {
             var settlement = Settlement.All.Where(s => !s.IsVisible).GetRandomElementInefficiently();
             var clan = Clan.BanditFactions.ToList()[Rng.Next(0, Clan.BanditFactions.Count())];
-            var mobileParty = settlement.IsHideout()
+            var mobileParty = settlement.IsHideout
                 ? BanditPartyComponent.CreateBanditParty("Bandit_Militia", clan, settlement.Hideout, false)
                 : BanditPartyComponent.CreateLooterParty("Bandit_Militia", clan, settlement, false);
             mobileParty.InitializeMobileParty(clan.DefaultPartyTemplate, settlement.GatePosition, 0);

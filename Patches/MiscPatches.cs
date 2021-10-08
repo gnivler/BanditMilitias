@@ -62,7 +62,7 @@ namespace Bandit_Militias.Patches
                 }
 
                 PartyMilitiaMap.Clear();
-                Hideouts = Settlement.FindAll(x => x.IsHideout()).ToList();
+                Hideouts = Settlement.FindAll(x => x.IsHideout).ToList();
 
                 // considers leaderless militias
                 var militias = MobileParty.All.Where(m =>
@@ -89,7 +89,7 @@ namespace Bandit_Militias.Patches
         [HarmonyPatch(typeof(MapEventSide), "HandleMapEventEndForPartyInternal", typeof(PartyBase))]
         public static class MapEventSideHandleMapEventEndForPartyPatch
         {
-            private static void Postfix(MapEventSide __instance, PartyBase party, ref bool __state)
+            private static void Postfix(PartyBase party)
             {
                 if (party?.MobileParty is null
                     || !party.MobileParty.IsBM()

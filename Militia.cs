@@ -94,8 +94,7 @@ namespace Bandit_Militias
 
         private void CreateHero(Clan mostPrevalent)
         {
-            //Hero = HeroCreatorCopy.CreateBanditHero(mostPrevalent, MobileParty);
-            Hero = HeroCreator.CreateHeroAtOccupation(Occupation.Outlaw);
+            Hero = HeroCreator.CreateHeroAtOccupation(Occupation.NotAssigned);
             Hero.Clan = mostPrevalent;
             var partyStrength = Traverse.Create(MobileParty.Party).Method("CalculateStrength").GetValue<float>();
             Hero.Gold = Convert.ToInt32(partyStrength * GoldMap[Globals.Settings.GoldReward.SelectedValue]);

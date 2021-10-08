@@ -48,7 +48,7 @@ namespace Bandit_Militias.Patches
                 }
 
                 lastChecked = Campaign.CurrentTime;
-                var hideouts = Settlement.All.WhereQ(s => s.IsHideout()).ToList();
+                var hideouts = Settlement.All.WhereQ(s => s.IsHideout).ToList();
                 var parties = MobileParty.All.WhereQ(m =>
                         m.Party.IsMobile
                         && m.CurrentSettlement is null

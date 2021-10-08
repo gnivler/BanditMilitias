@@ -414,7 +414,7 @@ namespace Bandit_Militias.Helpers
 
         private static void FlushHideoutsOfMilitias()
         {
-            foreach (var hideout in Settlement.All.Where(s => s.IsHideout()).ToList())
+            foreach (var hideout in Settlement.All.Where(s => s.IsHideout).ToList())
             {
                 for (var index = 0; index < hideout.Parties.Count; index++)
                 {
