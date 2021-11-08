@@ -358,4 +358,7 @@
     <Target Name="AfterBuild">
     </Target>
     -->
+    <PropertyGroup>
+        <PostBuildEvent>xcopy "$(TargetPath)" "N:\SteamLibrary\steamapps\common\Mount %26 Blade II Bannerlord\Modules\Bandit Militias\bin\Win64_Shipping_Client" /Y</PostBuildEvent>
+    </PropertyGroup>
 </Project>

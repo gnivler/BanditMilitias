@@ -12,7 +12,6 @@ using TaleWorlds.Library;
 using TaleWorlds.Localization;
 using static Bandit_Militias.Globals;
 using static Bandit_Militias.Helpers.Helper;
-using Debug = TaleWorlds.Library.Debug;
 
 namespace Bandit_Militias
 {
@@ -72,6 +71,23 @@ namespace Bandit_Militias
             var mostPrevalent = (Clan)GetMostPrevalentFactionInParty(MobileParty) ?? Clan.BanditFactions.First();
             MobileParty.ActualClan = mostPrevalent;
             CreateHero(mostPrevalent);
+            if (MobileParty.MemberRoster.GetTroopRoster().Any(t => t.Character.IsMounted))
+            {
+                var mount = Mounts.GetRandomElement();
+                var mountId = mount.StringId.ToLower();
+                Hero.BattleEquipment[10] = new EquipmentElement(mount);
+                if (mountId.Contains("camel"))
+                {
+                    Hero.BattleEquipment[11] = new EquipmentElement(Saddles.Where(saddle =>
+                        saddle.Name.ToString().ToLower().Contains("camel")).ToList().GetRandomElement());
+                }
+                else
+                {
+                    Hero.BattleEquipment[11] = new EquipmentElement(Saddles.Where(saddle =>
+                        !saddle.Name.ToString().ToLower().Contains("camel")).ToList().GetRandomElement());
+                }
+            }
+
             var getLocalizedText = AccessTools.Method(typeof(MBTextManager), "GetLocalizedText");
             Name = (string)getLocalizedText.Invoke(null, new object[] { $"{Possess(Hero.FirstName.ToString())} Bandit Militia" });
             MobileParty.SetCustomName(new TextObject(Name));
@@ -96,10 +112,15 @@ namespace Bandit_Militias
         {
             Hero = HeroCreator.CreateHeroAtOccupation(Occupation.NotAssigned);
             Hero.Clan = mostPrevalent;
+            if (MBRandom.Random.Next(0, 2) == 0)
+            {
+                Hero.UpdatePlayerGender(true);
+                Hero.FirstName.SetTextVariable("FEMALE", 1);
+                StringHelpers.SetCharacterProperties("HERO", Hero.CharacterObject, Hero.FirstName);
+            }
+
             var partyStrength = Traverse.Create(MobileParty.Party).Method("CalculateStrength").GetValue<float>();
             Hero.Gold = Convert.ToInt32(partyStrength * GoldMap[Globals.Settings.GoldReward.SelectedValue]);
-            //Traverse.Create(specialHero).Field("_homeSettlement").SetValue(settlement);
-            //Traverse.Create(specialHero.Clan).Field("_warParties").Method("Add", mobileParty).GetValue();
             MobileParty.MemberRoster.AddToCounts(Hero.CharacterObject, 1, false, 0, 0, true, 0);
             EquipmentHelper.AssignHeroEquipmentFromEquipment(Hero, BanditEquipment.GetRandomElement());
             if (Globals.Settings.CanTrain)
@@ -174,9 +195,9 @@ namespace Bandit_Militias
                 for (var i = 0; i < iterations; i++)
                 {
                     var validTroops = MobileParty.MemberRoster.GetTroopRoster().Where(x =>
-                        x.Character.Tier < Globals.Settings.MaxTrainingTier &&
-                        !x.Character.IsHero &&
-                        troopUpgradeModel.IsTroopUpgradeable(MobileParty.Party, x.Character));
+                        x.Character.Tier < Globals.Settings.MaxTrainingTier
+                        && !x.Character.IsHero
+                        && troopUpgradeModel.IsTroopUpgradeable(MobileParty.Party, x.Character));
                     var troopToTrain = validTroops.ToList().GetRandomElement();
                     number = troopToTrain.Number;
                     if (number < 1)
@@ -205,7 +226,6 @@ namespace Bandit_Militias
             catch (Exception ex)
             {
                 Mod.Log("Bandit Militias is failing to configure parties!  Exception: " + ex);
-                Debug.PrintError("Bandit Militias is failing to configure parties!  Exception: " + ex);
                 Trash(MobileParty);
             }
         }

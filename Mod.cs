@@ -103,7 +103,6 @@ namespace Bandit_Militias
 
             if (superKey && Input.IsKeyPressed(InputKey.P))
             {
-
             }
 
             if (superKey && Input.IsKeyPressed(InputKey.F10))

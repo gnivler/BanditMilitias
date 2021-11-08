@@ -19,6 +19,9 @@ namespace Bandit_Militias.Helpers
 {
     public static class Helper
     {
+        internal static List<ItemObject> Mounts;
+        internal static List<ItemObject> Saddles;
+
         internal static void TrySplitParty(MobileParty mobileParty)
         {
             if (MilitiaPowerPercent > Globals.Settings.GlobalPowerPercent
@@ -309,6 +312,7 @@ namespace Bandit_Militias.Helpers
 
         internal static void FlushMilitiaCharacterObjects()
         {
+            // possibly fixed by TWE in 1.6.4
             // leak from CampaignTickPatch, trashing parties there doesn't get rid of all remnants...
             // many hours trying to find proper solution
             // 2-4 ms
@@ -355,7 +359,7 @@ namespace Bandit_Militias.Helpers
         {
             foreach (var clan in Clan.BanditFactions)
             {
-                if (clan.Leader is not null &&
+                if (clan.Leader?.StringId is not null &&
                     clan.Leader.StringId.EndsWith("Bandit_Militia"))
                 {
                     clan.SetLeader(null);
@@ -490,42 +494,64 @@ namespace Bandit_Militias.Helpers
 
         internal static void PopulateItems()
         {
-            var verbotenItems = new[]
+            var verbotenItems = new List<string>
             {
-                "Sparring Targe",
+                "Sparring",
                 "Trash Item",
                 "Torch",
                 "Horse Whip",
                 "Push Fork",
-                "Bound Crossbow"
+                "Bound Crossbow",
+                "Hoe",
+                "Scythe",
+                "Stone",
+                "Crafted",
+                "Wooden",
+                "Practice",
+                "Ballista",
+                "Boulder",
+                "Fire Pot",
+                "Banner",
+                "Grapeshot"
             };
 
+            Mounts = Items.All.Where(x => x.ItemType == ItemObject.ItemTypeEnum.Horse).Where(x => !x.StringId.Contains("unmountable")).ToList();
+            Saddles = Items.All.Where(x => x.ItemType == ItemObject.ItemTypeEnum.HorseHarness && !x.StringId.ToLower().Contains("mule")).ToList();
             var all = Items.All.Where(i =>
-                i.ItemType != ItemObject.ItemTypeEnum.Goods
-                && i.ItemType != ItemObject.ItemTypeEnum.Horse
-                && i.ItemType != ItemObject.ItemTypeEnum.HorseHarness
-                && i.ItemType != ItemObject.ItemTypeEnum.Animal
-                && i.ItemType != ItemObject.ItemTypeEnum.Banner
-                && i.ItemType != ItemObject.ItemTypeEnum.Book
-                && i.ItemType != ItemObject.ItemTypeEnum.Invalid
-                && i.Value <= Globals.Settings.MaxItemValue
-                && !i.Name.Contains("Crafted")
-                && !i.Name.Contains("Wooden")
-                && !i.Name.Contains("Practice")
-                && !verbotenItems.Contains(i.Name.ToString())).ToList();
-            Arrows = all.Where(i => i.ItemType == ItemObject.ItemTypeEnum.Arrows)
-                .Where(x => !x.Name.Contains("Ballista")).ToList();
+                !i.IsCivilian
+                && !i.IsCraftedByPlayer
+                && i.ItemType is not ItemObject.ItemTypeEnum.Goods
+                    or ItemObject.ItemTypeEnum.Horse
+                    or ItemObject.ItemTypeEnum.HorseHarness
+                    or ItemObject.ItemTypeEnum.Animal
+                    or ItemObject.ItemTypeEnum.Banner
+                    or ItemObject.ItemTypeEnum.Book
+                    or ItemObject.ItemTypeEnum.Invalid
+                && i.ItemCategory.StringId != "garment").ToList();
+
+            for (var index = 0; index < all.Count; index++)
+            {
+                var item = all[index];
+                foreach (var word in verbotenItems)
+                {
+                    if (item.Name.Contains(word))
+                    {
+                        Mod.Log("Removing " + item.Name);
+                        all.Remove(item);
+                        index--;
+                        break;
+                    }
+                }
+            }
+
+            Arrows = all.Where(i => i.ItemType == ItemObject.ItemTypeEnum.Arrows).ToList();
             Bolts = all.Where(i => i.ItemType == ItemObject.ItemTypeEnum.Bolts).ToList();
-            all = all.Where(i => i.Value >= 1000 && i.Value <= Globals.Settings.MaxItemValue * Variance).ToList();
             var oneHanded = all.Where(i => i.ItemType == ItemObject.ItemTypeEnum.OneHandedWeapon);
             var twoHanded = all.Where(i => i.ItemType == ItemObject.ItemTypeEnum.TwoHandedWeapon);
             var polearm = all.Where(i => i.ItemType == ItemObject.ItemTypeEnum.Polearm);
-            var thrown = all.Where(i => i.ItemType == ItemObject.ItemTypeEnum.Thrown &&
-                                        i.Name.ToString() != "Boulder" && i.Name.ToString() != "Fire Pot");
+            var thrown = all.Where(i => i.ItemType == ItemObject.ItemTypeEnum.Thrown);
             var shields = all.Where(i => i.ItemType == ItemObject.ItemTypeEnum.Shield);
-            var bows = all.Where(i =>
-                i.ItemType == ItemObject.ItemTypeEnum.Bow ||
-                i.ItemType == ItemObject.ItemTypeEnum.Crossbow);
+            var bows = all.Where(i => i.ItemType is ItemObject.ItemTypeEnum.Bow or ItemObject.ItemTypeEnum.Crossbow);
             var any = new List<ItemObject>(oneHanded.Concat(twoHanded).Concat(polearm).Concat(thrown).Concat(shields).Concat(bows).ToList());
             any.Do(i => EquipmentItems.Add(new EquipmentElement(i)));
         }
@@ -621,6 +647,23 @@ namespace Bandit_Militias.Helpers
                 //{
                 //    Mod.Log(gear[i].Item?.Name);
                 //}
+                // 20% chance to get a mount
+                if (Rng.NextDouble() < 0.2f)
+                {
+                    var mount = Mounts.GetRandomElement();
+                    var mountId = mount.StringId.ToLower();
+                    gear[10] = new EquipmentElement(mount);
+                    if (mountId.Contains("camel"))
+                    {
+                        gear[11] = new EquipmentElement(Saddles.Where(x =>
+                            x.Name.ToString().ToLower().Contains("camel")).ToList().GetRandomElement());
+                    }
+                    else
+                    {
+                        gear[11] = new EquipmentElement(Saddles.Where(x =>
+                            !x.Name.ToString().ToLower().Contains("camel")).ToList().GetRandomElement());
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -761,6 +804,11 @@ namespace Bandit_Militias.Helpers
                     Mod.Log(ex);
                 }
             }
+        }
+
+        internal static int NumMountedTroops(TroopRoster troopRoster)
+        {
+            return troopRoster.GetTroopRoster().Where(x => x.Character.IsMounted).Sum(e => e.Number);
         }
     }
 }

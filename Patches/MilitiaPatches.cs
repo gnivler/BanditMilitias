@@ -48,8 +48,8 @@ namespace Bandit_Militias.Patches
                 }
 
                 lastChecked = Campaign.CurrentTime;
-                var hideouts = Settlement.All.WhereQ(s => s.IsHideout).ToList();
-                var parties = MobileParty.All.WhereQ(m =>
+                var hideouts = Settlement.All.Where(s => s.IsHideout).ToList();
+                var parties = MobileParty.All.Where(m =>
                         m.Party.IsMobile
                         && m.CurrentSettlement is null
                         && !m.IsUsedByAQuest()
@@ -126,7 +126,7 @@ namespace Bandit_Militias.Patches
                         || militiaTotalCount < Globals.Settings.MinPartySize
                         || militiaTotalCount > CalculatedMaxPartySize
                         || mobileParty.Party.TotalStrength > CalculatedMaxPartyStrength
-                        || mobileParty.Party.NumberOfMenWithHorse + targetParty.NumberOfMenWithHorse > militiaTotalCount / 2)
+                        || NumMountedTroops(mobileParty.MemberRoster) + NumMountedTroops(targetParty.MemberRoster) > militiaTotalCount / 2)
                     {
                         continue;
                     }
@@ -149,8 +149,7 @@ namespace Bandit_Militias.Patches
                         continue;
                     }
 
-                    //Mod.Log($"==> found settlement {T.ElapsedTicks / 10000F:F3}ms.");
-
+                    //Mod.Log($"==> found settlement {T.ElapsedTicks / 10000F:F3}ms."); 
                     // create a new party merged from the two
                     var rosters = MergeRosters(mobileParty, targetParty);
                     var militia = new Militia(mobileParty.Position2D, rosters[0], rosters[1]);
@@ -189,7 +188,6 @@ namespace Bandit_Militias.Patches
                 //Mod.Log($"Looped ==> {T.ElapsedTicks / 10000F:F3}ms");
             }
         }
-
 
         // slows down BM parties a bit
         internal static void DefaultPartySpeedCalculatingModelCalculateFinalSpeedPatch(MobileParty mobileParty, ref ExplainedNumber __result)
