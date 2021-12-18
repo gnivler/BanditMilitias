@@ -271,7 +271,7 @@ namespace Bandit_Militias.Patches
                 //T.Restart();
                 // Leader is null after a battle, crashes after-action
                 // this staged approach feels awkward but it's fast
-                if (__instance.Party?.Leader is null)
+                if (__instance.Party?.LeaderHero is null)
                 {
                     return;
                 }

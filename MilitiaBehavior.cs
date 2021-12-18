@@ -53,8 +53,7 @@ namespace Bandit_Militias
                 simulatedMergedRoster.Add(mobileParty.MemberRoster);
             }
 
-            // ReSharper disable once ObjectCreationAsStatement
-            new Militia(mobileParty.Position2D, simulatedMergedRoster, TroopRoster.CreateDummyTroopRoster());
+            var BM = new Militia(mobileParty.Position2D, simulatedMergedRoster, TroopRoster.CreateDummyTroopRoster());
             mobileParty.RemoveParty();
             DoPowerCalculations();
         }

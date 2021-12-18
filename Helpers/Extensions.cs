@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using HarmonyLib;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Library;
@@ -33,6 +34,14 @@ namespace Bandit_Militias.Helpers
         {
             try
             {
+                var leader = hero.Clan.Leader == hero;
+                if (leader)
+                {
+                    hero.Clan.SetLeader(Globals.PartyMilitiaMap.First(k =>
+                        k.Key.Party.TotalStrength == Globals.PartyMilitiaMap.Max(k => k.Key.Party.TotalStrength)).Key.LeaderHero);
+                }
+
+                hero.Clan = null;
                 hero.PartyBelongedTo?.MemberRoster.RemoveTroop(hero.CharacterObject);
                 Traverse.Create(hero).Field<Hero.CharacterStates>("_heroState").Value = Hero.CharacterStates.NotSpawned;
                 LocationComplex.Current?.RemoveCharacterIfExists(hero);
@@ -49,6 +58,7 @@ namespace Bandit_Militias.Helpers
                 Characters(Campaign.Current) = new MBReadOnlyList<CharacterObject>(tempCharacterObjectList);
                 MBObjectManager.Instance.UnregisterObject(hero.CharacterObject);
                 MBObjectManager.Instance.UnregisterObject(hero);
+   
             }
             catch // (Exception ex)
             {

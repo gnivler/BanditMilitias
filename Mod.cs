@@ -103,6 +103,12 @@ namespace Bandit_Militias
 
             if (superKey && Input.IsKeyPressed(InputKey.P))
             {
+                Mod.Log(Campaign.Current.Kingdoms.Count());
+                var kingdoms = Campaign.Current.Kingdoms.ToList();
+                var trimmed = kingdoms.Take(3).ToList();
+                Traverse.Create(Campaign.Current.CampaignObjectManager).Property<MBReadOnlyList<Kingdom>>("Kingdoms").Value = new MBReadOnlyList<Kingdom>(trimmed);
+                Mod.Log(Campaign.Current.Kingdoms.Count());
+
             }
 
             if (superKey && Input.IsKeyPressed(InputKey.F10))

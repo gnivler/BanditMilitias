@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using HarmonyLib;
-using Helpers;
 using SandBox.View.Map;
 using SandBox.ViewModelCollection.MobilePartyTracker;
 using TaleWorlds.CampaignSystem;
@@ -30,9 +29,11 @@ namespace Bandit_Militias
             Banner = Banners.GetRandomElement();
             BannerKey = Banner.Serialize();
             Hero = mobileParty.LeaderHero;
-            if (!MobileParty.Leader.StringId.EndsWith("Bandit_Militia"))
+            if (!Hero.StringId.EndsWith("Bandit_Militia")
+                || !Hero.CharacterObject.StringId.EndsWith("Bandit Militia"))
             {
-                MobileParty.Leader.StringId += "Bandit_Militia";
+                Hero.StringId += "Bandit_Militia";
+                Hero.CharacterObject.StringId += "Bandit_Militia";
             }
 
             if (!PartyImageMap.ContainsKey(MobileParty))
@@ -60,17 +61,16 @@ namespace Bandit_Militias
 
         private void Spawn(Vec2 position, TroopRoster party, TroopRoster prisoners)
         {
-            MobileParty = BanditPartyComponent.CreateBanditParty("Bandit_Militia", Clan.BanditFactions.First(), Hideouts.GetRandomElement().Hideout, false);
-            MobileParty.InitializeMobileParty(
-                party,
-                prisoners,
-                position,
-                0);
+            var partyClan = GetMostPrevalent(party) ?? Clan.BanditFactions.First();
+            MobileParty = BanditMilitiaPartyComponent.CreateBanditParty(partyClan);
+            MobileParty.InitializeMobileParty(party, prisoners, position, 0);
             PartyMilitiaMap.Add(MobileParty, this);
             PartyImageMap.Add(MobileParty, new ImageIdentifierVM(Banner));
-            var mostPrevalent = (Clan)GetMostPrevalentFactionInParty(MobileParty) ?? Clan.BanditFactions.First();
-            MobileParty.ActualClan = mostPrevalent;
-            CreateHero(mostPrevalent);
+            Hero = MobileParty.LeaderHero;
+            if (MobileParty.ActualClan.Leader is null)
+            {
+                 MobileParty.ActualClan.SetLeader(Hero);
+            }
             if (MobileParty.MemberRoster.GetTroopRoster().Any(t => t.Character.IsMounted))
             {
                 var mount = Mounts.GetRandomElement();
@@ -91,8 +91,7 @@ namespace Bandit_Militias
             var getLocalizedText = AccessTools.Method(typeof(MBTextManager), "GetLocalizedText");
             Name = (string)getLocalizedText.Invoke(null, new object[] { $"{Possess(Hero.FirstName.ToString())} Bandit Militia" });
             MobileParty.SetCustomName(new TextObject(Name));
-            MobileParty.Party.SetCustomOwner(Hero);
-            MobileParty.Leader.StringId += "Bandit_Militia";
+            MobileParty.LeaderHero.StringId += "Bandit_Militia";
             MobileParty.ShouldJoinPlayerBattles = true;
             var tracker = Globals.MobilePartyTrackerVM?.Trackers?.FirstOrDefault(t => t.TrackedParty == MobileParty);
             if (Globals.Settings.Trackers
@@ -106,31 +105,6 @@ namespace Bandit_Militias
             {
                 Globals.MobilePartyTrackerVM.Trackers.Remove(tracker);
             }
-        }
-
-        private void CreateHero(Clan mostPrevalent)
-        {
-            Hero = HeroCreator.CreateHeroAtOccupation(Occupation.NotAssigned);
-            Hero.Clan = mostPrevalent;
-            if (MBRandom.Random.Next(0, 2) == 0)
-            {
-                Hero.UpdatePlayerGender(true);
-                Hero.FirstName.SetTextVariable("FEMALE", 1);
-                StringHelpers.SetCharacterProperties("HERO", Hero.CharacterObject, Hero.FirstName);
-            }
-
-            var partyStrength = Traverse.Create(MobileParty.Party).Method("CalculateStrength").GetValue<float>();
-            Hero.Gold = Convert.ToInt32(partyStrength * GoldMap[Globals.Settings.GoldReward.SelectedValue]);
-            MobileParty.MemberRoster.AddToCounts(Hero.CharacterObject, 1, false, 0, 0, true, 0);
-            EquipmentHelper.AssignHeroEquipmentFromEquipment(Hero, BanditEquipment.GetRandomElement());
-            if (Globals.Settings.CanTrain)
-            {
-                Traverse.Create(Hero).Method("SetSkillValueInternal", DefaultSkills.Leadership, 150).GetValue();
-                Traverse.Create(Hero).Method("SetPerkValueInternal", DefaultPerks.Leadership.VeteransRespect, true).GetValue();
-            }
-
-            var faction = Clan.BanditFactions.FirstOrDefault(x => Hero.MapFaction.Name == x.Name);
-            Hero.Culture = faction is null ? Clan.BanditFactions.FirstOrDefault()?.Culture : faction.Culture;
         }
 
         private void TrainMilitia()
@@ -230,15 +204,15 @@ namespace Bandit_Militias
             }
         }
 
-        private static IFaction GetMostPrevalentFactionInParty(MobileParty mobileParty)
+        private static Clan GetMostPrevalent(TroopRoster troopRoster)
         {
             var map = new Dictionary<CultureObject, int>();
-            var troopTypes = mobileParty.MemberRoster.GetTroopRoster().Select(x => x.Character).ToList();
+            var troopTypes = troopRoster.GetTroopRoster().Select(t => t.Character).ToList();
             foreach (var clan in Clan.BanditFactions)
             {
                 for (var i = 0; i < troopTypes.Count && troopTypes[i].Culture == clan.Culture; i++)
                 {
-                    var troop = mobileParty.MemberRoster.GetElementCopyAtIndex(i);
+                    var troop = troopRoster.GetElementCopyAtIndex(i);
                     var count = troop.Number;
                     if (map.ContainsKey(troop.Character.Culture))
                     {
@@ -251,8 +225,7 @@ namespace Bandit_Militias
                 }
             }
 
-            var faction = Clan.BanditFactions.FirstOrDefault(
-                x => x.Culture == map.OrderByDescending(y => y.Value).FirstOrDefault().Key);
+            var faction = Clan.BanditFactions.FirstOrDefault(c => c.Culture == map.OrderByDescending(y => y.Value).FirstOrDefault().Key);
             return faction;
         }
 

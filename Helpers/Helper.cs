@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Bandit_Militias.Patches;
 using HarmonyLib;
+using Helpers;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.SandBox.CampaignBehaviors;
@@ -310,6 +311,7 @@ namespace Bandit_Militias.Helpers
             }
         }
 
+        // TODO verify if needed post-1.6.4
         internal static void FlushMilitiaCharacterObjects()
         {
             // possibly fixed by TWE in 1.6.4
@@ -359,11 +361,11 @@ namespace Bandit_Militias.Helpers
         {
             foreach (var clan in Clan.BanditFactions)
             {
-                if (clan.Leader?.StringId is not null &&
-                    clan.Leader.StringId.EndsWith("Bandit_Militia"))
-                {
-                    clan.SetLeader(null);
-                }
+                // if (clan.Leader?.StringId is not null &&
+                //     clan.Leader.StringId.EndsWith("Bandit_Militia"))
+                // {
+                clan.SetLeader(null);
+                // }
             }
         }
 
@@ -395,7 +397,7 @@ namespace Bandit_Militias.Helpers
                 .ToList();
             for (var i = 0; i < parties.Count; i++)
             {
-                Mod.Log($">>> FLUSH party without a current settlement or any troops.");
+                Mod.Log(">>> FLUSH party without a current settlement or any troops.");
                 parties[i].LeaderHero.RemoveMilitiaHero();
                 parties[i].RemoveParty();
             }
@@ -408,7 +410,7 @@ namespace Bandit_Militias.Helpers
             {
                 var mapEvent = mapEvents[index];
                 if (mapEvent.InvolvedParties.Any(p =>
-                    p.Id.Contains("Bandit_Militia")))
+                        p.Id.Contains("Bandit_Militia")))
                 {
                     Mod.Log(">>> FLUSH MapEvent.");
                     mapEvent.FinalizeEvent();
@@ -809,6 +811,96 @@ namespace Bandit_Militias.Helpers
         internal static int NumMountedTroops(TroopRoster troopRoster)
         {
             return troopRoster.GetTroopRoster().Where(x => x.Character.IsMounted).Sum(e => e.Number);
+        }
+
+        internal static Hero CreateHero()
+        {
+            var hero = CreateHeroAtOccupationCopy(Occupation.NotAssigned, Hideouts.GetRandomElement()); // HeroCreator.CreateHeroAtOccupation(Occupation.NotAssigned, Hideouts.GetRandomElement());
+            hero.StringId += "Bandit_Militia";
+            hero.CharacterObject.StringId += "Bandit_Militia";
+            if (MBRandom.RandomInt(1) == 0)
+            {
+                hero.UpdatePlayerGender(true);
+                hero.FirstName.SetTextVariable("FEMALE", 1);
+                StringHelpers.SetCharacterProperties("HERO", hero.CharacterObject, hero.FirstName);
+            }
+
+            EquipmentHelper.AssignHeroEquipmentFromEquipment(hero, BanditEquipment.GetRandomElement());
+            if (Globals.Settings.CanTrain)
+            {
+                Traverse.Create(hero).Method("SetSkillValueInternal", DefaultSkills.Leadership, 150).GetValue();
+                Traverse.Create(hero).Method("SetPerkValueInternal", DefaultPerks.Leadership.VeteransRespect, true).GetValue();
+            }
+
+            return hero;
+        }
+
+        // used for 1.6.5 backport of 1.7 refactor
+        public static Hero CreateHeroAtOccupationCopy(
+            Occupation neededOccupation,
+            Settlement forcedHomeSettlement = null)
+        {
+            var characterObjects =
+                CharacterObject.All.Where(x =>
+                    x.Occupation is Occupation.Bandit
+                    && x.Name.Contains("Boss")).ToListQ();
+            var settlement = forcedHomeSettlement ?? SettlementHelper.GetRandomTown();
+            var num1 = 0;
+            foreach (var characterObject in characterObjects)
+            {
+                var num2 = characterObject.GetTraitLevel(DefaultTraits.Frequency) * 10;
+                num1 += num2 > 0 ? num2 : 100;
+            }
+
+            if (!characterObjects.Any())
+            {
+                return null;
+            }
+
+            var template = (CharacterObject)null;
+            var num3 = 1 + (int)(settlement.Random.GetValueNormalized(settlement.Notables.Count()) * (double)(num1 - 1));
+            foreach (var characterObject in characterObjects)
+            {
+                var num4 = characterObject.GetTraitLevel(DefaultTraits.Frequency) * 10;
+                num3 -= num4 > 0 ? num4 : 100;
+                if (num3 < 0)
+                {
+                    template = characterObject;
+                    break;
+                }
+            }
+
+            var specialHero = HeroCreator.CreateSpecialHero(template, settlement);
+            if (specialHero.HomeSettlement.IsVillage && specialHero.HomeSettlement.Village.Bound != null && specialHero.HomeSettlement.Village.Bound.IsCastle)
+            {
+                var num5 = MBRandom.RandomFloat * 20f;
+                specialHero.AddPower(num5);
+            }
+
+            if (neededOccupation != Occupation.Wanderer)
+            {
+                specialHero.ChangeState(Hero.CharacterStates.Active);
+            }
+
+            if (neededOccupation != Occupation.Wanderer)
+            {
+                EnterSettlementAction.ApplyForCharacterOnly(specialHero, settlement);
+            }
+
+            if (neededOccupation != Occupation.Wanderer)
+            {
+                var amount = 10000;
+                GiveGoldAction.ApplyBetweenCharacters(null, specialHero, amount, true);
+            }
+
+            var heroObject = specialHero.Template?.HeroObject;
+            specialHero.SupporterOf = heroObject == null || specialHero.Template.HeroObject.Clan == null || !specialHero.Template.HeroObject.Clan.IsMinorFaction ? HeroHelper.GetRandomClanForNotable(specialHero) : specialHero.Template.HeroObject.Clan;
+            if (neededOccupation != Occupation.Wanderer)
+            {
+                AccessTools.Method(typeof(HeroCreator), "AddRandomVarianceToTraits").Invoke(null, new object[] { specialHero });
+            }
+
+            return specialHero;
         }
     }
 }

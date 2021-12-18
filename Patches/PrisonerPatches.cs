@@ -3,6 +3,7 @@ using Bandit_Militias.Helpers;
 using HarmonyLib;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
+using TaleWorlds.LinQuick;
 using TaleWorlds.Localization;
 
 
@@ -28,12 +29,11 @@ namespace Bandit_Militias.Patches
                 }
 
                 var loserBMs = __instance.PartiesOnSide(__instance.DefeatedSide)
-                    .Where(p => p.Party?.MobileParty?.LeaderHero?.CharacterObject is not null
-                                && p.Party.MobileParty.LeaderHero.CharacterObject.StringId.EndsWith("Bandit_Militia")).ToList();
+                    .Where(p => p.Party.MobileParty is not null
+                                && p.Party.MobileParty.StringId.StartsWith("Bandit_Militia"));
                 foreach (var party in loserBMs)
                 {
-                    var heroes = party.Party.MemberRoster.RemoveIf(t => t.Character.IsHero)
-                        .Where(h => h.Character.StringId.EndsWith("Bandit_Militia")).ToList();
+                    var heroes = party.Party.MemberRoster.RemoveIf(t => t.Character.IsHero).ToListQ();
                     for (var i = 0; i < heroes.Count; i++)
                     {
                         Mod.Log($">>> Killing {heroes[i].Character.Name} at FinishBattle.");
@@ -59,12 +59,11 @@ namespace Bandit_Militias.Patches
             private static void Prefix(MapEvent __instance)
             {
                 var loserBMs = __instance.PartiesOnSide(__instance.DefeatedSide)
-                    .Where(p => p.Party?.MobileParty?.LeaderHero?.CharacterObject is not null
-                                && p.Party.MobileParty.LeaderHero.CharacterObject.StringId.EndsWith("Bandit_Militia")).ToList();
+                    .Where(p => p.Party.MobileParty is not null
+                                && p.Party.MobileParty.StringId.StartsWith("Bandit_Militia"));
                 foreach (var party in loserBMs)
                 {
-                    var heroes = party.Party.MemberRoster.RemoveIf(t => t.Character.IsHero)
-                        .Where(h => h.Character.StringId.EndsWith("Bandit_Militia")).ToList();
+                    var heroes = party.Party.MemberRoster.RemoveIf(t => t.Character.IsHero).ToListQ();
                     for (var i = 0; i < heroes.Count; i++)
                     {
                         Mod.Log($">>> Killing {heroes[i].Character.Name} at LootDefeatedParties.");
