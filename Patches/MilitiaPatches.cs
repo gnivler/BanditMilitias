@@ -12,7 +12,6 @@ using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.GameMenus;
 using TaleWorlds.Core;
 using TaleWorlds.LinQuick;
-using TaleWorlds.Localization;
 using static Bandit_Militias.Helpers.Helper;
 using static Bandit_Militias.Globals;
 
@@ -190,11 +189,11 @@ namespace Bandit_Militias.Patches
         }
 
         // slows down BM parties a bit
-        internal static void DefaultPartySpeedCalculatingModelCalculateFinalSpeedPatch(MobileParty mobileParty, ref ExplainedNumber __result)
+        internal static void PartySpeedModelCalculatePureSpeedPatch(MobileParty mobileParty, ref ExplainedNumber __result)
         {
             if (mobileParty.IsBM())
             {
-                __result.AddFactor(-0.15f, new TextObject("Bandit Militia"));
+                __result.AddFactor(-0.05f);
             }
         }
 

@@ -26,7 +26,7 @@ namespace Bandit_Militias.Helpers
                    || mobileParty.ShortTermBehavior is AiBehavior.EngageParty or AiBehavior.FleeToPoint;
         }
 
-        internal static readonly AccessTools.FieldRef<Campaign, MBReadOnlyList<CharacterObject>> Characters 
+        internal static readonly AccessTools.FieldRef<Campaign, MBReadOnlyList<CharacterObject>> Characters
             = AccessTools.FieldRefAccess<Campaign, MBReadOnlyList<CharacterObject>>("_characters");
 
         // howitzer approach to lobotomize the game of bandit heroes
@@ -38,7 +38,8 @@ namespace Bandit_Militias.Helpers
                 if (leader)
                 {
                     hero.Clan.SetLeader(Globals.PartyMilitiaMap.First(k =>
-                        k.Key.Party.TotalStrength == Globals.PartyMilitiaMap.Max(k => k.Key.Party.TotalStrength)).Key.LeaderHero);
+                        k.Key.Party.TotalStrength >= Globals.PartyMilitiaMap.Max(m =>
+                            m.Key.Party.TotalStrength)).Key.LeaderHero);
                 }
 
                 hero.Clan = null;
@@ -58,7 +59,6 @@ namespace Bandit_Militias.Helpers
                 Characters(Campaign.Current) = new MBReadOnlyList<CharacterObject>(tempCharacterObjectList);
                 MBObjectManager.Instance.UnregisterObject(hero.CharacterObject);
                 MBObjectManager.Instance.UnregisterObject(hero);
-   
             }
             catch // (Exception ex)
             {
