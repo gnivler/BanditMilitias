@@ -778,13 +778,14 @@ namespace Bandit_Militias.Helpers
 
         internal static void RunLateManualPatches()
         {
+            // this patch prevents nasty problems with saving at an encounter dialog (might be getting old as of 3.3.1)
             // have to patch late because of static constructors (type initialization exception)
             Mod.harmony.Patch(
                 AccessTools.Method(typeof(EncounterGameMenuBehavior), "game_menu_encounter_on_init"),
                 new HarmonyMethod(AccessTools.Method(typeof(Helper), nameof(FixMapEventFuckery))));
 
-            var original = AccessTools.Method(typeof(DefaultPartySpeedCalculatingModel), "CalculateFinalSpeed");
-            var postfix = AccessTools.Method(typeof(MilitiaPatches), nameof(MilitiaPatches.DefaultPartySpeedCalculatingModelCalculateFinalSpeedPatch));
+            var original = AccessTools.Method(typeof(DefaultPartySpeedCalculatingModel), "CalculateFinalSpeed");    // TODO check speed
+            var postfix = AccessTools.Method(typeof(MilitiaPatches), nameof(MilitiaPatches.PartySpeedModelCalculatePureSpeedPatch));
             Mod.harmony.Patch(original, null, new HarmonyMethod(postfix));
         }
 

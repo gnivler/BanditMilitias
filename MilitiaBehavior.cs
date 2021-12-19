@@ -53,7 +53,7 @@ namespace Bandit_Militias
                 simulatedMergedRoster.Add(mobileParty.MemberRoster);
             }
 
-            var BM = new Militia(mobileParty.Position2D, simulatedMergedRoster, TroopRoster.CreateDummyTroopRoster());
+            var _ = new Militia(mobileParty.Position2D, simulatedMergedRoster, TroopRoster.CreateDummyTroopRoster());
             mobileParty.RemoveParty();
             DoPowerCalculations();
         }
