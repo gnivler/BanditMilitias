@@ -1,4 +1,3 @@
-using System;
 using Bandit_Militias.Helpers;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Library;
@@ -10,12 +9,15 @@ namespace Bandit_Militias
     {
         public override Hero PartyOwner => MobileParty.ActualClan?.Leader;
         public override Settlement HomeSettlement { get; }
+        public override Hero Leader => leader;
+        private Hero leader;
 
         [CachedData]
         private TextObject cachedName;
 
         private BanditMilitiaPartyComponent(Hero hero)
         {
+            leader = hero;
             HomeSettlement = hero.HomeSettlement;
         }
 
@@ -29,6 +31,11 @@ namespace Bandit_Militias
             }
         }
 
+        public override void ChangePartyLeader(Hero newLeader)
+        {
+            leader = newLeader;
+        }
+
         public static MobileParty CreateBanditParty(Clan clan)
         {
             var hero = Helper.CreateHero();
@@ -37,8 +44,7 @@ namespace Bandit_Militias
             {
                 m.ActualClan = clan;
             });
-            hero.Gold = Convert.ToInt32(mobileParty.Party.TotalStrength * Globals.GoldMap[Globals.Settings.GoldReward.SelectedValue]);
-            //mobileParty.PartyComponent.ChangePartyLeader(hero);
+            
             mobileParty.MemberRoster.AddToCounts(hero.CharacterObject, 1, false, 0, 0, true, 0);
             return mobileParty;
         }

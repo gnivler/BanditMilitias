@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.Emit;
 using Bandit_Militias.Helpers;
 using HarmonyLib;
 using SandBox.View.Map;
@@ -188,13 +189,37 @@ namespace Bandit_Militias.Patches
             }
         }
 
-        // slows down BM parties a bit
-        internal static void PartySpeedModelCalculatePureSpeedPatch(MobileParty mobileParty, ref ExplainedNumber __result)
+        internal static IEnumerable<CodeInstruction> CalculateBasePartySpeedPatch(IEnumerable<CodeInstruction> ins)
         {
-            if (mobileParty.IsBM())
+            // ReSharper disable once EntityNameCapturedOnly.Local
+            float SlowBM(MobileParty mobileParty, float input)
             {
-                __result.AddFactor(-0.05f);
+                if (PartyMilitiaMap.ContainsKey(mobileParty))
+                {
+                    return input * 0.025f;
+                }
+
+                return input;
             }
+
+            var codes = ins.ToListQ();
+            for (var index = 0; index < codes.Count; index++)
+            {
+                if (codes[index].opcode == OpCodes.Call
+                    && codes[index + 1].opcode == OpCodes.Stloc_S
+                    && codes[index + 2].opcode == OpCodes.Ldloca_S
+                    && codes[index + 3].opcode == OpCodes.Ldloc_S)
+                {
+                    codes.InsertRange(index + 1, new List<CodeInstruction>
+                    {
+                        new(OpCodes.Dup),
+                        new(OpCodes.Ldarg_1),
+                        new(OpCodes.Call, AccessTools.Method(typeof(MilitiaPatches), nameof(SlowBM)))
+                    });
+                }
+            }
+
+            return codes.AsEnumerable();
         }
 
         // changes the flag

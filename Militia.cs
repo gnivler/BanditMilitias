@@ -8,6 +8,7 @@ using SandBox.ViewModelCollection.MobilePartyTracker;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
+using TaleWorlds.LinQuick;
 using TaleWorlds.Localization;
 using static Bandit_Militias.Globals;
 using static Bandit_Militias.Helpers.Helper;
@@ -63,10 +64,13 @@ namespace Bandit_Militias
         {
             var partyClan = GetMostPrevalent(party) ?? Clan.BanditFactions.First();
             MobileParty = BanditMilitiaPartyComponent.CreateBanditParty(partyClan);
-            MobileParty.InitializeMobileParty(party, prisoners, position, 0);
+            MobileParty.InitializeMobilePartyAroundPosition(party, prisoners, position, 0);
             PartyMilitiaMap.Add(MobileParty, this);
             PartyImageMap.Add(MobileParty, new ImageIdentifierVM(Banner));
+            var leaderHero = MobileParty.MemberRoster.GetTroopRoster().ToListQ()[0].Character.HeroObject;
+            MobileParty.ChangePartyLeader(leaderHero);
             Hero = MobileParty.LeaderHero;
+            Hero.Gold = Convert.ToInt32(MobileParty.Party.TotalStrength * Globals.GoldMap[Globals.Settings.GoldReward.SelectedValue]);
             if (MobileParty.ActualClan.Leader is null)
             {
                  MobileParty.ActualClan.SetLeader(Hero);

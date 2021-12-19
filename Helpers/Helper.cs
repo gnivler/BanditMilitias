@@ -784,9 +784,9 @@ namespace Bandit_Militias.Helpers
                 AccessTools.Method(typeof(EncounterGameMenuBehavior), "game_menu_encounter_on_init"),
                 new HarmonyMethod(AccessTools.Method(typeof(Helper), nameof(FixMapEventFuckery))));
 
-            var original = AccessTools.Method(typeof(DefaultPartySpeedCalculatingModel), "CalculateFinalSpeed");    // TODO check speed
-            var postfix = AccessTools.Method(typeof(MilitiaPatches), nameof(MilitiaPatches.PartySpeedModelCalculatePureSpeedPatch));
-            Mod.harmony.Patch(original, null, new HarmonyMethod(postfix));
+            var original = AccessTools.Method(typeof(DefaultPartySpeedCalculatingModel), "CalculateBaseSpeedForParty");    // TODO check speed
+            var transpiler = AccessTools.Method(typeof(MilitiaPatches), nameof(MilitiaPatches.CalculateBasePartySpeedPatch));
+            Mod.harmony.Patch(original, transpiler:new HarmonyMethod(transpiler));
         }
 
         internal static void RemoveUndersizedTracker(PartyBase party)
