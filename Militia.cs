@@ -70,7 +70,7 @@ namespace Bandit_Militias
             var leaderHero = MobileParty.MemberRoster.GetTroopRoster().ToListQ()[0].Character.HeroObject;
             MobileParty.ChangePartyLeader(leaderHero);
             Hero = MobileParty.LeaderHero;
-            Hero.Gold = Convert.ToInt32(MobileParty.Party.TotalStrength * Globals.GoldMap[Globals.Settings.GoldReward.SelectedValue]);
+            Hero.Gold = Convert.ToInt32(MobileParty.Party.TotalStrength * GoldMap[Globals.Settings.GoldReward.SelectedValue]);
             if (MobileParty.ActualClan.Leader is null)
             {
                  MobileParty.ActualClan.SetLeader(Hero);
@@ -96,7 +96,7 @@ namespace Bandit_Militias
             Name = (string)getLocalizedText.Invoke(null, new object[] { $"{Possess(Hero.FirstName.ToString())} Bandit Militia" });
             MobileParty.SetCustomName(new TextObject(Name));
             MobileParty.LeaderHero.StringId += "Bandit_Militia";
-            MobileParty.ShouldJoinPlayerBattles = true;
+            //MobileParty.ShouldJoinPlayerBattles = true;
             var tracker = Globals.MobilePartyTrackerVM?.Trackers?.FirstOrDefault(t => t.TrackedParty == MobileParty);
             if (Globals.Settings.Trackers
                 && tracker is null
