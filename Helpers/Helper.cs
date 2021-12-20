@@ -518,7 +518,11 @@ namespace Bandit_Militias.Helpers
             };
 
             Mounts = Items.All.Where(x => x.ItemType == ItemObject.ItemTypeEnum.Horse).Where(x => !x.StringId.Contains("unmountable")).ToList();
-            Saddles = Items.All.Where(x => x.ItemType == ItemObject.ItemTypeEnum.HorseHarness && !x.StringId.ToLower().Contains("mule")).ToList();
+            Saddles = Items.All.Where(x => x.ItemType == ItemObject.ItemTypeEnum.HorseHarness
+                                           && !x.StringId.ToLower().Contains("mule")
+                                           && x.Name.ToString()!= "Celtic Frost"
+                                           && x.Name.ToString() != "Saddle of Aeneas"
+                                           && x.Name.ToString() != "Fortunas Choice").ToList();
             var all = Items.All.Where(i =>
                 !i.IsCivilian
                 && !i.IsCraftedByPlayer
@@ -653,9 +657,8 @@ namespace Bandit_Militias.Helpers
                 if (Rng.NextDouble() < 0.2f)
                 {
                     var mount = Mounts.GetRandomElement();
-                    var mountId = mount.StringId.ToLower();
                     gear[10] = new EquipmentElement(mount);
-                    if (mountId.Contains("camel"))
+                    if (mount.HorseComponent.Monster.MonsterUsage == "camel")
                     {
                         gear[11] = new EquipmentElement(Saddles.Where(x =>
                             x.Name.ToString().ToLower().Contains("camel")).ToList().GetRandomElement());
@@ -784,9 +787,9 @@ namespace Bandit_Militias.Helpers
                 AccessTools.Method(typeof(EncounterGameMenuBehavior), "game_menu_encounter_on_init"),
                 new HarmonyMethod(AccessTools.Method(typeof(Helper), nameof(FixMapEventFuckery))));
 
-            var original = AccessTools.Method(typeof(DefaultPartySpeedCalculatingModel), "CalculateFinalSpeed");    // TODO check speed
-            var postfix = AccessTools.Method(typeof(MilitiaPatches), nameof(MilitiaPatches.PartySpeedModelCalculatePureSpeedPatch));
-            Mod.harmony.Patch(original, null, new HarmonyMethod(postfix));
+            var original = AccessTools.Method(typeof(DefaultPartySpeedCalculatingModel), "CalculateBaseSpeedForParty");    // TODO check speed
+            var transpiler = AccessTools.Method(typeof(MilitiaPatches), nameof(MilitiaPatches.CalculateBasePartySpeedPatch));
+            Mod.harmony.Patch(original, transpiler:new HarmonyMethod(transpiler));
         }
 
         internal static void RemoveUndersizedTracker(PartyBase party)
@@ -819,7 +822,7 @@ namespace Bandit_Militias.Helpers
             var hero = CreateHeroAtOccupationCopy(Occupation.NotAssigned, Hideouts.GetRandomElement()); // HeroCreator.CreateHeroAtOccupation(Occupation.NotAssigned, Hideouts.GetRandomElement());
             hero.StringId += "Bandit_Militia";
             hero.CharacterObject.StringId += "Bandit_Militia";
-            if (MBRandom.RandomInt(1) == 0)
+            if (Rng.Next(0, 2) == 0)
             {
                 hero.UpdatePlayerGender(true);
                 hero.FirstName.SetTextVariable("FEMALE", 1);
