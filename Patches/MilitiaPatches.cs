@@ -398,5 +398,29 @@ namespace Bandit_Militias.Patches
                 }
             }
         }
+
+        [HarmonyPatch(typeof(MobileParty), "IsBandit", MethodType.Getter)]
+        public static class MobilePartyIsBanditPatch
+        {
+            public static void Postfix(MobileParty __instance, ref bool __result)
+            {
+                if (__instance.PartyComponent is MilitiaPartyComponent)
+                {
+                    __result = true;
+                }
+            }
+        }
+
+        [HarmonyPatch(typeof(MobileParty), "IsBanditBossParty", MethodType.Getter)]
+        public static class MobilePartyIsBanditBossPatch
+        {
+            public static void Postfix(MobileParty __instance, ref bool __result)
+            {
+                if (__instance.PartyComponent is MilitiaPartyComponent)
+                {
+                    __result = false;
+                }
+            }
+        }
     }
 }
