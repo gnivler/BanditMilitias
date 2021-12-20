@@ -80,7 +80,7 @@ namespace Bandit_Militias
                 var mount = Mounts.GetRandomElement();
                 var mountId = mount.StringId.ToLower();
                 Hero.BattleEquipment[10] = new EquipmentElement(mount);
-                if (mountId.Contains("camel"))
+                if (mount.HorseComponent.Monster.MonsterUsage == "camel")
                 {
                     Hero.BattleEquipment[11] = new EquipmentElement(Saddles.Where(saddle =>
                         saddle.Name.ToString().ToLower().Contains("camel")).ToList().GetRandomElement());

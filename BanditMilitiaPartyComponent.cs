@@ -1,3 +1,4 @@
+using System;
 using Bandit_Militias.Helpers;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Library;
@@ -44,7 +45,7 @@ namespace Bandit_Militias
             {
                 m.ActualClan = clan;
             });
-            
+
             mobileParty.MemberRoster.AddToCounts(hero.CharacterObject, 1, false, 0, 0, true, 0);
             return mobileParty;
         }

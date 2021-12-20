@@ -34,6 +34,7 @@ namespace Bandit_Militias.Patches
                 EquipmentItems.Clear();
                 PopulateItems();
                 // 1.7 changed CreateHeroAtOccupation to only fish from this: NotableAndWandererTemplates
+                // this has no effect on 1.6.5 since the property doesn't exist
                 var characterObjects =
                     CharacterObject.All.Where(x =>
                     x.Occupation is Occupation.Bandit
