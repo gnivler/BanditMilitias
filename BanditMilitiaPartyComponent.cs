@@ -1,4 +1,3 @@
-using System;
 using Bandit_Militias.Helpers;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Library;
@@ -10,7 +9,6 @@ namespace Bandit_Militias
     {
         public override Hero PartyOwner => MobileParty.ActualClan?.Leader;
         public override Settlement HomeSettlement { get; }
-        public override Hero Leader => leader;
         private Hero leader;
 
         [CachedData]
@@ -30,11 +28,6 @@ namespace Bandit_Militias
                 cachedName.SetTextVariable("IS_BANDIT", 1);
                 return cachedName;
             }
-        }
-
-        public override void ChangePartyLeader(Hero newLeader)
-        {
-            leader = newLeader;
         }
 
         public static MobileParty CreateBanditParty(Clan clan)

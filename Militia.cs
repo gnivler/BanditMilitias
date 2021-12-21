@@ -64,11 +64,11 @@ namespace Bandit_Militias
         {
             var partyClan = GetMostPrevalent(party) ?? Clan.BanditFactions.First();
             MobileParty = BanditMilitiaPartyComponent.CreateBanditParty(partyClan);
-            MobileParty.InitializeMobilePartyAroundPosition(party, prisoners, position, 0);
+            MobileParty.InitializeMobileParty(party, prisoners, position, 0);
             PartyMilitiaMap.Add(MobileParty, this);
             PartyImageMap.Add(MobileParty, new ImageIdentifierVM(Banner));
             var leaderHero = MobileParty.MemberRoster.GetTroopRoster().ToListQ()[0].Character.HeroObject;
-            MobileParty.ChangePartyLeader(leaderHero);
+            Traverse.Create(MobileParty.Party).Field<CharacterObject>("_leader").Value = leaderHero.CharacterObject;
             Hero = MobileParty.LeaderHero;
             Hero.Gold = Convert.ToInt32(MobileParty.Party.TotalStrength * GoldMap[Globals.Settings.GoldReward.SelectedValue]);
             if (MobileParty.ActualClan.Leader is null)
