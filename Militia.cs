@@ -63,7 +63,7 @@ namespace Bandit_Militias
         private void Spawn(Vec2 position, TroopRoster party, TroopRoster prisoners)
         {
             var partyClan = GetMostPrevalent(party) ?? Clan.BanditFactions.First();
-            MobileParty = BanditMilitiaPartyComponent.CreateBanditParty(partyClan);
+            MobileParty = ModBanditMilitiaPartyComponent.CreateBanditParty(partyClan);
             MobileParty.InitializeMobileParty(party, prisoners, position, 0);
             PartyMilitiaMap.Add(MobileParty, this);
             PartyImageMap.Add(MobileParty, new ImageIdentifierVM(Banner));
