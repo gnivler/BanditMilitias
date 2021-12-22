@@ -78,7 +78,6 @@ namespace Bandit_Militias
             if (MobileParty.MemberRoster.GetTroopRoster().Any(t => t.Character.IsMounted))
             {
                 var mount = Mounts.GetRandomElement();
-                var mountId = mount.StringId.ToLower();
                 Hero.BattleEquipment[10] = new EquipmentElement(mount);
                 if (mount.HorseComponent.Monster.MonsterUsage == "camel")
                 {

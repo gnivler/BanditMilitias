@@ -9,14 +9,12 @@ namespace Bandit_Militias
     {
         public override Hero PartyOwner => MobileParty.ActualClan?.Leader;
         public override Settlement HomeSettlement { get; }
-        private Hero leader;
 
         [CachedData]
         private TextObject cachedName;
 
         private ModBanditMilitiaPartyComponent(Hero hero)
         {
-            leader = hero;
             HomeSettlement = hero.HomeSettlement;
         }
 

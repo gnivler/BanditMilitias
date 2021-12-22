@@ -22,7 +22,8 @@ namespace Bandit_Militias.Helpers
     {
         internal static List<ItemObject> Mounts;
         internal static List<ItemObject> Saddles;
-
+        const float ReductionFactor = 0.8f;
+        
         internal static void TrySplitParty(MobileParty mobileParty)
         {
             if (MilitiaPowerPercent > Globals.Settings.GlobalPowerPercent
@@ -33,10 +34,11 @@ namespace Bandit_Militias.Helpers
                 return;
             }
 
+            
             var roll = Rng.Next(0, 101);
             if (roll > Globals.Settings.RandomSplitChance
-                || mobileParty.Party.TotalStrength > CalculatedMaxPartyStrength * (1 + Globals.Settings.SplitStrengthPercent / 100) * Variance
-                || mobileParty.Party.MemberRoster.TotalManCount > Math.Max(1, CalculatedMaxPartySize * Globals.Settings.SplitSizePercent * Variance))
+                || mobileParty.Party.TotalStrength > CalculatedMaxPartyStrength * ReductionFactor * Variance
+                || mobileParty.Party.MemberRoster.TotalManCount > Math.Max(1, CalculatedMaxPartySize * ReductionFactor * Variance))
             {
                 return;
             }
@@ -520,7 +522,7 @@ namespace Bandit_Militias.Helpers
             Mounts = Items.All.Where(x => x.ItemType == ItemObject.ItemTypeEnum.Horse).Where(x => !x.StringId.Contains("unmountable")).ToList();
             Saddles = Items.All.Where(x => x.ItemType == ItemObject.ItemTypeEnum.HorseHarness
                                            && !x.StringId.ToLower().Contains("mule")
-                                           && x.Name.ToString()!= "Celtic Frost"
+                                           && x.Name.ToString() != "Celtic Frost"
                                            && x.Name.ToString() != "Saddle of Aeneas"
                                            && x.Name.ToString() != "Fortunas Choice").ToList();
             var all = Items.All.Where(i =>
@@ -787,9 +789,9 @@ namespace Bandit_Militias.Helpers
                 AccessTools.Method(typeof(EncounterGameMenuBehavior), "game_menu_encounter_on_init"),
                 new HarmonyMethod(AccessTools.Method(typeof(Helper), nameof(FixMapEventFuckery))));
 
-            var original = AccessTools.Method(typeof(DefaultPartySpeedCalculatingModel), "CalculateBaseSpeedForParty");    // TODO check speed
+            var original = AccessTools.Method(typeof(DefaultPartySpeedCalculatingModel), "CalculateBaseSpeedForParty");
             var transpiler = AccessTools.Method(typeof(MilitiaPatches), nameof(MilitiaPatches.CalculateBasePartySpeedPatch));
-            Mod.harmony.Patch(original, transpiler:new HarmonyMethod(transpiler));
+            Mod.harmony.Patch(original, transpiler: new HarmonyMethod(transpiler));
         }
 
         internal static void RemoveUndersizedTracker(PartyBase party)
