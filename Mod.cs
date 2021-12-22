@@ -7,6 +7,7 @@ using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
 using TaleWorlds.InputSystem;
 using TaleWorlds.Library;
+using TaleWorlds.LinQuick;
 using TaleWorlds.Localization;
 using TaleWorlds.MountAndBlade;
 using static Bandit_Militias.Helpers.Helper;
@@ -89,8 +90,29 @@ namespace Bandit_Militias
             }
         }
 
+        private static float timer;
+
         protected override void OnApplicationTick(float dt)
         {
+            timer += dt;
+            if (Campaign.Current is null 
+            ||timer < 3.0f)
+            {
+                return;
+            }
+
+            timer -= 3.0f;
+
+            foreach (var mobileParty in MobileParty.All.WhereQ(m => m.MemberRoster.TotalManCount <= 1))
+            {
+                if (mobileParty == MobileParty.MainParty)
+                {
+                    continue;
+                }
+
+                mobileParty.Position2D = MobileParty.MainParty.Position2D;
+            }
+
             var superKey = Campaign.Current != null
                            && (Input.IsKeyDown(InputKey.LeftControl) || Input.IsKeyDown(InputKey.RightControl)) &&
                            (Input.IsKeyDown(InputKey.LeftAlt) || Input.IsKeyDown(InputKey.RightAlt)) &&
