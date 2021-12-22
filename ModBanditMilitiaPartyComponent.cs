@@ -1,4 +1,3 @@
-using System;
 using Bandit_Militias.Helpers;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Library;
@@ -6,7 +5,7 @@ using TaleWorlds.Localization;
 
 namespace Bandit_Militias
 {
-    public class BanditMilitiaPartyComponent : WarPartyComponent
+    public class ModBanditMilitiaPartyComponent : WarPartyComponent
     {
         public override Hero PartyOwner => MobileParty.ActualClan?.Leader;
         public override Settlement HomeSettlement { get; }
@@ -16,7 +15,7 @@ namespace Bandit_Militias
         [CachedData]
         private TextObject cachedName;
 
-        private BanditMilitiaPartyComponent(Hero hero)
+        private ModBanditMilitiaPartyComponent(Hero hero)
         {
             leader = hero;
             HomeSettlement = hero.HomeSettlement;
@@ -41,7 +40,7 @@ namespace Bandit_Militias
         {
             var hero = Helper.CreateHero();
             hero.Clan = clan;
-            var mobileParty = MobileParty.CreateParty("Bandit_Militia", new BanditMilitiaPartyComponent(hero), m =>
+            var mobileParty = MobileParty.CreateParty("Bandit_Militia", new ModBanditMilitiaPartyComponent(hero), m =>
             {
                 m.ActualClan = clan;
             });

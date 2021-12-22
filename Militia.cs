@@ -63,7 +63,7 @@ namespace Bandit_Militias
         private void Spawn(Vec2 position, TroopRoster party, TroopRoster prisoners)
         {
             var partyClan = GetMostPrevalent(party) ?? Clan.BanditFactions.First();
-            MobileParty = BanditMilitiaPartyComponent.CreateBanditParty(partyClan);
+            MobileParty = ModBanditMilitiaPartyComponent.CreateBanditParty(partyClan);
             MobileParty.InitializeMobilePartyAroundPosition(party, prisoners, position, 0);
             PartyMilitiaMap.Add(MobileParty, this);
             PartyImageMap.Add(MobileParty, new ImageIdentifierVM(Banner));
@@ -78,7 +78,6 @@ namespace Bandit_Militias
             if (MobileParty.MemberRoster.GetTroopRoster().Any(t => t.Character.IsMounted))
             {
                 var mount = Mounts.GetRandomElement();
-                var mountId = mount.StringId.ToLower();
                 Hero.BattleEquipment[10] = new EquipmentElement(mount);
                 if (mount.HorseComponent.Monster.MonsterUsage == "camel")
                 {

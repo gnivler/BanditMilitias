@@ -11,6 +11,7 @@ using SandBox.ViewModelCollection.Nameplate;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.GameMenus;
+using TaleWorlds.CampaignSystem.SandBox.CampaignBehaviors.AiBehaviors;
 using TaleWorlds.Core;
 using TaleWorlds.LinQuick;
 using static Bandit_Militias.Helpers.Helper;
@@ -268,12 +269,12 @@ namespace Bandit_Militias.Patches
             }
         }
 
-        [HarmonyPatch(typeof(EnterSettlementAction), "ApplyInternal")]
+        [HarmonyPatch(typeof(EnterSettlementAction), "ApplyForParty")]
         public static class EnterSettlementActionApplyInternalPatch
         {
             private static bool Prefix(MobileParty mobileParty, Settlement settlement)
             {
-                if (mobileParty.IsBM())
+                if (mobileParty.PartyComponent is ModBanditMilitiaPartyComponent)
                 {
                     Mod.Log($"Preventing {mobileParty} from entering {settlement.Name}");
                     SetMilitiaPatrol(mobileParty);
@@ -404,7 +405,7 @@ namespace Bandit_Militias.Patches
         {
             public static void Postfix(MobileParty __instance, ref bool __result)
             {
-                if (__instance.PartyComponent is MilitiaPartyComponent)
+                if (__instance.PartyComponent is ModBanditMilitiaPartyComponent)
                 {
                     __result = true;
                 }
@@ -412,14 +413,25 @@ namespace Bandit_Militias.Patches
         }
 
         [HarmonyPatch(typeof(MobileParty), "IsBanditBossParty", MethodType.Getter)]
-        public static class MobilePartyIsBanditBossPatch
+        public static class MobilePartyIsBanditBossPartyPatch
         {
             public static void Postfix(MobileParty __instance, ref bool __result)
             {
-                if (__instance.PartyComponent is MilitiaPartyComponent)
+                if (__instance.PartyComponent is ModBanditMilitiaPartyComponent)
                 {
                     __result = false;
                 }
+            }
+        }
+
+        // skip the regular bandit AI stuff, looks at moving into hideouts
+        // and other stuff I don't really want happening
+        [HarmonyPatch(typeof(AiBanditPatrollingBehavior), "AiHourlyTick")]
+        public static class AiBanditPatrollingBehaviorAiHourlyTickPatch
+        {
+            public static bool Prefix(MobileParty mobileParty)
+            {
+                return mobileParty.PartyComponent is not ModBanditMilitiaPartyComponent;
             }
         }
     }

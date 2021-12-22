@@ -776,7 +776,7 @@ namespace Bandit_Militias.Helpers
         internal static void SetMilitiaPatrol(MobileParty mobileParty)
         {
             var settlement = Settlement.All.GetRandomElement();
-            mobileParty.SetMovePatrolAroundSettlement(settlement);
+            mobileParty.SetMovePatrolAroundPoint(settlement.GatePosition);
         }
 
         internal static void RunLateManualPatches()

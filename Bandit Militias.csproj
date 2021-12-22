@@ -346,7 +346,7 @@
         </Reference>
     </ItemGroup>
     <ItemGroup>
-        <Compile Include="BanditMilitiaPartyComponent.cs" />
+        <Compile Include="ModBanditMilitiaPartyComponent.cs" />
         <Compile Include="MilitiaSaveableTypeDefiner.cs" />
         <Compile Include="Globals.cs" />
         <Compile Include="Helpers\Extensions.cs" />
