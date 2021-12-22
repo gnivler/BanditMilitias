@@ -103,7 +103,8 @@ namespace Bandit_Militias
 
             timer -= 3.0f;
 
-            foreach (var mobileParty in MobileParty.All.WhereQ(m => m.MemberRoster.TotalManCount <= 1))
+            foreach (var mobileParty in MobileParty.All.WhereQ(m => m.MemberRoster.TotalManCount <= 1
+                     && m.LeaderHero is not null))
             {
                 if (mobileParty == MobileParty.MainParty)
                 {
@@ -114,9 +115,9 @@ namespace Bandit_Militias
             }
 
             var superKey = Campaign.Current != null
-                           && (Input.IsKeyDown(InputKey.LeftControl) || Input.IsKeyDown(InputKey.RightControl)) &&
-                           (Input.IsKeyDown(InputKey.LeftAlt) || Input.IsKeyDown(InputKey.RightAlt)) &&
-                           (Input.IsKeyDown(InputKey.LeftShift) || Input.IsKeyDown(InputKey.RightShift));
+                           && (Input.IsKeyDown(InputKey.LeftControl) || Input.IsKeyDown(InputKey.RightControl))
+                           && (Input.IsKeyDown(InputKey.LeftAlt) || Input.IsKeyDown(InputKey.RightAlt))
+                           && (Input.IsKeyDown(InputKey.LeftShift) || Input.IsKeyDown(InputKey.RightShift));
             if (superKey && Input.IsKeyPressed(InputKey.F11))
             {
                 Globals.Settings.TestingMode = !Globals.Settings.TestingMode;
