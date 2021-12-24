@@ -34,6 +34,7 @@ namespace Bandit_Militias.Helpers
         {
             try
             {
+                // appoint the strongest BM as the leader if the current leader dies
                 var leader = hero.Clan.Leader == hero;
                 if (leader)
                 {

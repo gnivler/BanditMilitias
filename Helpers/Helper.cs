@@ -241,7 +241,7 @@ namespace Bandit_Militias.Helpers
         {
             PartyMilitiaMap.Clear();
             var hasLogged = false;
-            var partiesToRemove = MobileParty.All.Where(m => m.StringId.Contains("Bandit_Militia")).ToList();
+            var partiesToRemove = MobileParty.All.WhereQ(m => m.PartyComponent is ModBanditMilitiaPartyComponent).ToListQ();
             foreach (var mobileParty in partiesToRemove)
             {
                 if (!hasLogged)
