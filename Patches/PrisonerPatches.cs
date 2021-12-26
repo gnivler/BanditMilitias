@@ -6,12 +6,9 @@ using TaleWorlds.Core;
 using TaleWorlds.LinQuick;
 using TaleWorlds.Localization;
 
-
-// ReSharper disable UnusedMember.Global 
-// ReSharper disable UnusedType.Global 
-// ReSharper disable UnusedMember.Local   
-// ReSharper disable RedundantAssignment  
+// ReSharper disable UnusedType.Global
 // ReSharper disable InconsistentNaming
+// ReSharper disable UnusedMember.Local
 
 namespace Bandit_Militias.Patches
 {
@@ -29,14 +26,15 @@ namespace Bandit_Militias.Patches
                 }
 
                 var loserBMs = __instance.PartiesOnSide(__instance.DefeatedSide)
-                    .Where(p => p.Party.MobileParty is not null
-                                && p.Party.MobileParty.StringId.StartsWith("Bandit_Militia"));
+                    .Where(p => p.Party?.MobileParty?.PartyComponent is ModBanditMilitiaPartyComponent
+                                || !string.IsNullOrEmpty(p.Party?.MobileParty?.LeaderHero?.CharacterObject?.StringId)
+                                && p.Party.MobileParty.LeaderHero.CharacterObject.StringId.Contains("Bandit_Militia"));
                 foreach (var party in loserBMs)
                 {
                     var heroes = party.Party.MemberRoster.RemoveIf(t => t.Character.IsHero).ToListQ();
                     for (var i = 0; i < heroes.Count; i++)
                     {
-                        Mod.Log($">>> Killing {heroes[i].Character.Name} at FinishBattle.");
+                        Mod.Log($">>> Killing {heroes[i].Character.Name} ({heroes[i].Character.StringId}) at FinishBattle.");
                         heroes[i].Character.HeroObject.RemoveMilitiaHero();
                     }
 
@@ -46,29 +44,6 @@ namespace Bandit_Militias.Patches
                     }
 
                     Helper.RemoveUndersizedTracker(party.Party);
-                }
-
-                Helper.DoPowerCalculations();
-            }
-        }
-
-        // prevents BM hero prisoners being taken after battle
-        [HarmonyPatch(typeof(MapEvent), "LootDefeatedParties")]
-        public static class MapEventLootDefeatedPartiesPatch
-        {
-            private static void Prefix(MapEvent __instance)
-            {
-                var loserBMs = __instance.PartiesOnSide(__instance.DefeatedSide)
-                    .Where(p => p.Party.MobileParty is not null
-                                && p.Party.MobileParty.StringId.StartsWith("Bandit_Militia"));
-                foreach (var party in loserBMs)
-                {
-                    var heroes = party.Party.MemberRoster.RemoveIf(t => t.Character.IsHero).ToListQ();
-                    for (var i = 0; i < heroes.Count; i++)
-                    {
-                        Mod.Log($">>> Killing {heroes[i].Character.Name} at LootDefeatedParties.");
-                        heroes[i].Character.HeroObject.RemoveMilitiaHero();
-                    }
                 }
 
                 Helper.DoPowerCalculations();

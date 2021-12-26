@@ -62,51 +62,60 @@ namespace Bandit_Militias
 
         private void Spawn(Vec2 position, TroopRoster party, TroopRoster prisoners)
         {
-            var partyClan = GetMostPrevalent(party) ?? Clan.BanditFactions.First();
-            MobileParty = ModBanditMilitiaPartyComponent.CreateBanditParty(partyClan);
-            MobileParty.InitializeMobilePartyAroundPosition(party, prisoners, position, 0);
-            PartyMilitiaMap.Add(MobileParty, this);
-            PartyImageMap.Add(MobileParty, new ImageIdentifierVM(Banner));
-            var leaderHero = MobileParty.MemberRoster.GetTroopRoster().ToListQ()[0].Character.HeroObject;
-            MobileParty.ChangePartyLeader(leaderHero);
-            Hero = MobileParty.LeaderHero;
-            Hero.Gold = Convert.ToInt32(MobileParty.Party.TotalStrength * GoldMap[Globals.Settings.GoldReward.SelectedValue]);
-            if (MobileParty.ActualClan.Leader is null)
+            try
             {
-                 MobileParty.ActualClan.SetLeader(Hero);
-            }
-            if (MobileParty.MemberRoster.GetTroopRoster().Any(t => t.Character.IsMounted))
-            {
-                var mount = Mounts.GetRandomElement();
-                Hero.BattleEquipment[10] = new EquipmentElement(mount);
-                if (mount.HorseComponent.Monster.MonsterUsage == "camel")
+                var partyClan = GetMostPrevalent(party) ?? Clan.BanditFactions.First();
+                MobileParty = ModBanditMilitiaPartyComponent.CreateBanditParty(partyClan);
+                MobileParty.InitializeMobilePartyAroundPosition(party, prisoners, position, 0);
+                PartyMilitiaMap.Add(MobileParty, this);
+                PartyImageMap.Add(MobileParty, new ImageIdentifierVM(Banner));
+                var leaderHero = MobileParty.MemberRoster.GetTroopRoster().ToListQ()[0].Character.HeroObject;
+                MobileParty.ChangePartyLeader(leaderHero);
+                Hero = MobileParty.LeaderHero;
+                Hero.Gold = Convert.ToInt32(MobileParty.Party.TotalStrength * GoldMap[Globals.Settings.GoldReward.SelectedValue]);
+                if (MobileParty.ActualClan.Leader is null
+                    || !MobileParty.ActualClan.Leader.IsAlive)
                 {
-                    Hero.BattleEquipment[11] = new EquipmentElement(Saddles.Where(saddle =>
-                        saddle.Name.ToString().ToLower().Contains("camel")).ToList().GetRandomElement());
+                    Mod.Log($">>> new leader for {MobileParty.ActualClan.Name}: {Hero}");
+                    MobileParty.ActualClan.SetLeader(Hero);
                 }
-                else
-                {
-                    Hero.BattleEquipment[11] = new EquipmentElement(Saddles.Where(saddle =>
-                        !saddle.Name.ToString().ToLower().Contains("camel")).ToList().GetRandomElement());
-                }
-            }
 
-            var getLocalizedText = AccessTools.Method(typeof(MBTextManager), "GetLocalizedText");
-            Name = (string)getLocalizedText.Invoke(null, new object[] { $"{Possess(Hero.FirstName.ToString())} Bandit Militia" });
-            MobileParty.SetCustomName(new TextObject(Name));
-            MobileParty.LeaderHero.StringId += "Bandit_Militia";
-            //MobileParty.ShouldJoinPlayerBattles = true;
-            var tracker = Globals.MobilePartyTrackerVM?.Trackers?.FirstOrDefault(t => t.TrackedParty == MobileParty);
-            if (Globals.Settings.Trackers
-                && tracker is null
-                && MobileParty.MemberRoster.TotalManCount >= Globals.Settings.TrackedSizeMinimum)
-            {
-                tracker = new MobilePartyTrackItemVM(MobileParty, MapScreen.Instance.MapCamera, null);
-                Globals.MobilePartyTrackerVM?.Trackers?.Add(tracker);
+                if (MobileParty.MemberRoster.GetTroopRoster().Any(t => t.Character.IsMounted))
+                {
+                    var mount = Mounts.GetRandomElement();
+                    Hero.BattleEquipment[10] = new EquipmentElement(mount);
+                    if (mount.HorseComponent.Monster.MonsterUsage == "camel")
+                    {
+                        Hero.BattleEquipment[11] = new EquipmentElement(Saddles.Where(saddle =>
+                            saddle.Name.ToString().ToLower().Contains("camel")).ToList().GetRandomElement());
+                    }
+                    else
+                    {
+                        Hero.BattleEquipment[11] = new EquipmentElement(Saddles.Where(saddle =>
+                            !saddle.Name.ToString().ToLower().Contains("camel")).ToList().GetRandomElement());
+                    }
+                }
+
+                var getLocalizedText = AccessTools.Method(typeof(MBTextManager), "GetLocalizedText");
+                Name = (string)getLocalizedText.Invoke(null, new object[] { $"{Possess(Hero.FirstName.ToString())} Bandit Militia" });
+                MobileParty.SetCustomName(new TextObject(Name));
+                MobileParty.LeaderHero.StringId += "Bandit_Militia";
+                var tracker = Globals.MobilePartyTrackerVM?.Trackers?.FirstOrDefault(t => t.TrackedParty == MobileParty);
+                if (Globals.Settings.Trackers
+                    && tracker is null
+                    && MobileParty.MemberRoster.TotalManCount >= Globals.Settings.TrackedSizeMinimum)
+                {
+                    tracker = new MobilePartyTrackItemVM(MobileParty, MapScreen.Instance.MapCamera, null);
+                    Globals.MobilePartyTrackerVM?.Trackers?.Add(tracker);
+                }
+                else if (tracker is not null)
+                {
+                    Globals.MobilePartyTrackerVM.Trackers.Remove(tracker);
+                }
             }
-            else if (tracker is not null)
+            catch (Exception ex)
             {
-                Globals.MobilePartyTrackerVM.Trackers.Remove(tracker);
+                Mod.Log(ex);
             }
         }
 
@@ -189,10 +198,11 @@ namespace Bandit_Militias
                     var xpGain = numberToUpgrade * DifficultyXpMap[Globals.Settings.XpGift.SelectedValue];
                     MobileParty.MemberRoster.AddXpToTroop(xpGain, troopToTrain.Character);
                     Campaign.Current._partyUpgrader.UpgradeReadyTroops(MobileParty.Party);
+                    // todo removed at PartyComp refactor
                     // this is gross, not sure why it doesn't update itself, seems like the right way to call
-                    Traverse.Create(MobileParty.MemberRoster).Field<List<TroopRosterElement>>("_troopRosterElements").Value
-                        = MobileParty.MemberRoster.GetTroopRoster();
-                    MobileParty.MemberRoster.UpdateVersion();
+                    //Traverse.Create(MobileParty.MemberRoster).Field<List<TroopRosterElement>>("_troopRosterElements").Value
+                    //    = MobileParty.MemberRoster.GetTroopRoster();
+                    //MobileParty.MemberRoster.UpdateVersion();
                     if (Globals.Settings.TestingMode)
                     {
                         var party = Hero.MainHero.PartyBelongedTo ?? Hero.MainHero.PartyBelongedToAsPrisoner.MobileParty;
@@ -238,7 +248,7 @@ namespace Bandit_Militias
             {
                 var troopString = $"{mobileParty.Party.NumberOfAllMembers} troop" + (mobileParty.Party.NumberOfAllMembers > 1 ? "s" : "");
                 var strengthString = $"{Math.Round(mobileParty.Party.TotalStrength)} strength";
-                Mod.Log($"{$">>> New Bandit Militia led by {mobileParty.LeaderHero.Name}",-70} | {troopString,10} | {strengthString,12} |");
+                Mod.Log($"{$"New Bandit Militia led by {mobileParty.LeaderHero.Name}",-70} | {troopString,10} | {strengthString,12} |");
             }
             catch (Exception ex)
             {

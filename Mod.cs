@@ -89,8 +89,6 @@ namespace Bandit_Militias
             }
         }
 
-        private static float timer;
-
         protected override void OnApplicationTick(float dt)
         {
             var superKey = Campaign.Current != null
@@ -135,6 +133,8 @@ namespace Bandit_Militias
             {
                 try
                 {
+                    Nuke();
+                    Nuke();
                     Nuke();
                     Nuke();
                     Nuke();

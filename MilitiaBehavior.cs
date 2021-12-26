@@ -3,6 +3,7 @@ using System.Linq;
 using Bandit_Militias.Helpers;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
+using TaleWorlds.LinQuick;
 using TaleWorlds.TwoDimension;
 using static Bandit_Militias.Globals;
 using static Bandit_Militias.Helpers.Helper;
@@ -26,11 +27,31 @@ namespace Bandit_Militias
 
         private static void OnDailyTickEvent()
         {
+            //var prisoners = Hero.AllAliveHeroes.Where(h => h.IsPrisoner && h.CharacterObject.StringId.Contains("Bandit_Militia")).ToListQ();
+            //for (var index = 0; index < prisoners.Count; index++)
+            //{
+            //    var h = prisoners[index];
+            //    Mod.Log($">>> Found {h.Name} at {h.CurrentSettlement} {h.PartyBelongedToAsPrisoner.Id}");
+            //    h.RemoveMilitiaHero();
+            //    Campaign.Current.TimeControlMode = CampaignTimeControlMode.Stop;
+            //}
+
+            // TODO remove this temporary fix
+            var heroes = Hero.AllAliveHeroes.WhereQ(h => h.PartyBelongedTo is null && h.CharacterObject.StringId.Contains("Bandit_Militia")).ToListQ();
+            for (var index = 0; index < heroes.Count; index++)
+            {
+                var h = heroes[index];
+                Mod.Log($">>> NULL PARTY FOR {h.Name} - settlement: {h.CurrentSettlement} - RemoveMilitiaHero");
+                h.RemoveMilitiaHero();
+                //Campaign.Current.TimeControlMode = CampaignTimeControlMode.Stop;
+            }
+
             if (!Globals.Settings.MilitiaSpawn)
             {
                 return;
             }
 
+            // todo hourly
             // ReSharper disable once PossibleLossOfFraction
             for (var i = 0; i < Globals.Settings.GlobalPowerPercent - MilitiaPowerPercent; i++)
             {
@@ -54,7 +75,7 @@ namespace Bandit_Militias
             }
 
             var _ = new Militia(mobileParty.Position2D, simulatedMergedRoster, TroopRoster.CreateDummyTroopRoster());
-            mobileParty.RemoveParty();
+            Trash(mobileParty);
             DoPowerCalculations();
         }
 
@@ -84,8 +105,8 @@ namespace Bandit_Militias
             {
                 if (Growth
                     && MilitiaPowerPercent < Globals.Settings.GlobalPowerPercent
-                    && mobileParty.IsBM()
                     && mobileParty.ShortTermBehavior != AiBehavior.FleeToPoint
+                    && mobileParty.IsBM()
                     && IsAvailableBanditParty(mobileParty)
                     && Rng.NextDouble() <= Globals.Settings.GrowthChance / 100f)
                 {
@@ -93,7 +114,7 @@ namespace Bandit_Militias
                         rosterElement.Character.Tier < Globals.Settings.MaxTrainingTier
                         && !rosterElement.Character.IsHero
                         && mobileParty.ShortTermBehavior != AiBehavior.FleeToPoint
-                        && !mobileParty.IsVisible).ToList();
+                        && !mobileParty.IsVisible).ToListQ();
                     if (eligibleToGrow.Any())
                     {
                         var growthAmount = mobileParty.MemberRoster.TotalManCount * Globals.Settings.GrowthPercent / 100f;
@@ -120,9 +141,9 @@ namespace Bandit_Militias
                             }
                         }
 
-                        var troopString = $"{mobileParty.Party.NumberOfAllMembers} troop" + (mobileParty.Party.NumberOfAllMembers > 1 ? "s" : "");
-                        var strengthString = $"{Math.Round(mobileParty.Party.TotalStrength)} strength";
-                        Mod.Log($"{$"Grown to",-70} | {troopString,10} | {strengthString,12} |");
+                        //var troopString = $"{mobileParty.Party.NumberOfAllMembers} troop" + (mobileParty.Party.NumberOfAllMembers > 1 ? "s" : "");
+                        //var strengthString = $"{Math.Round(mobileParty.Party.TotalStrength)} strength";
+                        //Mod.Log($"{$"Grown to",-70} | {troopString,10} | {strengthString,12} |");
                         DoPowerCalculations();
                         // Mod.Log($"Grown to: {mobileParty.MemberRoster.TotalManCount}");
                     }
