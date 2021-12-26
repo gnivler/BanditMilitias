@@ -70,7 +70,7 @@ namespace Bandit_Militias
             var leaderHero = MobileParty.MemberRoster.GetTroopRoster().ToListQ()[0].Character.HeroObject;
             Traverse.Create(MobileParty.Party).Field<CharacterObject>("_leader").Value = leaderHero.CharacterObject;
             Hero = MobileParty.LeaderHero;
-            Hero.Gold = Convert.ToInt32(MobileParty.Party.TotalStrength * GoldMap[Globals.Settings.GoldReward.SelectedValue]);
+            Hero.Gold = Convert.ToInt32(MobileParty.Party.TotalStrength * Globals.GoldMap[Globals.Settings.GoldReward.SelectedValue]);
             if (MobileParty.ActualClan.Leader is null)
             {
                  MobileParty.ActualClan.SetLeader(Hero);
@@ -95,7 +95,7 @@ namespace Bandit_Militias
             Name = (string)getLocalizedText.Invoke(null, new object[] { $"{Possess(Hero.FirstName.ToString())} Bandit Militia" });
             MobileParty.SetCustomName(new TextObject(Name));
             MobileParty.LeaderHero.StringId += "Bandit_Militia";
-            //MobileParty.ShouldJoinPlayerBattles = true;
+            MobileParty.ShouldJoinPlayerBattles = true;
             var tracker = Globals.MobilePartyTrackerVM?.Trackers?.FirstOrDefault(t => t.TrackedParty == MobileParty);
             if (Globals.Settings.Trackers
                 && tracker is null
@@ -189,10 +189,11 @@ namespace Bandit_Militias
                     var xpGain = numberToUpgrade * DifficultyXpMap[Globals.Settings.XpGift.SelectedValue];
                     MobileParty.MemberRoster.AddXpToTroop(xpGain, troopToTrain.Character);
                     Campaign.Current._partyUpgrader.UpgradeReadyTroops(MobileParty.Party);
+                    // todo note: removed at PartyComp refactor
                     // this is gross, not sure why it doesn't update itself, seems like the right way to call
-                    Traverse.Create(MobileParty.MemberRoster).Field<List<TroopRosterElement>>("_troopRosterElements").Value
-                        = MobileParty.MemberRoster.GetTroopRoster();
-                    MobileParty.MemberRoster.UpdateVersion();
+                    //Traverse.Create(MobileParty.MemberRoster).Field<List<TroopRosterElement>>("_troopRosterElements").Value
+                    //    = MobileParty.MemberRoster.GetTroopRoster();
+                    //MobileParty.MemberRoster.UpdateVersion();
                     if (Globals.Settings.TestingMode)
                     {
                         var party = Hero.MainHero.PartyBelongedTo ?? Hero.MainHero.PartyBelongedToAsPrisoner.MobileParty;
@@ -238,7 +239,7 @@ namespace Bandit_Militias
             {
                 var troopString = $"{mobileParty.Party.NumberOfAllMembers} troop" + (mobileParty.Party.NumberOfAllMembers > 1 ? "s" : "");
                 var strengthString = $"{Math.Round(mobileParty.Party.TotalStrength)} strength";
-                Mod.Log($"{$">>> New Bandit Militia led by {mobileParty.LeaderHero.Name}",-70} | {troopString,10} | {strengthString,12} |");
+                Mod.Log($"{$"New Bandit Militia led by {mobileParty.LeaderHero.Name}",-70} | {troopString,10} | {strengthString,12} |");
             }
             catch (Exception ex)
             {

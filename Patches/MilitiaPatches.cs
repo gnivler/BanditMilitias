@@ -12,6 +12,7 @@ using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.GameMenus;
 using TaleWorlds.CampaignSystem.SandBox.CampaignBehaviors.AiBehaviors;
+using TaleWorlds.CampaignSystem.SandBox.GameComponents.Map;
 using TaleWorlds.Core;
 using TaleWorlds.LinQuick;
 using static Bandit_Militias.Helpers.Helper;
@@ -163,19 +164,12 @@ namespace Bandit_Militias.Patches
                     }
 
                     militia.MobileParty.Party.Visuals.SetMapIconAsDirty();
-                    // BUG... so many hours.  parties (rarely?) don't actually get trashed, BM hero character leaks
-                    // MilitiaBehavior.cs registers a daily tick event to remove them
-                    mobileParty.IsDisbanding = true;
-                    targetParty.MobileParty.IsDisbanding = true;
+
                     try
                     {
                         // can throw if Clan is null
                         Trash(mobileParty);
                         Trash(targetParty.MobileParty);
-                    }
-                    catch (NullReferenceException)
-                    {
-                        // ignore
                     }
                     catch (Exception ex)
                     {
@@ -341,7 +335,7 @@ namespace Bandit_Militias.Patches
         {
             private static void Postfix(MobileParty __instance, MobileParty targetParty, ref bool __result)
             {
-                if (__result && __instance.IsBM())
+                if (__result && __instance.PartyComponent is ModBanditMilitiaPartyComponent)
                 {
                     var party1Strength = __instance.GetTotalStrengthWithFollowers();
                     var party2Strength = targetParty.GetTotalStrengthWithFollowers();
@@ -352,8 +346,6 @@ namespace Bandit_Militias.Patches
         }
 
         // force Heroes to appear to die in combat
-        // it's not IDEAL because a hero with 20hp (Wounded) will be killed
-        // I tried many other approaches that didn't come close
         [HarmonyPriority(Priority.High)]
         [HarmonyPatch(typeof(SPScoreboardVM), "TroopNumberChanged")]
         public static class SPScoreboardVMTroopNumberChangedPatch
@@ -432,6 +424,18 @@ namespace Bandit_Militias.Patches
             public static bool Prefix(MobileParty mobileParty)
             {
                 return mobileParty.PartyComponent is not ModBanditMilitiaPartyComponent;
+            }
+        }
+
+        [HarmonyPatch(typeof(DefaultMobilePartyFoodConsumptionModel), "DoesPartyConsumeFood")]
+        public static class DefaultMobilePartyFoodConsumptionModelDoesPartyConsumeFoodPatch
+        {
+            public static void Postfix(MobileParty mobileParty, ref bool __result)
+            {
+                if (mobileParty.PartyComponent is ModBanditMilitiaPartyComponent)
+                {
+                    __result = false;
+                }
             }
         }
     }

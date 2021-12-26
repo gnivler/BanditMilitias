@@ -136,6 +136,8 @@ namespace Bandit_Militias
                     Nuke();
                     Nuke();
                     Nuke();
+                    Nuke();
+                    Nuke();
                     DoPowerCalculations(true);
                     InformationManager.AddQuickInformation(new TextObject("BANDIT MILITIAS CLEARED"));
                 }
