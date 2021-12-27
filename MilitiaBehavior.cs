@@ -27,56 +27,36 @@ namespace Bandit_Militias
 
         private static void OnDailyTickEvent()
         {
-            //var prisoners = Hero.AllAliveHeroes.Where(h => h.IsPrisoner && h.CharacterObject.StringId.Contains("Bandit_Militia")).ToListQ();
-            //for (var index = 0; index < prisoners.Count; index++)
-            //{
-            //    var h = prisoners[index];
-            //    Mod.Log($">>> Found {h.Name} at {h.CurrentSettlement} {h.PartyBelongedToAsPrisoner.Id}");
-            //    h.RemoveMilitiaHero();
-            //    Campaign.Current.TimeControlMode = CampaignTimeControlMode.Stop;
-            //}
-
             // TODO remove this temporary fix
-            var heroes = Hero.AllAliveHeroes.WhereQ(h => h.PartyBelongedTo is null && h.CharacterObject.StringId.Contains("Bandit_Militia")).ToListQ();
-            for (var index = 0; index < heroes.Count; index++)
-            {
-                var h = heroes[index];
-                Mod.Log($">>> NULL PARTY FOR {h.Name} - settlement: {h.CurrentSettlement} - RemoveMilitiaHero");
-                h.RemoveMilitiaHero();
-                //Campaign.Current.TimeControlMode = CampaignTimeControlMode.Stop;
-            }
+            RemoveHeroesWithoutParty();
+        }
 
+        private static void SynthesizeBM()
+        {
             if (!Globals.Settings.MilitiaSpawn)
             {
                 return;
             }
 
-            // todo hourly
-            // ReSharper disable once PossibleLossOfFraction
-            for (var i = 0; i < Globals.Settings.GlobalPowerPercent - MilitiaPowerPercent; i++)
+            for (var i = 0; i < (Globals.Settings.GlobalPowerPercent - MilitiaPowerPercent) / 24f; i++)
             {
-                SynthesizeBM();
-            }
-        }
+                var settlement = Settlement.All.Where(s => !s.IsVisible).GetRandomElementInefficiently();
+                var clan = Clan.BanditFactions.ToList()[Rng.Next(0, Clan.BanditFactions.Count())];
+                var mobileParty = settlement.IsHideout
+                    ? BanditPartyComponent.CreateBanditParty("Bandit_Militia", clan, settlement.Hideout, false)
+                    : BanditPartyComponent.CreateLooterParty("Bandit_Militia", clan, settlement, false);
+                mobileParty.InitializeMobileParty(clan.DefaultPartyTemplate, settlement.GatePosition, 0);
+                var simulatedMergedRoster = TroopRoster.CreateDummyTroopRoster();
+                while (mobileParty.MemberRoster.TotalManCount != 0
+                       && simulatedMergedRoster.TotalManCount < Globals.Settings.MinPartySize * Rng.Next(1, Globals.Settings.SpawnSizeMultiplier + 1))
+                {
+                    simulatedMergedRoster.Add(mobileParty.MemberRoster);
+                }
 
-        private static void SynthesizeBM()
-        {
-            var settlement = Settlement.All.Where(s => !s.IsVisible).GetRandomElementInefficiently();
-            var clan = Clan.BanditFactions.ToList()[Rng.Next(0, Clan.BanditFactions.Count())];
-            var mobileParty = settlement.IsHideout
-                ? BanditPartyComponent.CreateBanditParty("Bandit_Militia", clan, settlement.Hideout, false)
-                : BanditPartyComponent.CreateLooterParty("Bandit_Militia", clan, settlement, false);
-            mobileParty.InitializeMobileParty(clan.DefaultPartyTemplate, settlement.GatePosition, 0);
-            var simulatedMergedRoster = TroopRoster.CreateDummyTroopRoster();
-            while (mobileParty.MemberRoster.TotalManCount != 0
-                   && simulatedMergedRoster.TotalManCount < Globals.Settings.MinPartySize * Rng.Next(1, Globals.Settings.SpawnSizeMultiplier + 1))
-            {
-                simulatedMergedRoster.Add(mobileParty.MemberRoster);
+                var _ = new Militia(mobileParty.Position2D, simulatedMergedRoster, TroopRoster.CreateDummyTroopRoster());
+                Trash(mobileParty);
+                DoPowerCalculations();
             }
-
-            var _ = new Militia(mobileParty.Position2D, simulatedMergedRoster, TroopRoster.CreateDummyTroopRoster());
-            Trash(mobileParty);
-            DoPowerCalculations();
         }
 
         private static void OnPartyRemoved(PartyBase party)
