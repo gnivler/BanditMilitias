@@ -33,6 +33,11 @@ namespace Bandit_Militias
 
         public override void ChangePartyLeader(Hero newLeader)
         {
+            if (leader != newLeader)
+            {
+                leader?.RemoveMilitiaHero();
+            }
+
             leader = newLeader;
         }
 

@@ -37,13 +37,14 @@ namespace Bandit_Militias
             //}
 
             // TODO remove this temporary fix
-            var heroes = Hero.AllAliveHeroes.WhereQ(h => h.PartyBelongedTo is null && h.CharacterObject.StringId.Contains("Bandit_Militia")).ToListQ();
+            var heroes = Hero.AllAliveHeroes.WhereQ(h =>
+                h.PartyBelongedTo is null && h.CharacterObject.StringId.Contains("Bandit_Militia")).ToListQ();
             for (var index = 0; index < heroes.Count; index++)
             {
                 var h = heroes[index];
                 Mod.Log($">>> NULL PARTY FOR {h.Name} - settlement: {h.CurrentSettlement} - RemoveMilitiaHero");
-                h.RemoveMilitiaHero();
-                //Campaign.Current.TimeControlMode = CampaignTimeControlMode.Stop;
+                //h.RemoveMilitiaHero();
+                Campaign.Current.TimeControlMode = CampaignTimeControlMode.Stop;
             }
 
             if (!Globals.Settings.MilitiaSpawn)

@@ -210,7 +210,10 @@ namespace Bandit_Militias.Helpers
             //Mod.Log("Trashing " + mobileParty.Name);
             PartyMilitiaMap.Remove(mobileParty);
             mobileParty.LeaderHero?.RemoveMilitiaHero();
-            DestroyPartyAction.Apply(null, mobileParty);
+            if (mobileParty.ActualClan is not null)
+            {
+                DestroyPartyAction.Apply(null, mobileParty);
+            }
         }
 
         internal static void Nuke()
@@ -220,6 +223,16 @@ namespace Bandit_Militias.Helpers
             FlushMilitiaCharacterObjects();
             FlushMapEvents();
             RemoveBMHeroesFromClanLeaderships();
+            // TODO remove this temporary fix
+            var heroes = Hero.AllAliveHeroes.WhereQ(h =>
+                h.PartyBelongedTo is null && h.CharacterObject.StringId.Contains("Bandit_Militia")).ToListQ();
+            for (var index = 0; index < heroes.Count; index++)
+            {
+                var h = heroes[index];
+                Mod.Log($">>> NULL PARTY FOR {h.Name} - settlement: {h.CurrentSettlement} - RemoveMilitiaHero");
+                h.RemoveMilitiaHero();
+                Campaign.Current.TimeControlMode = CampaignTimeControlMode.Stop;
+            }
             DoPowerCalculations(true);
         }
 
@@ -233,12 +246,14 @@ namespace Bandit_Militias.Helpers
             {
                 if (!hasLogged)
                 {
-                    Mod.Log($">>> FLUSH {partiesToRemove.Count} Bandit Militias");
+                    Mod.Log($">>> FLUSH {partiesToRemove.Count} Bandit Militias parties");
                     hasLogged = true;
                 }
 
                 Trash(mobileParty);
             }
+
+            var leftovers = Hero.AllAliveHeroes.WhereQ(h => h.StringId.Contains("Bandit_Militia"));
         }
 
         // TODO verify if needed post-1.6.4
