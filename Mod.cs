@@ -133,11 +133,10 @@ namespace Bandit_Militias
             {
                 try
                 {
-                    Nuke();
-                    Nuke();
-                    Nuke();
-                    Nuke();
-                    Nuke();
+                    for (var index = 0; index < 10; index++)
+                    {
+                        Nuke();
+                    }
                     DoPowerCalculations(true);
                     InformationManager.AddQuickInformation(new TextObject("BANDIT MILITIAS CLEARED"));
                 }

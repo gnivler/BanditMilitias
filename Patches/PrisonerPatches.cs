@@ -49,5 +49,29 @@ namespace Bandit_Militias.Patches
                 Helper.DoPowerCalculations();
             }
         }
+
+        // prevents BM hero prisoners being taken after battle
+        [HarmonyPatch(typeof(MapEvent), "LootDefeatedParties")]
+        public static class MapEventLootDefeatedPartiesPatch
+        {
+            private static void Prefix(MapEvent __instance)
+            {
+                var loserBMs = __instance.PartiesOnSide(__instance.DefeatedSide)
+                    .Where(p => p.Party?.MobileParty?.PartyComponent is ModBanditMilitiaPartyComponent
+                                || !string.IsNullOrEmpty(p.Party?.MobileParty?.LeaderHero?.CharacterObject?.StringId)
+                                && p.Party.MobileParty.LeaderHero.CharacterObject.StringId.Contains("Bandit_Militia"));
+                foreach (var party in loserBMs)
+                {
+                    var heroes = party.Party.MemberRoster.RemoveIf(t => t.Character.IsHero).ToListQ();
+                    for (var i = 0; i < heroes.Count; i++)
+                    {
+                        Mod.Log($">>> Killing {heroes[i].Character.Name} at LootDefeatedParties.");
+                        heroes[i].Character.HeroObject.RemoveMilitiaHero();
+                    }
+                }
+
+                Helper.DoPowerCalculations();
+            }
+        }
     }
 }

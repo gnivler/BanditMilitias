@@ -224,16 +224,21 @@ namespace Bandit_Militias.Helpers
             FlushMapEvents();
             RemoveBMHeroesFromClanLeaderships();
             // TODO remove this temporary fix
+            RemoveHeroesWithoutParty();
+            DoPowerCalculations(true);
+        }
+
+        internal static void RemoveHeroesWithoutParty()
+        {
             var heroes = Hero.AllAliveHeroes.WhereQ(h =>
                 h.PartyBelongedTo is null && h.CharacterObject.StringId.Contains("Bandit_Militia")).ToListQ();
             for (var index = 0; index < heroes.Count; index++)
             {
-                var h = heroes[index];
-                Mod.Log($">>> NULL PARTY FOR {h.Name} - settlement: {h.CurrentSettlement} - RemoveMilitiaHero");
-                h.RemoveMilitiaHero();
-                Campaign.Current.TimeControlMode = CampaignTimeControlMode.Stop;
+                var hero = heroes[index];
+                Mod.Log($">>> NULL PARTY FOR {hero.Name} - settlement: {hero.CurrentSettlement} - RemoveMilitiaHero");
+                hero.RemoveMilitiaHero();
+                //Campaign.Current.TimeControlMode = CampaignTimeControlMode.Stop;
             }
-            DoPowerCalculations(true);
         }
 
         private static void FlushBanditMilitias()
@@ -253,10 +258,45 @@ namespace Bandit_Militias.Helpers
                 Trash(mobileParty);
             }
 
-            var leftovers = Hero.AllAliveHeroes.WhereQ(h => h.StringId.Contains("Bandit_Militia"));
+            // still needed 1.7?
+            // prisoners somehow of settlements
+            foreach (var settlement in Settlement.All)
+            {
+                var count = settlement.Party.PrisonRoster.Count;
+                if (count <= 0)
+                {
+                    continue;
+                }
+
+                for (var i = 0; i < settlement.Party.PrisonRoster.Count; i++)
+                {
+                    try
+                    {
+                        var prisoner = settlement.Party.PrisonRoster.GetCharacterAtIndex(i);
+                        if (prisoner.StringId.Contains("Bandit_Militia"))
+                        {
+                            Mod.Log($">>> FLUSH dead bandit hero prisoner {prisoner.HeroObject.Name} at {settlement.Name}.");
+                            prisoner.HeroObject.RemoveMilitiaHero();
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Mod.Log(ex);
+                    }
+                }
+            }
+
+            var leftovers = Hero.AllAliveHeroes.WhereQ(h => h.StringId.Contains("Bandit_Militia")).ToListQ();
+
+            for (var index = 0; index < leftovers.Count(); index++)
+            {
+                var hero = leftovers[index];
+                Mod.Log("Removing leftover hero " + hero);
+                hero.RemoveMilitiaHero();
+            }
         }
 
-        // TODO verify if needed post-1.6.4
+        // TODO verify if needed post-1.7
         internal static void FlushMilitiaCharacterObjects()
         {
             // still rarely happening with 1.7 and 3.3.7
