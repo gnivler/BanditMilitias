@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using HarmonyLib;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.ObjectSystem;
@@ -31,6 +33,8 @@ namespace Bandit_Militias.Helpers
                 KillCharacterAction.ApplyByRemove(hero);
                 MBObjectManager.Instance.UnregisterObject(hero.CharacterObject);
                 MBObjectManager.Instance.UnregisterObject(hero);
+                Traverse.Create(Campaign.Current.CampaignObjectManager).Field<List<Hero>>("_aliveHeroes").Value.Remove(hero);
+                Traverse.Create(Campaign.Current.CampaignObjectManager).Field<List<Hero>>("_deadOrDisabledHeroes").Value.Remove(hero);
             }
             catch (Exception ex)
             {

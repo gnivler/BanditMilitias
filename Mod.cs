@@ -133,7 +133,8 @@ namespace Bandit_Militias
             {
                 try
                 {
-                    for (var index = 0; index < 10; index++)
+                    // no idea why it takes several iterations to clean up certain situations but it does
+                    for (var index = 0; index < 20; index++)
                     {
                         Nuke();
                     }
