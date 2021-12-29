@@ -219,9 +219,9 @@ namespace Bandit_Militias.Helpers
 
         internal static void Nuke()
         {
-            Mod.Log("Clearing mod data.");
             FlushBanditMilitias();
             FlushMilitiaCharacterObjects();
+            FlushPrisoners();
             FlushMapEvents();
             RemoveBMHeroesFromClanLeaderships();
             // TODO remove this temporary fix
@@ -320,10 +320,9 @@ namespace Bandit_Militias.Helpers
                 charactersField.Value = new MBReadOnlyList<CharacterObject>(tempCharacterObjectList);
             }
 
-            Mod.Log("");
-            Mod.Log($"{new string('=', 80)}\nBMs: {PartyMilitiaMap.Count,-4} Power: {GlobalMilitiaPower} / Power Limit: {CalculatedGlobalPowerLimit} = {GlobalMilitiaPower / CalculatedGlobalPowerLimit * 100:f2}% (limit {Globals.Settings.GlobalPowerPercent}%)");
-            Mod.Log("");
-            FlushPrisoners();
+            //Mod.Log("");
+            //Mod.Log($"{new string('=', 80)}\nBMs: {PartyMilitiaMap.Count,-4} Power: {GlobalMilitiaPower} / Power Limit: {CalculatedGlobalPowerLimit} = {GlobalMilitiaPower / CalculatedGlobalPowerLimit * 100:f2}% (limit {Globals.Settings.GlobalPowerPercent}%)");
+            //Mod.Log("");
         }
 
         internal static void FlushPrisoners()

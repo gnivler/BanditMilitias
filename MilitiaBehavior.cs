@@ -30,6 +30,7 @@ namespace Bandit_Militias
         {
             // TODO remove this temporary fix
             RemoveHeroesWithoutParty();
+            FlushPrisoners();
         }
 
         private static void SynthesizeBM()
