@@ -225,7 +225,6 @@ namespace Bandit_Militias.Helpers
             RemoveBMHeroesFromClanLeaderships();
             // TODO remove this temporary fix
             RemoveHeroesWithoutParty();
-            DoPowerCalculations(true);
         }
 
         internal static void RemoveHeroesWithoutParty()
@@ -246,7 +245,7 @@ namespace Bandit_Militias.Helpers
             PartyMilitiaMap.Clear();
             var hasLogged = false;
             var partiesToRemove = MobileParty.All.Where(m => m.StringId.Contains("Bandit_Militia"))
-                .Concat(MobileParty.All.WhereQ(m => m.PartyComponent is ModBanditMilitiaPartyComponent).Distinct()).ToListQ();
+                .Concat(MobileParty.All.WhereQ(m => m.PartyComponent is ModBanditMilitiaPartyComponent)).Distinct().ToListQ();
             foreach (var mobileParty in partiesToRemove)
             {
                 if (!hasLogged)
@@ -276,6 +275,7 @@ namespace Bandit_Militias.Helpers
                         if (prisoner.StringId.Contains("Bandit_Militia"))
                         {
                             Mod.Log($">>> FLUSH dead bandit hero prisoner {prisoner.HeroObject.Name} at {settlement.Name}.");
+                            settlement.Party.PrisonRoster.AddToCounts(prisoner, -1);
                             prisoner.HeroObject.RemoveMilitiaHero();
                         }
                     }
