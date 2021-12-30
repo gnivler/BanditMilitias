@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using HarmonyLib;
 using SandBox.View.Map;
@@ -243,7 +242,6 @@ namespace Bandit_Militias
             }
             catch (Exception ex)
             {
-                Mod.Log(new StackTrace());
                 Mod.Log(ex);
             }
         }

@@ -154,6 +154,7 @@ namespace Bandit_Militias
             if (gameStarterObject is CampaignGameStarter gameStarter)
             {
                 gameStarter.AddBehavior(new MilitiaBehavior());
+                gameStarter.AddModel(new ModBanditMilitiaKillModel());
             }
         }
 

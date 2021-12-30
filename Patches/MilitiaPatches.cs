@@ -191,7 +191,7 @@ namespace Bandit_Militias.Patches
             {
                 if (PartyMilitiaMap.ContainsKey(mobileParty))
                 {
-                    return input * 0.025f;
+                    return input * 0.0333f;
                 }
 
                 return input;
@@ -345,7 +345,7 @@ namespace Bandit_Militias.Patches
             }
         }
 
-        // force Heroes to appear to die in combat
+        // force Heroes to die in simulated combat
         [HarmonyPriority(Priority.High)]
         [HarmonyPatch(typeof(SPScoreboardVM), "TroopNumberChanged")]
         public static class SPScoreboardVMTroopNumberChangedPatch

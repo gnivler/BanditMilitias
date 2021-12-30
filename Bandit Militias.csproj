@@ -331,6 +331,7 @@
         </Reference>
     </ItemGroup>
     <ItemGroup>
+        <Compile Include="ModBanditMilitiaKillModel.cs" />
         <Compile Include="ModBanditMilitiaPartyComponent.cs" />
         <Compile Include="MilitiaSaveableTypeDefiner.cs" />
         <Compile Include="Globals.cs" />

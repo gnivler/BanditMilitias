@@ -30,7 +30,7 @@ namespace Bandit_Militias.Helpers
         {
             try
             {
-                KillCharacterAction.ApplyByRemove(hero);
+                Traverse.Create(typeof(KillCharacterAction)).Method("MakeDead",  hero).GetValue();
                 MBObjectManager.Instance.UnregisterObject(hero.CharacterObject);
                 MBObjectManager.Instance.UnregisterObject(hero);
                 Traverse.Create(Campaign.Current.CampaignObjectManager).Field<List<Hero>>("_aliveHeroes").Value.Remove(hero);
