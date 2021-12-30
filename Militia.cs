@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using HarmonyLib;
 using SandBox.View.Map;
@@ -64,11 +63,11 @@ namespace Bandit_Militias
         {
             var partyClan = GetMostPrevalent(party) ?? Clan.BanditFactions.First();
             MobileParty = ModBanditMilitiaPartyComponent.CreateBanditParty(partyClan);
-            MobileParty.InitializeMobileParty(party, prisoners, position, 0);
+            MobileParty.InitializeMobilePartyAroundPosition(party, prisoners, position, 0);
             PartyMilitiaMap.Add(MobileParty, this);
             PartyImageMap.Add(MobileParty, new ImageIdentifierVM(Banner));
             var leaderHero = MobileParty.MemberRoster.GetTroopRoster().ToListQ()[0].Character.HeroObject;
-            Traverse.Create(MobileParty.Party).Field<CharacterObject>("_leader").Value = leaderHero.CharacterObject;
+            MobileParty.PartyComponent.ChangePartyLeader(leaderHero);
             Hero = MobileParty.LeaderHero;
             Hero.Gold = Convert.ToInt32(MobileParty.Party.TotalStrength * Globals.GoldMap[Globals.Settings.GoldReward.SelectedValue]);
             if (MobileParty.ActualClan.Leader is null)
@@ -243,7 +242,6 @@ namespace Bandit_Militias
             }
             catch (Exception ex)
             {
-                Mod.Log(new StackTrace());
                 Mod.Log(ex);
             }
         }

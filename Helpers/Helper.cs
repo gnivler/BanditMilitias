@@ -303,7 +303,6 @@ namespace Bandit_Militias.Helpers
             // leak from CampaignTickPatch, trashing parties there doesn't get rid of all remnants...
             // many hours trying to find proper solution
             // 2-4 ms
-            //var COs = new List<CharacterObject>();
             var COs = MBObjectManager.Instance.GetObjectTypeList<CharacterObject>();
             var BMs = COs.WhereQ(c => c.HeroObject?.PartyBelongedTo is null
                                       && c.StringId.EndsWith("Bandit_Militia")

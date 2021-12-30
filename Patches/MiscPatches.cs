@@ -3,14 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using Bandit_Militias.Helpers;
 using HarmonyLib;
-using SandBox;
 using SandBox.View.Map;
 using SandBox.ViewModelCollection.MobilePartyTracker;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
 using TaleWorlds.Engine;
 using TaleWorlds.Library;
-using TaleWorlds.MountAndBlade;
 using static Bandit_Militias.Helpers.Helper;
 using static Bandit_Militias.Globals;
 
@@ -131,30 +129,30 @@ namespace Bandit_Militias.Patches
 
         // the 2nd one at least
         // seems to make the skulls red in combat, eg kill
-        [HarmonyPatch(typeof(BattleAgentLogic), "OnAgentRemoved")]
-        public static class BattleAgentLogicOnAgentRemovedPatch
-        {
-            private static void Prefix(Agent affectedAgent, ref AgentState agentState)
-            {
-                if (affectedAgent.Character is not null
-                    && affectedAgent.Character.StringId.EndsWith("Bandit_Militia"))
-                {
-                    agentState = AgentState.Killed;
-                }
-            }
-        }
-
-        [HarmonyPatch(typeof(Mission), "OnAgentRemoved")]
-        public static class MissionOnAgentRemovedPatch
-        {
-            private static void Prefix(Agent affectedAgent, ref AgentState agentState)
-            {
-                if (affectedAgent.Character is not null
-                    && affectedAgent.Character.StringId.EndsWith("Bandit_Militia"))
-                {
-                    agentState = AgentState.Killed;
-                }
-            }
-        }
+        //[HarmonyPatch(typeof(BattleAgentLogic), "OnAgentRemoved")]
+        //public static class BattleAgentLogicOnAgentRemovedPatch
+        //{
+        //    private static void Prefix(Agent affectedAgent, ref AgentState agentState)
+        //    {
+        //        if (affectedAgent.Character is not null
+        //            && affectedAgent.Character.StringId.EndsWith("Bandit_Militia"))
+        //        {
+        //            agentState = AgentState.Killed;
+        //        }
+        //    }
+        //}
+        //
+        //[HarmonyPatch(typeof(Mission), "OnAgentRemoved")]
+        //public static class MissionOnAgentRemovedPatch
+        //{
+        //    private static void Prefix(Agent affectedAgent, ref AgentState agentState)
+        //    {
+        //        if (affectedAgent.Character is not null
+        //            && affectedAgent.Character.StringId.EndsWith("Bandit_Militia"))
+        //        {
+        //            agentState = AgentState.Killed;
+        //        }
+        //    }
+        //}
     }
 }

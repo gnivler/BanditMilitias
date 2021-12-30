@@ -47,7 +47,7 @@ namespace Bandit_Militias
                 var mobileParty = settlement.IsHideout
                     ? BanditPartyComponent.CreateBanditParty("Bandit_Militia", clan, settlement.Hideout, false)
                     : BanditPartyComponent.CreateLooterParty("Bandit_Militia", clan, settlement, false);
-                mobileParty.InitializeMobileParty(clan.DefaultPartyTemplate, settlement.GatePosition, 0);
+                mobileParty.InitializeMobilePartyAroundPosition(clan.DefaultPartyTemplate, settlement.GatePosition, 0);
                 var simulatedMergedRoster = TroopRoster.CreateDummyTroopRoster();
                 while (mobileParty.MemberRoster.TotalManCount != 0
                        && simulatedMergedRoster.TotalManCount < Globals.Settings.MinPartySize * Rng.Next(1, Globals.Settings.SpawnSizeMultiplier + 1))
