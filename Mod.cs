@@ -95,6 +95,12 @@ namespace Bandit_Militias
                            && (Input.IsKeyDown(InputKey.LeftControl) || Input.IsKeyDown(InputKey.RightControl))
                            && (Input.IsKeyDown(InputKey.LeftAlt) || Input.IsKeyDown(InputKey.RightAlt))
                            && (Input.IsKeyDown(InputKey.LeftShift) || Input.IsKeyDown(InputKey.RightShift));
+
+            if (Input.IsKeyPressed(InputKey.F12))
+            {
+                // used for easy breakpoint
+            }
+
             if (superKey && Input.IsKeyPressed(InputKey.F11))
             {
                 Globals.Settings.TestingMode = !Globals.Settings.TestingMode;
@@ -135,10 +141,11 @@ namespace Bandit_Militias
                 {
                     Log("Clearing mod data.");
                     // no idea why it takes several iterations to clean up certain situations but it does
-                    for (var index = 0; index < 20; index++)
+                    for (var index = 0; index < 2; index++)
                     {
                         Nuke();
                     }
+
                     DoPowerCalculations(true);
                     InformationManager.AddQuickInformation(new TextObject("BANDIT MILITIAS CLEARED"));
                 }

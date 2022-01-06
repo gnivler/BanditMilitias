@@ -6,6 +6,7 @@ using SandBox.ViewModelCollection.MobilePartyTracker;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
+using TaleWorlds.ObjectSystem;
 
 namespace Bandit_Militias
 {
@@ -41,7 +42,9 @@ namespace Bandit_Militias
         internal static readonly List<Banner> Banners = new();
         internal static double LastCalculated;
         internal static float Variance => MBRandom.RandomFloatRanged(0.8f, 1.2f);
-
+        // ArmsDealer compatibility
+        internal static CultureObject BlackFlag => MBObjectManager.Instance.GetObject<CultureObject>("ad_bandit_blackflag");
+        
         // ReSharper disable once InconsistentNaming
         internal static MobilePartyTrackerVM MobilePartyTrackerVM;
 

@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -7,6 +8,7 @@ using HarmonyLib;
 using Helpers;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
+using TaleWorlds.CampaignSystem.LogEntries;
 using TaleWorlds.CampaignSystem.SandBox.CampaignBehaviors;
 using TaleWorlds.CampaignSystem.SandBox.GameComponents.Map;
 using TaleWorlds.Core;
@@ -24,7 +26,7 @@ namespace Bandit_Militias.Helpers
         internal static List<ItemObject> Mounts;
         internal static List<ItemObject> Saddles;
         const float ReductionFactor = 0.8f;
-        
+
         internal static void TrySplitParty(MobileParty mobileParty)
         {
             if (MilitiaPowerPercent > Globals.Settings.GlobalPowerPercent
@@ -35,7 +37,7 @@ namespace Bandit_Militias.Helpers
                 return;
             }
 
-            
+
             var roll = Rng.Next(0, 101);
             if (roll > Globals.Settings.RandomSplitChance
                 || mobileParty.Party.TotalStrength > CalculatedMaxPartyStrength * ReductionFactor * Variance
@@ -220,12 +222,23 @@ namespace Bandit_Militias.Helpers
         internal static void Nuke()
         {
             FlushBanditMilitias();
+            FlushObjectManager();
             FlushMilitiaCharacterObjects();
             FlushPrisoners();
             FlushMapEvents();
             RemoveBMHeroesFromClanLeaderships();
             // TODO remove this temporary fix
             RemoveHeroesWithoutParty();
+        }
+
+        private static void FlushObjectManager()
+        {
+            List<LogEntry> remove = new();
+            remove.AddRange(Campaign.Current.LogEntryHistory.GameActionLogs.WhereQ(l => l is TakePrisonerLogEntry entry && entry.Prisoner.StringId.Contains("Bandit_Militia")));
+            remove.AddRange(Campaign.Current.LogEntryHistory.GameActionLogs.WhereQ(l => l is EndCaptivityLogEntry entry && entry.Prisoner.StringId.Contains("Bandit_Militia")));
+            Traverse.Create(Campaign.Current.LogEntryHistory).Field<List<LogEntry>>("_logs").Value = Campaign.Current.LogEntryHistory.GameActionLogs.Except(remove).ToListQ();
+            var characterObjectsRecord = ((IList)Traverse.Create(MBObjectManager.Instance).Field("ObjectTypeRecords").GetValue())[12];
+            Traverse.Create(characterObjectsRecord).Method("ReInitialize").GetValue();
         }
 
         internal static void RemoveHeroesWithoutParty()
@@ -587,6 +600,11 @@ namespace Bandit_Militias.Helpers
                 }
             }
 
+            if (BlackFlag is not null)
+            {
+                map.Remove(BlackFlag);
+            }
+
             var highest = map.Where(x =>
                 x.Value == map.Values.Max()).Select(x => x.Key);
             var result = highest.ToList().GetRandomElement();
@@ -695,7 +713,7 @@ namespace Bandit_Militias.Helpers
 
         internal static Hero CreateHero()
         {
-            var hero = CreateHeroAtOccupationCopy(Occupation.NotAssigned, Hideouts.GetRandomElement()); // HeroCreator.CreateHeroAtOccupation(Occupation.NotAssigned, Hideouts.GetRandomElement());
+            var hero = HeroCreator.CreateHeroAtOccupation(Occupation.NotAssigned, Hideouts.GetRandomElement()); // HeroCreator.CreateHeroAtOccupation(Occupation.NotAssigned, Hideouts.GetRandomElement());
             hero.StringId += "Bandit_Militia";
             hero.CharacterObject.StringId += "Bandit_Militia";
             if (Rng.Next(0, 2) == 0)
@@ -713,74 +731,6 @@ namespace Bandit_Militias.Helpers
             }
 
             return hero;
-        }
-
-        // used for 1.6.5 backport of 1.7 refactor
-        public static Hero CreateHeroAtOccupationCopy(
-            Occupation neededOccupation,
-            Settlement forcedHomeSettlement = null)
-        {
-            var characterObjects =
-                CharacterObject.All.Where(x =>
-                    x.Occupation is Occupation.Bandit
-                    && x.Name.Contains("Boss")).ToListQ();
-            var settlement = forcedHomeSettlement ?? SettlementHelper.GetRandomTown();
-            var num1 = 0;
-            foreach (var characterObject in characterObjects)
-            {
-                var num2 = characterObject.GetTraitLevel(DefaultTraits.Frequency) * 10;
-                num1 += num2 > 0 ? num2 : 100;
-            }
-
-            if (!characterObjects.Any())
-            {
-                return null;
-            }
-
-            var template = (CharacterObject)null;
-            var num3 = 1 + (int)(settlement.Random.GetValueNormalized(settlement.Notables.Count()) * (double)(num1 - 1));
-            foreach (var characterObject in characterObjects)
-            {
-                var num4 = characterObject.GetTraitLevel(DefaultTraits.Frequency) * 10;
-                num3 -= num4 > 0 ? num4 : 100;
-                if (num3 < 0)
-                {
-                    template = characterObject;
-                    break;
-                }
-            }
-
-            var specialHero = HeroCreator.CreateSpecialHero(template, settlement);
-            if (specialHero.HomeSettlement.IsVillage && specialHero.HomeSettlement.Village.Bound != null && specialHero.HomeSettlement.Village.Bound.IsCastle)
-            {
-                var num5 = MBRandom.RandomFloat * 20f;
-                specialHero.AddPower(num5);
-            }
-
-            if (neededOccupation != Occupation.Wanderer)
-            {
-                specialHero.ChangeState(Hero.CharacterStates.Active);
-            }
-
-            if (neededOccupation != Occupation.Wanderer)
-            {
-                EnterSettlementAction.ApplyForCharacterOnly(specialHero, settlement);
-            }
-
-            if (neededOccupation != Occupation.Wanderer)
-            {
-                var amount = 10000;
-                GiveGoldAction.ApplyBetweenCharacters(null, specialHero, amount, true);
-            }
-
-            var heroObject = specialHero.Template?.HeroObject;
-            specialHero.SupporterOf = heroObject == null || specialHero.Template.HeroObject.Clan == null || !specialHero.Template.HeroObject.Clan.IsMinorFaction ? HeroHelper.GetRandomClanForNotable(specialHero) : specialHero.Template.HeroObject.Clan;
-            if (neededOccupation != Occupation.Wanderer)
-            {
-                AccessTools.Method(typeof(HeroCreator), "AddRandomVarianceToTraits").Invoke(null, new object[] { specialHero });
-            }
-
-            return specialHero;
         }
     }
 }

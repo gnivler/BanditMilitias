@@ -55,7 +55,7 @@ namespace Bandit_Militias.Patches
                         m.Party.IsMobile
                         && m.CurrentSettlement is null
                         && !m.IsUsedByAQuest()
-                        && m.IsBandit // as of BM 3.1.1 they are classified as Bandits
+                        && m.IsBandit
                         && m.MemberRoster.TotalManCount >= Globals.Settings.MinPartySizeToConsiderMerge)
                     .ToListQ();
                 for (var index = 0; index < parties.Count; index++)
@@ -128,7 +128,8 @@ namespace Bandit_Militias.Patches
                         || militiaTotalCount < Globals.Settings.MinPartySize
                         || militiaTotalCount > CalculatedMaxPartySize
                         || mobileParty.Party.TotalStrength > CalculatedMaxPartyStrength
-                        || NumMountedTroops(mobileParty.MemberRoster) + NumMountedTroops(targetParty.MemberRoster) > militiaTotalCount / 2)
+                        || NumMountedTroops(mobileParty.MemberRoster) +
+                        NumMountedTroops(targetParty.MemberRoster) > militiaTotalCount / 2)
                     {
                         continue;
                     }
