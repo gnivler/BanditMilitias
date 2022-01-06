@@ -339,13 +339,16 @@ namespace Bandit_Militias.Helpers
 
         internal static void FlushPrisoners()
         {
+            // stupid overkill, 0-sequences
             var prisoners = Hero.AllAliveHeroes.WhereQ(h =>
                 h.CharacterObject.StringId.Contains("Bandit_Militia") && h.IsPrisoner).ToListQ();
-            for (var index = 0; index < prisoners.Count(); index++)
+            prisoners = prisoners.Concat(Hero.DeadOrDisabledHeroes.WhereQ(h => h.CharacterObject.StringId.Contains("Bandit_Militia") && h.IsPrisoner)).ToListQ();
+            prisoners = prisoners.Concat(MobileParty.MainParty.PrisonRoster.GetTroopRoster().WhereQ(e => e.Character.StringId.Contains("Bandit_Militia")).Select(e => e.Character.HeroObject)).ToListQ();
+            for (var index = 0; index < prisoners.Count; index++)
             {
                 var prisoner = prisoners[index];
                 Mod.Log($"{new string('=', 80)}");
-                Mod.Log($"PRISONER >>> {prisoner.Name,-20}: {prisoner.IsPrisoner} ({prisoner.PartyBelongedToAsPrisoner is not null})");
+                Mod.Log($">>> PRISONER {prisoner.Name,-20}: {prisoner.IsPrisoner} ({prisoner.PartyBelongedToAsPrisoner is not null})");
                 prisoner.RemoveMilitiaHero();
                 Mod.Log($"{new string('=', 80)}");
             }
@@ -713,7 +716,7 @@ namespace Bandit_Militias.Helpers
 
         internal static Hero CreateHero()
         {
-            var hero = HeroCreator.CreateHeroAtOccupation(Occupation.NotAssigned, Hideouts.GetRandomElement()); // HeroCreator.CreateHeroAtOccupation(Occupation.NotAssigned, Hideouts.GetRandomElement());
+            var hero = HeroCreator.CreateHeroAtOccupation(Occupation.Bandit, Hideouts.GetRandomElement()); // HeroCreator.CreateHeroAtOccupation(Occupation.NotAssigned, Hideouts.GetRandomElement());
             hero.StringId += "Bandit_Militia";
             hero.CharacterObject.StringId += "Bandit_Militia";
             if (Rng.Next(0, 2) == 0)

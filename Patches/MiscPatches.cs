@@ -126,33 +126,5 @@ namespace Bandit_Militias.Patches
                 Globals.MobilePartyTrackerVM = __instance;
             }
         }
-
-        // the 2nd one at least
-        // seems to make the skulls red in combat, eg kill
-        //[HarmonyPatch(typeof(BattleAgentLogic), "OnAgentRemoved")]
-        //public static class BattleAgentLogicOnAgentRemovedPatch
-        //{
-        //    private static void Prefix(Agent affectedAgent, ref AgentState agentState)
-        //    {
-        //        if (affectedAgent.Character is not null
-        //            && affectedAgent.Character.StringId.EndsWith("Bandit_Militia"))
-        //        {
-        //            agentState = AgentState.Killed;
-        //        }
-        //    }
-        //}
-        //
-        //[HarmonyPatch(typeof(Mission), "OnAgentRemoved")]
-        //public static class MissionOnAgentRemovedPatch
-        //{
-        //    private static void Prefix(Agent affectedAgent, ref AgentState agentState)
-        //    {
-        //        if (affectedAgent.Character is not null
-        //            && affectedAgent.Character.StringId.EndsWith("Bandit_Militia"))
-        //        {
-        //            agentState = AgentState.Killed;
-        //        }
-        //    }
-        //}
     }
 }

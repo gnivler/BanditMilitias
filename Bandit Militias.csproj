@@ -212,12 +212,6 @@
         <Reference Include="TaleWorlds.Diamond.ChatSystem.Library, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
           <HintPath>..\..\BannerlordRefs\1.7\TaleWorlds.Diamond.ChatSystem.Library.dll</HintPath>
         </Reference>
-        <Reference Include="TaleWorlds.Diamond.FarmSystem.Consistent, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-          <HintPath>..\..\BannerlordRefs\1.7\TaleWorlds.Diamond.FarmSystem.Consistent.dll</HintPath>
-        </Reference>
-        <Reference Include="TaleWorlds.Diamond.Server.Consistent, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-          <HintPath>..\..\BannerlordRefs\1.7\TaleWorlds.Diamond.Server.Consistent.dll</HintPath>
-        </Reference>
         <Reference Include="TaleWorlds.DotNet, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
           <HintPath>..\..\BannerlordRefs\1.7\TaleWorlds.DotNet.dll</HintPath>
         </Reference>
@@ -378,6 +372,6 @@
     -->
     <PropertyGroup>
         <PostBuildEvent>xcopy "$(TargetPath)" "N:\SteamLibrary\steamapps\common\Mount %26 Blade II Bannerlord\Modules\Bandit Militias\bin\Win64_Shipping_Client" /Y
-xcopy "N:\Repos\Bandit Militias\obj\release\Bandit Militias.pdb" "N:\SteamLibrary\steamapps\common\Mount %26 Blade II Bannerlord\Modules\Bandit Militias\bin\Win64_Shipping_Client" /Y</PostBuildEvent>
+xcopy "N:\Repos\Bandit Militias\obj\debug\Bandit Militias.pdb" "N:\SteamLibrary\steamapps\common\Mount %26 Blade II Bannerlord\Modules\Bandit Militias\bin\Win64_Shipping_Client" /Y</PostBuildEvent>
     </PropertyGroup>
 </Project>
