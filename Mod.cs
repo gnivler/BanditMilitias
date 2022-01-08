@@ -98,6 +98,16 @@ namespace Bandit_Militias
 
             if (Input.IsKeyPressed(InputKey.F12))
             {
+                //foreach (var m in MobileParty.All)
+                //{
+                //    foreach (var r in m.PrisonRoster.GetTroopRoster())
+                //    {
+                //        if (r.Character.StringId.Contains("Bandit_Militia"))
+                //        {
+                //            m.PrisonRoster.RemoveTroop(r.Character);
+                //        }
+                //    }
+                //}
                 // used for easy breakpoint
             }
 

@@ -288,7 +288,7 @@ namespace Bandit_Militias.Helpers
                         var prisoner = settlement.Party.PrisonRoster.GetCharacterAtIndex(i);
                         if (prisoner.StringId.Contains("Bandit_Militia"))
                         {
-                            Mod.Log($">>> FLUSH dead bandit hero prisoner {prisoner.HeroObject.Name} at {settlement.Name}.");
+                            Mod.Log($">>> FLUSH BM hero prisoner {prisoner.HeroObject.Name} at {settlement.Name}.");
                             settlement.Party.PrisonRoster.AddToCounts(prisoner, -1);
                             prisoner.HeroObject.RemoveMilitiaHero();
                         }

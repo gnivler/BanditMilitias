@@ -68,6 +68,8 @@ namespace Bandit_Militias.Patches
                         Mod.Log($">>> Killing {heroes[i].Character.Name} at LootDefeatedParties.");
                         heroes[i].Character.HeroObject.RemoveMilitiaHero();
                     }
+
+                    Helper.RemoveUndersizedTracker(party.Party);
                 }
 
                 Helper.DoPowerCalculations();

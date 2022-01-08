@@ -5,6 +5,7 @@ using Helpers;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Library;
 using TaleWorlds.Localization;
+using TaleWorlds.SaveSystem;
 
 namespace Bandit_Militias
 {
@@ -13,7 +14,7 @@ namespace Bandit_Militias
         public override Hero PartyOwner => MobileParty.ActualClan?.Leader;
         public override Settlement HomeSettlement { get; }
         public override Hero Leader => leader;
-        private Hero leader;
+        [SaveableField(1)] private Hero leader;
 
         private static readonly AccessTools.FieldRef<NameGenerator, TextObject[]> GangLeaderNames =
             AccessTools.FieldRefAccess<NameGenerator, TextObject[]>("_gangLeaderNames");
@@ -62,12 +63,12 @@ namespace Bandit_Militias
                 textObject.SetTextVariable("FIRST_NAME", hero.FirstName);
                 StringHelpers.SetCharacterProperties("HERO", hero.CharacterObject, textObject);
                 hero.SetName(textObject, hero.FirstName);
-
             }
             catch (Exception ex)
             {
                 Mod.Log(ex);
             }
+
             hero.Clan = clan;
             var mobileParty = MobileParty.CreateParty("Bandit_Militia", new ModBanditMilitiaPartyComponent(hero), m =>
             {
