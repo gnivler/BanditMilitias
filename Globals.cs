@@ -41,10 +41,12 @@ namespace Bandit_Militias
         internal static IEnumerable<CharacterObject> Recruits;
         internal static readonly List<Banner> Banners = new();
         internal static double LastCalculated;
-        internal static float Variance => MBRandom.RandomFloatRanged(0.8f, 1.2f);
+
+        internal static float Variance => MBRandom.RandomFloatRanged(0.925f, 1.075f);
+
         // ArmsDealer compatibility
         internal static CultureObject BlackFlag => MBObjectManager.Instance.GetObject<CultureObject>("ad_bandit_blackflag");
-        
+
         // ReSharper disable once InconsistentNaming
         internal static MobilePartyTrackerVM MobilePartyTrackerVM;
 
@@ -54,19 +56,18 @@ namespace Bandit_Militias
 
         internal static readonly Dictionary<string, int> DifficultyXpMap = new()
         {
-            {"Off", 0},
-            {"Normal", 300},
-            {"Hard", 600},
-            {"Hardest", 900},
+            { "Off", 0 },
+            { "Normal", 300 },
+            { "Hard", 600 },
+            { "Hardest", 900 },
         };
 
         internal static readonly Dictionary<string, int> GoldMap = new()
         {
-            {"Low", 250},
-            {"Normal", 500},
-            {"Rich", 900},
-            {"Richest", 2000},
+            { "Low", 250 },
+            { "Normal", 500 },
+            { "Rich", 900 },
+            { "Richest", 2000 },
         };
-
     }
 }

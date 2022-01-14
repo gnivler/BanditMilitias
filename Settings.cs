@@ -34,12 +34,10 @@ namespace Bandit_Militias
                 MilitiaSpawn = true,
                 SpawnSizeMultiplier = 5,
                 MaxItemValue = 8000,
-                LooterUpgradePercent = 66,
-                MaxStrengthDeltaPercent = 100,
+                LooterUpgradePercent = 66, 
                 UpgradeUnitsPercent = 33,
                 GlobalPowerPercent = 25,
                 MaxTrainingTier = 5,
-                //CreateChance = 100,
             });
             return basePresets;
         }
@@ -79,7 +77,7 @@ namespace Bandit_Militias
         [SettingPropertyGroup("Primary Settings")]
         public DropdownDefault<string> GoldReward { get; private set; } = new(Globals.GoldMap.Keys, 1);
 
-        [SettingPropertyInteger("Minimum Militia Size", 10, 100, HintText = "\nMilitias defeated with fewer than this many remaining troops will be dispersed.", Order = 0, RequireRestart = false)]
+        [SettingPropertyInteger("Disperse Militia Size", 10, 100, HintText = "\nMilitias defeated with fewer than this many remaining troops will be dispersed.", Order = 0, RequireRestart = false)]
         [SettingPropertyGroup("Size Adjustments", GroupOrder = 2)]
         public int MinPartySize { get; private set; } = 20;
 
@@ -101,11 +99,7 @@ namespace Bandit_Militias
 
         [SettingPropertyInteger("Looter Conversions", 0, 100, HintText = "\nHow many looters get made into better units when training.", Order = 8, RequireRestart = false)]
         [SettingPropertyGroup("Militia Adjustments")]
-        public int LooterUpgradePercent { get; private set; } = 25;
-
-        [SettingPropertyInteger("Limit Militia Engagements", 0, 100, HintText = "\n100 means they will attack any strength of party.  90 means BM will ignore parties less than 90% as strong.", Order = 9, RequireRestart = false)]
-        [SettingPropertyGroup("Militia Adjustments")]
-        public int MaxStrengthDeltaPercent { get; private set; } = 10;
+        public int LooterUpgradePercent { get; private set; } = 15;
 
         [SettingPropertyInteger("Upgrade Units", 0, 100, HintText = "\nUpgrade (at most) this percentage of troops when training occurs.", Order = 10, RequireRestart = false)]
         [SettingPropertyGroup("Militia Adjustments")]
@@ -127,6 +121,9 @@ namespace Bandit_Militias
 
         [SettingPropertyBool("Random Banners", HintText = "\nBMs will have unique banners, or basic bandit clan ones.", Order = 1, RequireRestart = false)]
         public bool RandomBanners { get; internal set; } = true;
+
+        [SettingPropertyBool("Legacy Scaling", HintText = "\nScaling is harder in legacy mode.", Order = 1, RequireRestart = false)]
+        public bool LegacyScaling { get; internal set; } = false;
 
         [SettingPropertyBool("Debug Logging", HintText = "\nCreates logfile output in the mod folder.", Order = 3, RequireRestart = false)]
         public bool Debug { get; set; }

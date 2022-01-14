@@ -40,8 +40,8 @@ namespace Bandit_Militias.Helpers
 
             var roll = Rng.Next(0, 101);
             if (roll > Globals.Settings.RandomSplitChance
-                || mobileParty.Party.TotalStrength > CalculatedMaxPartyStrength * ReductionFactor * Variance
-                || mobileParty.Party.MemberRoster.TotalManCount > Math.Max(1, CalculatedMaxPartySize * ReductionFactor * Variance))
+                || mobileParty.Party.TotalStrength > CalculatedMaxPartyStrength * ReductionFactor
+                || mobileParty.Party.MemberRoster.TotalManCount > Math.Max(1, CalculatedMaxPartySize * ReductionFactor))
             {
                 return;
             }
@@ -574,12 +574,25 @@ namespace Bandit_Militias.Helpers
             if (force
                 || LastCalculated < CampaignTime.Now.ToHours - 8)
             {
+                List<MobileParty> parties;
+                if (Globals.Settings.LegacyScaling)
+                {
+                    parties = MobileParty.All.Where(p => p.LeaderHero is not null && !p.IsBM()).ToListQ();
+                }
+                else
+                {
+                    parties = MobileParty.All.Where(p =>
+                            (p.IsCaravan
+                             || p.IsVillager
+                             || p.IsMainParty)
+                            && !p.IsBM())
+                        .ToListQ();
+                }
+
                 LastCalculated = CampaignTime.Now.ToHours;
-                var parties = MobileParty.All.Where(p => p.LeaderHero is not null && !p.IsBM()).ToList();
-                CalculatedMaxPartySize = (float)parties.Average(p => p.Party.PartySizeLimit) * Variance;
-                var totalStrength = parties.Sum(p => p.Party.TotalStrength);
-                CalculatedMaxPartyStrength = totalStrength / parties.Count * (1 + Globals.Settings.PartyStrengthPercent / 100) * Variance;
-                CalculatedGlobalPowerLimit = totalStrength * Variance;
+                CalculatedMaxPartySize = (float)parties.Average(p => p.MemberRoster.TotalManCount) * Variance;
+                CalculatedGlobalPowerLimit = parties.Sum(p => p.Party.TotalStrength) * Variance;
+                CalculatedMaxPartyStrength = CalculatedGlobalPowerLimit / parties.Count * (1 + Globals.Settings.PartyStrengthPercent / 100) * Variance;
                 GlobalMilitiaPower = PartyMilitiaMap.Keys.Sum(p => p.Party.TotalStrength);
                 MilitiaPowerPercent = GlobalMilitiaPower / CalculatedGlobalPowerLimit * 100;
             }

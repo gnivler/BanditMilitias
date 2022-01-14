@@ -372,6 +372,6 @@
     -->
     <PropertyGroup>
         <PostBuildEvent>xcopy "$(TargetPath)" "N:\SteamLibrary\steamapps\common\Mount %26 Blade II Bannerlord\Modules\Bandit Militias\bin\Win64_Shipping_Client" /Y
-xcopy "N:\Repos\Bandit Militias\obj\release\Bandit Militias.pdb" "N:\SteamLibrary\steamapps\common\Mount %26 Blade II Bannerlord\Modules\Bandit Militias\bin\Win64_Shipping_Client" /Y</PostBuildEvent>
+xcopy "N:\Repos\Bandit Militias\obj\debug\Bandit Militias.pdb" "N:\SteamLibrary\steamapps\common\Mount %26 Blade II Bannerlord\Modules\Bandit Militias\bin\Win64_Shipping_Client" /Y</PostBuildEvent>
     </PropertyGroup>
 </Project>

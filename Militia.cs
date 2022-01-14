@@ -30,7 +30,7 @@ namespace Bandit_Militias
             BannerKey = Banner.Serialize();
             Hero = mobileParty.LeaderHero;
             if (!Hero.StringId.EndsWith("Bandit_Militia")
-                || !Hero.CharacterObject.StringId.EndsWith("Bandit Militia"))
+                || !Hero.CharacterObject.StringId.EndsWith("Bandit_Militia"))
             {
                 Hero.StringId += "Bandit_Militia";
                 Hero.CharacterObject.StringId += "Bandit_Militia";
@@ -188,11 +188,6 @@ namespace Bandit_Militias
                     var xpGain = numberToUpgrade * DifficultyXpMap[Globals.Settings.XpGift.SelectedValue];
                     MobileParty.MemberRoster.AddXpToTroop(xpGain, troopToTrain.Character);
                     Campaign.Current._partyUpgrader.UpgradeReadyTroops(MobileParty.Party);
-                    // todo note: removed at PartyComp refactor
-                    // this is gross, not sure why it doesn't update itself, seems like the right way to call
-                    //Traverse.Create(MobileParty.MemberRoster).Field<List<TroopRosterElement>>("_troopRosterElements").Value
-                    //    = MobileParty.MemberRoster.GetTroopRoster();
-                    //MobileParty.MemberRoster.UpdateVersion();
                     if (Globals.Settings.TestingMode)
                     {
                         var party = Hero.MainHero.PartyBelongedTo ?? Hero.MainHero.PartyBelongedToAsPrisoner.MobileParty;

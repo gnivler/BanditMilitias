@@ -331,20 +331,20 @@ namespace Bandit_Militias.Patches
         }
 
         // prevent militias from attacking parties they can destroy easily
-        [HarmonyPatch(typeof(MobileParty), "CanAttack")]
-        public static class MobilePartyCanAttackPatch
-        {
-            private static void Postfix(MobileParty __instance, MobileParty targetParty, ref bool __result)
-            {
-                if (__result && __instance.PartyComponent is ModBanditMilitiaPartyComponent)
-                {
-                    var party1Strength = __instance.GetTotalStrengthWithFollowers();
-                    var party2Strength = targetParty.GetTotalStrengthWithFollowers();
-                    var delta = (party1Strength - party2Strength) / party1Strength * 100;
-                    __result = delta <= Globals.Settings.MaxStrengthDeltaPercent;
-                }
-            }
-        }
+        //[HarmonyPatch(typeof(MobileParty), "CanAttack")]
+        //public static class MobilePartyCanAttackPatch
+        //{
+        //    private static void Postfix(MobileParty __instance, MobileParty targetParty, ref bool __result)
+        //    {
+        //        if (__result && __instance.PartyComponent is ModBanditMilitiaPartyComponent)
+        //        {
+        //            var party1Strength = __instance.GetTotalStrengthWithFollowers();
+        //            var party2Strength = targetParty.GetTotalStrengthWithFollowers();
+        //            var delta = (party1Strength - party2Strength) / party1Strength * 100;
+        //            __result = delta <= Globals.Settings.MaxStrengthDeltaPercent;
+        //        }
+        //    }
+        //}
 
         // force Heroes to die in simulated combat
         [HarmonyPriority(Priority.High)]
