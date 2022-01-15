@@ -27,14 +27,12 @@ namespace Bandit_Militias
                 CooldownHours = 8,
                 MinPartySize = 30,
                 RandomSplitChance = 50,
-                PartyStrengthPercent = 125,
                 MinPartySizeToConsiderMerge = 30,
                 GrowthChance = 100,
                 GrowthPercent = 3,
                 MilitiaSpawn = true,
-                SpawnSizeMultiplier = 5,
                 MaxItemValue = 8000,
-                LooterUpgradePercent = 66, 
+                LooterUpgradePercent = 66,
                 UpgradeUnitsPercent = 33,
                 GlobalPowerPercent = 25,
                 MaxTrainingTier = 5,
@@ -65,10 +63,6 @@ namespace Bandit_Militias
         [SettingPropertyGroup("Primary Settings")]
         public bool MilitiaSpawn { get; private set; } = true;
 
-        [SettingPropertyInteger("Spawned BM Size Multiplier", 1, 5, HintText = "\nIf your minimum BM size is 20, you'll spawn parties up to size 80.", Order = 6, RequireRestart = false)]
-        [SettingPropertyGroup("Primary Settings")]
-        public int SpawnSizeMultiplier { get; private set; } = 4;
-
         [SettingPropertyInteger("Change Cooldown", 1, 168, HintText = "\nBM won't merge or split a second time until this many hours go by.", Order = 7, RequireRestart = false)]
         [SettingPropertyGroup("Primary Settings")]
         public int CooldownHours { get; private set; } = 24;
@@ -88,10 +82,6 @@ namespace Bandit_Militias
         [SettingPropertyInteger("Random Split Chance", 0, 100, HintText = "\nHow likely BM is to split when large enough.", Order = 2, RequireRestart = false)]
         [SettingPropertyGroup("Militia Adjustments", GroupOrder = 1)]
         public int RandomSplitChance { get; private set; } = 25;
-
-        [SettingPropertyInteger("Max Party Strength", 30, 1000, HintText = "\nBM size will be limited to this percentage of world average size .", Order = 5, RequireRestart = false)]
-        [SettingPropertyGroup("Militia Adjustments")]
-        public int PartyStrengthPercent { get; private set; } = 90;
 
         [SettingPropertyInteger("Max Item Value", 3000, 1000000, HintText = "\nLimit the per-piece value of equipment given to the Heroes.\nMostly for when other mods give you Hero loot.", Order = 7, RequireRestart = false)]
         [SettingPropertyGroup("Militia Adjustments")]
@@ -113,6 +103,10 @@ namespace Bandit_Militias
         [SettingPropertyGroup("Militia Adjustments")]
         public int MaxTrainingTier { get; private set; } = 4;
 
+        [SettingPropertyInteger("Ignore Weaker Parties", 0, 80, HintText = "\n10 means any party 10% weaker will be ignored.", Order = 9, RequireRestart = false)]
+        [SettingPropertyGroup("Militia Adjustments")]
+        public int MaxStrengthDeltaPercent { get; private set; } = 10;
+           
         [SettingPropertyBool("Militia Map Markers", HintText = "\nHave omniscient view of BMs.", Order = 0, RequireRestart = false)]
         public bool Trackers { get; private set; } = false;
 
@@ -121,9 +115,6 @@ namespace Bandit_Militias
 
         [SettingPropertyBool("Random Banners", HintText = "\nBMs will have unique banners, or basic bandit clan ones.", Order = 1, RequireRestart = false)]
         public bool RandomBanners { get; internal set; } = true;
-
-        [SettingPropertyBool("Legacy Scaling", HintText = "\nScaling is harder in legacy mode.", Order = 1, RequireRestart = false)]
-        public bool LegacyScaling { get; internal set; } = false;
 
         [SettingPropertyBool("Debug Logging", HintText = "\nCreates logfile output in the mod folder.", Order = 3, RequireRestart = false)]
         public bool Debug { get; set; }

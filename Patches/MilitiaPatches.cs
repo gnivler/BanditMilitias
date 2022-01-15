@@ -127,7 +127,6 @@ namespace Bandit_Militias.Patches
                     if (MilitiaPowerPercent > Globals.Settings.GlobalPowerPercent
                         || militiaTotalCount < Globals.Settings.MinPartySize
                         || militiaTotalCount > CalculatedMaxPartySize
-                        || mobileParty.Party.TotalStrength > CalculatedMaxPartyStrength
                         || NumMountedTroops(mobileParty.MemberRoster) +
                         NumMountedTroops(targetParty.MemberRoster) > militiaTotalCount / 2)
                     {
@@ -331,20 +330,32 @@ namespace Bandit_Militias.Patches
         }
 
         // prevent militias from attacking parties they can destroy easily
-        //[HarmonyPatch(typeof(MobileParty), "CanAttack")]
-        //public static class MobilePartyCanAttackPatch
-        //{
-        //    private static void Postfix(MobileParty __instance, MobileParty targetParty, ref bool __result)
-        //    {
-        //        if (__result && __instance.PartyComponent is ModBanditMilitiaPartyComponent)
-        //        {
-        //            var party1Strength = __instance.GetTotalStrengthWithFollowers();
-        //            var party2Strength = targetParty.GetTotalStrengthWithFollowers();
-        //            var delta = (party1Strength - party2Strength) / party1Strength * 100;
-        //            __result = delta <= Globals.Settings.MaxStrengthDeltaPercent;
-        //        }
-        //    }
-        //}
+        [HarmonyPatch(typeof(MobileParty), "CanAttack")]
+        public static class MobilePartyCanAttackPatch
+        {
+            private static void Postfix(MobileParty __instance, MobileParty targetParty, ref bool __result)
+            {
+                if (__result
+                    && !targetParty.IsGarrison
+                    && __instance.PartyComponent is ModBanditMilitiaPartyComponent)
+                {
+                    var party1Strength = __instance.GetTotalStrengthWithFollowers();
+                    var party2Strength = targetParty.GetTotalStrengthWithFollowers();
+                    float delta;
+                    if (party1Strength > party2Strength)
+                    {
+                        delta = party1Strength - party2Strength;
+                    }
+                    else
+                    {
+                        delta = party2Strength - party1Strength;
+                    }
+
+                    var deltaPercent = delta / party1Strength * 100;
+                    __result = deltaPercent <= Globals.Settings.MaxStrengthDeltaPercent;
+                }
+            }
+        }
 
         // force Heroes to die in simulated combat
         [HarmonyPriority(Priority.High)]

@@ -1,11 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using HarmonyLib;
 using SandBox.ViewModelCollection.MobilePartyTracker;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
-using TaleWorlds.Library;
 using TaleWorlds.ObjectSystem;
 
 namespace Bandit_Militias
@@ -20,7 +18,6 @@ namespace Bandit_Militias
         internal static int MinSplitSize = 0;
 
         // holders for criteria
-        internal static float CalculatedMaxPartyStrength;
         internal static float CalculatedMaxPartySize;
         internal static float CalculatedGlobalPowerLimit;
         internal static float GlobalMilitiaPower;
@@ -49,10 +46,6 @@ namespace Bandit_Militias
 
         // ReSharper disable once InconsistentNaming
         internal static MobilePartyTrackerVM MobilePartyTrackerVM;
-
-        // FieldRefs
-        internal static readonly AccessTools.FieldRef<Settlement, MBReadOnlyList<Hero>> HeroesWithoutParty =
-            AccessTools.FieldRefAccess<Settlement, MBReadOnlyList<Hero>>("<HeroesWithoutParty>k__BackingField");
 
         internal static readonly Dictionary<string, int> DifficultyXpMap = new()
         {

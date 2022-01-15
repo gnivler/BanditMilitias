@@ -35,7 +35,8 @@ namespace Bandit_Militias
 
         private static void SynthesizeBM()
         {
-            if (!Globals.Settings.MilitiaSpawn)
+            if (!Globals.Settings.MilitiaSpawn
+                || CalculatedMaxPartySize < Globals.Settings.MinPartySize)
             {
                 return;
             }
@@ -49,9 +50,10 @@ namespace Bandit_Militias
                     : BanditPartyComponent.CreateLooterParty("Bandit_Militia", clan, settlement, false);
                 mobileParty.InitializeMobilePartyAroundPosition(clan.DefaultPartyTemplate, settlement.GatePosition, 0);
                 var simulatedMergedRoster = TroopRoster.CreateDummyTroopRoster();
-                while (simulatedMergedRoster.TotalManCount < CalculatedMaxPartySize
-                       && mobileParty.MemberRoster.TotalManCount != 0
-                       && simulatedMergedRoster.TotalManCount < Globals.Settings.MinPartySize * Rng.Next(1, Globals.Settings.SpawnSizeMultiplier + 1))
+                for (var count = 0;
+                     count < CalculatedMaxPartySize / Globals.Settings.MinPartySize
+                     && simulatedMergedRoster.TotalManCount < CalculatedMaxPartySize;
+                     count++)
                 {
                     simulatedMergedRoster.Add(mobileParty.MemberRoster);
                 }
