@@ -129,18 +129,25 @@ namespace Bandit_Militias
             {
                 foreach (var militia in PartyMilitiaMap.Values.OrderBy(x => x.MobileParty.MemberRoster.TotalManCount))
                 {
-                    Log($">> {militia.Hero.Name,-30}: {militia.MobileParty.MemberRoster.TotalManCount}/{militia.MobileParty.Party.TotalStrength:0}");
+                    Log($">> {militia.Hero.Name,-30}: {militia.MobileParty.MemberRoster.TotalManCount:F1}/{militia.MobileParty.Party.TotalStrength:0}");
                     for (int tier = 1; tier <= 6; tier++)
                     {
                         var count = militia.MobileParty.MemberRoster.GetTroopRoster().Where(x => x.Character.Tier == tier).Sum(x => x.Number);
                         if (count > 0)
                         {
-                            Log($"  Tier {tier}: {count}.");
+                            Log($"  Tier {tier}: {count}");
                         }
+                    }
+
+                    Log($"Cavalry: {NumMountedTroops(militia.MobileParty.MemberRoster)} ({(float)NumMountedTroops(militia.MobileParty.MemberRoster) / militia.MobileParty.MemberRoster.TotalManCount * 100}%)");
+                    if ((float)NumMountedTroops(militia.MobileParty.MemberRoster) / (militia.MobileParty.MemberRoster.TotalManCount * 100) > militia.MobileParty.MemberRoster.TotalManCount / 2f)
+                    {
+                        Log(new string('*', 80));
+                        Log(new string('*', 80));
                     }
                 }
 
-                Log($">> Total {PartyMilitiaMap.Values.Count} = {PartyMilitiaMap.Values.Select(x => x.MobileParty.MemberRoster.TotalManCount).Sum()}");
+                Log($">>> Total {PartyMilitiaMap.Values.Count} = {PartyMilitiaMap.Values.Select(x => x.MobileParty.MemberRoster.TotalManCount).Sum()} ({MilitiaPowerPercent}%)");
             }
 
             if ((Input.IsKeyDown(InputKey.LeftControl) || Input.IsKeyDown(InputKey.RightControl)) &&

@@ -106,7 +106,7 @@ namespace Bandit_Militias
         [SettingPropertyInteger("Ignore Weaker Parties", 0, 80, HintText = "\n10 means any party 10% weaker will be ignored.", Order = 9, RequireRestart = false)]
         [SettingPropertyGroup("Militia Adjustments")]
         public int MaxStrengthDeltaPercent { get; private set; } = 10;
-           
+
         [SettingPropertyBool("Militia Map Markers", HintText = "\nHave omniscient view of BMs.", Order = 0, RequireRestart = false)]
         public bool Trackers { get; private set; } = false;
 
