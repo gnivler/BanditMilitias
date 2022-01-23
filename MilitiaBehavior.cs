@@ -52,7 +52,8 @@ namespace Bandit_Militias
                 var simulatedMergedRoster = TroopRoster.CreateDummyTroopRoster();
                 for (var count = 0;
                      count < CalculatedMaxPartySize / Globals.Settings.MinPartySize
-                     && simulatedMergedRoster.TotalManCount < CalculatedMaxPartySize;
+                     && simulatedMergedRoster.TotalManCount < CalculatedMaxPartySize
+                     && NumMountedTroops(simulatedMergedRoster) <= simulatedMergedRoster.TotalManCount / 2;
                      count++)
                 {
                     simulatedMergedRoster.Add(mobileParty.MemberRoster);

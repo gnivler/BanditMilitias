@@ -189,9 +189,10 @@ namespace Bandit_Militias.Patches
             // ReSharper disable once EntityNameCapturedOnly.Local
             float SlowBM(MobileParty mobileParty, float input)
             {
+                
                 if (PartyMilitiaMap.ContainsKey(mobileParty))
                 {
-                    return input * 0.0333f;
+                    return input * 0.15f;
                 }
 
                 return input;
