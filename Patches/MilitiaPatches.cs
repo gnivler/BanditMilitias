@@ -44,7 +44,8 @@ namespace Bandit_Militias.Patches
                     return;
                 }
 
-                if (Campaign.CurrentTime - lastChecked < 1f)
+                if (Campaign.CurrentTime - lastChecked < 1f
+                    || GlobalMilitiaPower > Globals.Settings.GlobalPowerPercent)
                 {
                     return;
                 }
@@ -189,7 +190,6 @@ namespace Bandit_Militias.Patches
             // ReSharper disable once EntityNameCapturedOnly.Local
             float SlowBM(MobileParty mobileParty, float input)
             {
-                
                 if (PartyMilitiaMap.ContainsKey(mobileParty))
                 {
                     return input * 0.15f;
@@ -451,5 +451,20 @@ namespace Bandit_Militias.Patches
                 }
             }
         }
+
+        // bug finding patch, maybe not BM
+        //[HarmonyPatch(typeof(Hideout), "OnPartyEntered")]
+        //public static class HideoutOnPartyEntered
+        //{
+        //    public static Exception Finalizer(MobileParty mobileParty, Exception __exception)
+        //    {
+        //        if (__exception is not null)
+        //        {
+        //            Mod.Log($"HideoutOnPartyEntered Finalizer: {mobileParty.Name} MapFaction = {mobileParty.MapFaction}");
+        //        }
+        //
+        //        return null;
+        //    }
+        //}
     }
 }

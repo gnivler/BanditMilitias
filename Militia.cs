@@ -72,7 +72,7 @@ namespace Bandit_Militias
             Hero.Gold = Convert.ToInt32(MobileParty.Party.TotalStrength * Globals.GoldMap[Globals.Settings.GoldReward.SelectedValue]);
             if (MobileParty.ActualClan.Leader is null)
             {
-                 MobileParty.ActualClan.SetLeader(Hero);
+                MobileParty.ActualClan.SetLeader(Hero);
             }
             if (MobileParty.MemberRoster.GetTroopRoster().Any(t => t.Character.IsMounted))
             {
@@ -121,7 +121,8 @@ namespace Bandit_Militias
                 }
 
                 if (!Globals.Settings.CanTrain ||
-                    DifficultyXpMap[Globals.Settings.XpGift.SelectedValue] == 0)
+                    GlobalMilitiaPower > Globals.Settings.GlobalPowerPercent
+                    || DifficultyXpMap[Globals.Settings.XpGift.SelectedValue] == 0)
                 {
                     return;
                 }
@@ -168,7 +169,7 @@ namespace Bandit_Militias
                 }
 
                 var troopUpgradeModel = Campaign.Current.Models.PartyTroopUpgradeModel;
-                for (var i = 0; i < iterations; i++)
+                for (var i = 0; i < iterations && GlobalMilitiaPower <= Globals.Settings.GlobalPowerPercent; i++)
                 {
                     var validTroops = MobileParty.MemberRoster.GetTroopRoster().Where(x =>
                         x.Character.Tier < Globals.Settings.MaxTrainingTier
@@ -233,7 +234,7 @@ namespace Bandit_Militias
             {
                 var troopString = $"{mobileParty.Party.NumberOfAllMembers} troop" + (mobileParty.Party.NumberOfAllMembers > 1 ? "s" : "");
                 var strengthString = $"{Math.Round(mobileParty.Party.TotalStrength)} strength";
-                Mod.Log($"{$"New Bandit Militia led by {mobileParty.LeaderHero.Name}",-70} | {troopString,10} | {strengthString,12} |");
+                Mod.Log($"{$"New Bandit Militia led by {mobileParty.LeaderHero.Name}",-70} | {troopString,10} | {strengthString,12} | >>> {GlobalMilitiaPower / CalculatedGlobalPowerLimit * 100}%");
             }
             catch (Exception ex)
             {

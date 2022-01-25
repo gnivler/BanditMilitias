@@ -103,7 +103,7 @@ namespace Bandit_Militias
         [SettingPropertyGroup("Militia Adjustments")]
         public int MaxTrainingTier { get; private set; } = 4;
 
-        [SettingPropertyInteger("Ignore Weaker Parties", 0, 80, HintText = "\n10 means any party 10% weaker will be ignored.", Order = 9, RequireRestart = false)]
+        [SettingPropertyInteger("Ignore Weaker Parties", 0, 90, HintText = "\n10 means any party 10% weaker will be ignored.\n0 makes BM defensive-only.  90 makes them ignore almost all parties.", Order = 9, RequireRestart = false)]
         [SettingPropertyGroup("Militia Adjustments")]
         public int MaxStrengthDeltaPercent { get; private set; } = 10;
 
