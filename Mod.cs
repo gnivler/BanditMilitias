@@ -35,7 +35,7 @@ namespace Bandit_Militias
             }
 
             using var sw = new StreamWriter(logFilename, true);
-            sw.WriteLine(input.ToString());
+            sw.WriteLine($"[{DateTime.Now.ToShortTimeString()}] {(string.IsNullOrEmpty(input.ToString()) ? "nullOrEmpty" : input)}");
         }
 
         protected override void OnSubModuleLoad()

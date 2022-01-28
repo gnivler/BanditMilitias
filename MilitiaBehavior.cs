@@ -1,4 +1,3 @@
-using System;
 using System.Linq;
 using Bandit_Militias.Helpers;
 using TaleWorlds.CampaignSystem;
@@ -57,7 +56,7 @@ namespace Bandit_Militias
                  && i < (Globals.Settings.GlobalPowerPercent - MilitiaPowerPercent) / 24f;
                  i++)
             {
-                if (Rng.Next(0, 10) != 0)
+                if (Rng.Next(0, 5) == 0)
                 {
                     continue;
                 }
@@ -118,25 +117,18 @@ namespace Bandit_Militias
                     rosterElement.Character.Tier < Globals.Settings.MaxTrainingTier
                     && !rosterElement.Character.IsHero
                     && mobileParty.ShortTermBehavior != AiBehavior.FleeToPoint
-                    && !mobileParty.IsVisible).ToListQ();
+                    && !mobileParty.IsVisible)
+                    .ToListQ();
                 if (eligibleToGrow.Any())
                 {
                     var growthAmount = mobileParty.MemberRoster.TotalManCount * Globals.Settings.GrowthPercent / 100f;
                     // bump up growth to reach GlobalPowerPercent (synthetic but it helps warm up militia population)
-                    // (Growth cap % - current %) / 2 = additional
                     // thanks Erythion!
                     var boost = CalculatedGlobalPowerLimit / GlobalMilitiaPower;
                     growthAmount += Globals.Settings.GlobalPowerPercent / 100f * boost;
                     growthAmount = Mathf.Clamp(growthAmount, 1, 50);
-                    var growthRounded = Convert.ToInt32(growthAmount);
-                    // last condition doesn't account for the size increase but who cares
-                    if (mobileParty.MemberRoster.TotalManCount + growthRounded > CalculatedMaxPartySize)
-                    {
-                        return;
-                    }
-
                     Mod.Log($"Growing {mobileParty.Name}, total: {mobileParty.MemberRoster.TotalManCount}");
-                    for (var i = 0; i < eligibleToGrow.Count; i++)
+                    for (var i = 0; i < growthAmount && mobileParty.MemberRoster.TotalManCount + 1 < CalculatedMaxPartySize; i++)
                     {
                         var troop = eligibleToGrow.GetRandomElement().Character;
                         if (GlobalMilitiaPower + troop.GetPower() < CalculatedGlobalPowerLimit)

@@ -44,8 +44,9 @@ namespace Bandit_Militias.Patches
                     return;
                 }
 
+                // don't run this if paused and unless 3% off power limit
                 if (Campaign.CurrentTime - lastChecked < 1f
-                    || GlobalMilitiaPower > Globals.Settings.GlobalPowerPercent)
+                    || MilitiaPowerPercent + MilitiaPowerPercent / 100 * 0.03 > Globals.Settings.GlobalPowerPercent)
                 {
                     return;
                 }
@@ -122,7 +123,6 @@ namespace Bandit_Militias.Patches
                     {
                         continue;
                     }
-
 
                     var militiaTotalCount = mobileParty.MemberRoster.TotalManCount + targetParty.MemberRoster.TotalManCount;
                     if (MilitiaPowerPercent > Globals.Settings.GlobalPowerPercent
