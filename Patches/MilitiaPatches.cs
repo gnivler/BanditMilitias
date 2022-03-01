@@ -58,7 +58,7 @@ namespace Bandit_Militias.Patches
                         && m.CurrentSettlement is null
                         && !m.IsUsedByAQuest()
                         && m.IsBandit
-                        && m.MemberRoster.TotalManCount >= Globals.Settings.MinPartySizeToConsiderMerge)
+                        && m.MemberRoster.TotalManCount >= Globals.Settings.MergeableSize)
                     .ToListQ();
                 for (var index = 0; index < parties.Count; index++)
                 {
@@ -85,25 +85,24 @@ namespace Bandit_Militias.Patches
                         continue;
                     }
 
+                    // TODO improve
                     if (mobileParty.ToString().Contains("manhunter")) // Calradia Expanded Kingdoms
                     {
                         continue;
                     }
 
-                    CampaignTime? lastChangeDate = null;
                     if (mobileParty.IsBM())
                     {
-                        lastChangeDate = PartyMilitiaMap[mobileParty].LastMergedOrSplitDate;
-                    }
-
-                    if (CampaignTime.Now < lastChangeDate + CampaignTime.Hours(Globals.Settings.CooldownHours))
-                    {
-                        continue;
+                        CampaignTime? lastChangeDate = PartyMilitiaMap[mobileParty].LastMergedOrSplitDate;
+                        if (CampaignTime.Now < lastChangeDate + CampaignTime.Hours(Globals.Settings.CooldownHours))
+                        {
+                            continue;
+                        }
                     }
 
                     var targetParty = nearbyParties.Where(m =>
-                            IsAvailableBanditParty(m)
-                            && m.MemberRoster.TotalManCount + mobileParty.MemberRoster.TotalManCount >= Globals.Settings.MinPartySize)
+                            m.MemberRoster.TotalManCount + mobileParty.MemberRoster.TotalManCount >= Globals.Settings.MinPartySize
+                            && IsAvailableBanditParty(m))
                         .ToListQ().GetRandomElement()?.Party;
 
                     //Mod.Log($">T targetParty {T.ElapsedTicks / 10000F:F3}ms.");
@@ -113,23 +112,20 @@ namespace Bandit_Militias.Patches
                         continue;
                     }
 
-                    CampaignTime? targetLastChangeDate = null;
                     if (targetParty.MobileParty.IsBM())
                     {
-                        targetLastChangeDate = PartyMilitiaMap[targetParty.MobileParty].LastMergedOrSplitDate;
-                    }
-
-                    if (CampaignTime.Now < targetLastChangeDate + CampaignTime.Hours(Globals.Settings.CooldownHours))
-                    {
-                        continue;
+                        CampaignTime? targetLastChangeDate = PartyMilitiaMap[targetParty.MobileParty].LastMergedOrSplitDate;
+                        if (CampaignTime.Now < targetLastChangeDate + CampaignTime.Hours(Globals.Settings.CooldownHours))
+                        {
+                            continue;
+                        }
                     }
 
                     var militiaTotalCount = mobileParty.MemberRoster.TotalManCount + targetParty.MemberRoster.TotalManCount;
                     if (MilitiaPowerPercent > Globals.Settings.GlobalPowerPercent
-                        || militiaTotalCount < Globals.Settings.MinPartySize
                         || militiaTotalCount > CalculatedMaxPartySize
-                        || NumMountedTroops(mobileParty.MemberRoster) +
-                        NumMountedTroops(targetParty.MemberRoster) > militiaTotalCount / 2)
+                        || militiaTotalCount < Globals.Settings.MinPartySize
+                        || NumMountedTroops(mobileParty.MemberRoster) + NumMountedTroops(targetParty.MemberRoster) > militiaTotalCount / 2)
                     {
                         continue;
                     }
@@ -385,9 +381,10 @@ namespace Bandit_Militias.Patches
                 if (__exception is IndexOutOfRangeException)
                 {
                     Mod.Log("HACK Squelching IndexOutOfRangeException at TroopRoster.AddToCountsAtIndex");
+                    return null;
                 }
 
-                return null;
+                return __exception;
             }
         }
 

@@ -25,9 +25,9 @@ namespace Bandit_Militias
                 XpGift = new DropdownDefault<string>(Globals.DifficultyXpMap.Keys, 3),
                 GoldReward = new DropdownDefault<string>(Globals.GoldMap.Keys, 2),
                 CooldownHours = 8,
-                MinPartySize = 30,
+                DisperseSize = 30,
                 RandomSplitChance = 50,
-                MinPartySizeToConsiderMerge = 30,
+                MergeableSize = 30,
                 GrowthChance = 100,
                 GrowthPercent = 3,
                 MilitiaSpawn = true,
@@ -63,6 +63,10 @@ namespace Bandit_Militias
         [SettingPropertyGroup("Primary Settings")]
         public bool MilitiaSpawn { get; private set; } = true;
 
+        [SettingPropertyInteger("Spawn Chance Percent", 1, 168, HintText = "\nBM will spawn hourly at this likelihood.", Order = 6, RequireRestart = false)]
+        [SettingPropertyGroup("Primary Settings")]
+        public int SpawnChance { get; private set; } = 6;
+        
         [SettingPropertyInteger("Change Cooldown", 1, 168, HintText = "\nBM won't merge or split a second time until this many hours go by.", Order = 7, RequireRestart = false)]
         [SettingPropertyGroup("Primary Settings")]
         public int CooldownHours { get; private set; } = 24;
@@ -73,11 +77,15 @@ namespace Bandit_Militias
 
         [SettingPropertyInteger("Disperse Militia Size", 10, 100, HintText = "\nMilitias defeated with fewer than this many remaining troops will be dispersed.", Order = 0, RequireRestart = false)]
         [SettingPropertyGroup("Size Adjustments", GroupOrder = 2)]
+        public int DisperseSize { get; private set; } = 20;
+
+        [SettingPropertyInteger("Minimum Size", 0, 100, HintText = "\nNo BMs smaller than this will form.", Order = 1, RequireRestart = false)]
+        [SettingPropertyGroup("Size Adjustments")]
         public int MinPartySize { get; private set; } = 20;
 
-        [SettingPropertyInteger("Minimum Size To Merge", 10, 100, HintText = "\nSmall looter and bandit parties won't merge.", Order = 1, RequireRestart = false)]
+        [SettingPropertyInteger("Mergeable party size", 10, 100, HintText = "\nSmall looter and bandit parties won't merge.", Order = 1, RequireRestart = false)]
         [SettingPropertyGroup("Size Adjustments")]
-        public int MinPartySizeToConsiderMerge { get; private set; } = 10;
+        public int MergeableSize { get; private set; } = 10;
 
         [SettingPropertyInteger("Random Split Chance", 0, 100, HintText = "\nHow likely BM is to split when large enough.", Order = 2, RequireRestart = false)]
         [SettingPropertyGroup("Militia Adjustments", GroupOrder = 1)]
@@ -103,7 +111,7 @@ namespace Bandit_Militias
         [SettingPropertyGroup("Militia Adjustments")]
         public int MaxTrainingTier { get; private set; } = 4;
 
-        [SettingPropertyInteger("Ignore Weaker Parties", 0, 90, HintText = "\n10 means any party 10% weaker will be ignored.\n0 makes BM defensive-only.  90 makes them ignore almost all parties.", Order = 9, RequireRestart = false)]
+        [SettingPropertyInteger("Ignore Weaker Parties", 0, 100, HintText = "\n10 means any party 10% weaker will be ignored.\n100 attacks without restriction.", Order = 9, RequireRestart = false)]
         [SettingPropertyGroup("Militia Adjustments")]
         public int MaxStrengthDeltaPercent { get; private set; } = 10;
 

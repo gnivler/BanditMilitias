@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using HarmonyLib;
 using TaleWorlds.CampaignSystem;
@@ -9,6 +8,9 @@ namespace Bandit_Militias.Helpers
 {
     public static class Extensions
     {
+        private static readonly AccessTools.FieldRef<CampaignObjectManager, List<Hero>> aliveHeroes = AccessTools.FieldRefAccess<CampaignObjectManager, List<Hero>>("_aliveHeroes");
+        private static readonly AccessTools.FieldRef<CampaignObjectManager, List<Hero>> deadOrDisabledHeroes = AccessTools.FieldRefAccess<CampaignObjectManager, List<Hero>>("_deadOrDisabledHeroes");
+
         internal static bool IsUsedByAQuest(this MobileParty mobileParty)
         {
             return Campaign.Current.VisualTrackerManager.CheckTracked(mobileParty);
@@ -28,18 +30,11 @@ namespace Bandit_Militias.Helpers
 
         internal static void RemoveMilitiaHero(this Hero hero)
         {
-            try
-            {
-                Traverse.Create(typeof(KillCharacterAction)).Method("MakeDead",  hero).GetValue();
-                Traverse.Create(Campaign.Current.CampaignObjectManager).Field<List<Hero>>("_aliveHeroes").Value.Remove(hero);
-                Traverse.Create(Campaign.Current.CampaignObjectManager).Field<List<Hero>>("_deadOrDisabledHeroes").Value.Remove(hero);
-                MBObjectManager.Instance.UnregisterObject(hero.CharacterObject);
-                MBObjectManager.Instance.UnregisterObject(hero);
-            }
-            catch (Exception ex)
-            {
-                Mod.Log(ex);
-            }
+            Traverse.Create(typeof(KillCharacterAction)).Method("MakeDead", hero).GetValue();
+            aliveHeroes(Campaign.Current.CampaignObjectManager).Remove(hero);
+            deadOrDisabledHeroes(Campaign.Current.CampaignObjectManager).Remove(hero);
+            MBObjectManager.Instance.UnregisterObject(hero.CharacterObject);
+            MBObjectManager.Instance.UnregisterObject(hero);
         }
 
         // ReSharper disable once InconsistentNaming

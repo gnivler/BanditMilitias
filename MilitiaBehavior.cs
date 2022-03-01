@@ -45,8 +45,7 @@ namespace Bandit_Militias
 
         private static void SynthesizeBM()
         {
-            if (!Globals.Settings.MilitiaSpawn
-                || CalculatedMaxPartySize < Globals.Settings.MinPartySize)
+            if (!Globals.Settings.MilitiaSpawn)
             {
                 return;
             }
@@ -56,7 +55,7 @@ namespace Bandit_Militias
                  && i < (Globals.Settings.GlobalPowerPercent - MilitiaPowerPercent) / 24f;
                  i++)
             {
-                if (Rng.Next(0, 5) == 0)
+                if (Rng.Next(0, 101) <= Globals.Settings.SpawnChance)
                 {
                     continue;
                 }
@@ -69,16 +68,22 @@ namespace Bandit_Militias
                 mobileParty.InitializeMobilePartyAroundPosition(clan.DefaultPartyTemplate, settlement.GatePosition, 0);
                 // create an empty roster and stuff it with template roster copies
                 var simulatedMergedRoster = TroopRoster.CreateDummyTroopRoster();
-                for (var count = 0;
-                     count < CalculatedMaxPartySize / Globals.Settings.MinPartySize
-                     && simulatedMergedRoster.TotalManCount < CalculatedMaxPartySize
-                     && NumMountedTroops(simulatedMergedRoster) <= simulatedMergedRoster.TotalManCount / 2;
-                     count++)
+                while (simulatedMergedRoster.TotalManCount < CalculatedMaxPartySize
+                       && simulatedMergedRoster.TotalManCount < Globals.Settings.MinPartySize
+                       && NumMountedTroops(simulatedMergedRoster) <= simulatedMergedRoster.TotalManCount / 2)
                 {
                     simulatedMergedRoster.Add(mobileParty.MemberRoster);
                 }
 
-                var _ = new Militia(mobileParty.Position2D, simulatedMergedRoster, TroopRoster.CreateDummyTroopRoster());
+                var militia = new Militia(mobileParty.Position2D, simulatedMergedRoster, TroopRoster.CreateDummyTroopRoster());
+                // teleport new militias near the player
+                if (Globals.Settings.TestingMode)
+                {
+                    // in case a prisoner
+                    var party = Hero.MainHero.PartyBelongedTo ?? Hero.MainHero.PartyBelongedToAsPrisoner.MobileParty;
+                    militia.MobileParty.Position2D = party.Position2D;
+                }
+
                 Trash(mobileParty);
                 DoPowerCalculations();
             }
@@ -114,10 +119,10 @@ namespace Bandit_Militias
                 && Rng.NextDouble() <= Globals.Settings.GrowthChance / 100f)
             {
                 var eligibleToGrow = mobileParty.MemberRoster.GetTroopRoster().Where(rosterElement =>
-                    rosterElement.Character.Tier < Globals.Settings.MaxTrainingTier
-                    && !rosterElement.Character.IsHero
-                    && mobileParty.ShortTermBehavior != AiBehavior.FleeToPoint
-                    && !mobileParty.IsVisible)
+                        rosterElement.Character.Tier < Globals.Settings.MaxTrainingTier
+                        && !rosterElement.Character.IsHero
+                        && mobileParty.ShortTermBehavior != AiBehavior.FleeToPoint
+                        && !mobileParty.IsVisible)
                     .ToListQ();
                 if (eligibleToGrow.Any())
                 {

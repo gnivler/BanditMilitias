@@ -40,7 +40,8 @@ namespace Bandit_Militias.Helpers
 
             var roll = Rng.Next(0, 101);
             if (roll > Globals.Settings.RandomSplitChance
-                || mobileParty.Party.MemberRoster.TotalManCount > Math.Max(1, CalculatedMaxPartySize * ReductionFactor))
+                || mobileParty.Party.MemberRoster.TotalManCount > Math.Max(1, CalculatedMaxPartySize * ReductionFactor)
+                || mobileParty.Party.MemberRoster.TotalManCount / 2 < Globals.Settings.MinPartySize)
             {
                 return;
             }
@@ -427,23 +428,33 @@ namespace Bandit_Militias.Helpers
                 "Grapeshot"
             };
 
-            Mounts = Items.All.Where(x => x.ItemType == ItemObject.ItemTypeEnum.Horse).Where(x => !x.StringId.Contains("unmountable")).ToList();
-            Saddles = Items.All.Where(x => x.ItemType == ItemObject.ItemTypeEnum.HorseHarness
-                                           && !x.StringId.ToLower().Contains("mule")
-                                           && x.Name.ToString() != "Celtic Frost"
-                                           && x.Name.ToString() != "Saddle of Aeneas"
-                                           && x.Name.ToString() != "Fortunas Choice").ToList();
+            var verbotenSaddles = new List<string>
+            {
+                "celtic_frost",
+                "saddle_of_aeneas",
+                "fortunas_choice",
+                "aseran_village_harness"
+            };
+
+            Mounts = Items.All.Where(i => i.ItemType == ItemObject.ItemTypeEnum.Horse).Where(i => !i.StringId.Contains("unmountable")).ToList();
+            Saddles = Items.All.Where(i => i.ItemType == ItemObject.ItemTypeEnum.HorseHarness
+                                           && !i.StringId.Contains("mule")
+                                           && !verbotenSaddles.Contains(i.StringId)).ToList();
+            var moddedWithCivilized = AppDomain.CurrentDomain.GetAssemblies().AnyQ(a => a.FullName.Contains("Civilized"));
             var all = Items.All.Where(i =>
-                !i.IsCivilian
-                && !i.IsCraftedByPlayer
+                !i.IsCraftedByPlayer
                 && i.ItemType is not ItemObject.ItemTypeEnum.Goods
-                    or ItemObject.ItemTypeEnum.Horse
-                    or ItemObject.ItemTypeEnum.HorseHarness
-                    or ItemObject.ItemTypeEnum.Animal
-                    or ItemObject.ItemTypeEnum.Banner
-                    or ItemObject.ItemTypeEnum.Book
-                    or ItemObject.ItemTypeEnum.Invalid
+                && i.ItemType is not ItemObject.ItemTypeEnum.Horse
+                && i.ItemType is not ItemObject.ItemTypeEnum.HorseHarness
+                && i.ItemType is not ItemObject.ItemTypeEnum.Animal
+                && i.ItemType is not ItemObject.ItemTypeEnum.Banner
+                && i.ItemType is not ItemObject.ItemTypeEnum.Book
+                && i.ItemType is not ItemObject.ItemTypeEnum.Invalid
                 && i.ItemCategory.StringId != "garment").ToList();
+            if (!moddedWithCivilized)
+            {
+                all = Items.All.Where(i => !i.IsCivilian).ToList();
+            }
 
             for (var index = 0; index < all.Count; index++)
             {
@@ -581,7 +592,7 @@ namespace Bandit_Militias.Helpers
                     CalculatedMaxPartySize *= 1 + CalculatedMaxPartySize / MobileParty.MainParty.MemberRoster.TotalManCount;
                 }
 
-                CalculatedMaxPartySize = Math.Max(CalculatedMaxPartySize, Globals.Settings.MinPartySize);
+                CalculatedMaxPartySize = Math.Max(CalculatedMaxPartySize, Globals.Settings.DisperseSize);
                 LastCalculated = CampaignTime.Now.ToHours;
                 CalculatedGlobalPowerLimit = parties.Sum(p => p.Party.TotalStrength) * Variance;
                 GlobalMilitiaPower = PartyMilitiaMap.Keys.Sum(p => p.Party.TotalStrength);

@@ -3,6 +3,8 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using HarmonyLib;
+using SandBox.View.Map;
+using SandBox.ViewModelCollection.MobilePartyTracker;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
 using TaleWorlds.InputSystem;
@@ -96,19 +98,13 @@ namespace Bandit_Militias
                            && (Input.IsKeyDown(InputKey.LeftAlt) || Input.IsKeyDown(InputKey.RightAlt))
                            && (Input.IsKeyDown(InputKey.LeftShift) || Input.IsKeyDown(InputKey.RightShift));
 
-            if (Input.IsKeyPressed(InputKey.F12))
+            if (superKey && Input.IsKeyPressed(InputKey.F9))
             {
-                //foreach (var m in MobileParty.All)
-                //{
-                //    foreach (var r in m.PrisonRoster.GetTroopRoster())
-                //    {
-                //        if (r.Character.StringId.Contains("Bandit_Militia"))
-                //        {
-                //            m.PrisonRoster.RemoveTroop(r.Character);
-                //        }
-                //    }
-                //}
-                // used for easy breakpoint
+                // debug to show all parties on map
+                foreach (var m in MobileParty.All)
+                {
+                    Globals.MobilePartyTrackerVM.Trackers.Add(new MobilePartyTrackItemVM(m, MapScreen.Instance.MapCamera, null));
+                }
             }
 
             if (superKey && Input.IsKeyPressed(InputKey.F11))

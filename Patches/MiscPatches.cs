@@ -34,9 +34,9 @@ namespace Bandit_Militias.Patches
                 // 1.7 changed CreateHeroAtOccupation to only fish from this: NotableAndWandererTemplates
                 // this has no effect on 1.6.5 since the property doesn't exist
                 var characterObjects =
-                    CharacterObject.All.Where(x =>
-                    x.Occupation is Occupation.Bandit
-                    && x.Name.Contains("Boss")).ToList().GetReadOnlyList();
+                    CharacterObject.All.Where(c =>
+                        c.Occupation is Occupation.Bandit
+                        && c.Name.Contains("Boss")).ToList().GetReadOnlyList();
 
                 foreach (var clan in Clan.BanditFactions)
                 {
@@ -107,7 +107,7 @@ namespace Bandit_Militias.Patches
                     return;
                 }
 
-                if (party.MemberRoster.TotalManCount <= Globals.Settings.MinPartySize)
+                if (party.MemberRoster.TotalManCount <= Globals.Settings.DisperseSize)
                 {
                     Mod.Log($">>> Dispersing {party.Name} of {party.MemberRoster.TotalHealthyCount}+{party.MemberRoster.TotalWounded}w+{party.PrisonRoster?.Count}p");
                     Trash(party.MobileParty);

@@ -55,10 +55,13 @@ namespace Bandit_Militias
                 var nameIndex = (int)Traverse.Create(NameGenerator.Current)
                     .Method("SelectNameIndex", hero, GangLeaderNames(NameGenerator.Current), 0, true, false)
                     .GetValue();
+                var originalStringId = hero.CharacterObject.StringId;
+                hero.CharacterObject.StringId = hero.CharacterObject.StringId.Replace("Bandit_Militia", "");
                 NameGenerator.Current.AddName(
                     (uint)Traverse.Create(NameGenerator.Current)
                         .Method("CreateNameCode", hero.CharacterObject, GangLeaderNames(NameGenerator.Current), nameIndex)
                         .GetValue());
+                hero.CharacterObject.StringId = originalStringId;
                 var textObject = GangLeaderNames(NameGenerator.Current)[nameIndex].CopyTextObject();
                 textObject.SetTextVariable("FIRST_NAME", hero.FirstName);
                 StringHelpers.SetCharacterProperties("HERO", hero.CharacterObject, textObject);
