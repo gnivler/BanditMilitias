@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using Bandit_Militias.Helpers;
 using TaleWorlds.CampaignSystem;
@@ -55,7 +56,7 @@ namespace Bandit_Militias
                  && i < (Globals.Settings.GlobalPowerPercent - MilitiaPowerPercent) / 24f;
                  i++)
             {
-                if (Rng.Next(0, 101) <= Globals.Settings.SpawnChance)
+                if (Rng.Next(0, 101) > Globals.Settings.SpawnChance)
                 {
                     continue;
                 }
@@ -68,11 +69,30 @@ namespace Bandit_Militias
                 mobileParty.InitializeMobilePartyAroundPosition(clan.DefaultPartyTemplate, settlement.GatePosition, 0);
                 // create an empty roster and stuff it with template roster copies
                 var simulatedMergedRoster = TroopRoster.CreateDummyTroopRoster();
-                while (simulatedMergedRoster.TotalManCount < CalculatedMaxPartySize
-                       && simulatedMergedRoster.TotalManCount < Globals.Settings.MinPartySize
-                       && NumMountedTroops(simulatedMergedRoster) <= simulatedMergedRoster.TotalManCount / 2)
+                for (var count = 0; count < CalculatedMaxPartySize / mobileParty.MemberRoster.TotalManCount; count++)
                 {
                     simulatedMergedRoster.Add(mobileParty.MemberRoster);
+                    if (simulatedMergedRoster.TotalManCount >= Globals.Settings.MinPartySize)
+                    {
+                        break;
+                    }
+                }
+
+                if (simulatedMergedRoster.TotalManCount > CalculatedMaxPartySize)
+                {
+                    simulatedMergedRoster.KillNumberOfMenRandomly(Convert.ToInt32(simulatedMergedRoster.TotalManCount - CalculatedMaxPartySize), false);
+                }
+
+                var numMounted = NumMountedTroops(simulatedMergedRoster);
+                if (numMounted > simulatedMergedRoster.TotalManCount / 2)
+                {
+                    var troops = simulatedMergedRoster.ToFlattenedRoster().Troops.ToListQ();
+                    var half = Convert.ToInt32(simulatedMergedRoster.TotalManCount / 2);
+                    for (var count = 0; count < simulatedMergedRoster.TotalManCount - numMounted + half; count++)
+                    {
+                        var character = troops.WhereQ(c => simulatedMergedRoster.Contains(c)).GetRandomElementInefficiently();
+                        simulatedMergedRoster.AddToCounts(character, -1);
+                    }
                 }
 
                 var militia = new Militia(mobileParty.Position2D, simulatedMergedRoster, TroopRoster.CreateDummyTroopRoster());

@@ -100,10 +100,16 @@ namespace Bandit_Militias.Patches
                         }
                     }
 
-                    var targetParty = nearbyParties.Where(m =>
-                            m.MemberRoster.TotalManCount + mobileParty.MemberRoster.TotalManCount >= Globals.Settings.MinPartySize
-                            && IsAvailableBanditParty(m))
-                        .ToListQ().GetRandomElement()?.Party;
+                    var targetParties = nearbyParties.Where(m =>
+                        m.MemberRoster.TotalManCount + mobileParty.MemberRoster.TotalManCount >= Globals.Settings.MinPartySize
+                        && IsAvailableBanditParty(m)).ToListQ();
+
+                    if (Globals.Settings.IgnoreVillagersCaravans)
+                    {
+                        targetParties = targetParties.Except(targetParties.WhereQ(p => p.IsVillager || p.IsCaravan)).ToListQ();
+                    }
+
+                    var targetParty = targetParties?.GetRandomElement()?.Party;
 
                     //Mod.Log($">T targetParty {T.ElapsedTicks / 10000F:F3}ms.");
                     // "nobody" is a valid answer

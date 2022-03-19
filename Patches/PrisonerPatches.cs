@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.Linq;
 using Bandit_Militias.Helpers;
 using HarmonyLib;
@@ -19,8 +18,6 @@ namespace Bandit_Militias.Patches
         [HarmonyPatch(typeof(MapEvent), "FinishBattle")]
         public static class MapEventFinishBattlePatch
         {
-            private static readonly List<Hero> HeroesToRemove = new();
-
             private static void Prefix(MapEvent __instance)
             {
                 if (__instance.DefeatedSide is BattleSideEnum.None)
@@ -38,7 +35,7 @@ namespace Bandit_Militias.Patches
                     for (var i = 0; i < heroes.Count; i++)
                     {
                         Mod.Log($">>> Killing {heroes[i].Character.Name} ({heroes[i].Character.StringId}) at FinishBattle.");
-                        HeroesToRemove.Add(heroes[i].Character.HeroObject);
+                        heroes[i].Character.HeroObject.RemoveMilitiaHero();
                     }
 
                     if (party.Party.MobileParty.LeaderHero is null)
@@ -50,14 +47,6 @@ namespace Bandit_Militias.Patches
                 }
 
                 Helper.DoPowerCalculations();
-            }
-
-            private static void Postfix()
-            {
-                foreach (var hero in HeroesToRemove)
-                {
-                    hero.RemoveMilitiaHero();
-                }
             }
         }
 

@@ -59,13 +59,17 @@ namespace Bandit_Militias
         [SettingPropertyGroup("Primary Settings")]
         public int GrowthPercent { get; private set; } = 1;
 
+        [SettingPropertyBool("Ignore Villagers/Caravans", HintText = "\nThey won't be attacked by BMs.", Order = 5, RequireRestart = false)]
+        [SettingPropertyGroup("Primary Settings")]
+        public bool IgnoreVillagersCaravans { get; private set; } = false;
+
         [SettingPropertyBool("BM Spawn", HintText = "\nNew BM will form spontaneously as well as by merging together normally.", Order = 5, RequireRestart = false)]
         [SettingPropertyGroup("Primary Settings")]
         public bool MilitiaSpawn { get; private set; } = true;
 
-        [SettingPropertyInteger("Spawn Chance Percent", 1, 168, HintText = "\nBM will spawn hourly at this likelihood.", Order = 6, RequireRestart = false)]
+        [SettingPropertyInteger("Spawn Chance Percent", 1, 100, HintText = "\nBM will spawn hourly at this likelihood.", Order = 6, RequireRestart = false)]
         [SettingPropertyGroup("Primary Settings")]
-        public int SpawnChance { get; private set; } = 6;
+        public int SpawnChance { get; private set; } = 30;
         
         [SettingPropertyInteger("Change Cooldown", 1, 168, HintText = "\nBM won't merge or split a second time until this many hours go by.", Order = 7, RequireRestart = false)]
         [SettingPropertyGroup("Primary Settings")]
@@ -91,7 +95,7 @@ namespace Bandit_Militias
         [SettingPropertyGroup("Militia Adjustments", GroupOrder = 1)]
         public int RandomSplitChance { get; private set; } = 25;
 
-        [SettingPropertyInteger("Max Item Value", 3000, 1000000, HintText = "\nLimit the per-piece value of equipment given to the Heroes.\nMostly for when other mods give you Hero loot.", Order = 7, RequireRestart = false)]
+        [SettingPropertyInteger("Max Item Value", 1000, 1000000, HintText = "\nLimit the per-piece value of equipment given to the Heroes.\nMostly for when other mods give you Hero loot.", Order = 7, RequireRestart = false)]
         [SettingPropertyGroup("Militia Adjustments")]
         public int MaxItemValue { get; private set; } = 3000;
 

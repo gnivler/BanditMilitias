@@ -41,7 +41,7 @@ namespace Bandit_Militias
                 PartyImageMap.Add(MobileParty, new ImageIdentifierVM(Banner));
             }
 
-            LogMilitiaFormed(MobileParty);
+            //LogMilitiaFormed(MobileParty);
         }
 
         public Militia(Vec2 position, TroopRoster party, TroopRoster prisoners)
@@ -56,7 +56,7 @@ namespace Bandit_Militias
 
             TrainMilitia();
             SetMilitiaPatrol(MobileParty);
-            LogMilitiaFormed(MobileParty);
+            //LogMilitiaFormed(MobileParty);
         }
 
         private void Spawn(Vec2 position, TroopRoster party, TroopRoster prisoners)
@@ -74,6 +74,7 @@ namespace Bandit_Militias
             {
                 MobileParty.ActualClan.SetLeader(Hero);
             }
+
             if (MobileParty.MemberRoster.GetTroopRoster().Any(t => t.Character.IsMounted))
             {
                 var mount = Mounts.GetRandomElement();
@@ -228,18 +229,19 @@ namespace Bandit_Militias
             return faction;
         }
 
-        private static void LogMilitiaFormed(MobileParty mobileParty)
-        {
-            try
-            {
-                var troopString = $"{mobileParty.Party.NumberOfAllMembers} troop" + (mobileParty.Party.NumberOfAllMembers > 1 ? "s" : "");
-                var strengthString = $"{Math.Round(mobileParty.Party.TotalStrength)} strength";
-                Mod.Log($"{$"New Bandit Militia led by {mobileParty.LeaderHero.Name}",-70} | {troopString,10} | {strengthString,12} | >>> {GlobalMilitiaPower / CalculatedGlobalPowerLimit * 100}%");
-            }
-            catch (Exception ex)
-            {
-                Mod.Log(ex);
-            }
-        }
+        // too slow
+        //private static void LogMilitiaFormed(MobileParty mobileParty)
+        //{
+        //    try
+        //    {
+        //        var troopString = $"{mobileParty.Party.NumberOfAllMembers} troop" + (mobileParty.Party.NumberOfAllMembers > 1 ? "s" : "");
+        //        var strengthString = $"{Math.Round(mobileParty.Party.TotalStrength)} strength";
+        //        Mod.Log($"{$"New Bandit Militia led by {mobileParty.LeaderHero.Name}",-70} | {troopString,10} | {strengthString,12} | >>> {GlobalMilitiaPower / CalculatedGlobalPowerLimit * 100}%");
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Mod.Log(ex);
+        //    }
+        //}
     }
 }

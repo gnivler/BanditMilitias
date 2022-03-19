@@ -101,6 +101,7 @@ namespace Bandit_Militias.Patches
             {
                 if (party?.MobileParty is null
                     || !party.MobileParty.IsBM()
+                    && party.MobileParty.MemberRoster.TotalManCount != 0
                     || party.PrisonRoster is not null
                     && party.PrisonRoster.Contains(Hero.MainHero.CharacterObject))
                 {
