@@ -12,6 +12,7 @@
     <DependedModule Id="StoryMode" DependentVersion="e1.7.1"/>
     <DependedModule Id="Bannerlord.Harmony"/>
     <DependedModule Id="Bannerlord.ButterLib"/>
+    <DependedModule Id="Bannerlord.MBOptionScreen"/>
   </DependedModules>
   <SubModules>
     <SubModule>
@@ -22,18 +23,6 @@
         <Tag key="DedicatedServerType" value="none" />
         <Tag key="IsNoRenderModeElement" value="false" />
       </Tags>
-    </SubModule>
-    <SubModule>
-      <Name value="MCMv4" />
-      <DLLName value="MCMv4.dll" />
-      <SubModuleClassType value="MCM.MCMSubModule" />
-      <Tags />
-    </SubModule>
-    <SubModule>
-      <Name value="MCMv4 Basic Implementation" />
-      <DLLName value="MCMv4.dll" />
-      <SubModuleClassType value="MCM.Implementation.MCMImplementationSubModule" />
-      <Tags />
     </SubModule>
   </SubModules>
   <Xmls/>
