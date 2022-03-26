@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection.Emit;
 using Bandit_Militias.Helpers;
 using HarmonyLib;
 using SandBox.View.Map;
@@ -187,39 +186,17 @@ namespace Bandit_Militias.Patches
             }
         }
 
-        internal static IEnumerable<CodeInstruction> CalculateBasePartySpeedPatch(IEnumerable<CodeInstruction> ins)
+        public static class DefaultPartySpeedCalculatingModelCalculatePureSpeedPatch
         {
-            // ReSharper disable once EntityNameCapturedOnly.Local
-            float SlowBM(MobileParty mobileParty, float input)
+            public static void Postfix(MobileParty mobileParty, ref ExplainedNumber __result)
             {
                 if (PartyMilitiaMap.ContainsKey(mobileParty))
                 {
-                    return input * 0.15f;
-                }
-
-                return input;
-            }
-
-            var codes = ins.ToListQ();
-            for (var index = 0; index < codes.Count; index++)
-            {
-                if (codes[index].opcode == OpCodes.Call
-                    && codes[index + 1].opcode == OpCodes.Stloc_S
-                    && codes[index + 2].opcode == OpCodes.Ldloca_S
-                    && codes[index + 3].opcode == OpCodes.Ldloc_S)
-                {
-                    codes.InsertRange(index + 1, new List<CodeInstruction>
-                    {
-                        new(OpCodes.Dup),
-                        new(OpCodes.Ldarg_1),
-                        new(OpCodes.Call, AccessTools.Method(typeof(MilitiaPatches), nameof(SlowBM)))
-                    });
+                    __result.AddFactor(-0.15f);
                 }
             }
-
-            return codes.AsEnumerable();
         }
-
+        
         // changes the flag
         [HarmonyPatch(typeof(PartyVisual), "AddCharacterToPartyIcon")]
         public static class PartyVisualAddCharacterToPartyIconPatch
@@ -454,20 +431,5 @@ namespace Bandit_Militias.Patches
                 }
             }
         }
-
-        // bug finding patch, maybe not BM
-        //[HarmonyPatch(typeof(Hideout), "OnPartyEntered")]
-        //public static class HideoutOnPartyEntered
-        //{
-        //    public static Exception Finalizer(MobileParty mobileParty, Exception __exception)
-        //    {
-        //        if (__exception is not null)
-        //        {
-        //            Mod.Log($"HideoutOnPartyEntered Finalizer: {mobileParty.Name} MapFaction = {mobileParty.MapFaction}");
-        //        }
-        //
-        //        return null;
-        //    }
-        //}
     }
 }

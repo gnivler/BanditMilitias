@@ -592,7 +592,7 @@ namespace Bandit_Militias.Helpers
                     CalculatedMaxPartySize *= 1 + CalculatedMaxPartySize / MobileParty.MainParty.MemberRoster.TotalManCount;
                 }
 
-                CalculatedMaxPartySize = Math.Max(CalculatedMaxPartySize, Globals.Settings.DisperseSize);
+                CalculatedMaxPartySize = Math.Max(CalculatedMaxPartySize, Globals.Settings.MinPartySize);
                 LastCalculated = CampaignTime.Now.ToHours;
                 CalculatedGlobalPowerLimit = parties.Sum(p => p.Party.TotalStrength) * Variance;
                 GlobalMilitiaPower = PartyMilitiaMap.Keys.Sum(p => p.Party.TotalStrength);
@@ -699,39 +699,47 @@ namespace Bandit_Militias.Helpers
                 AccessTools.Method(typeof(EncounterGameMenuBehavior), "game_menu_encounter_on_init"),
                 new HarmonyMethod(AccessTools.Method(typeof(Helper), nameof(FixMapEventFuckery))));
 
-            var original = AccessTools.Method(typeof(DefaultPartySpeedCalculatingModel), "CalculateBaseSpeedForParty");
-            var transpiler = AccessTools.Method(typeof(MilitiaPatches), nameof(MilitiaPatches.CalculateBasePartySpeedPatch));
-            Mod.harmony.Patch(original, transpiler: new HarmonyMethod(transpiler));
+            var original = AccessTools.Method(typeof(DefaultPartySpeedCalculatingModel), "CalculatePureSpeed");
+            var postfix = AccessTools.Method(
+                typeof(MilitiaPatches.DefaultPartySpeedCalculatingModelCalculatePureSpeedPatch),
+                nameof(MilitiaPatches.DefaultPartySpeedCalculatingModelCalculatePureSpeedPatch.Postfix));
+            Mod.harmony.Patch(original, postfix: new HarmonyMethod(postfix));
         }
 
         internal static void RemoveUndersizedTracker(PartyBase party)
         {
             if (party.MemberRoster.TotalManCount < Globals.Settings.TrackedSizeMinimum)
             {
-                try
+                var tracker = MobilePartyTrackerVM?.Trackers?.FirstOrDefault(t => t.TrackedParty == party.MobileParty);
+                if (tracker is not null)
                 {
-                    var tracker = MobilePartyTrackerVM?.Trackers?.FirstOrDefault(t => t.TrackedParty == party.MobileParty);
-                    if (tracker is not null)
-                    {
-                        Mod.Log("Removing small BM tracker.");
-                        MobilePartyTrackerVM.Trackers.Remove(tracker);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Mod.Log(ex);
+                    MobilePartyTrackerVM.Trackers.Remove(tracker);
                 }
             }
         }
 
         internal static int NumMountedTroops(TroopRoster troopRoster)
         {
-            return troopRoster.GetTroopRoster().Where(x => x.Character.IsMounted).Sum(e => e.Number);
+            return troopRoster.GetTroopRoster().Where(x => x.Character.Equipment[10].Item is not null).Sum(e => e.Number);
         }
+
+        private static List<CultureObject> AllowedCultures;
+        private static List<Settlement> AllowedSettlements;
 
         internal static Hero CreateHero()
         {
-            var hero = HeroCreator.CreateHeroAtOccupation(Occupation.Bandit, Hideouts.GetRandomElement()); // HeroCreator.CreateHeroAtOccupation(Occupation.NotAssigned, Hideouts.GetRandomElement());
+            AllowedCultures ??= new()
+            {
+                MBObjectManager.Instance.GetObject<CultureObject>("looters"),
+                MBObjectManager.Instance.GetObject<CultureObject>("mountain_bandits"),
+                MBObjectManager.Instance.GetObject<CultureObject>("forest_bandits"),
+                MBObjectManager.Instance.GetObject<CultureObject>("desert_bandits"),
+                MBObjectManager.Instance.GetObject<CultureObject>("steppe_bandits"),
+                MBObjectManager.Instance.GetObject<CultureObject>("sea_bandits")
+            };
+
+            AllowedSettlements ??= Hideouts.WhereQ(s => AllowedCultures.Contains(s.Culture)).ToListQ();
+            var hero = HeroCreator.CreateHeroAtOccupation(Occupation.Bandit, AllowedSettlements.GetRandomElement());
             hero.StringId += "Bandit_Militia";
             hero.CharacterObject.StringId += "Bandit_Militia";
             if (Rng.Next(0, 2) == 0)

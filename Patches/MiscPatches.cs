@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Bandit_Militias.Helpers;
 using HarmonyLib;
 using SandBox.View.Map;
 using SandBox.ViewModelCollection.MobilePartyTracker;
@@ -28,9 +27,11 @@ namespace Bandit_Militias.Patches
             private static void Postfix()
             {
                 Mod.Log("MapScreen.OnInitialize");
+
                 MinSplitSize = Globals.Settings.MinPartySize * 2;
                 EquipmentItems.Clear();
                 PopulateItems();
+
                 // 1.7 changed CreateHeroAtOccupation to only fish from this: NotableAndWandererTemplates
                 // this has no effect on 1.6.5 since the property doesn't exist
                 var characterObjects =
@@ -90,32 +91,6 @@ namespace Bandit_Militias.Patches
                 ReHome();
                 Mod.Log($"Militias: {militias.Count} (registered {PartyMilitiaMap.Count})");
                 RunLateManualPatches();
-            }
-        }
-
-        // just disperse small militias
-        [HarmonyPatch(typeof(MapEventSide), "HandleMapEventEndForPartyInternal", typeof(PartyBase))]
-        public static class MapEventSideHandleMapEventEndForPartyPatch
-        {
-            private static void Postfix(PartyBase party)
-            {
-                if (party?.MobileParty is null
-                    || !party.MobileParty.IsBM()
-                    && party.MobileParty.MemberRoster.TotalManCount != 0
-                    || party.PrisonRoster is not null
-                    && party.PrisonRoster.Contains(Hero.MainHero.CharacterObject))
-                {
-                    return;
-                }
-
-                if (party.MemberRoster.TotalManCount <= Globals.Settings.DisperseSize)
-                {
-                    Mod.Log($">>> Dispersing {party.Name} of {party.MemberRoster.TotalHealthyCount}+{party.MemberRoster.TotalWounded}w+{party.PrisonRoster?.Count}p");
-                    Trash(party.MobileParty);
-                    return;
-                }
-
-                RemoveUndersizedTracker(party);
             }
         }
 

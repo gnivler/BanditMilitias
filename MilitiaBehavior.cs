@@ -39,9 +39,8 @@ namespace Bandit_Militias
 
         private static void OnDailyTickEvent()
         {
-            // TODO remove this temporary fix
-            RemoveHeroesWithoutParty();
-            FlushPrisoners();
+            //RemoveHeroesWithoutParty();
+            //FlushPrisoners();
         }
 
         private static void SynthesizeBM()
@@ -63,39 +62,31 @@ namespace Bandit_Militias
 
                 var settlement = Settlement.All.Where(s => !s.IsVisible).GetRandomElementInefficiently();
                 var clan = Clan.BanditFactions.ToList()[Rng.Next(0, Clan.BanditFactions.Count())];
-                var mobileParty = settlement.IsHideout
-                    ? BanditPartyComponent.CreateBanditParty("Bandit_Militia", clan, settlement.Hideout, false)
-                    : BanditPartyComponent.CreateLooterParty("Bandit_Militia", clan, settlement, false);
-                mobileParty.InitializeMobilePartyAroundPosition(clan.DefaultPartyTemplate, settlement.GatePosition, 0);
-                // create an empty roster and stuff it with template roster copies
-                var simulatedMergedRoster = TroopRoster.CreateDummyTroopRoster();
-                for (var count = 0; count < CalculatedMaxPartySize / mobileParty.MemberRoster.TotalManCount; count++)
+                var min = Convert.ToInt32(Globals.Settings.MinPartySize);
+                var max = Convert.ToInt32(CalculatedMaxPartySize);
+                var roster = TroopRoster.CreateDummyTroopRoster();
+                roster.AddToCounts(clan.BasicTroop, Rng.Next(min, max + 1));
+                var numMounted = NumMountedTroops(roster);
+                var mountedTroops = roster.ToFlattenedRoster().Troops.WhereQ(t => t.IsMounted);
+                // remove horses past 50% of the BM
+                if (numMounted > roster.TotalManCount / 2)
                 {
-                    simulatedMergedRoster.Add(mobileParty.MemberRoster);
-                    if (simulatedMergedRoster.TotalManCount >= Globals.Settings.MinPartySize)
+                    foreach (var troop in mountedTroops)
                     {
-                        break;
+                        if (NumMountedTroops(roster) > roster.TotalManCount / 2)
+                        {
+                            troop.Equipment[10] = new EquipmentElement();
+                            troop.Equipment[11] = new EquipmentElement();
+                        }
+                        else
+                        {
+                            break;
+                        }
                     }
                 }
 
-                if (simulatedMergedRoster.TotalManCount > CalculatedMaxPartySize)
-                {
-                    simulatedMergedRoster.KillNumberOfMenRandomly(Convert.ToInt32(simulatedMergedRoster.TotalManCount - CalculatedMaxPartySize), false);
-                }
 
-                var numMounted = NumMountedTroops(simulatedMergedRoster);
-                if (numMounted > simulatedMergedRoster.TotalManCount / 2)
-                {
-                    var troops = simulatedMergedRoster.ToFlattenedRoster().Troops.ToListQ();
-                    var half = Convert.ToInt32(simulatedMergedRoster.TotalManCount / 2);
-                    for (var count = 0; count < simulatedMergedRoster.TotalManCount - numMounted + half; count++)
-                    {
-                        var character = troops.WhereQ(c => simulatedMergedRoster.Contains(c)).GetRandomElementInefficiently();
-                        simulatedMergedRoster.AddToCounts(character, -1);
-                    }
-                }
-
-                var militia = new Militia(mobileParty.Position2D, simulatedMergedRoster, TroopRoster.CreateDummyTroopRoster());
+                var militia = new Militia(settlement.GatePosition, roster, TroopRoster.CreateDummyTroopRoster());
                 // teleport new militias near the player
                 if (Globals.Settings.TestingMode)
                 {
@@ -104,7 +95,7 @@ namespace Bandit_Militias
                     militia.MobileParty.Position2D = party.Position2D;
                 }
 
-                Trash(mobileParty);
+                //Trash(mobileParty);
                 DoPowerCalculations();
             }
         }

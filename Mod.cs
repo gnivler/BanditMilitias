@@ -115,10 +115,6 @@ namespace Bandit_Militias
 
             if (superKey && Input.IsKeyPressed(InputKey.F10))
             {
-                foreach (var militia in PartyMilitiaMap)
-                {
-                    Log($"{militia.Key.Name}.  {militia.Value.Hero.MapFaction}.");
-                }
             }
 
             if (superKey && Input.IsKeyPressed(InputKey.F12))

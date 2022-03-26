@@ -75,7 +75,7 @@ namespace Bandit_Militias
                 MobileParty.ActualClan.SetLeader(Hero);
             }
 
-            if (MobileParty.MemberRoster.GetTroopRoster().Any(t => t.Character.IsMounted))
+            if (Rng.Next(0, 2) == 0)
             {
                 var mount = Mounts.GetRandomElement();
                 Hero.BattleEquipment[10] = new EquipmentElement(mount);
@@ -90,6 +90,7 @@ namespace Bandit_Militias
                         !saddle.Name.ToString().ToLower().Contains("camel")).ToList().GetRandomElement());
                 }
             }
+
 
             var getLocalizedText = AccessTools.Method(typeof(MBTextManager), "GetLocalizedText");
             Name = (string)getLocalizedText.Invoke(null, new object[] { $"{Possess(Hero.FirstName.ToString())} Bandit Militia" });

@@ -21,6 +21,10 @@ namespace Bandit_Militias
 
         [CachedData] private TextObject cachedName;
 
+        internal ModBanditMilitiaPartyComponent()
+        {
+        }
+
         private ModBanditMilitiaPartyComponent(Hero hero)
         {
             leader = hero;
