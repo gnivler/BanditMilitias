@@ -70,7 +70,7 @@ namespace Bandit_Militias
         [SettingPropertyInteger("Spawn Chance Percent", 1, 100, HintText = "\nBM will spawn hourly at this likelihood.", Order = 6, RequireRestart = false)]
         [SettingPropertyGroup("Primary Settings")]
         public int SpawnChance { get; private set; } = 30;
-        
+
         [SettingPropertyInteger("Change Cooldown", 1, 168, HintText = "\nBM won't merge or split a second time until this many hours go by.", Order = 7, RequireRestart = false)]
         [SettingPropertyGroup("Primary Settings")]
         public int CooldownHours { get; private set; } = 24;

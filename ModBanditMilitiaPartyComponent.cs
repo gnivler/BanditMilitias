@@ -3,6 +3,9 @@ using Bandit_Militias.Helpers;
 using HarmonyLib;
 using Helpers;
 using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.Party;
+using TaleWorlds.CampaignSystem.Party.PartyComponents;
+using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Library;
 using TaleWorlds.Localization;
 using TaleWorlds.SaveSystem;
@@ -20,10 +23,6 @@ namespace Bandit_Militias
             AccessTools.FieldRefAccess<NameGenerator, TextObject[]>("_gangLeaderNames");
 
         [CachedData] private TextObject cachedName;
-
-        internal ModBanditMilitiaPartyComponent()
-        {
-        }
 
         private ModBanditMilitiaPartyComponent(Hero hero)
         {

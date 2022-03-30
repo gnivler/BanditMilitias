@@ -9,9 +9,14 @@ using SandBox.ViewModelCollection.MobilePartyTracker;
 using SandBox.ViewModelCollection.Nameplate;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
+using TaleWorlds.CampaignSystem.AgentOrigins;
+using TaleWorlds.CampaignSystem.CampaignBehaviors.AiBehaviors;
+using TaleWorlds.CampaignSystem.Encounters;
+using TaleWorlds.CampaignSystem.GameComponents;
 using TaleWorlds.CampaignSystem.GameMenus;
-using TaleWorlds.CampaignSystem.SandBox.CampaignBehaviors.AiBehaviors;
-using TaleWorlds.CampaignSystem.SandBox.GameComponents.Map;
+using TaleWorlds.CampaignSystem.Party;
+using TaleWorlds.CampaignSystem.Roster;
+using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
 using TaleWorlds.LinQuick;
 using static Bandit_Militias.Helpers.Helper;
@@ -196,7 +201,7 @@ namespace Bandit_Militias.Patches
                 }
             }
         }
-        
+
         // changes the flag
         [HarmonyPatch(typeof(PartyVisual), "AddCharacterToPartyIcon")]
         public static class PartyVisualAddCharacterToPartyIconPatch
