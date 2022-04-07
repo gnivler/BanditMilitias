@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using HarmonyLib;
+using Helpers;
 using SandBox.View.Map;
 using SandBox.ViewModelCollection.MobilePartyTracker;
 using TaleWorlds.CampaignSystem;
@@ -100,6 +101,17 @@ namespace Bandit_Militias.Patches
             private static void Postfix(MobilePartyTrackerVM __instance)
             {
                 Globals.MobilePartyTrackerVM = __instance;
+            }
+        }
+
+        // TODO find root cause, remove finalizer
+        [HarmonyPatch(typeof(PartyBaseHelper), "HasFeat")]
+        public static class PartyBaseHelperHasFeat
+        {
+            public static Exception Finalizer(Exception __exception)
+            {
+                Mod.Log(__exception);
+                return null;
             }
         }
     }

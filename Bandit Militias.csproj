@@ -34,22 +34,23 @@
     </PropertyGroup>
     <ItemGroup>
         <Reference Include="0Harmony, Version=2.2.1.0, Culture=neutral, PublicKeyToken=null">
-          <HintPath>M:\SteamLibrary\steamapps\common\Mount &amp; Blade II Bannerlord\Modules\Bannerlord.Harmony\bin\Win64_Shipping_Client\0Harmony.dll</HintPath>
-        </Reference>
-        <Reference Include="Bannerlord.ButterLib, Version=1.0.27.0, Culture=neutral, PublicKeyToken=null">
-          <HintPath>packages\Bannerlord.ButterLib.1.0.27\lib\net472\Bannerlord.ButterLib.dll</HintPath>
+          <HintPath>packages\Lib.Harmony.2.2.1\lib\net472\0Harmony.dll</HintPath>
           <Private>True</Private>
         </Reference>
-        <Reference Include="Bannerlord.UIExtenderEx, Version=2.1.6.0, Culture=neutral, PublicKeyToken=null">
-          <HintPath>packages\Bannerlord.UIExtenderEx.2.1.6\lib\net472\Bannerlord.UIExtenderEx.dll</HintPath>
+        <Reference Include="Bannerlord.ButterLib, Version=1.0.38.0, Culture=neutral, PublicKeyToken=null">
+          <HintPath>packages\Bannerlord.ButterLib.1.0.38\lib\net472\Bannerlord.ButterLib.dll</HintPath>
           <Private>True</Private>
         </Reference>
-        <Reference Include="MCMv4, Version=4.3.10.0, Culture=neutral, PublicKeyToken=null">
-            <HintPath>packages\Bannerlord.MCM.4.3.10\lib\net472\MCMv4.dll</HintPath>
-            <Private>False</Private>
+        <Reference Include="Bannerlord.UIExtenderEx, Version=2.1.13.0, Culture=neutral, PublicKeyToken=null">
+          <HintPath>packages\Bannerlord.UIExtenderEx.2.1.13\lib\net472\Bannerlord.UIExtenderEx.dll</HintPath>
+          <Private>True</Private>
         </Reference>
-        <Reference Include="Microsoft.Bcl.AsyncInterfaces, Version=6.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51">
-          <HintPath>packages\Microsoft.Bcl.AsyncInterfaces.6.0.0-preview.7.21377.19\lib\net461\Microsoft.Bcl.AsyncInterfaces.dll</HintPath>
+        <Reference Include="MCMv4, Version=4.3.23.0, Culture=neutral, PublicKeyToken=null">
+          <HintPath>packages\Bannerlord.MCM.4.3.23\lib\net472\MCMv4.dll</HintPath>
+          <Private>True</Private>
+        </Reference>
+        <Reference Include="Microsoft.Bcl.AsyncInterfaces, Version=7.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51">
+          <HintPath>packages\Microsoft.Bcl.AsyncInterfaces.7.0.0-preview.2.22152.2\lib\net462\Microsoft.Bcl.AsyncInterfaces.dll</HintPath>
           <Private>True</Private>
         </Reference>
         <Reference Include="Microsoft.Bcl.HashCode, Version=1.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51">
@@ -57,38 +58,29 @@
           <Private>True</Private>
         </Reference>
         <Reference Include="Microsoft.CSharp" />
-        <Reference Include="Microsoft.Extensions.DependencyInjection, Version=6.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60">
-          <HintPath>packages\Microsoft.Extensions.DependencyInjection.6.0.0-preview.7.21377.19\lib\net461\Microsoft.Extensions.DependencyInjection.dll</HintPath>
+        <Reference Include="Microsoft.Extensions.DependencyInjection, Version=7.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60">
+          <HintPath>packages\Microsoft.Extensions.DependencyInjection.7.0.0-preview.2.22152.2\lib\net462\Microsoft.Extensions.DependencyInjection.dll</HintPath>
           <Private>True</Private>
         </Reference>
-        <Reference Include="Microsoft.Extensions.DependencyInjection.Abstractions, Version=6.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60">
-          <HintPath>packages\Microsoft.Extensions.DependencyInjection.Abstractions.6.0.0-preview.7.21377.19\lib\net461\Microsoft.Extensions.DependencyInjection.Abstractions.dll</HintPath>
+        <Reference Include="Microsoft.Extensions.DependencyInjection.Abstractions, Version=7.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60">
+          <HintPath>packages\Microsoft.Extensions.DependencyInjection.Abstractions.7.0.0-preview.2.22152.2\lib\net462\Microsoft.Extensions.DependencyInjection.Abstractions.dll</HintPath>
           <Private>True</Private>
         </Reference>
-        <Reference Include="Microsoft.Extensions.Logging, Version=6.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60">
-          <HintPath>packages\Microsoft.Extensions.Logging.6.0.0-preview.7.21377.19\lib\net461\Microsoft.Extensions.Logging.dll</HintPath>
+        <Reference Include="Microsoft.Extensions.Logging, Version=7.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60">
+          <HintPath>packages\Microsoft.Extensions.Logging.7.0.0-preview.2.22152.2\lib\net462\Microsoft.Extensions.Logging.dll</HintPath>
           <Private>True</Private>
         </Reference>
-        <Reference Include="Microsoft.Extensions.Logging.Abstractions, Version=6.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60">
-          <HintPath>packages\Microsoft.Extensions.Logging.Abstractions.6.0.0-preview.7.21377.19\lib\net461\Microsoft.Extensions.Logging.Abstractions.dll</HintPath>
+        <Reference Include="Microsoft.Extensions.Logging.Abstractions, Version=7.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60">
+          <HintPath>packages\Microsoft.Extensions.Logging.Abstractions.7.0.0-preview.2.22152.2\lib\net462\Microsoft.Extensions.Logging.Abstractions.dll</HintPath>
           <Private>True</Private>
         </Reference>
-        <Reference Include="Microsoft.Extensions.Options, Version=6.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60">
-          <HintPath>packages\Microsoft.Extensions.Options.6.0.0-preview.7.21377.19\lib\net461\Microsoft.Extensions.Options.dll</HintPath>
+        <Reference Include="Microsoft.Extensions.Options, Version=7.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60">
+          <HintPath>packages\Microsoft.Extensions.Options.7.0.0-preview.2.22152.2\lib\net462\Microsoft.Extensions.Options.dll</HintPath>
           <Private>True</Private>
         </Reference>
-        <Reference Include="Microsoft.Extensions.Primitives, Version=6.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60">
-          <HintPath>packages\Microsoft.Extensions.Primitives.6.0.0-preview.7.21377.19\lib\net461\Microsoft.Extensions.Primitives.dll</HintPath>
+        <Reference Include="Microsoft.Extensions.Primitives, Version=7.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60">
+          <HintPath>packages\Microsoft.Extensions.Primitives.7.0.0-preview.2.22152.2\lib\net462\Microsoft.Extensions.Primitives.dll</HintPath>
           <Private>True</Private>
-        </Reference>
-        <Reference Include="Mono.Cecil, Version=0.11.4.0, Culture=neutral, PublicKeyToken=50cebf1cceb9d05e">
-          <HintPath>N:\BannerlordRefs\Current\Mono.Cecil.dll</HintPath>
-        </Reference>
-        <Reference Include="Mono.Cecil.Rocks, Version=0.11.4.0, Culture=neutral, PublicKeyToken=50cebf1cceb9d05e">
-          <HintPath>N:\BannerlordRefs\Current\Mono.Cecil.Rocks.dll</HintPath>
-        </Reference>
-        <Reference Include="Mono.Options, Version=6.0.0.0, Culture=neutral, PublicKeyToken=null">
-          <HintPath>N:\BannerlordRefs\Current\Mono.Options.dll</HintPath>
         </Reference>
         <Reference Include="mscorlib">
             <Private>False</Private>
@@ -112,15 +104,15 @@
           <HintPath>N:\BannerlordRefs\Current\SandBox.ViewModelCollection.dll</HintPath>
         </Reference>
         <Reference Include="Serilog, Version=2.0.0.0, Culture=neutral, PublicKeyToken=24c2f752a8e58a10">
-          <HintPath>packages\Serilog.2.10.1-dev-01343\lib\net46\Serilog.dll</HintPath>
+          <HintPath>packages\Serilog.2.11.0-dev-01380\lib\net46\Serilog.dll</HintPath>
           <Private>True</Private>
         </Reference>
         <Reference Include="Serilog.Extensions.Logging, Version=2.0.0.0, Culture=neutral, PublicKeyToken=24c2f752a8e58a10">
-          <HintPath>packages\Serilog.Extensions.Logging.3.0.2-dev-10289\lib\netstandard2.0\Serilog.Extensions.Logging.dll</HintPath>
+          <HintPath>packages\Serilog.Extensions.Logging.3.1.0\lib\netstandard2.0\Serilog.Extensions.Logging.dll</HintPath>
           <Private>True</Private>
         </Reference>
-        <Reference Include="Serilog.Sinks.File, Version=5.0.0.0, Culture=neutral, PublicKeyToken=24c2f752a8e58a10">
-          <HintPath>packages\Serilog.Sinks.File.5.0.0\lib\net45\Serilog.Sinks.File.dll</HintPath>
+        <Reference Include="Serilog.Sinks.File, Version=5.0.1.0, Culture=neutral, PublicKeyToken=24c2f752a8e58a10">
+          <HintPath>packages\Serilog.Sinks.File.5.0.1-dev-00947\lib\net45\Serilog.Sinks.File.dll</HintPath>
           <Private>True</Private>
         </Reference>
         <Reference Include="StoryMode, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
@@ -143,14 +135,14 @@
             <HintPath>packages\System.Buffers.4.5.1\lib\net461\System.Buffers.dll</HintPath>
             <Private>False</Private>
         </Reference>
-        <Reference Include="System.Collections.Immutable, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-          <HintPath>packages\System.Collections.Immutable.6.0.0-preview.7.21377.19\lib\net461\System.Collections.Immutable.dll</HintPath>
+        <Reference Include="System.Collections.Immutable, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+          <HintPath>packages\System.Collections.Immutable.7.0.0-preview.2.22152.2\lib\net462\System.Collections.Immutable.dll</HintPath>
           <Private>True</Private>
         </Reference>
         <Reference Include="System.ComponentModel.DataAnnotations" />
         <Reference Include="System.Core" />
-        <Reference Include="System.Diagnostics.DiagnosticSource, Version=6.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51">
-          <HintPath>packages\System.Diagnostics.DiagnosticSource.6.0.0-preview.7.21377.19\lib\net461\System.Diagnostics.DiagnosticSource.dll</HintPath>
+        <Reference Include="System.Diagnostics.DiagnosticSource, Version=7.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51">
+          <HintPath>packages\System.Diagnostics.DiagnosticSource.7.0.0-preview.2.22152.2\lib\net462\System.Diagnostics.DiagnosticSource.dll</HintPath>
           <Private>True</Private>
         </Reference>
         <Reference Include="System.Memory, Version=4.0.1.1, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51">
@@ -161,12 +153,12 @@
             <HintPath>packages\System.Numerics.Vectors.4.5.0\lib\net46\System.Numerics.Vectors.dll</HintPath>
             <Private>False</Private>
         </Reference>
-        <Reference Include="System.Reflection.Metadata, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-          <HintPath>packages\System.Reflection.Metadata.6.0.0-preview.7.21377.19\lib\net461\System.Reflection.Metadata.dll</HintPath>
+        <Reference Include="System.Reflection.Metadata, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+          <HintPath>packages\System.Reflection.Metadata.7.0.0-preview.2.22152.2\lib\net462\System.Reflection.Metadata.dll</HintPath>
           <Private>True</Private>
         </Reference>
-        <Reference Include="System.Runtime.CompilerServices.Unsafe, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-          <HintPath>packages\System.Runtime.CompilerServices.Unsafe.6.0.0-preview.7.21377.19\lib\net461\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
+        <Reference Include="System.Runtime.CompilerServices.Unsafe, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+          <HintPath>packages\System.Runtime.CompilerServices.Unsafe.7.0.0-preview.2.22152.2\lib\net462\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
           <Private>True</Private>
         </Reference>
         <Reference Include="System.Threading.Tasks.Extensions, Version=4.2.0.1, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51">
@@ -373,6 +365,7 @@
         <Content Include="SubModule.xml" />
     </ItemGroup>
     <ItemGroup>
+        <None Include="App.config" />
         <None Include="packages.config" />
     </ItemGroup>
     <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
@@ -387,4 +380,11 @@
         <PostBuildEvent>xcopy /y "N:\Repos\Bandit Militias\obj\release\Bandit Militias.???" "M:\SteamLibrary\steamapps\common\Mount %26 Blade II Bannerlord\Modules\Bandit Militias\bin\Win64_Shipping_Client"
 xcopy /y "N:\Repos\Bandit Militias\SubModule.xml" "M:\SteamLibrary\steamapps\common\Mount %26 Blade II Bannerlord\Modules\Bandit Militias"</PostBuildEvent>
     </PropertyGroup>
+    <Import Project="packages\Microsoft.Extensions.Logging.Abstractions.7.0.0-preview.2.22152.2\build\Microsoft.Extensions.Logging.Abstractions.targets" Condition="Exists('packages\Microsoft.Extensions.Logging.Abstractions.7.0.0-preview.2.22152.2\build\Microsoft.Extensions.Logging.Abstractions.targets')" />
+    <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+      <PropertyGroup>
+        <ErrorText>This project references NuGet package(s) that are missing on this computer. Enable NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105.The missing file is {0}.</ErrorText>
+      </PropertyGroup>
+      <Error Condition="!Exists('packages\Microsoft.Extensions.Logging.Abstractions.7.0.0-preview.2.22152.2\build\Microsoft.Extensions.Logging.Abstractions.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Microsoft.Extensions.Logging.Abstractions.7.0.0-preview.2.22152.2\build\Microsoft.Extensions.Logging.Abstractions.targets'))" />
+    </Target>
 </Project>

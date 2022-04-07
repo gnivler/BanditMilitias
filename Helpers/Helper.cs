@@ -586,7 +586,7 @@ namespace Bandit_Militias.Helpers
                 var parties = MobileParty.All.Where(p => p.LeaderHero is not null && !p.IsBM()).ToListQ();
                 var medianSize = (float)parties.OrderBy(p => p.MemberRoster.TotalManCount)
                     .ElementAt(parties.CountQ() / 2).MemberRoster.TotalManCount;
-                CalculatedMaxPartySize = Math.Min(medianSize * Variance, MobileParty.MainParty.MemberRoster.TotalManCount * 1.5f);
+                CalculatedMaxPartySize = Math.Min(medianSize * Variance, Math.Max(1, MobileParty.MainParty.MemberRoster.TotalManCount) * 1.5f);
                 if (CalculatedMaxPartySize <= MobileParty.MainParty.MemberRoster.TotalManCount)
                 {
                     CalculatedMaxPartySize *= 1 + CalculatedMaxPartySize / MobileParty.MainParty.MemberRoster.TotalManCount;
