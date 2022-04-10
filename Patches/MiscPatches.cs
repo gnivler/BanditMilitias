@@ -6,6 +6,7 @@ using Helpers;
 using SandBox.View.Map;
 using SandBox.ViewModelCollection.MobilePartyTracker;
 using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.SandBox.GameComponents;
 using TaleWorlds.Core;
 using TaleWorlds.Engine;
 using TaleWorlds.Library;
@@ -104,13 +105,39 @@ namespace Bandit_Militias.Patches
             }
         }
 
-        // TODO find root cause, remove finalizer
+        // TODO find root causes, remove finalizers
+        // not sure where to start
         [HarmonyPatch(typeof(PartyBaseHelper), "HasFeat")]
         public static class PartyBaseHelperHasFeat
         {
-            public static Exception Finalizer(Exception __exception)
+            public static Exception Finalizer(Exception __exception, PartyBase party, FeatObject feat)
             {
-                Mod.Log(__exception);
+                if (__exception is not null)
+                {
+                    Mod.Log(__exception);
+                    Mod.Log(party.MobileParty.StringId);
+                    Mod.Log(feat.StringId);
+                    Mod.Log($"guessing: {party.Owner?.Culture}?");
+                }
+
+                return null;
+            }
+        }
+
+        // TODO find root causes, remove finalizers
+        // maybe BM heroes being considered for troop upgrade - no upgrade targets though
+        [HarmonyPatch(typeof(DefaultPartyTroopUpgradeModel), "CanTroopGainXp")]
+        public static class DefaultPartyTroopUpgradeModelCanTroopGainXp
+        {
+            public static Exception Finalizer(Exception __exception, PartyBase owner, CharacterObject character)
+            {
+                if (__exception is not null)
+                {
+                    Mod.Log(__exception);
+                    Mod.Log(owner.MobileParty.StringId);
+                    Mod.Log(character.StringId);
+                }
+
                 return null;
             }
         }

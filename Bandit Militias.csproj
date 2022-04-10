@@ -280,9 +280,6 @@
         <Reference Include="TaleWorlds.MountAndBlade.Helpers, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
           <HintPath>N:\BannerlordRefs\Current\TaleWorlds.MountAndBlade.Helpers.dll</HintPath>
         </Reference>
-        <Reference Include="TaleWorlds.MountAndBlade.Launcher.Library, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-          <HintPath>N:\BannerlordRefs\Current\TaleWorlds.MountAndBlade.Launcher.Library.dll</HintPath>
-        </Reference>
         <Reference Include="TaleWorlds.MountAndBlade.Launcher.Steam, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
           <HintPath>N:\BannerlordRefs\Current\TaleWorlds.MountAndBlade.Launcher.Steam.dll</HintPath>
         </Reference>
@@ -319,17 +316,11 @@
         <Reference Include="TaleWorlds.PlayerServices, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
           <HintPath>N:\BannerlordRefs\Current\TaleWorlds.PlayerServices.dll</HintPath>
         </Reference>
-        <Reference Include="TaleWorlds.PowerText, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-          <HintPath>N:\BannerlordRefs\Current\TaleWorlds.PowerText.dll</HintPath>
-        </Reference>
         <Reference Include="TaleWorlds.PSAI, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
           <HintPath>N:\BannerlordRefs\Current\TaleWorlds.PSAI.dll</HintPath>
         </Reference>
         <Reference Include="TaleWorlds.SaveSystem, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
           <HintPath>N:\BannerlordRefs\Current\TaleWorlds.SaveSystem.dll</HintPath>
-        </Reference>
-        <Reference Include="TaleWorlds.ScreenSystem, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-          <HintPath>N:\BannerlordRefs\Current\TaleWorlds.ScreenSystem.dll</HintPath>
         </Reference>
         <Reference Include="TaleWorlds.Starter.DotNetCore, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
           <HintPath>N:\BannerlordRefs\Current\TaleWorlds.Starter.DotNetCore.dll</HintPath>
