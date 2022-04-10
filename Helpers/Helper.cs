@@ -22,6 +22,7 @@ using TaleWorlds.Core;
 using TaleWorlds.Library;
 using TaleWorlds.LinQuick;
 using TaleWorlds.ObjectSystem;
+using TaleWorlds.TwoDimension;
 using static Bandit_Militias.Globals;
 
 // ReSharper disable InconsistentNaming  
@@ -593,7 +594,7 @@ namespace Bandit_Militias.Helpers
                 var parties = MobileParty.All.Where(p => p.LeaderHero is not null && !p.IsBM()).ToListQ();
                 var medianSize = (float)parties.OrderBy(p => p.MemberRoster.TotalManCount)
                     .ElementAt(parties.CountQ() / 2).MemberRoster.TotalManCount;
-                CalculatedMaxPartySize = Math.Min(medianSize * Variance, MobileParty.MainParty.MemberRoster.TotalManCount * 1.5f);
+                CalculatedMaxPartySize = Math.Min(medianSize * Variance, Math.Max(1, MobileParty.MainParty.MemberRoster.TotalManCount) * 1.5f);
                 if (CalculatedMaxPartySize <= MobileParty.MainParty.MemberRoster.TotalManCount)
                 {
                     CalculatedMaxPartySize *= 1 + CalculatedMaxPartySize / MobileParty.MainParty.MemberRoster.TotalManCount;
@@ -764,6 +765,104 @@ namespace Bandit_Militias.Helpers
             }
 
             return hero;
+        }
+
+        internal static void SynthesizeBM()
+        {
+            if (!Globals.Settings.MilitiaSpawn)
+            {
+                return;
+            }
+
+            for (var i = 0;
+                 MilitiaPowerPercent <= Globals.Settings.GlobalPowerPercent
+                 && i < (Globals.Settings.GlobalPowerPercent - MilitiaPowerPercent) / 24f;
+                 i++)
+            {
+                if (Rng.Next(0, 101) > Globals.Settings.SpawnChance)
+                {
+                    continue;
+                }
+
+                var settlement = Settlement.All.Where(s => !s.IsVisible).GetRandomElementInefficiently();
+                var clan = Clan.BanditFactions.ToList()[Rng.Next(0, Clan.BanditFactions.Count())];
+                var min = Convert.ToInt32(Globals.Settings.MinPartySize);
+                var max = Convert.ToInt32(CalculatedMaxPartySize);
+                var roster = TroopRoster.CreateDummyTroopRoster();
+                roster.AddToCounts(clan.BasicTroop, Rng.Next(min, max + 1));
+                var numMounted = NumMountedTroops(roster);
+                var mountedTroops = roster.ToFlattenedRoster().Troops.WhereQ(t => t.IsMounted);
+                // remove horses past 50% of the BM
+                if (numMounted > roster.TotalManCount / 2)
+                {
+                    foreach (var troop in mountedTroops)
+                    {
+                        if (NumMountedTroops(roster) > roster.TotalManCount / 2)
+                        {
+                            troop.Equipment[10] = new EquipmentElement();
+                            troop.Equipment[11] = new EquipmentElement();
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    }
+                }
+
+
+                var militia = new Militia(settlement.GatePosition, roster, TroopRoster.CreateDummyTroopRoster());
+                // teleport new militias near the player
+                if (Globals.Settings.TestingMode)
+                {
+                    // in case a prisoner
+                    var party = Hero.MainHero.PartyBelongedTo ?? Hero.MainHero.PartyBelongedToAsPrisoner.MobileParty;
+                    militia.MobileParty.Position2D = party.Position2D;
+                }
+                
+                DoPowerCalculations();
+            }
+        }
+
+        internal static void TryGrowing(MobileParty mobileParty)
+        {
+            if (Globals.Settings.GrowthPercent > 0
+                && MilitiaPowerPercent <= Globals.Settings.GlobalPowerPercent
+                && mobileParty.ShortTermBehavior != AiBehavior.FleeToPoint
+                && mobileParty.IsBM()
+                && IsAvailableBanditParty(mobileParty)
+                && Rng.NextDouble() <= Globals.Settings.GrowthChance / 100f)
+            {
+                var eligibleToGrow = mobileParty.MemberRoster.GetTroopRoster().Where(rosterElement =>
+                        rosterElement.Character.Tier < Globals.Settings.MaxTrainingTier
+                        && !rosterElement.Character.IsHero
+                        && mobileParty.ShortTermBehavior != AiBehavior.FleeToPoint
+                        && !mobileParty.IsVisible)
+                    .ToListQ();
+                if (eligibleToGrow.Any())
+                {
+                    var growthAmount = mobileParty.MemberRoster.TotalManCount * Globals.Settings.GrowthPercent / 100f;
+                    // bump up growth to reach GlobalPowerPercent (synthetic but it helps warm up militia population)
+                    // thanks Erythion!
+                    var boost = CalculatedGlobalPowerLimit / GlobalMilitiaPower;
+                    growthAmount += Globals.Settings.GlobalPowerPercent / 100f * boost;
+                    growthAmount = Mathf.Clamp(growthAmount, 1, 50);
+                    Mod.Log($"Growing {mobileParty.Name}, total: {mobileParty.MemberRoster.TotalManCount}");
+                    for (var i = 0; i < growthAmount && mobileParty.MemberRoster.TotalManCount + 1 < CalculatedMaxPartySize; i++)
+                    {
+                        var troop = eligibleToGrow.GetRandomElement().Character;
+                        if (GlobalMilitiaPower + troop.GetPower() < CalculatedGlobalPowerLimit)
+                        {
+                            mobileParty.MemberRoster.AddToCounts(troop, 1);
+                        }
+                    }
+
+                    //var troopString = $"{mobileParty.Party.NumberOfAllMembers} troop" + (mobileParty.Party.NumberOfAllMembers > 1 ? "s" : "");
+                    //var strengthString = $"{Math.Round(mobileParty.Party.TotalStrength)} strength";
+                    //Mod.Log($"{$"Grown to",-70} | {troopString,10} | {strengthString,12} |");
+                    DoPowerCalculations();
+                    // Mod.Log($"Grown to: {mobileParty.MemberRoster.TotalManCount}");
+                }
+            }
         }
     }
 }
