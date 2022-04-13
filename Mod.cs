@@ -6,7 +6,6 @@ using HarmonyLib;
 using SandBox.View.Map;
 using SandBox.ViewModelCollection.MobilePartyTracker;
 using TaleWorlds.CampaignSystem;
-using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.Core;
 using TaleWorlds.InputSystem;
 using TaleWorlds.Library;
@@ -14,10 +13,11 @@ using TaleWorlds.Localization;
 using TaleWorlds.MountAndBlade;
 using static Bandit_Militias.Helpers.Helper;
 using static Bandit_Militias.Globals;
+using Module = TaleWorlds.MountAndBlade.Module;
 
-// ReSharper disable ConditionIsAlwaysTrueOrFalse  
-// ReSharper disable ClassNeverInstantiated.Global  
-// ReSharper disable UnusedMember.Local  
+// ReSharper disable ConditionIsAlwaysTrueOrFalse
+// ReSharper disable ClassNeverInstantiated.Global
+// ReSharper disable UnusedMember.Local
 // ReSharper disable InconsistentNaming
 
 namespace Bandit_Militias
@@ -43,6 +43,7 @@ namespace Bandit_Militias
 
         protected override void OnSubModuleLoad()
         {
+            AccessTools.Field(typeof(Module), "_splashScreenPlayed").SetValue(Module.CurrentModule, true);
             CacheBanners();
             RunManualPatches();
             harmony.PatchAll(Assembly.GetExecutingAssembly());

@@ -9,6 +9,12 @@ namespace Bandit_Militias
 {
     public class MilitiaBehavior : CampaignBehaviorBase
     {
+        public static MilitiaBehavior Instance;
+        public MilitiaBehavior()
+        {
+            Instance = this;
+        }
+        
         public override void RegisterEvents()
         {
             CampaignEvents.DailyTickPartyEvent.AddNonSerializedListener(this, TryGrowing);

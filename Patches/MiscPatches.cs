@@ -6,7 +6,6 @@ using Helpers;
 using SandBox.View.Map;
 using SandBox.ViewModelCollection.MobilePartyTracker;
 using TaleWorlds.CampaignSystem;
-using TaleWorlds.CampaignSystem.SandBox.GameComponents;
 using TaleWorlds.Core;
 using TaleWorlds.Engine;
 using TaleWorlds.Library;
@@ -141,5 +140,147 @@ namespace Bandit_Militias.Patches
                 return null;
             }
         }
+
+        //[HarmonyPatch(typeof(ClanRoleMemberItemVM), "IsHeroAssignableForRole")]
+        //public class ClanRoleMemberItemVMIsHeroAssignableForRole
+        //{
+        //    public static void Postfix(SkillEffect.PerkRole role, ref bool __result)
+        //    {
+        //        if ((int)role == 15)
+        //        {
+        //            __result = true;
+        //        }
+        //    }
+        //}
+        //
+        //[HarmonyPatch(typeof(ClanRoleMemberItemVM), "GetRoleHint")]
+        //public static class ClanRoleMemberItemVMGetRoleHint
+        //{
+        //    public static Exception Finalizer(ClanRoleMemberItemVM __instance, Exception __exception)
+        //    {
+        //        //Mod.Log(__exception);
+        //        return null;
+        //    }
+        //}
+        //
+        //[HarmonyPatch(typeof(ClanPartyItemVM), "GetAssignablePartyRoles")]
+        //public static class ClanPartyItemVMGetAssignablePartyRoles
+        //{
+        //    public static bool Prefix(ref IEnumerable __result)
+        //    {
+        //        __result = new[]
+        //        {
+        //            SkillEffect.PerkRole.Quartermaster,
+        //            SkillEffect.PerkRole.Scout,
+        //            SkillEffect.PerkRole.Surgeon,
+        //            SkillEffect.PerkRole.Engineer,
+        //            (SkillEffect.PerkRole)15
+        //        };
+        //
+        //        return false;
+        //    }
+        //}
+        //
+        //[HarmonyPatch(typeof(Game), "Initialize")]
+        //public static class GameInitialize
+        //{
+        //    public static void Postfix()
+        //    {
+        //        var gameText = Game.Current.GameTextManager.AddGameText("_merchant");
+        //        gameText.AddVariation("{=aQducWrZ}Variation Bonus to trade skill: {a0}");
+        //    }
+        //}
+        //
+        //[HarmonyPatch(typeof(Campaign), "InitializeDefaultCampaignObjects")]
+        //public static class CampaignCreateLists
+        //{
+        //    public static void Postfix(Campaign __instance)
+        //    {
+        //        var merchant = (SkillEffect)Traverse.Create(__instance.DefaultSkillEffects).Method("Create", "Merchant SkillEffect").GetValue();
+        //        merchant.Initialize(new TextObject("{=aQducWrZ}SkillEffect Bonus to trade skill: {a0}"),
+        //            new[] { DefaultSkills.Trade },
+        //            (SkillEffect.PerkRole)15,
+        //            10000f,
+        //            SkillEffect.PerkRole.None,
+        //            0f, SkillEffect.EffectIncrementType.Invalid);
+        //        // Initialize() creates an empty TextObject name...
+        //        Traverse.Create(merchant).Field<TextObject>("_name").Value = new TextObject("Merchant SkillEffect Name");
+        //    }
+        //}
+        //
+        //[HarmonyPatch(typeof(ClanRoleMemberItemVM), "GetRelevantSkillForRole")]
+        //public static class ClanRoleMemberItemVMGetRelevantSkillForRole
+        //{
+        //    public static bool Prefix(SkillEffect.PerkRole role, ref SkillObject __result)
+        //    {
+        //        if ((int)role == 15)
+        //        {
+        //            __result = DefaultSkills.Trade;
+        //            return false;
+        //        }
+        //
+        //        return true;
+        //    }
+        //}
+        //
+        //private static Hero MerchantRoleOwner;
+        //private static Hero MerchantEffectiveRoleOwner => MerchantRoleOwner;
+        //
+        //[HarmonyPatch(typeof(ClanRoleItemVM), "GetMemberAssignedToRole")]
+        //public static class ClanRoleItemVMGetMemberAssignedToRole
+        //{
+        //    public static bool Prefix(ClanRoleItemVM __instance, MobileParty party, SkillEffect.PerkRole role, out Hero roleOwner, out Hero effectiveRoleOwner)
+        //    {
+        //        if ((int)role == 15)
+        //        {
+        //            __instance.Name = "Merchant";
+        //            roleOwner = MerchantRoleOwner;
+        //            effectiveRoleOwner = MerchantEffectiveRoleOwner;
+        //            return false;
+        //        }
+        //
+        //        roleOwner = default;
+        //        effectiveRoleOwner = default;
+        //        return true;
+        //    }
+        //}
+        //
+        //[HarmonyPatch(typeof(ClanRoleMemberItemVM), "ExecuteAssignHeroToRole")]
+        //public static class ClanRoleMemberItemVMExecuteAssignHeroToRole
+        //{
+        //    public static bool Prefix(ClanRoleMemberItemVM __instance, Action ____onRoleAssigned)
+        //    {
+        //        if ((int)__instance.Role == 15)
+        //        {
+        //            Traverse.Create(__instance).Method("OnSetMemberAsRole", (SkillEffect.PerkRole)15).GetValue();
+        //            ____onRoleAssigned?.Invoke();
+        //            return false;
+        //        }
+        //
+        //        return true;
+        //    }
+        //}
+        //
+        //
+        //[HarmonyPatch(typeof(ClanRoleMemberItemVM), "OnSetMemberAsRole")]
+        //public static class ClanRoleMemberItemVMOnSetMemberAsRole
+        //{
+        //    public static bool Prefix(ClanRoleMemberItemVM __instance, Action ____onRoleAssigned, SkillEffect.PerkRole role, MobileParty ____party)
+        //    {
+        //        if ((int)role == 15)
+        //        {
+        //            if (____party.GetHeroPerkRole(__instance.Member.HeroObject) != role)
+        //            {
+        //                ____party.RemoveHeroPerkRole(__instance.Member.HeroObject);
+        //                MerchantRoleOwner = __instance.Member.HeroObject;
+        //                // TODO need to patch RemoveHeroPerkRole?
+        //            }
+        //
+        //            return false;
+        //        }
+        //
+        //        return true;
+        //    }
+        //}
     }
 }
