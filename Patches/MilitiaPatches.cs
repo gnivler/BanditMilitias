@@ -62,7 +62,7 @@ namespace Bandit_Militias.Patches
                 {
                     if (militia.MobileParty.MapEvent is null)
                     {
-                        Mod.Log($"{new string('*', 40)} {militia.MobileParty.Name}: {militia.MobileParty.MemberRoster.TotalManCount}");
+                        Mod.Log($"{new string('*', 80)} {militia.MobileParty.Name}: {militia.MobileParty.MemberRoster.TotalManCount}");
                     }
                 }
 
@@ -166,11 +166,12 @@ namespace Bandit_Militias.Patches
 
                     //Mod.Log($"==> found settlement {T.ElapsedTicks / 10000F:F3}ms."); 
                     // create a new party merged from the two
-                    if (mobileParty.MemberRoster.TotalManCount + targetParty.MemberRoster.TotalManCount < 20)
+
+                    var rosters = MergeRosters(mobileParty, targetParty);
+                    if (rosters[0].TotalManCount < Globals.Settings.MinPartySize)
                     {
                         Mod.Log("fml");
                     }
-                    var rosters = MergeRosters(mobileParty, targetParty);
                     var militia = new Militia(mobileParty.Position2D, rosters[0], rosters[1]);
                     // teleport new militias near the player
                     if (Globals.Settings.TestingMode)

@@ -41,8 +41,7 @@ namespace Bandit_Militias.Helpers
         // ReSharper disable once InconsistentNaming
         internal static bool IsBM(this MobileParty mobileParty)
         {
-            return mobileParty?.LeaderHero is not null
-                   && Globals.PartyMilitiaMap.ContainsKey(mobileParty);
+            return mobileParty.PartyComponent is ModBanditMilitiaPartyComponent;
         }
     }
 }

@@ -62,6 +62,13 @@ namespace Bandit_Militias.Patches
                                 && p.Party.MobileParty.LeaderHero.CharacterObject.StringId.Contains("Bandit_Militia"));
                 foreach (var party in loserBMs)
                 {
+                    // disperse small militias
+                    if (party.Party.MobileParty.MemberRoster.TotalManCount <= Globals.Settings.DisperseSize)
+                    {
+                        Helper.Trash(party.Party.MobileParty);
+                        continue;
+                    }
+
                     var heroes = party.Party.MemberRoster.RemoveIf(t => t.Character.IsHero).ToListQ();
                     for (var i = 0; i < heroes.Count; i++)
                     {
@@ -69,12 +76,7 @@ namespace Bandit_Militias.Patches
                         heroes[i].Character.HeroObject.RemoveMilitiaHero();
                     }
 
-                    // disperse small militias
-                    if (party.Party.MobileParty.MemberRoster.TotalManCount <= Globals.Settings.DisperseSize)
-                    {
-                        Helper.RemoveUndersizedTracker(party.Party);
-                        Helper.Trash(party.Party.MobileParty);
-                    }
+                    Helper.RemoveUndersizedTracker(party.Party);
                 }
 
                 Helper.DoPowerCalculations();
