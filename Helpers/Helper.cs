@@ -35,23 +35,23 @@ namespace Bandit_Militias.Helpers
         internal static List<ItemObject> Saddles;
         private const float ReductionFactor = 0.8f;
 
-        internal static void TrySplitParty(MobileParty mobileParty)
+        internal static bool TrySplitParty(MobileParty mobileParty)
         {
+            const float splitDivisor = 2;
+            const float removedHero = 1;
             if (MilitiaPowerPercent > Globals.Settings.GlobalPowerPercent
-                || mobileParty.MemberRoster.TotalManCount < MinSplitSize
+                || mobileParty.Party.MemberRoster.TotalManCount / splitDivisor - removedHero < Globals.Settings.MinPartySize
                 || !mobileParty.IsBM()
                 || mobileParty.IsTooBusyToMerge())
             {
-                return;
+                return false;
             }
-
 
             var roll = Rng.Next(0, 101);
             if (roll > Globals.Settings.RandomSplitChance
-                || mobileParty.Party.MemberRoster.TotalManCount > Math.Max(1, CalculatedMaxPartySize * ReductionFactor)
-                || mobileParty.Party.MemberRoster.TotalManCount / 2 < Globals.Settings.MinPartySize)
+                || mobileParty.Party.MemberRoster.TotalManCount > Math.Max(1, CalculatedMaxPartySize * ReductionFactor))
             {
-                return;
+                return false;
             }
 
             var party1 = TroopRoster.CreateDummyTroopRoster();
@@ -62,6 +62,8 @@ namespace Bandit_Militias.Helpers
             var inventory2 = new ItemRoster();
             SplitRosters(mobileParty, party1, party2, prisoners1, prisoners2, inventory1, inventory2);
             CreateSplitMilitias(mobileParty, party1, party2, prisoners1, prisoners2, inventory1, inventory2);
+
+            return true;
         }
 
         private static void SplitRosters(MobileParty original, TroopRoster troops1, TroopRoster troops2,
@@ -97,26 +99,26 @@ namespace Bandit_Militias.Helpers
             }
         }
 
-        private static void SplitRosters(TroopRoster troops1, TroopRoster troops2, TroopRosterElement rosterElement)
+        private static void SplitRosters(TroopRoster roster1, TroopRoster roster2, TroopRosterElement rosterElement)
         {
             // toss a coin (to your Witcher)
             if (rosterElement.Number == 1)
             {
                 if (Rng.Next(0, 2) == 0)
                 {
-                    troops1.AddToCounts(rosterElement.Character, 1);
+                    roster1.AddToCounts(rosterElement.Character, 1);
                 }
                 else
                 {
-                    troops2.AddToCounts(rosterElement.Character, 1);
+                    roster2.AddToCounts(rosterElement.Character, 1);
                 }
             }
             else
             {
                 var half = Math.Max(1, rosterElement.Number / 2);
-                troops1.AddToCounts(rosterElement.Character, half);
+                roster1.AddToCounts(rosterElement.Character, half);
                 var remainder = rosterElement.Number % 2;
-                troops2.AddToCounts(rosterElement.Character, Math.Max(1, half + remainder));
+                roster2.AddToCounts(rosterElement.Character, Math.Max(1, half + remainder));
             }
         }
 
@@ -125,9 +127,21 @@ namespace Bandit_Militias.Helpers
         {
             try
             {
+                while (party1.TotalManCount < Globals.Settings.MinPartySize)
+                {
+                    // using 1, not 0 because 0 is the BM hero
+                    party1.AddToCounts(party1.GetCharacterAtIndex(Rng.Next(1, party1.Count + 1)), 1);
+                }
+
+                // pretty sure this is never true ...
+                while (party2.TotalManCount < Globals.Settings.MinPartySize)
+                {
+                    party2.AddToCounts(party2.GetCharacterAtIndex(Rng.Next(1, party1.Count + 1)), 1);
+                }
+
                 var militia1 = new Militia(original.Position2D, party1, prisoners1);
                 var militia2 = new Militia(original.Position2D, party2, prisoners2);
-                Mod.Log($">>> {militia1.MobileParty.StringId} <- Split -> {militia2.MobileParty.StringId}");
+                Mod.Log($">>> {militia1.MobileParty.Name} <- Split {original.Name} Split -> {militia2.MobileParty.Name}");
                 Traverse.Create(militia1.MobileParty.Party).Property("ItemRoster").SetValue(inventory1);
                 Traverse.Create(militia2.MobileParty.Party).Property("ItemRoster").SetValue(inventory2);
                 militia1.MobileParty.Party.Visuals.SetMapIconAsDirty();
@@ -809,6 +823,10 @@ namespace Bandit_Militias.Helpers
                     }
                 }
 
+                if (roster.TotalManCount < Globals.Settings.MinPartySize)
+                {
+                    Mod.Log("wtf");
+                }
 
                 var militia = new Militia(settlement.GatePosition, roster, TroopRoster.CreateDummyTroopRoster());
                 // teleport new militias near the player
@@ -818,7 +836,7 @@ namespace Bandit_Militias.Helpers
                     var party = Hero.MainHero.PartyBelongedTo ?? Hero.MainHero.PartyBelongedToAsPrisoner.MobileParty;
                     militia.MobileParty.Position2D = party.Position2D;
                 }
-                
+
                 DoPowerCalculations();
             }
         }
@@ -829,6 +847,7 @@ namespace Bandit_Militias.Helpers
                 && MilitiaPowerPercent <= Globals.Settings.GlobalPowerPercent
                 && mobileParty.ShortTermBehavior != AiBehavior.FleeToPoint
                 && mobileParty.IsBM()
+                && mobileParty.MapEvent is null
                 && IsAvailableBanditParty(mobileParty)
                 && Rng.NextDouble() <= Globals.Settings.GrowthChance / 100f)
             {

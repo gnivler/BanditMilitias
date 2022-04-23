@@ -1,11 +1,19 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using Bandit_Militias.Helpers;
 using HarmonyLib;
 using Helpers;
 using SandBox.View.Map;
 using SandBox.ViewModelCollection.MobilePartyTracker;
 using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.CharacterDevelopment;
+using TaleWorlds.CampaignSystem.Extensions;
+using TaleWorlds.CampaignSystem.GameComponents;
+using TaleWorlds.CampaignSystem.Party;
+using TaleWorlds.CampaignSystem.Roster;
+using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
 using TaleWorlds.Engine;
 using TaleWorlds.Library;
@@ -114,9 +122,9 @@ namespace Bandit_Militias.Patches
                 if (__exception is not null)
                 {
                     Mod.Log(__exception);
-                    Mod.Log(party.MobileParty.StringId);
+                    Mod.Log(party?.MobileParty.StringId);
                     Mod.Log(feat.StringId);
-                    Mod.Log($"guessing: {party.Owner?.Culture}?");
+                    Mod.Log($"guessing: {party?.Owner?.Culture}?");
                 }
 
                 return null;
@@ -135,6 +143,20 @@ namespace Bandit_Militias.Patches
                     Mod.Log(__exception);
                     Mod.Log(owner.MobileParty.StringId);
                     Mod.Log(character.StringId);
+                }
+
+                return null;
+            }
+        }
+
+        [HarmonyPatch(typeof(Hero), "SetInitialValuesFromCharacter")]
+        public class HeroSetInitialValuesFromCharacter
+        {
+            public static Exception Finalizer(Hero __instance, Exception __exception)
+            {
+                if (__exception is not null)
+                {
+                    Mod.Log(__instance);
                 }
 
                 return null;
@@ -282,5 +304,38 @@ namespace Bandit_Militias.Patches
         //        return true;
         //    }
         //}
+
+        [HarmonyPatch(typeof(TroopRoster), "AddToCounts")]
+        public class asdfsadf
+        {
+            public static void Prefix(TroopRoster __instance, int count)
+            {
+                try
+                {
+                    if (count < 0
+                        && !__instance.IsPrisonRoster)
+                    {
+                        var party = Traverse.Create(__instance).Property<PartyBase>("OwnerParty").Value;
+                        var stack = new StackTrace();
+                        if (stack.GetFrames()![2].GetMethod().Name == "UpgradeReadyTroops")
+                        {
+                            return;
+                        }
+                        if (party?.MobileParty is not null && party.MobileParty.IsBM())
+                        {
+                            if (__instance.TotalManCount < Globals.Settings.MinPartySize)
+                            {
+                                Mod.Log("");
+                                Mod.Log(party.MapEvent is null);
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Mod.Log(ex);
+                }
+            }
+        }
     }
 }

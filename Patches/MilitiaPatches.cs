@@ -33,6 +33,7 @@ namespace Bandit_Militias.Patches
     public static class MilitiaPatches
     {
         private static float lastChecked;
+        private static List<Settlement> Hideouts;
 
         [HarmonyPatch(typeof(Campaign), "Tick")]
         public static class CampaignTickPatch
@@ -56,7 +57,16 @@ namespace Bandit_Militias.Patches
                 }
 
                 lastChecked = Campaign.CurrentTime;
-                var hideouts = Settlement.All.Where(s => s.IsHideout).ToList();
+                foreach (var militia in PartyMilitiaMap.Values.WhereQ(m =>
+                             m.MobileParty.MemberRoster.TotalManCount < Globals.Settings.MinPartySize).OrderByDescending(x => x.MobileParty.MemberRoster.TotalManCount))
+                {
+                    if (militia.MobileParty.MapEvent is null)
+                    {
+                        Mod.Log($"{new string('*', 40)} {militia.MobileParty.Name}: {militia.MobileParty.MemberRoster.TotalManCount}");
+                    }
+                }
+
+                Hideouts ??= Settlement.All.Where(s => s.IsHideout).ToListQ();
                 var parties = MobileParty.All.Where(m =>
                         m.Party.IsMobile
                         && m.CurrentSettlement is null
@@ -69,7 +79,7 @@ namespace Bandit_Militias.Patches
                     //T.Restart();
                     var mobileParty = parties[index];
 
-                    if (hideouts.AnyQ(s => s.Position2D.Distance(mobileParty.Position2D) < MinDistanceFromHideout))
+                    if (Hideouts.AnyQ(s => s.Position2D.Distance(mobileParty.Position2D) < MinDistanceFromHideout))
                     {
                         continue;
                     }
@@ -97,6 +107,7 @@ namespace Bandit_Militias.Patches
 
                     if (mobileParty.IsBM())
                     {
+                        //AdjustRelations(mobileParty, nearbyParties.WhereQ(m => PartyMilitiaMap.ContainsKey(m)));
                         CampaignTime? lastChangeDate = PartyMilitiaMap[mobileParty].LastMergedOrSplitDate;
                         if (CampaignTime.Now < lastChangeDate + CampaignTime.Hours(Globals.Settings.CooldownHours))
                         {
@@ -107,11 +118,6 @@ namespace Bandit_Militias.Patches
                     var targetParties = nearbyParties.Where(m =>
                         m.MemberRoster.TotalManCount + mobileParty.MemberRoster.TotalManCount >= Globals.Settings.MinPartySize
                         && IsAvailableBanditParty(m)).ToListQ();
-
-                    if (Globals.Settings.IgnoreVillagersCaravans)
-                    {
-                        targetParties = targetParties.Except(targetParties.WhereQ(p => p.IsVillager || p.IsCaravan)).ToListQ();
-                    }
 
                     var targetParty = targetParties?.GetRandomElement()?.Party;
 
@@ -160,6 +166,10 @@ namespace Bandit_Militias.Patches
 
                     //Mod.Log($"==> found settlement {T.ElapsedTicks / 10000F:F3}ms."); 
                     // create a new party merged from the two
+                    if (mobileParty.MemberRoster.TotalManCount + targetParty.MemberRoster.TotalManCount < 20)
+                    {
+                        Mod.Log("fml");
+                    }
                     var rosters = MergeRosters(mobileParty, targetParty);
                     var militia = new Militia(mobileParty.Position2D, rosters[0], rosters[1]);
                     // teleport new militias near the player
@@ -324,6 +334,13 @@ namespace Bandit_Militias.Patches
                     && !targetParty.IsGarrison
                     && __instance.PartyComponent is ModBanditMilitiaPartyComponent)
                 {
+                    if (Globals.Settings.IgnoreVillagersCaravans
+                        && targetParty.IsCaravan || targetParty.IsVillager)
+                    {
+                        __result = false;
+                        return;
+                    }
+
                     var party1Strength = __instance.GetTotalStrengthWithFollowers();
                     var party2Strength = targetParty.GetTotalStrengthWithFollowers();
                     float delta;
@@ -390,29 +407,29 @@ namespace Bandit_Militias.Patches
             }
         }
 
-        [HarmonyPatch(typeof(MobileParty), "IsBandit", MethodType.Getter)]
-        public static class MobilePartyIsBanditPatch
-        {
-            public static void Postfix(MobileParty __instance, ref bool __result)
-            {
-                if (__instance.PartyComponent is ModBanditMilitiaPartyComponent)
-                {
-                    __result = true;
-                }
-            }
-        }
+        //[HarmonyPatch(typeof(MobileParty), "IsBandit", MethodType.Getter)]
+        //public static class MobilePartyIsBanditPatch
+        //{
+        //    public static void Postfix(MobileParty __instance, ref bool __result)
+        //    {
+        //        if (__instance.PartyComponent is ModBanditMilitiaPartyComponent)
+        //        {
+        //            __result = true;
+        //        }
+        //    }
+        //}
 
-        [HarmonyPatch(typeof(MobileParty), "IsBanditBossParty", MethodType.Getter)]
-        public static class MobilePartyIsBanditBossPartyPatch
-        {
-            public static void Postfix(MobileParty __instance, ref bool __result)
-            {
-                if (__instance.PartyComponent is ModBanditMilitiaPartyComponent)
-                {
-                    __result = false;
-                }
-            }
-        }
+        //[HarmonyPatch(typeof(MobileParty), "IsBanditBossParty", MethodType.Getter)]
+        //public static class MobilePartyIsBanditBossPartyPatch
+        //{
+        //    public static void Postfix(MobileParty __instance, ref bool __result)
+        //    {
+        //        if (__instance.PartyComponent is ModBanditMilitiaPartyComponent)
+        //        {
+        //            __result = false;
+        //        }
+        //    }
+        //}
 
         // skip the regular bandit AI stuff, looks at moving into hideouts
         // and other stuff I don't really want happening

@@ -6,9 +6,11 @@ using HarmonyLib;
 using SandBox.View.Map;
 using SandBox.ViewModelCollection.MobilePartyTracker;
 using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.Core;
 using TaleWorlds.InputSystem;
 using TaleWorlds.Library;
+using TaleWorlds.LinQuick;
 using TaleWorlds.Localization;
 using TaleWorlds.MountAndBlade;
 using static Bandit_Militias.Helpers.Helper;
@@ -38,7 +40,7 @@ namespace Bandit_Militias
             }
 
             using var sw = new StreamWriter(logFilename, true);
-            sw.WriteLine($"[{DateTime.Now.ToShortTimeString()}] {(string.IsNullOrEmpty(input.ToString()) ? "nullOrEmpty" : input)}");
+            sw.WriteLine($"[{DateTime.Now.ToLongTimeString()}] {(string.IsNullOrEmpty(input.ToString()) ? "IsNullOrEmpty" : input)}");
         }
 
         protected override void OnSubModuleLoad()
@@ -117,6 +119,15 @@ namespace Bandit_Militias
 
             if (superKey && Input.IsKeyPressed(InputKey.F10))
             {
+                foreach (var militia in PartyMilitiaMap.Values.WhereQ(m => m.MobileParty.MemberRoster.TotalManCount < Globals.Settings.MinPartySize).OrderByDescending(x => x.MobileParty.MemberRoster.TotalManCount))
+                {
+                    //if (militia.MobileParty.MemberRoster.TotalManCount >= Globals.Settings.MinPartySize)
+                    //{
+                    //    continue;
+                    //}
+
+                    Log( militia.MobileParty.MemberRoster.TotalManCount + " " + militia.MobileParty.Food);
+                }
             }
 
             if (superKey && Input.IsKeyPressed(InputKey.F12))
