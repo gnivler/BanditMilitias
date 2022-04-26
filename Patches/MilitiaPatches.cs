@@ -1,6 +1,19 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using Bandit_Militias.Helpers;
 using HarmonyLib;
+using SandBox.View.Map;
+using SandBox.ViewModelCollection;
+using SandBox.ViewModelCollection.MobilePartyTracker;
+using SandBox.ViewModelCollection.Nameplate;
+using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.Actions;
+using TaleWorlds.CampaignSystem.GameMenus;
+using TaleWorlds.CampaignSystem.SandBox.CampaignBehaviors.AiBehaviors;
+using TaleWorlds.CampaignSystem.SandBox.GameComponents.Map;
+using TaleWorlds.Core;
+using TaleWorlds.LinQuick;
 using static Bandit_Militias.Helpers.Helper;
 using static Bandit_Militias.Globals;
 

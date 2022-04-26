@@ -1,4 +1,5 @@
 using Bandit_Militias.Helpers;
+using TaleWorlds.CampaignSystem;
 using static Bandit_Militias.Globals;
 
 // ReSharper disable InconsistentNaming

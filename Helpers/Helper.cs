@@ -5,8 +5,17 @@ using System.Diagnostics;
 using System.Linq;
 using Bandit_Militias.Patches;
 using HarmonyLib;
+using Helpers;
+using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.Actions;
+using TaleWorlds.CampaignSystem.LogEntries;
+using TaleWorlds.CampaignSystem.SandBox.CampaignBehaviors;
+using TaleWorlds.CampaignSystem.SandBox.GameComponents.Map;
+using TaleWorlds.Core;
 using TaleWorlds.Library;
 using TaleWorlds.LinQuick;
+using TaleWorlds.ObjectSystem;
+using TaleWorlds.TwoDimension;
 using static Bandit_Militias.Globals;
 
 // ReSharper disable InconsistentNaming  
@@ -525,7 +534,7 @@ namespace Bandit_Militias.Helpers
                     {
                         ItemModifier(ref randomElement) = randomElement.Item.ArmorComponent.ItemModifierGroup?.ItemModifiers.GetRandomElementWithPredicate(i => i.PriceMultiplier > 1);
                     }
-                    
+
                     if (randomElement.Item.HasWeaponComponent)
                     {
                         ItemModifier(ref randomElement) = randomElement.Item.WeaponComponent.ItemModifierGroup?.ItemModifiers.GetRandomElementWithPredicate(i => i.PriceMultiplier > 1);

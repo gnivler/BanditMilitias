@@ -8,12 +8,7 @@ using Helpers;
 using SandBox.View.Map;
 using SandBox.ViewModelCollection.MobilePartyTracker;
 using TaleWorlds.CampaignSystem;
-using TaleWorlds.CampaignSystem.CharacterDevelopment;
-using TaleWorlds.CampaignSystem.Extensions;
-using TaleWorlds.CampaignSystem.GameComponents;
-using TaleWorlds.CampaignSystem.Party;
-using TaleWorlds.CampaignSystem.Roster;
-using TaleWorlds.CampaignSystem.Settlements;
+using TaleWorlds.CampaignSystem.SandBox.GameComponents;
 using TaleWorlds.Core;
 using TaleWorlds.Engine;
 using TaleWorlds.Library;
@@ -122,9 +117,8 @@ namespace Bandit_Militias.Patches
                 if (__exception is not null)
                 {
                     Mod.Log(__exception);
-                    Mod.Log(party?.MobileParty.StringId);
+                    Mod.Log(party.MobileParty?.StringId);
                     Mod.Log(feat.StringId);
-                    Mod.Log($"guessing: {party?.Owner?.Culture}?");
                 }
 
                 return null;
@@ -141,7 +135,7 @@ namespace Bandit_Militias.Patches
                 if (__exception is not null)
                 {
                     Mod.Log(__exception);
-                    Mod.Log(owner.MobileParty.StringId);
+                    Mod.Log(owner.MobileParty?.StringId);
                     Mod.Log(character.StringId);
                 }
 
