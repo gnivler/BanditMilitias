@@ -1,10 +1,5 @@
-using System.Linq;
 using Bandit_Militias.Helpers;
 using HarmonyLib;
-using TaleWorlds.CampaignSystem.MapEvents;
-using TaleWorlds.Core;
-using TaleWorlds.LinQuick;
-using TaleWorlds.Localization;
 
 // ReSharper disable UnusedType.Global
 // ReSharper disable InconsistentNaming
@@ -26,9 +21,7 @@ namespace Bandit_Militias.Patches
                 }
 
                 var loserBMs = __instance.PartiesOnSide(__instance.DefeatedSide)
-                    .Where(p => p.Party?.MobileParty?.PartyComponent is ModBanditMilitiaPartyComponent
-                                || !string.IsNullOrEmpty(p.Party?.MobileParty?.LeaderHero?.CharacterObject?.StringId)
-                                && p.Party.MobileParty.LeaderHero.CharacterObject.StringId.Contains("Bandit_Militia"));
+                    .Where(p => p.Party?.MobileParty?.PartyComponent is ModBanditMilitiaPartyComponent);
                 foreach (var party in loserBMs)
                 {
                     var heroes = party.Party.MemberRoster.RemoveIf(t => t.Character.IsHero).ToListQ();
@@ -56,14 +49,18 @@ namespace Bandit_Militias.Patches
         {
             private static void Prefix(MapEvent __instance)
             {
+                if (__instance.DefeatedSide is BattleSideEnum.None)
+                {
+                    return;
+                }
+
                 var loserBMs = __instance.PartiesOnSide(__instance.DefeatedSide)
-                    .Where(p => p.Party?.MobileParty?.PartyComponent is ModBanditMilitiaPartyComponent
-                                || !string.IsNullOrEmpty(p.Party?.MobileParty?.LeaderHero?.CharacterObject?.StringId)
-                                && p.Party.MobileParty.LeaderHero.CharacterObject.StringId.Contains("Bandit_Militia"));
+                    .Where(p => p.Party?.MobileParty?.PartyComponent is ModBanditMilitiaPartyComponent);
+
                 foreach (var party in loserBMs)
                 {
                     // disperse small militias
-                    if (party.Party.MobileParty.MemberRoster.TotalManCount <= Globals.Settings.DisperseSize)
+                    if (party.Party.MobileParty.MemberRoster.TotalManCount < Globals.Settings.DisperseSize)
                     {
                         Helper.Trash(party.Party.MobileParty);
                         continue;

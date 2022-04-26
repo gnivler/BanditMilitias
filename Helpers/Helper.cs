@@ -5,24 +5,8 @@ using System.Diagnostics;
 using System.Linq;
 using Bandit_Militias.Patches;
 using HarmonyLib;
-using Helpers;
-using TaleWorlds.CampaignSystem;
-using TaleWorlds.CampaignSystem.Actions;
-using TaleWorlds.CampaignSystem.CampaignBehaviors;
-using TaleWorlds.CampaignSystem.CharacterDevelopment;
-using TaleWorlds.CampaignSystem.Encounters;
-using TaleWorlds.CampaignSystem.Extensions;
-using TaleWorlds.CampaignSystem.GameComponents;
-using TaleWorlds.CampaignSystem.LogEntries;
-using TaleWorlds.CampaignSystem.MapEvents;
-using TaleWorlds.CampaignSystem.Party;
-using TaleWorlds.CampaignSystem.Roster;
-using TaleWorlds.CampaignSystem.Settlements;
-using TaleWorlds.Core;
 using TaleWorlds.Library;
 using TaleWorlds.LinQuick;
-using TaleWorlds.ObjectSystem;
-using TaleWorlds.TwoDimension;
 using static Bandit_Militias.Globals;
 
 // ReSharper disable InconsistentNaming  
@@ -505,6 +489,9 @@ namespace Bandit_Militias.Helpers
             any.Do(i => EquipmentItems.Add(new EquipmentElement(i)));
         }
 
+        private static readonly AccessTools.StructFieldRef<EquipmentElement, ItemModifier> ItemModifier =
+            AccessTools.StructFieldRefAccess<EquipmentElement, ItemModifier>("<ItemModifier>k__BackingField");
+
         // builds a set of 4 weapons that won't include more than 1 bow or shield, nor any lack of ammo
         internal static Equipment BuildViableEquipmentSet()
         {
@@ -532,6 +519,16 @@ namespace Bandit_Militias.Helpers
                         case 3:
                             randomElement = EquipmentItems.GetRandomElement();
                             break;
+                    }
+
+                    if (randomElement.Item.HasArmorComponent)
+                    {
+                        ItemModifier(ref randomElement) = randomElement.Item.ArmorComponent.ItemModifierGroup?.ItemModifiers.GetRandomElementWithPredicate(i => i.PriceMultiplier > 1);
+                    }
+                    
+                    if (randomElement.Item.HasWeaponComponent)
+                    {
+                        ItemModifier(ref randomElement) = randomElement.Item.WeaponComponent.ItemModifierGroup?.ItemModifiers.GetRandomElementWithPredicate(i => i.PriceMultiplier > 1);
                     }
 
                     // matches here by obtaining a bow, which then stuffed ammo into [3]

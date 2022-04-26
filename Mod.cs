@@ -3,16 +3,8 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using HarmonyLib;
-using SandBox.View.Map;
-using SandBox.ViewModelCollection.MobilePartyTracker;
-using TaleWorlds.CampaignSystem;
-using TaleWorlds.CampaignSystem.Party;
-using TaleWorlds.Core;
-using TaleWorlds.InputSystem;
 using TaleWorlds.Library;
 using TaleWorlds.LinQuick;
-using TaleWorlds.Localization;
-using TaleWorlds.MountAndBlade;
 using static Bandit_Militias.Helpers.Helper;
 using static Bandit_Militias.Globals;
 using Module = TaleWorlds.MountAndBlade.Module;
@@ -45,7 +37,11 @@ namespace Bandit_Militias
 
         protected override void OnSubModuleLoad()
         {
-            AccessTools.Field(typeof(Module), "_splashScreenPlayed").SetValue(Module.CurrentModule, true);
+            if (Environment.MachineName == "MEOWMEOW")
+            {
+                AccessTools.Field(typeof(Module), "_splashScreenPlayed").SetValue(Module.CurrentModule, true);
+            }
+
             CacheBanners();
             RunManualPatches();
             harmony.PatchAll(Assembly.GetExecutingAssembly());
@@ -85,10 +81,10 @@ namespace Bandit_Militias
         {
             var assemblies = AppDomain.CurrentDomain.GetAssemblies();
             var BM = assemblies.First(a => a.FullName.StartsWith("Bandit Militias"));
-            var CAK = assemblies.FirstOrDefault(x => x.FullName.StartsWith("CalradiaExpandedKingdoms"));
-            if (CAK is not null)
+            var CEK = assemblies.FirstOrDefault(x => x.FullName.StartsWith("CalradiaExpandedKingdoms"));
+            if (CEK is not null)
             {
-                if (assemblies.FindIndex(a => a == BM) > assemblies.FindIndex(a => a == CAK))
+                if (assemblies.FindIndex(a => a == BM) > assemblies.FindIndex(a => a == CEK))
                 {
                     Globals.Settings.RandomBanners = false;
                 }
@@ -126,7 +122,7 @@ namespace Bandit_Militias
                     //    continue;
                     //}
 
-                    Log( militia.MobileParty.MemberRoster.TotalManCount + " " + militia.MobileParty.Food);
+                    Log(militia.MobileParty.MemberRoster.TotalManCount + " " + militia.MobileParty.Food);
                 }
             }
 

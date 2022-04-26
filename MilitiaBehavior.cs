@@ -1,6 +1,4 @@
 using Bandit_Militias.Helpers;
-using TaleWorlds.CampaignSystem;
-using TaleWorlds.CampaignSystem.Party;
 using static Bandit_Militias.Globals;
 
 // ReSharper disable InconsistentNaming
@@ -17,18 +15,7 @@ namespace Bandit_Militias
             CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, Helper.FlushMilitiaCharacterObjects);
             CampaignEvents.OnPartyRemovedEvent.AddNonSerializedListener(this, party => PartyMilitiaMap.Remove(party.MobileParty));
             CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, OnDailyTickEvent);
-            //CampaignEvents.OnSessionLaunchedEvent.AddNonSerializedListener(this, OnSessionLaunched);
         }
-
-        //private void OnSessionLaunched(CampaignGameStarter campaignGameStarter)
-        //{
-        //    AddDialogs(campaignGameStarter);
-        //}
-
-        //private static void AddDialogs(CampaignGameStarter cgs)
-        //{
-        //    cgs.AddPlayerLine("BM_001", "Input_001", "Output_001", "{=DEnFOGhS}Something!", null, null);
-        //}
 
         private static void OnDailyTickEvent()
         {

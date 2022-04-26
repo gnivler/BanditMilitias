@@ -1,24 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using Bandit_Militias.Helpers;
 using HarmonyLib;
-using SandBox.View.Map;
-using SandBox.ViewModelCollection;
-using SandBox.ViewModelCollection.MobilePartyTracker;
-using SandBox.ViewModelCollection.Nameplate;
-using TaleWorlds.CampaignSystem;
-using TaleWorlds.CampaignSystem.Actions;
-using TaleWorlds.CampaignSystem.AgentOrigins;
-using TaleWorlds.CampaignSystem.CampaignBehaviors.AiBehaviors;
-using TaleWorlds.CampaignSystem.Encounters;
-using TaleWorlds.CampaignSystem.GameComponents;
-using TaleWorlds.CampaignSystem.GameMenus;
-using TaleWorlds.CampaignSystem.Party;
-using TaleWorlds.CampaignSystem.Roster;
-using TaleWorlds.CampaignSystem.Settlements;
-using TaleWorlds.Core;
-using TaleWorlds.LinQuick;
 using static Bandit_Militias.Helpers.Helper;
 using static Bandit_Militias.Globals;
 
@@ -33,7 +15,6 @@ namespace Bandit_Militias.Patches
     public static class MilitiaPatches
     {
         private static float lastChecked;
-        private static List<Settlement> Hideouts;
 
         [HarmonyPatch(typeof(Campaign), "Tick")]
         public static class CampaignTickPatch
@@ -57,16 +38,6 @@ namespace Bandit_Militias.Patches
                 }
 
                 lastChecked = Campaign.CurrentTime;
-                foreach (var militia in PartyMilitiaMap.Values.WhereQ(m =>
-                             m.MobileParty.MemberRoster.TotalManCount < Globals.Settings.MinPartySize).OrderByDescending(x => x.MobileParty.MemberRoster.TotalManCount))
-                {
-                    if (militia.MobileParty.MapEvent is null)
-                    {
-                        Mod.Log($"{new string('*', 80)} {militia.MobileParty.Name}: {militia.MobileParty.MemberRoster.TotalManCount}");
-                    }
-                }
-
-                Hideouts ??= Settlement.All.Where(s => s.IsHideout).ToListQ();
                 var parties = MobileParty.All.Where(m =>
                         m.Party.IsMobile
                         && m.CurrentSettlement is null
@@ -165,13 +136,8 @@ namespace Bandit_Militias.Patches
                     }
 
                     //Mod.Log($"==> found settlement {T.ElapsedTicks / 10000F:F3}ms."); 
-                    // create a new party merged from the two
-
+                    // create a new party merged from the two           
                     var rosters = MergeRosters(mobileParty, targetParty);
-                    if (rosters[0].TotalManCount < Globals.Settings.MinPartySize)
-                    {
-                        Mod.Log("fml");
-                    }
                     var militia = new Militia(mobileParty.Position2D, rosters[0], rosters[1]);
                     // teleport new militias near the player
                     if (Globals.Settings.TestingMode)
@@ -206,7 +172,7 @@ namespace Bandit_Militias.Patches
         {
             public static void Postfix(MobileParty mobileParty, ref ExplainedNumber __result)
             {
-                if (PartyMilitiaMap.ContainsKey(mobileParty))
+                if (mobileParty.IsBM())
                 {
                     __result.AddFactor(-0.15f);
                 }
@@ -408,30 +374,6 @@ namespace Bandit_Militias.Patches
             }
         }
 
-        //[HarmonyPatch(typeof(MobileParty), "IsBandit", MethodType.Getter)]
-        //public static class MobilePartyIsBanditPatch
-        //{
-        //    public static void Postfix(MobileParty __instance, ref bool __result)
-        //    {
-        //        if (__instance.PartyComponent is ModBanditMilitiaPartyComponent)
-        //        {
-        //            __result = true;
-        //        }
-        //    }
-        //}
-
-        //[HarmonyPatch(typeof(MobileParty), "IsBanditBossParty", MethodType.Getter)]
-        //public static class MobilePartyIsBanditBossPartyPatch
-        //{
-        //    public static void Postfix(MobileParty __instance, ref bool __result)
-        //    {
-        //        if (__instance.PartyComponent is ModBanditMilitiaPartyComponent)
-        //        {
-        //            __result = false;
-        //        }
-        //    }
-        //}
-
         // skip the regular bandit AI stuff, looks at moving into hideouts
         // and other stuff I don't really want happening
         [HarmonyPatch(typeof(AiBanditPatrollingBehavior), "AiHourlyTick")]
@@ -439,7 +381,7 @@ namespace Bandit_Militias.Patches
         {
             public static bool Prefix(MobileParty mobileParty)
             {
-                return mobileParty.PartyComponent is not ModBanditMilitiaPartyComponent;
+                return !mobileParty.IsBM();
             }
         }
 
@@ -448,10 +390,7 @@ namespace Bandit_Militias.Patches
         {
             public static void Postfix(MobileParty mobileParty, ref bool __result)
             {
-                if (mobileParty.PartyComponent is ModBanditMilitiaPartyComponent)
-                {
-                    __result = false;
-                }
+                __result = !mobileParty.IsBM();
             }
         }
     }
