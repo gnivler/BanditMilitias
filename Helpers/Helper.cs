@@ -534,7 +534,7 @@ namespace Bandit_Militias.Helpers
                     {
                         ItemModifier(ref randomElement) = randomElement.Item.ArmorComponent.ItemModifierGroup?.ItemModifiers.GetRandomElementWithPredicate(i => i.PriceMultiplier > 1);
                     }
-
+                    
                     if (randomElement.Item.HasWeaponComponent)
                     {
                         ItemModifier(ref randomElement) = randomElement.Item.WeaponComponent.ItemModifierGroup?.ItemModifiers.GetRandomElementWithPredicate(i => i.PriceMultiplier > 1);

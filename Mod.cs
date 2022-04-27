@@ -21,7 +21,6 @@ using Module = TaleWorlds.MountAndBlade.Module;
 // ReSharper disable UnusedMember.Local
 // ReSharper disable InconsistentNaming
 
-
 namespace Bandit_Militias
 {
     public class Mod : MBSubModuleBase

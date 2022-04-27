@@ -31,8 +31,6 @@ namespace Bandit_Militias.Patches
             private static void Postfix()
             {
                 Mod.Log("MapScreen.OnInitialize");
-
-                MinSplitSize = Globals.Settings.MinPartySize * 2;
                 EquipmentItems.Clear();
                 PopulateItems();
 
@@ -86,7 +84,6 @@ namespace Bandit_Militias.Patches
                     var militia = militias[i];
                     var recreatedMilitia = new Militia(militia);
                     SetMilitiaPatrol(recreatedMilitia.MobileParty);
-                    PartyMilitiaMap.Add(recreatedMilitia.MobileParty, recreatedMilitia);
                 }
 
                 DoPowerCalculations(true);
@@ -118,7 +115,6 @@ namespace Bandit_Militias.Patches
                 {
                     Mod.Log(__exception);
                     Mod.Log(party.MobileParty?.StringId);
-                    Mod.Log(feat.StringId);
                 }
 
                 return null;
@@ -135,7 +131,7 @@ namespace Bandit_Militias.Patches
                 if (__exception is not null)
                 {
                     Mod.Log(__exception);
-                    Mod.Log(owner.MobileParty?.StringId);
+                    Mod.Log(owner.MobileParty.StringId);
                     Mod.Log(character.StringId);
                 }
 
@@ -143,6 +139,7 @@ namespace Bandit_Militias.Patches
             }
         }
 
+        // TODO find root causes, remove finalizers
         [HarmonyPatch(typeof(Hero), "SetInitialValuesFromCharacter")]
         public class HeroSetInitialValuesFromCharacter
         {
@@ -154,43 +151,6 @@ namespace Bandit_Militias.Patches
                 }
 
                 return null;
-            }
-        }
-
-        [HarmonyPatch(typeof(TroopRoster), "AddToCounts")]
-        public class asdfsadf
-        {
-            public static void Prefix(TroopRoster __instance, int count)
-            {
-                try
-                {
-                    if (count < 0)
-                    {
-                        var party = Traverse.Create(__instance).Property<PartyBase>("OwnerParty").Value;
-                        var stack = new StackTrace();
-                        var skip = new List<string>
-                        {
-                            "UpgradeReadyTroops",
-                            "ApplyEscapeChanceToExceededPrisoners"
-                        };
-                        if (skip.Contains(stack.GetFrames()![2].GetMethod().Name))
-                        {
-                            return;
-                        }
-                        if (party?.MobileParty is not null && party.MobileParty.IsBM())
-                        {
-                            if (__instance.TotalManCount < Globals.Settings.MinPartySize)
-                            {
-                                Mod.Log("");
-                                Mod.Log(party.MapEvent is null);
-                            }
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Mod.Log(ex);
-                }
             }
         }
     }

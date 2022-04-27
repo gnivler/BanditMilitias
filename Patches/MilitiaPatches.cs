@@ -217,7 +217,10 @@ namespace Bandit_Militias.Patches
                     __instance.MobileParty is not null &&
                     __instance.MobileParty.IsBM())
                 {
-                    __result = PartyMilitiaMap[__instance.MobileParty].Banner;
+                    if (PartyMilitiaMap.ContainsKey(__instance.MobileParty))
+                    {
+                        __result = PartyMilitiaMap[__instance.MobileParty].Banner;
+                    }
                 }
             }
         }
@@ -403,7 +406,10 @@ namespace Bandit_Militias.Patches
         {
             public static void Postfix(MobileParty mobileParty, ref bool __result)
             {
-                __result = !mobileParty.IsBM();
+                if (mobileParty.IsBM())
+                {
+                    __result = false;
+                }
             }
         }
     }

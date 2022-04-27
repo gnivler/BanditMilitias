@@ -15,7 +15,6 @@ namespace Bandit_Militias
         internal const float MergeDistance = 2;
         internal static float FindRadius = 7;
         internal static float MinDistanceFromHideout = 8;
-        internal static int MinSplitSize = 0;
 
         // holders for criteria
         internal static float CalculatedMaxPartySize;
