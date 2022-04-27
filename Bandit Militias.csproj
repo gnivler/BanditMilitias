@@ -37,307 +37,227 @@
           <HintPath>packages\Lib.Harmony.2.2.1\lib\net472\0Harmony.dll</HintPath>
           <Private>True</Private>
         </Reference>
-        <Reference Include="Bannerlord.ButterLib, Version=1.0.38.0, Culture=neutral, PublicKeyToken=null">
-          <HintPath>packages\Bannerlord.ButterLib.1.0.38\lib\net472\Bannerlord.ButterLib.dll</HintPath>
-          <Private>True</Private>
+        <Reference Include="Bannerlord.ButterLib">
+          <HintPath>$(BANNERLORD_GAME_DIR)\Modules\Bannerlord.ButterLib\bin\Win64_Shipping_Client\Bannerlord.ButterLib.dll</HintPath>
         </Reference>
-        <Reference Include="Bannerlord.UIExtenderEx, Version=2.1.13.0, Culture=neutral, PublicKeyToken=null">
-          <HintPath>packages\Bannerlord.UIExtenderEx.2.1.13\lib\net472\Bannerlord.UIExtenderEx.dll</HintPath>
-          <Private>True</Private>
+        <Reference Include="Bannerlord.UIExtenderEx">
+          <HintPath>M:\SteamLibrary\steamapps\common\Mount &amp; Blade II Bannerlord\Modules\Bannerlord.UIExtenderEx\bin\Win64_Shipping_Client\Bannerlord.UIExtenderEx.dll</HintPath>
         </Reference>
-        <Reference Include="MCMv4, Version=4.3.23.0, Culture=neutral, PublicKeyToken=null">
-          <HintPath>packages\Bannerlord.MCM.4.3.23\lib\net472\MCMv4.dll</HintPath>
-          <Private>True</Private>
-        </Reference>
-        <Reference Include="Microsoft.Bcl.AsyncInterfaces, Version=7.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51">
-          <HintPath>packages\Microsoft.Bcl.AsyncInterfaces.7.0.0-preview.2.22152.2\lib\net462\Microsoft.Bcl.AsyncInterfaces.dll</HintPath>
-          <Private>True</Private>
-        </Reference>
-        <Reference Include="Microsoft.Bcl.HashCode, Version=1.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51">
-          <HintPath>packages\Microsoft.Bcl.HashCode.1.1.1\lib\net461\Microsoft.Bcl.HashCode.dll</HintPath>
-          <Private>True</Private>
+        <Reference Include="MCMv4">
+          <HintPath>M:\SteamLibrary\steamapps\common\Mount &amp; Blade II Bannerlord\Modules\Bannerlord.MBOptionScreen\bin\Win64_Shipping_Client\MCMv4.dll</HintPath>
         </Reference>
         <Reference Include="Microsoft.CSharp" />
-        <Reference Include="Microsoft.Extensions.DependencyInjection, Version=7.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60">
-          <HintPath>packages\Microsoft.Extensions.DependencyInjection.7.0.0-preview.2.22152.2\lib\net462\Microsoft.Extensions.DependencyInjection.dll</HintPath>
-          <Private>True</Private>
-        </Reference>
-        <Reference Include="Microsoft.Extensions.DependencyInjection.Abstractions, Version=7.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60">
-          <HintPath>packages\Microsoft.Extensions.DependencyInjection.Abstractions.7.0.0-preview.2.22152.2\lib\net462\Microsoft.Extensions.DependencyInjection.Abstractions.dll</HintPath>
-          <Private>True</Private>
-        </Reference>
-        <Reference Include="Microsoft.Extensions.Logging, Version=7.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60">
-          <HintPath>packages\Microsoft.Extensions.Logging.7.0.0-preview.2.22152.2\lib\net462\Microsoft.Extensions.Logging.dll</HintPath>
-          <Private>True</Private>
-        </Reference>
-        <Reference Include="Microsoft.Extensions.Logging.Abstractions, Version=7.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60">
-          <HintPath>packages\Microsoft.Extensions.Logging.Abstractions.7.0.0-preview.2.22152.2\lib\net462\Microsoft.Extensions.Logging.Abstractions.dll</HintPath>
-          <Private>True</Private>
-        </Reference>
-        <Reference Include="Microsoft.Extensions.Options, Version=7.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60">
-          <HintPath>packages\Microsoft.Extensions.Options.7.0.0-preview.2.22152.2\lib\net462\Microsoft.Extensions.Options.dll</HintPath>
-          <Private>True</Private>
-        </Reference>
-        <Reference Include="Microsoft.Extensions.Primitives, Version=7.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60">
-          <HintPath>packages\Microsoft.Extensions.Primitives.7.0.0-preview.2.22152.2\lib\net462\Microsoft.Extensions.Primitives.dll</HintPath>
-          <Private>True</Private>
-        </Reference>
         <Reference Include="mscorlib">
             <Private>False</Private>
+        </Reference>
+        <Reference Include="Newtonsoft.Json">
+          <HintPath>..\..\BannerlordRefs\Current\Newtonsoft.Json.dll</HintPath>
         </Reference>
         <Reference Include="Newtonsoft.Json, Version=11.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed">
           <HintPath>..\..\BannerlordRefs\Current\Newtonsoft.Json.dll</HintPath>
         </Reference>
-        <Reference Include="SandBox, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="SandBox">
           <HintPath>..\..\BannerlordRefs\Current\SandBox.dll</HintPath>
         </Reference>
-        <Reference Include="SandBox.GauntletUI, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="SandBox.GauntletUI">
           <HintPath>..\..\BannerlordRefs\Current\SandBox.GauntletUI.dll</HintPath>
         </Reference>
-        <Reference Include="SandBox.GauntletUI.AutoGenerated, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="SandBox.GauntletUI.AutoGenerated">
           <HintPath>..\..\BannerlordRefs\Current\SandBox.GauntletUI.AutoGenerated.dll</HintPath>
         </Reference>
-        <Reference Include="SandBox.View, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="SandBox.View">
           <HintPath>..\..\BannerlordRefs\Current\SandBox.View.dll</HintPath>
         </Reference>
-        <Reference Include="SandBox.ViewModelCollection, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="SandBox.ViewModelCollection">
           <HintPath>..\..\BannerlordRefs\Current\SandBox.ViewModelCollection.dll</HintPath>
         </Reference>
-        <Reference Include="Serilog, Version=2.0.0.0, Culture=neutral, PublicKeyToken=24c2f752a8e58a10">
-          <HintPath>packages\Serilog.2.11.0-dev-01380\lib\net46\Serilog.dll</HintPath>
-          <Private>True</Private>
-        </Reference>
-        <Reference Include="Serilog.Extensions.Logging, Version=2.0.0.0, Culture=neutral, PublicKeyToken=24c2f752a8e58a10">
-          <HintPath>packages\Serilog.Extensions.Logging.3.1.0\lib\netstandard2.0\Serilog.Extensions.Logging.dll</HintPath>
-          <Private>True</Private>
-        </Reference>
-        <Reference Include="Serilog.Sinks.File, Version=5.0.1.0, Culture=neutral, PublicKeyToken=24c2f752a8e58a10">
-          <HintPath>packages\Serilog.Sinks.File.5.0.1-dev-00947\lib\net45\Serilog.Sinks.File.dll</HintPath>
-          <Private>True</Private>
-        </Reference>
-        <Reference Include="StoryMode, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="StoryMode">
           <HintPath>..\..\BannerlordRefs\Current\StoryMode.dll</HintPath>
         </Reference>
-        <Reference Include="StoryMode.GauntletUI, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="StoryMode.GauntletUI">
           <HintPath>..\..\BannerlordRefs\Current\StoryMode.GauntletUI.dll</HintPath>
         </Reference>
-        <Reference Include="StoryMode.GauntletUI.AutoGenerated, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="StoryMode.GauntletUI.AutoGenerated">
           <HintPath>..\..\BannerlordRefs\Current\StoryMode.GauntletUI.AutoGenerated.dll</HintPath>
         </Reference>
-        <Reference Include="StoryMode.View, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="StoryMode.View">
           <HintPath>..\..\BannerlordRefs\Current\StoryMode.View.dll</HintPath>
         </Reference>
-        <Reference Include="StoryMode.ViewModelCollection, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="StoryMode.ViewModelCollection">
           <HintPath>..\..\BannerlordRefs\Current\StoryMode.ViewModelCollection.dll</HintPath>
         </Reference>
         <Reference Include="System" />
-        <Reference Include="System.Buffers, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51">
-            <HintPath>packages\System.Buffers.4.5.1\lib\net461\System.Buffers.dll</HintPath>
-            <Private>False</Private>
-        </Reference>
-        <Reference Include="System.Collections.Immutable, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-          <HintPath>packages\System.Collections.Immutable.7.0.0-preview.2.22152.2\lib\net462\System.Collections.Immutable.dll</HintPath>
-          <Private>True</Private>
-        </Reference>
         <Reference Include="System.ComponentModel.DataAnnotations" />
         <Reference Include="System.Core" />
-        <Reference Include="System.Diagnostics.DiagnosticSource, Version=7.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51">
-          <HintPath>packages\System.Diagnostics.DiagnosticSource.7.0.0-preview.2.22152.2\lib\net462\System.Diagnostics.DiagnosticSource.dll</HintPath>
-          <Private>True</Private>
-        </Reference>
-        <Reference Include="System.Memory, Version=4.0.1.1, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51">
-            <HintPath>packages\System.Memory.4.5.4\lib\net461\System.Memory.dll</HintPath>
-            <Private>False</Private>
-        </Reference>
-        <Reference Include="System.Numerics.Vectors, Version=4.1.4.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-            <HintPath>packages\System.Numerics.Vectors.4.5.0\lib\net46\System.Numerics.Vectors.dll</HintPath>
-            <Private>False</Private>
-        </Reference>
-        <Reference Include="System.Reflection.Metadata, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-          <HintPath>packages\System.Reflection.Metadata.7.0.0-preview.2.22152.2\lib\net462\System.Reflection.Metadata.dll</HintPath>
-          <Private>True</Private>
-        </Reference>
-        <Reference Include="System.Runtime.CompilerServices.Unsafe, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-          <HintPath>packages\System.Runtime.CompilerServices.Unsafe.7.0.0-preview.2.22152.2\lib\net462\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
-          <Private>True</Private>
-        </Reference>
-        <Reference Include="System.Threading.Tasks.Extensions, Version=4.2.0.1, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51">
-          <HintPath>packages\System.Threading.Tasks.Extensions.4.5.4\lib\net461\System.Threading.Tasks.Extensions.dll</HintPath>
-          <Private>True</Private>
-        </Reference>
-        <Reference Include="System.ValueTuple, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51">
-          <HintPath>packages\System.ValueTuple.4.5.0\lib\net47\System.ValueTuple.dll</HintPath>
-          <Private>True</Private>
-        </Reference>
-        <Reference Include="TaleWorlds.AchievementSystem, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="TaleWorlds.AchievementSystem">
           <HintPath>..\..\BannerlordRefs\Current\TaleWorlds.AchievementSystem.dll</HintPath>
         </Reference>
-        <Reference Include="TaleWorlds.ActivitySystem, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="TaleWorlds.ActivitySystem">
           <HintPath>..\..\BannerlordRefs\Current\TaleWorlds.ActivitySystem.dll</HintPath>
         </Reference>
-        <Reference Include="TaleWorlds.BattlEye.Client, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="TaleWorlds.BattlEye.Client">
           <HintPath>..\..\BannerlordRefs\Current\TaleWorlds.BattlEye.Client.dll</HintPath>
         </Reference>
-        <Reference Include="TaleWorlds.CampaignSystem, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="TaleWorlds.CampaignSystem">
           <HintPath>..\..\BannerlordRefs\Current\TaleWorlds.CampaignSystem.dll</HintPath>
         </Reference>
-        <Reference Include="TaleWorlds.CampaignSystem.ViewModelCollection, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="TaleWorlds.CampaignSystem.ViewModelCollection">
           <HintPath>..\..\BannerlordRefs\Current\TaleWorlds.CampaignSystem.ViewModelCollection.dll</HintPath>
         </Reference>
-        <Reference Include="TaleWorlds.Core, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="TaleWorlds.Core">
           <HintPath>..\..\BannerlordRefs\Current\TaleWorlds.Core.dll</HintPath>
         </Reference>
-        <Reference Include="TaleWorlds.Core.ViewModelCollection, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="TaleWorlds.Core.ViewModelCollection">
           <HintPath>..\..\BannerlordRefs\Current\TaleWorlds.Core.ViewModelCollection.dll</HintPath>
         </Reference>
-        <Reference Include="TaleWorlds.Diamond, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="TaleWorlds.Diamond">
           <HintPath>..\..\BannerlordRefs\Current\TaleWorlds.Diamond.dll</HintPath>
         </Reference>
-        <Reference Include="TaleWorlds.Diamond.AccessProvider.Epic, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="TaleWorlds.Diamond.AccessProvider.Epic">
           <HintPath>..\..\BannerlordRefs\Current\TaleWorlds.Diamond.AccessProvider.Epic.dll</HintPath>
         </Reference>
-        <Reference Include="TaleWorlds.Diamond.AccessProvider.GDK, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="TaleWorlds.Diamond.AccessProvider.GDK">
           <HintPath>..\..\BannerlordRefs\Current\TaleWorlds.Diamond.AccessProvider.GDK.dll</HintPath>
         </Reference>
-        <Reference Include="TaleWorlds.Diamond.AccessProvider.GOG, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="TaleWorlds.Diamond.AccessProvider.GOG">
           <HintPath>..\..\BannerlordRefs\Current\TaleWorlds.Diamond.AccessProvider.GOG.dll</HintPath>
         </Reference>
-        <Reference Include="TaleWorlds.Diamond.AccessProvider.Steam, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="TaleWorlds.Diamond.AccessProvider.Steam">
           <HintPath>..\..\BannerlordRefs\Current\TaleWorlds.Diamond.AccessProvider.Steam.dll</HintPath>
         </Reference>
-        <Reference Include="TaleWorlds.Diamond.AccessProvider.Test, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="TaleWorlds.Diamond.AccessProvider.Test">
           <HintPath>..\..\BannerlordRefs\Current\TaleWorlds.Diamond.AccessProvider.Test.dll</HintPath>
         </Reference>
-        <Reference Include="TaleWorlds.Diamond.ChatSystem.Library, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="TaleWorlds.Diamond.ChatSystem.Library">
           <HintPath>..\..\BannerlordRefs\Current\TaleWorlds.Diamond.ChatSystem.Library.dll</HintPath>
         </Reference>
-        <Reference Include="TaleWorlds.DotNet, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="TaleWorlds.DotNet">
           <HintPath>..\..\BannerlordRefs\Current\TaleWorlds.DotNet.dll</HintPath>
         </Reference>
-        <Reference Include="TaleWorlds.DotNet.AutoGenerated, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="TaleWorlds.DotNet.AutoGenerated">
           <HintPath>..\..\BannerlordRefs\Current\TaleWorlds.DotNet.AutoGenerated.dll</HintPath>
         </Reference>
-        <Reference Include="TaleWorlds.Engine, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="TaleWorlds.Engine">
           <HintPath>..\..\BannerlordRefs\Current\TaleWorlds.Engine.dll</HintPath>
         </Reference>
-        <Reference Include="TaleWorlds.Engine.AutoGenerated, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="TaleWorlds.Engine.AutoGenerated">
           <HintPath>..\..\BannerlordRefs\Current\TaleWorlds.Engine.AutoGenerated.dll</HintPath>
         </Reference>
-        <Reference Include="TaleWorlds.Engine.GauntletUI, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="TaleWorlds.Engine.GauntletUI">
           <HintPath>..\..\BannerlordRefs\Current\TaleWorlds.Engine.GauntletUI.dll</HintPath>
         </Reference>
-        <Reference Include="TaleWorlds.GauntletUI, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="TaleWorlds.GauntletUI">
           <HintPath>..\..\BannerlordRefs\Current\TaleWorlds.GauntletUI.dll</HintPath>
         </Reference>
-        <Reference Include="TaleWorlds.GauntletUI.Data, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="TaleWorlds.GauntletUI.Data">
           <HintPath>..\..\BannerlordRefs\Current\TaleWorlds.GauntletUI.Data.dll</HintPath>
         </Reference>
-        <Reference Include="TaleWorlds.GauntletUI.ExtraWidgets, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="TaleWorlds.GauntletUI.ExtraWidgets">
           <HintPath>..\..\BannerlordRefs\Current\TaleWorlds.GauntletUI.ExtraWidgets.dll</HintPath>
         </Reference>
-        <Reference Include="TaleWorlds.GauntletUI.PrefabSystem, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="TaleWorlds.GauntletUI.PrefabSystem">
           <HintPath>..\..\BannerlordRefs\Current\TaleWorlds.GauntletUI.PrefabSystem.dll</HintPath>
         </Reference>
-        <Reference Include="TaleWorlds.GauntletUI.TooltipExtensions, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="TaleWorlds.GauntletUI.TooltipExtensions">
           <HintPath>..\..\BannerlordRefs\Current\TaleWorlds.GauntletUI.TooltipExtensions.dll</HintPath>
         </Reference>
-        <Reference Include="TaleWorlds.InputSystem, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="TaleWorlds.InputSystem">
           <HintPath>..\..\BannerlordRefs\Current\TaleWorlds.InputSystem.dll</HintPath>
         </Reference>
-        <Reference Include="TaleWorlds.Library, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="TaleWorlds.Library">
           <HintPath>..\..\BannerlordRefs\Current\TaleWorlds.Library.dll</HintPath>
         </Reference>
-        <Reference Include="TaleWorlds.LinQuick, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="TaleWorlds.LinQuick">
           <HintPath>..\..\BannerlordRefs\Current\TaleWorlds.LinQuick.dll</HintPath>
         </Reference>
-        <Reference Include="TaleWorlds.Localization, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="TaleWorlds.Localization">
           <HintPath>..\..\BannerlordRefs\Current\TaleWorlds.Localization.dll</HintPath>
         </Reference>
-        <Reference Include="TaleWorlds.ModuleManager, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="TaleWorlds.ModuleManager">
           <HintPath>..\..\BannerlordRefs\Current\TaleWorlds.ModuleManager.dll</HintPath>
         </Reference>
-        <Reference Include="TaleWorlds.MountAndBlade, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="TaleWorlds.MountAndBlade">
           <HintPath>..\..\BannerlordRefs\Current\TaleWorlds.MountAndBlade.dll</HintPath>
         </Reference>
-        <Reference Include="TaleWorlds.MountAndBlade.AutoGenerated, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="TaleWorlds.MountAndBlade.AutoGenerated">
           <HintPath>..\..\BannerlordRefs\Current\TaleWorlds.MountAndBlade.AutoGenerated.dll</HintPath>
         </Reference>
-        <Reference Include="TaleWorlds.MountAndBlade.CustomBattle, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="TaleWorlds.MountAndBlade.CustomBattle">
           <HintPath>..\..\BannerlordRefs\Current\TaleWorlds.MountAndBlade.CustomBattle.dll</HintPath>
         </Reference>
-        <Reference Include="TaleWorlds.MountAndBlade.Diamond, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="TaleWorlds.MountAndBlade.Diamond">
           <HintPath>..\..\BannerlordRefs\Current\TaleWorlds.MountAndBlade.Diamond.dll</HintPath>
         </Reference>
-        <Reference Include="TaleWorlds.MountAndBlade.GauntletUI, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="TaleWorlds.MountAndBlade.GauntletUI">
           <HintPath>..\..\BannerlordRefs\Current\TaleWorlds.MountAndBlade.GauntletUI.dll</HintPath>
         </Reference>
-        <Reference Include="TaleWorlds.MountAndBlade.GauntletUI.AutoGenerated, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="TaleWorlds.MountAndBlade.GauntletUI.AutoGenerated">
           <HintPath>..\..\BannerlordRefs\Current\TaleWorlds.MountAndBlade.GauntletUI.AutoGenerated.dll</HintPath>
         </Reference>
-        <Reference Include="TaleWorlds.MountAndBlade.GauntletUI.Widgets, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="TaleWorlds.MountAndBlade.GauntletUI.Widgets">
           <HintPath>..\..\BannerlordRefs\Current\TaleWorlds.MountAndBlade.GauntletUI.Widgets.dll</HintPath>
         </Reference>
-        <Reference Include="TaleWorlds.MountAndBlade.Helpers, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="TaleWorlds.MountAndBlade.Helpers">
           <HintPath>..\..\BannerlordRefs\Current\TaleWorlds.MountAndBlade.Helpers.dll</HintPath>
         </Reference>
-        <Reference Include="TaleWorlds.MountAndBlade.Launcher.Library, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="TaleWorlds.MountAndBlade.Launcher.Library">
           <HintPath>..\..\BannerlordRefs\Current\TaleWorlds.MountAndBlade.Launcher.Library.dll</HintPath>
         </Reference>
-        <Reference Include="TaleWorlds.MountAndBlade.Launcher.Steam, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="TaleWorlds.MountAndBlade.Launcher.Steam">
           <HintPath>..\..\BannerlordRefs\Current\TaleWorlds.MountAndBlade.Launcher.Steam.dll</HintPath>
         </Reference>
-        <Reference Include="TaleWorlds.MountAndBlade.Platform.PC, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="TaleWorlds.MountAndBlade.Platform.PC">
           <HintPath>..\..\BannerlordRefs\Current\TaleWorlds.MountAndBlade.Platform.PC.dll</HintPath>
         </Reference>
-        <Reference Include="TaleWorlds.MountAndBlade.View, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="TaleWorlds.MountAndBlade.View">
           <HintPath>..\..\BannerlordRefs\Current\TaleWorlds.MountAndBlade.View.dll</HintPath>
         </Reference>
-        <Reference Include="TaleWorlds.MountAndBlade.ViewModelCollection, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="TaleWorlds.MountAndBlade.ViewModelCollection">
           <HintPath>..\..\BannerlordRefs\Current\TaleWorlds.MountAndBlade.ViewModelCollection.dll</HintPath>
         </Reference>
-        <Reference Include="TaleWorlds.NavigationSystem, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="TaleWorlds.NavigationSystem">
           <HintPath>..\..\BannerlordRefs\Current\TaleWorlds.NavigationSystem.dll</HintPath>
         </Reference>
-        <Reference Include="TaleWorlds.Network, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="TaleWorlds.Network">
           <HintPath>..\..\BannerlordRefs\Current\TaleWorlds.Network.dll</HintPath>
         </Reference>
-        <Reference Include="TaleWorlds.ObjectSystem, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="TaleWorlds.ObjectSystem">
           <HintPath>..\..\BannerlordRefs\Current\TaleWorlds.ObjectSystem.dll</HintPath>
         </Reference>
-        <Reference Include="TaleWorlds.PlatformService, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="TaleWorlds.PlatformService">
           <HintPath>..\..\BannerlordRefs\Current\TaleWorlds.PlatformService.dll</HintPath>
         </Reference>
-        <Reference Include="TaleWorlds.PlatformService.Epic, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="TaleWorlds.PlatformService.Epic">
           <HintPath>..\..\BannerlordRefs\Current\TaleWorlds.PlatformService.Epic.dll</HintPath>
         </Reference>
-        <Reference Include="TaleWorlds.PlatformService.GOG, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="TaleWorlds.PlatformService.GOG">
           <HintPath>..\..\BannerlordRefs\Current\TaleWorlds.PlatformService.GOG.dll</HintPath>
         </Reference>
-        <Reference Include="TaleWorlds.PlatformService.Steam, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="TaleWorlds.PlatformService.Steam">
           <HintPath>..\..\BannerlordRefs\Current\TaleWorlds.PlatformService.Steam.dll</HintPath>
         </Reference>
-        <Reference Include="TaleWorlds.PlayerServices, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="TaleWorlds.PlayerServices">
           <HintPath>..\..\BannerlordRefs\Current\TaleWorlds.PlayerServices.dll</HintPath>
         </Reference>
-        <Reference Include="TaleWorlds.PSAI, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="TaleWorlds.PSAI">
           <HintPath>..\..\BannerlordRefs\Current\TaleWorlds.PSAI.dll</HintPath>
         </Reference>
-        <Reference Include="TaleWorlds.SaveSystem, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="TaleWorlds.SaveSystem">
           <HintPath>..\..\BannerlordRefs\Current\TaleWorlds.SaveSystem.dll</HintPath>
         </Reference>
-        <Reference Include="TaleWorlds.ScreenSystem, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="TaleWorlds.ScreenSystem">
           <HintPath>..\..\BannerlordRefs\Current\TaleWorlds.ScreenSystem.dll</HintPath>
         </Reference>
-        <Reference Include="TaleWorlds.Starter.DotNetCore, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="TaleWorlds.Starter.DotNetCore">
           <HintPath>..\..\BannerlordRefs\Current\TaleWorlds.Starter.DotNetCore.dll</HintPath>
         </Reference>
-        <Reference Include="TaleWorlds.Starter.Library, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="TaleWorlds.Starter.Library">
           <HintPath>..\..\BannerlordRefs\Current\TaleWorlds.Starter.Library.dll</HintPath>
         </Reference>
-        <Reference Include="TaleWorlds.TwoDimension, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="TaleWorlds.TwoDimension">
           <HintPath>..\..\BannerlordRefs\Current\TaleWorlds.TwoDimension.dll</HintPath>
         </Reference>
-        <Reference Include="TaleWorlds.TwoDimension.Standalone, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="TaleWorlds.TwoDimension.Standalone">
           <HintPath>..\..\BannerlordRefs\Current\TaleWorlds.TwoDimension.Standalone.dll</HintPath>
         </Reference>
     </ItemGroup>

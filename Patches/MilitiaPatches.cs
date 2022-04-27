@@ -1,6 +1,24 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using Bandit_Militias.Helpers;
 using HarmonyLib;
+using SandBox.View.Map;
+using SandBox.ViewModelCollection;
+using SandBox.ViewModelCollection.MobilePartyTracker;
+using SandBox.ViewModelCollection.Nameplate;
+using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.Actions;
+using TaleWorlds.CampaignSystem.AgentOrigins;
+using TaleWorlds.CampaignSystem.CampaignBehaviors.AiBehaviors;
+using TaleWorlds.CampaignSystem.Encounters;
+using TaleWorlds.CampaignSystem.GameComponents;
+using TaleWorlds.CampaignSystem.GameMenus;
+using TaleWorlds.CampaignSystem.Party;
+using TaleWorlds.CampaignSystem.Roster;
+using TaleWorlds.CampaignSystem.Settlements;
+using TaleWorlds.Core;
+using TaleWorlds.LinQuick;
 using static Bandit_Militias.Helpers.Helper;
 using static Bandit_Militias.Globals;
 
@@ -204,7 +222,10 @@ namespace Bandit_Militias.Patches
                     __instance.MobileParty is not null &&
                     __instance.MobileParty.IsBM())
                 {
-                    __result = PartyMilitiaMap[__instance.MobileParty].Banner;
+                    if (PartyMilitiaMap.ContainsKey(__instance.MobileParty))
+                    {
+                        __result = PartyMilitiaMap[__instance.MobileParty].Banner;
+                    }
                 }
             }
         }
@@ -390,7 +411,10 @@ namespace Bandit_Militias.Patches
         {
             public static void Postfix(MobileParty mobileParty, ref bool __result)
             {
-                __result = !mobileParty.IsBM();
+                if (mobileParty.IsBM())
+                {
+                    __result = false;
+                }
             }
         }
     }

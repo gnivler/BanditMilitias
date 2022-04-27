@@ -25,11 +25,15 @@ namespace Bandit_Militias
         internal Hero Hero;
         internal CampaignTime LastMergedOrSplitDate = CampaignTime.Now;
 
-        public Militia(MobileParty mobileParty)
+        public Militia()
         {
-            MobileParty = mobileParty;
             Banner = Banners.GetRandomElement();
             BannerKey = Banner.Serialize();
+        }
+
+        public Militia(MobileParty mobileParty) : this()
+        {
+            MobileParty = mobileParty;
             Hero = mobileParty.LeaderHero;
             if (!Hero.StringId.EndsWith("Bandit_Militia")
                 || !Hero.CharacterObject.StringId.EndsWith("Bandit_Militia"))
@@ -38,18 +42,20 @@ namespace Bandit_Militias
                 Hero.CharacterObject.StringId += "Bandit_Militia";
             }
 
+            if (!PartyMilitiaMap.ContainsKey(MobileParty))
+            {
+                PartyMilitiaMap.Add(MobileParty, this);
+            }
+
             if (!PartyImageMap.ContainsKey(MobileParty))
             {
                 PartyImageMap.Add(MobileParty, new ImageIdentifierVM(Banner));
             }
-
             //LogMilitiaFormed(MobileParty);
         }
 
-        public Militia(Vec2 position, TroopRoster party, TroopRoster prisoners)
+        public Militia(Vec2 position, TroopRoster party, TroopRoster prisoners) : this()
         {
-            Banner = Banners.GetRandomElement();
-            BannerKey = Banner.Serialize();
             Spawn(position, party, prisoners);
             if (!PartyImageMap.ContainsKey(MobileParty))
             {
@@ -71,7 +77,7 @@ namespace Bandit_Militias
             var leaderHero = MobileParty.MemberRoster.GetTroopRoster().ToListQ()[0].Character.HeroObject;
             MobileParty.PartyComponent.ChangePartyLeader(leaderHero);
             Hero = MobileParty.LeaderHero;
-            Hero.Gold = Convert.ToInt32(MobileParty.Party.TotalStrength * Globals.GoldMap[Globals.Settings.GoldReward.SelectedValue]);
+            Hero.Gold = Convert.ToInt32(MobileParty.Party.TotalStrength * GoldMap[Globals.Settings.GoldReward.SelectedValue]);
             if (MobileParty.ActualClan.Leader is null)
             {
                 MobileParty.ActualClan.SetLeader(Hero);
@@ -92,7 +98,6 @@ namespace Bandit_Militias
                         !saddle.Name.ToString().ToLower().Contains("camel")).ToList().GetRandomElement());
                 }
             }
-
 
             var getLocalizedText = AccessTools.Method(typeof(MBTextManager), "GetLocalizedText");
             Name = (string)getLocalizedText.Invoke(null, new object[] { $"{Possess(Hero.FirstName.ToString())} Bandit Militia" });
