@@ -24,17 +24,21 @@ namespace Bandit_Militias
         internal readonly string BannerKey;
         internal Hero Hero;
         internal CampaignTime LastMergedOrSplitDate = CampaignTime.Now;
-
-        public Militia()
+        //private static readonly AccessTools.FieldRef<MobileParty, bool> IsBandit =
+        //    AccessTools.FieldRefAccess<MobileParty, bool>("<IsBandit>k__BackingField"); 
+   
+        private Militia()
         {
             Banner = Banners.GetRandomElement();
             BannerKey = Banner.Serialize();
         }
 
+        // recreates militias on init
         public Militia(MobileParty mobileParty) : this()
         {
             MobileParty = mobileParty;
             Hero = mobileParty.LeaderHero;
+            //IsBandit(MobileParty) = true; // remove after a few versions
             if (!Hero.StringId.EndsWith("Bandit_Militia")
                 || !Hero.CharacterObject.StringId.EndsWith("Bandit_Militia"))
             {
@@ -54,6 +58,7 @@ namespace Bandit_Militias
             //LogMilitiaFormed(MobileParty);
         }
 
+        // instantiating new BMs
         public Militia(Vec2 position, TroopRoster party, TroopRoster prisoners) : this()
         {
             Spawn(position, party, prisoners);
@@ -67,11 +72,13 @@ namespace Bandit_Militias
             //LogMilitiaFormed(MobileParty);
         }
 
+        // genesis
         private void Spawn(Vec2 position, TroopRoster party, TroopRoster prisoners)
         {
             var partyClan = GetMostPrevalent(party) ?? Clan.BanditFactions.First();
             MobileParty = ModBanditMilitiaPartyComponent.CreateBanditParty(partyClan);
             MobileParty.InitializeMobilePartyAroundPosition(party, prisoners, position, 0);
+            //IsBandit(MobileParty) = true;
             PartyMilitiaMap.Add(MobileParty, this);
             PartyImageMap.Add(MobileParty, new ImageIdentifierVM(Banner));
             var leaderHero = MobileParty.MemberRoster.GetTroopRoster().ToListQ()[0].Character.HeroObject;

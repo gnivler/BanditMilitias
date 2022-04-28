@@ -56,6 +56,14 @@ namespace Bandit_Militias.Patches
                 }
 
                 lastChecked = Campaign.CurrentTime;
+                foreach (var party in MobileParty.All.WhereQ(m => m.IsBM()))
+                {
+                    if (NumMountedTroops(party.MemberRoster) > party.MemberRoster.TotalManCount - 10)
+                    {
+                        //Debugger.Break();
+                    }
+                }
+                
                 var parties = MobileParty.All.Where(m =>
                         m.Party.IsMobile
                         && m.CurrentSettlement is null

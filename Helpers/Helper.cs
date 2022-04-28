@@ -541,7 +541,7 @@ namespace Bandit_Militias.Helpers
                     {
                         ItemModifier(ref randomElement) = randomElement.Item.ArmorComponent.ItemModifierGroup?.ItemModifiers.GetRandomElementWithPredicate(i => i.PriceMultiplier > 1);
                     }
-                    
+
                     if (randomElement.Item.HasWeaponComponent)
                     {
                         ItemModifier(ref randomElement) = randomElement.Item.WeaponComponent.ItemModifierGroup?.ItemModifiers.GetRandomElementWithPredicate(i => i.PriceMultiplier > 1);
@@ -812,7 +812,35 @@ namespace Bandit_Militias.Helpers
                 }
 
                 var settlement = Settlement.All.Where(s => !s.IsVisible).GetRandomElementInefficiently();
-                var clan = Clan.BanditFactions.ToList()[Rng.Next(0, Clan.BanditFactions.Count())];
+                var nearbyBandits = MobileParty.FindPartiesAroundPosition(settlement.Position2D, 100).WhereQ(m => m.IsBandit);
+                var cultureMap = new Dictionary<Clan, int>();
+                {
+                    foreach (var party in nearbyBandits)
+                    {
+                        if (cultureMap.TryGetValue(party.ActualClan, out _))
+                        {
+                            cultureMap[party.ActualClan]++;
+                        }
+
+                        cultureMap[party.ActualClan] = 1;
+                    }
+                }
+                Clan clan = default;
+                try
+                {
+                    clan = Clan.BanditFactions.FirstOrDefaultQ(c => c == cultureMap.OrderByDescending(x => x.Value).FirstOrDefault().Key);
+
+                }
+                catch (Exception ex)
+                {
+                    Mod.Log(ex);
+                }
+
+                if (clan is null)
+                {
+                    clan = Clan.BanditFactions.First();
+                }
+
                 var min = Convert.ToInt32(Globals.Settings.MinPartySize);
                 var max = Convert.ToInt32(CalculatedMaxPartySize);
                 var roster = TroopRoster.CreateDummyTroopRoster();
@@ -834,11 +862,6 @@ namespace Bandit_Militias.Helpers
                             break;
                         }
                     }
-                }
-
-                if (roster.TotalManCount < Globals.Settings.MinPartySize)
-                {
-                    Mod.Log("wtf");
                 }
 
                 var militia = new Militia(settlement.GatePosition, roster, TroopRoster.CreateDummyTroopRoster());

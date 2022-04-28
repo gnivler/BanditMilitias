@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -113,6 +114,11 @@ namespace Bandit_Militias
                 {
                     Globals.MobilePartyTrackerVM.Trackers.Add(new MobilePartyTrackItemVM(m, MapScreen.Instance.MapCamera, null));
                 }
+            }
+
+            if (superKey && Input.IsKeyPressed(InputKey.Tilde))
+            {
+                Debugger.Break();
             }
 
             if (superKey && Input.IsKeyPressed(InputKey.F11))
