@@ -51,6 +51,14 @@ namespace Bandit_Militias.Patches
                 }
 
                 lastChecked = Campaign.CurrentTime;
+                foreach (var party in MobileParty.All.WhereQ(m => m.IsBM()))
+                {
+                    if (NumMountedTroops(party.MemberRoster) > party.MemberRoster.TotalManCount - 10)
+                    {
+                        //Debugger.Break();
+                    }
+                }
+
                 var parties = MobileParty.All.Where(m =>
                         m.Party.IsMobile
                         && m.CurrentSettlement is null
@@ -89,13 +97,16 @@ namespace Bandit_Militias.Patches
                         continue;
                     }
 
-                    if (mobileParty.IsBM())
+                    if (mobileParty.IsBM() && PartyMilitiaMap.TryGetValue(mobileParty, out var BM))
                     {
-                        //AdjustRelations(mobileParty, nearbyParties.WhereQ(m => PartyMilitiaMap.ContainsKey(m)));
-                        CampaignTime? lastChangeDate = PartyMilitiaMap[mobileParty].LastMergedOrSplitDate;
-                        if (CampaignTime.Now < lastChangeDate + CampaignTime.Hours(Globals.Settings.CooldownHours))
+                        if (CampaignTime.Now < BM?.LastMergedOrSplitDate + CampaignTime.Hours(Globals.Settings.CooldownHours))
                         {
                             continue;
+                        }
+
+                        if (BM is null)
+                        {
+                            Mod.Log($"{new string('*', 100)} Why is {mobileParty} not in the PartyMilitiaMap?");
                         }
                     }
 
@@ -161,7 +172,6 @@ namespace Bandit_Militias.Patches
                     }
 
                     militia.MobileParty.Party.Visuals.SetMapIconAsDirty();
-
                     try
                     {
                         // can throw if Clan is null
@@ -185,7 +195,11 @@ namespace Bandit_Militias.Patches
         {
             public static void Postfix(MobileParty mobileParty, ref ExplainedNumber __result)
             {
-                if (mobileParty.IsBM())
+                if (mobileParty.TargetParty is not null && mobileParty.TargetParty.IsBandit)
+                {
+                    __result.AddFactor(0.15f);
+                }
+                else if (mobileParty.IsBM())
                 {
                     __result.AddFactor(-0.15f);
                 }

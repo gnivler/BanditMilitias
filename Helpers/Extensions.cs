@@ -16,6 +16,20 @@ namespace Bandit_Militias.Helpers
             return Campaign.Current.VisualTrackerManager.CheckTracked(mobileParty);
         }
 
+        //[HarmonyPatch(typeof(AiPatrollingBehavior), "AiHourlyTick")]
+        //public class asidfjasoifj
+        //{
+        //    public static Exception Finalizer(Exception __exception, MobileParty mobileParty)
+        //    {
+        //        if (__exception is not null)
+        //        {
+        //            FileLog.Log(mobileParty.Name.ToString());
+        //        }
+        //
+        //        return null;
+        //    }
+        //}
+        
         internal static bool IsTooBusyToMerge(this MobileParty mobileParty)
         {
             if (mobileParty == mobileParty?.MoveTargetParty?.MoveTargetParty)

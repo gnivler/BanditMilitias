@@ -534,7 +534,7 @@ namespace Bandit_Militias.Helpers
                     {
                         ItemModifier(ref randomElement) = randomElement.Item.ArmorComponent.ItemModifierGroup?.ItemModifiers.GetRandomElementWithPredicate(i => i.PriceMultiplier > 1);
                     }
-                    
+
                     if (randomElement.Item.HasWeaponComponent)
                     {
                         ItemModifier(ref randomElement) = randomElement.Item.WeaponComponent.ItemModifierGroup?.ItemModifiers.GetRandomElementWithPredicate(i => i.PriceMultiplier > 1);
@@ -710,13 +710,14 @@ namespace Bandit_Militias.Helpers
             }
         }
 
+        private static readonly AccessTools.FieldRef<MobileParty, bool> aiBehaviorResetNeeded =
+            AccessTools.FieldRefAccess<MobileParty, bool>("_aiBehaviorResetNeeded");
+
         internal static void SetMilitiaPatrol(MobileParty mobileParty)
         {
             var settlement = Settlement.All.GetRandomElement();
             mobileParty.SetMovePatrolAroundPoint(settlement.GatePosition);
-
-            // TODO FieldRef
-            Traverse.Create(mobileParty).Field<bool>("._aiBehaviorResetNeeded").Value = false;
+            aiBehaviorResetNeeded(mobileParty) = false;
         }
 
         internal static void RunLateManualPatches()
@@ -805,34 +806,32 @@ namespace Bandit_Militias.Helpers
                 }
 
                 var settlement = Settlement.All.Where(s => !s.IsVisible).GetRandomElementInefficiently();
-                var clan = Clan.BanditFactions.ToList()[Rng.Next(0, Clan.BanditFactions.Count())];
+                var nearbyBandits = MobileParty.FindPartiesAroundPosition(settlement.Position2D, 100).WhereQ(m => m.IsBandit);
+                var cultureMap = new Dictionary<Clan, int>();
+                {
+                    foreach (var party in nearbyBandits)
+                    {
+                        if (cultureMap.TryGetValue(party.ActualClan, out _))
+                        {
+                            cultureMap[party.ActualClan]++;
+                        }
+
+                        cultureMap[party.ActualClan] = 1;
+                    }
+                }
+
+                var clan = Clan.BanditFactions.FirstOrDefaultQ(c =>
+                    c == cultureMap.OrderByDescending(x => x.Value).FirstOrDefault().Key);
+                if (clan is null)
+                {
+                    clan = Clan.BanditFactions.First();
+                }
+
                 var min = Convert.ToInt32(Globals.Settings.MinPartySize);
                 var max = Convert.ToInt32(CalculatedMaxPartySize);
                 var roster = TroopRoster.CreateDummyTroopRoster();
                 roster.AddToCounts(clan.BasicTroop, Rng.Next(min, max + 1));
-                var numMounted = NumMountedTroops(roster);
-                var mountedTroops = roster.ToFlattenedRoster().Troops.WhereQ(t => t.IsMounted);
-                // remove horses past 50% of the BM
-                if (numMounted > roster.TotalManCount / 2)
-                {
-                    foreach (var troop in mountedTroops)
-                    {
-                        if (NumMountedTroops(roster) > roster.TotalManCount / 2)
-                        {
-                            troop.Equipment[10] = new EquipmentElement();
-                            troop.Equipment[11] = new EquipmentElement();
-                        }
-                        else
-                        {
-                            break;
-                        }
-                    }
-                }
-
-                if (roster.TotalManCount < Globals.Settings.MinPartySize)
-                {
-                    Mod.Log("wtf");
-                }
+                MurderMounts(roster);
 
                 var militia = new Militia(settlement.GatePosition, roster, TroopRoster.CreateDummyTroopRoster());
                 // teleport new militias near the player
@@ -881,11 +880,35 @@ namespace Bandit_Militias.Helpers
                         }
                     }
 
+                    MurderMounts(mobileParty.MemberRoster);
                     //var troopString = $"{mobileParty.Party.NumberOfAllMembers} troop" + (mobileParty.Party.NumberOfAllMembers > 1 ? "s" : "");
                     //var strengthString = $"{Math.Round(mobileParty.Party.TotalStrength)} strength";
                     //Mod.Log($"{$"Grown to",-70} | {troopString,10} | {strengthString,12} |");
                     DoPowerCalculations();
                     // Mod.Log($"Grown to: {mobileParty.MemberRoster.TotalManCount}");
+                }
+            }
+        }
+
+        private static void MurderMounts(TroopRoster troopRoster)
+        {
+            var numMounted = NumMountedTroops(troopRoster);
+            var mountedTroops = troopRoster.ToFlattenedRoster().Troops.WhereQ(t => t.IsMounted && !t.IsHero).ToListQ();
+            mountedTroops.Shuffle();
+            // remove horses past 50% of the BM
+            if (numMounted > troopRoster.TotalManCount / 2)
+            {
+                foreach (var troop in mountedTroops)
+                {
+                    if (NumMountedTroops(troopRoster) > troopRoster.TotalManCount / 2)
+                    {
+                        troop.Equipment[10] = new EquipmentElement();
+                        troop.Equipment[11] = new EquipmentElement();
+                    }
+                    else
+                    {
+                        break;
+                    }
                 }
             }
         }
