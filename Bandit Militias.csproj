@@ -291,7 +291,7 @@
     </Target>
     -->
     <PropertyGroup>
-        <PostBuildEvent>xcopy /y "N:\Repos\Bandit Militias\obj\debug\Bandit Militias.???" "M:\SteamLibrary\steamapps\common\Mount %26 Blade II Bannerlord\Modules\Bandit Militias\bin\Win64_Shipping_Client"
+        <PostBuildEvent>xcopy /y "N:\Repos\Bandit Militias\obj\release\Bandit Militias.???" "M:\SteamLibrary\steamapps\common\Mount %26 Blade II Bannerlord\Modules\Bandit Militias\bin\Win64_Shipping_Client"
 xcopy /y "N:\Repos\Bandit Militias\SubModule.xml" "M:\SteamLibrary\steamapps\common\Mount %26 Blade II Bannerlord\Modules\Bandit Militias"</PostBuildEvent>
     </PropertyGroup>
 

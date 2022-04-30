@@ -12,11 +12,11 @@ namespace Bandit_Militias
         public override void RegisterEvents()
         {
             CampaignEvents.DailyTickPartyEvent.AddNonSerializedListener(this, Helper.TryGrowing);
-            CampaignEvents.HourlyTickEvent.AddNonSerializedListener(this, Helper.SynthesizeBM);
             CampaignEvents.DailyTickPartyEvent.AddNonSerializedListener(this, DailyTickParty);
             CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, Helper.FlushMilitiaCharacterObjects);
-            CampaignEvents.OnPartyRemovedEvent.AddNonSerializedListener(this, party => PartyMilitiaMap.Remove(party.MobileParty));
             CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, OnDailyTickEvent);
+            CampaignEvents.HourlyTickEvent.AddNonSerializedListener(this, Helper.SynthesizeBM);
+            CampaignEvents.OnPartyRemovedEvent.AddNonSerializedListener(this, party => PartyMilitiaMap.Remove(party.MobileParty));
         }
 
         private static void OnDailyTickEvent()
