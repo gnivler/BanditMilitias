@@ -10,7 +10,6 @@ using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.LogEntries;
 using TaleWorlds.Core;
-using TaleWorlds.Library;
 using TaleWorlds.LinQuick;
 using TaleWorlds.ObjectSystem;
 using TaleWorlds.TwoDimension;
@@ -32,6 +31,8 @@ namespace Bandit_Militias.Helpers
 
         internal static bool TrySplitParty(MobileParty mobileParty)
         {
+            
+            var _artisanList ??= ArtisanBuilder.GenerateArtisanPopulation();
             const float splitDivisor = 2;
             const float removedHero = 1;
             if (MilitiaPowerPercent > Globals.Settings.GlobalPowerPercent
