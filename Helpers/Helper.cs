@@ -8,16 +8,7 @@ using HarmonyLib;
 using Helpers;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
-using TaleWorlds.CampaignSystem.CampaignBehaviors;
-using TaleWorlds.CampaignSystem.CharacterDevelopment;
-using TaleWorlds.CampaignSystem.Encounters;
-using TaleWorlds.CampaignSystem.Extensions;
-using TaleWorlds.CampaignSystem.GameComponents;
 using TaleWorlds.CampaignSystem.LogEntries;
-using TaleWorlds.CampaignSystem.MapEvents;
-using TaleWorlds.CampaignSystem.Party;
-using TaleWorlds.CampaignSystem.Roster;
-using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
 using TaleWorlds.LinQuick;
@@ -35,7 +26,9 @@ namespace Bandit_Militias.Helpers
         internal static List<ItemObject> Saddles;
         private const float ReductionFactor = 0.8f;
         private static Clan looters;
+        private static IEnumerable<Clan> synthClans;
         private static Clan Looters => looters ??= Clan.BanditFactions.First(c => c.StringId == "looters");
+        private static IEnumerable<Clan> SynthClans => synthClans ??= Clan.BanditFactions.Except(new[] { Looters });
 
         internal static bool TrySplitParty(MobileParty mobileParty)
         {
@@ -829,8 +822,7 @@ namespace Bandit_Militias.Helpers
                     }
                 }
 
-                var clan = Clan.BanditFactions.Except(new[] { Looters }).FirstOrDefaultQ(c =>
-                    c == cultureMap.OrderByDescending(x => x.Value).First().Key);
+                var clan = SynthClans.FirstOrDefaultQ(c => c == cultureMap.OrderByDescending(x => x.Value).First().Key) ?? Looters;
                 var min = Convert.ToInt32(Globals.Settings.MinPartySize);
                 var max = Convert.ToInt32(CalculatedMaxPartySize);
                 var roster = TroopRoster.CreateDummyTroopRoster();
@@ -838,6 +830,7 @@ namespace Bandit_Militias.Helpers
                 roster.AddToCounts(clan.BasicTroop, size);
                 roster.AddToCounts(Looters.BasicTroop, size);
                 MurderMounts(roster);
+
 
                 var militia = new Militia(settlement.GatePosition, roster, TroopRoster.CreateDummyTroopRoster());
                 // teleport new militias near the player
