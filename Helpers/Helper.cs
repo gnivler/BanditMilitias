@@ -29,11 +29,13 @@ using static Bandit_Militias.Globals;
 
 namespace Bandit_Militias.Helpers
 {
-    public static class Helper
+    public class Helper
     {
         internal static List<ItemObject> Mounts;
         internal static List<ItemObject> Saddles;
         private const float ReductionFactor = 0.8f;
+        private static Clan looters;
+        private static Clan Looters => looters ??= Clan.BanditFactions.First(c => c.StringId == "looters");
 
         internal static bool TrySplitParty(MobileParty mobileParty)
         {
@@ -827,17 +829,14 @@ namespace Bandit_Militias.Helpers
                     }
                 }
 
-                var clan = Clan.BanditFactions.FirstOrDefaultQ(c =>
-                    c == cultureMap.OrderByDescending(x => x.Value).FirstOrDefault().Key);
-                if (clan is null)
-                {
-                    clan = Clan.BanditFactions.First();
-                }
-
+                var clan = Clan.BanditFactions.Except(new[] { Looters }).FirstOrDefaultQ(c =>
+                    c == cultureMap.OrderByDescending(x => x.Value).First().Key);
                 var min = Convert.ToInt32(Globals.Settings.MinPartySize);
                 var max = Convert.ToInt32(CalculatedMaxPartySize);
                 var roster = TroopRoster.CreateDummyTroopRoster();
-                roster.AddToCounts(clan.BasicTroop, Rng.Next(min, max + 1));
+                var size = Convert.ToInt32(Rng.Next(min, max + 1) / 2f);
+                roster.AddToCounts(clan.BasicTroop, size);
+                roster.AddToCounts(Looters.BasicTroop, size);
                 MurderMounts(roster);
 
                 var militia = new Militia(settlement.GatePosition, roster, TroopRoster.CreateDummyTroopRoster());
