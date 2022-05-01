@@ -106,6 +106,10 @@ namespace Bandit_Militias
                            && (Input.IsKeyDown(InputKey.LeftAlt) || Input.IsKeyDown(InputKey.RightAlt))
                            && (Input.IsKeyDown(InputKey.LeftShift) || Input.IsKeyDown(InputKey.RightShift));
 
+            if (superKey && Input.IsKeyPressed(InputKey.Tilde))
+            {
+                Debugger.Break();
+            }
             if (superKey && Input.IsKeyPressed(InputKey.F9))
             {
                 // debug to show all parties on map
