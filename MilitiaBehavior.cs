@@ -1,6 +1,6 @@
 using Bandit_Militias.Helpers;
 using TaleWorlds.CampaignSystem;
-using TaleWorlds.CampaignSystem.Party;
+using TaleWorlds.Core;
 using static Bandit_Militias.Globals;
 
 // ReSharper disable InconsistentNaming
@@ -65,10 +65,7 @@ namespace Bandit_Militias
                 //mobileParty.SetPartyObjective(MobileParty.PartyObjective.Aggressive);
                 if (!Helper.TrySplitParty(mobileParty))
                 {
-                    if (mobileParty.ShortTermBehavior is AiBehavior.None or AiBehavior.Hold)
-                    {
-                        Helper.SetMilitiaPatrol(mobileParty);
-                    }
+                    Helper.SetMilitiaPatrol(mobileParty);
                 }
             }
         }
