@@ -8,7 +8,16 @@ using HarmonyLib;
 using Helpers;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
+using TaleWorlds.CampaignSystem.CampaignBehaviors;
+using TaleWorlds.CampaignSystem.CharacterDevelopment;
+using TaleWorlds.CampaignSystem.Encounters;
+using TaleWorlds.CampaignSystem.Extensions;
+using TaleWorlds.CampaignSystem.GameComponents;
 using TaleWorlds.CampaignSystem.LogEntries;
+using TaleWorlds.CampaignSystem.MapEvents;
+using TaleWorlds.CampaignSystem.Party;
+using TaleWorlds.CampaignSystem.Roster;
+using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
 using TaleWorlds.LinQuick;
@@ -808,21 +817,32 @@ namespace Bandit_Militias.Helpers
                 }
 
                 var settlement = Settlement.All.Where(s => !s.IsVisible).GetRandomElementInefficiently();
-                var nearbyBandits = MobileParty.FindPartiesAroundPosition(settlement.Position2D, 100).WhereQ(m => m.IsBandit);
-                var cultureMap = new Dictionary<Clan, int>();
+                var nearbyBandits = MobileParty.FindPartiesAroundPosition(settlement.Position2D, 100).WhereQ(m => m.IsBandit).ToListQ();
+                Clan clan;
+                if (!nearbyBandits.Any())
                 {
-                    foreach (var party in nearbyBandits)
+                    clan = Looters;
+                }
+                else
+                {
+                    var cultureMap = new Dictionary<Clan, int>();
                     {
-                        if (cultureMap.TryGetValue(party.ActualClan, out _))
+                        foreach (var party in nearbyBandits)
                         {
-                            cultureMap[party.ActualClan]++;
+                            if (cultureMap.ContainsKey(party.ActualClan))
+                            {
+                                cultureMap[party.ActualClan]++;
+                            }
+                            else
+                            {
+                                cultureMap.Add(party.ActualClan, 1);
+                            }
                         }
-
-                        cultureMap[party.ActualClan] = 1;
                     }
+                    var mostCommon = cultureMap.OrderByDescending(x => x.Value).First().Key;
+                    clan = mostCommon != Looters ? SynthClans.First(c => c == cultureMap.OrderByDescending(x => x.Value).First().Key) : mostCommon;
                 }
 
-                var clan = SynthClans.FirstOrDefaultQ(c => c == cultureMap.OrderByDescending(x => x.Value).First().Key) ?? Looters;
                 var min = Convert.ToInt32(Globals.Settings.MinPartySize);
                 var max = Convert.ToInt32(CalculatedMaxPartySize);
                 var roster = TroopRoster.CreateDummyTroopRoster();
@@ -830,8 +850,6 @@ namespace Bandit_Militias.Helpers
                 roster.AddToCounts(clan.BasicTroop, size);
                 roster.AddToCounts(Looters.BasicTroop, size);
                 MurderMounts(roster);
-
-
                 var militia = new Militia(settlement.GatePosition, roster, TroopRoster.CreateDummyTroopRoster());
                 // teleport new militias near the player
                 if (Globals.Settings.TestingMode)
