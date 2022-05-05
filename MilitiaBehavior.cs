@@ -1,4 +1,6 @@
+using System.Diagnostics;
 using Bandit_Militias.Helpers;
+using Helpers;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
 using static Bandit_Militias.Globals;
@@ -33,28 +35,23 @@ namespace Bandit_Militias
                 return;
             }
 
-            var settlement = Settlement.All.GetRandomElement();
             switch (mobileParty.Ai.AiState)
             {
                 case AIState.Undefined:
+                case AIState.PatrollingAroundCenter:
+                case AIState.PatrollingAroundLocation when mobileParty.TargetSettlement is null:
+                    var settlement = SettlementHelper.FindNearestSettlementToPoint(mobileParty.Position2D, s => s.IsVillage);
+                    p.AIBehaviorScores.Add(new AIBehaviorTuple(settlement, AiBehavior.RaidSettlement), 100f);
+                    settlement = Settlement.All.GetRandomElement();
                     p.AIBehaviorScores.Add(new AIBehaviorTuple(settlement, AiBehavior.PatrolAroundPoint), 1f);
                     break;
-                case AIState.BesiegingCenter:
-                    break;
-                case AIState.PatrollingAroundCenter:
-                    var t = mobileParty.IsMoving;
-                    break;
-                case AIState.PatrollingAroundLocation:
-                    var x = mobileParty.IsMoving;
-                    break;
-                case AIState.VisitingHideout:
-                    break;
                 case AIState.InfestingVillage:
-                    break;
                 case AIState.Raiding:
+                    Debugger.Break();
                     break;
             }
         }
+
 
         private static void DailyTickParty(MobileParty mobileParty)
         {

@@ -2,13 +2,16 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using Bandit_Militias.Helpers;
 using HarmonyLib;
 using Helpers;
 using SandBox.View.Map;
 using SandBox.ViewModelCollection.MobilePartyTracker;
 using TaleWorlds.CampaignSystem;
-using TaleWorlds.CampaignSystem.SandBox.GameComponents;
+using TaleWorlds.CampaignSystem.CharacterDevelopment;
+using TaleWorlds.CampaignSystem.Extensions;
+using TaleWorlds.CampaignSystem.GameComponents;
+using TaleWorlds.CampaignSystem.Party;
+using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
 using TaleWorlds.Engine;
 using TaleWorlds.Library;
@@ -113,8 +116,7 @@ namespace Bandit_Militias.Patches
             {
                 if (__exception is not null)
                 {
-                    Mod.Log(__exception);
-                    Mod.Log(party.MobileParty?.StringId);
+                    Debugger.Break();
                 }
 
                 return null;
@@ -130,9 +132,7 @@ namespace Bandit_Militias.Patches
             {
                 if (__exception is not null)
                 {
-                    Mod.Log(__exception);
-                    Mod.Log(owner.MobileParty.StringId);
-                    Mod.Log(character.StringId);
+                    Debugger.Break();
                 }
 
                 return null;
@@ -143,11 +143,11 @@ namespace Bandit_Militias.Patches
         [HarmonyPatch(typeof(Hero), "SetInitialValuesFromCharacter")]
         public class HeroSetInitialValuesFromCharacter
         {
-            public static Exception Finalizer(Hero __instance, Exception __exception)
+            public static Exception Finalizer(Hero __instance, CharacterObject characterObject, Exception __exception)
             {
                 if (__exception is not null)
                 {
-                    Mod.Log(__instance);
+                    Debugger.Break();
                 }
 
                 return null;
