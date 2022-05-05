@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using HarmonyLib;
 using Helpers;
@@ -115,10 +116,7 @@ namespace Bandit_Militias.Patches
             {
                 if (__exception is not null)
                 {
-                    Mod.Log(__exception);
-                    Mod.Log(party?.MobileParty.StringId);
-                    Mod.Log(feat.StringId);
-                    Mod.Log($"guessing: {party?.Owner?.Culture}?");
+                    Debugger.Break();
                 }
 
                 return null;
@@ -134,9 +132,7 @@ namespace Bandit_Militias.Patches
             {
                 if (__exception is not null)
                 {
-                    Mod.Log(__exception);
-                    Mod.Log(owner.MobileParty.StringId);
-                    Mod.Log(character.StringId);
+                    Debugger.Break();
                 }
 
                 return null;
@@ -147,11 +143,11 @@ namespace Bandit_Militias.Patches
         [HarmonyPatch(typeof(Hero), "SetInitialValuesFromCharacter")]
         public class HeroSetInitialValuesFromCharacter
         {
-            public static Exception Finalizer(Hero __instance, Exception __exception)
+            public static Exception Finalizer(Hero __instance, CharacterObject characterObject, Exception __exception)
             {
                 if (__exception is not null)
                 {
-                    Mod.Log(__instance);
+                    Debugger.Break();
                 }
 
                 return null;

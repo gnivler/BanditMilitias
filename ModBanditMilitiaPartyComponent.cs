@@ -1,4 +1,3 @@
-using System;
 using Bandit_Militias.Helpers;
 using HarmonyLib;
 using Helpers;
@@ -53,34 +52,22 @@ namespace Bandit_Militias
         public static MobileParty CreateBanditParty(Clan clan)
         {
             var hero = Helper.CreateHero();
-            try
-            {
-                var nameIndex = (int)Traverse.Create(NameGenerator.Current)
-                    .Method("SelectNameIndex", hero, GangLeaderNames(NameGenerator.Current), 0, true, false)
-                    .GetValue();
-                var originalStringId = hero.CharacterObject.StringId;
-                hero.CharacterObject.StringId = hero.CharacterObject.StringId.Replace("Bandit_Militia", "");
-                NameGenerator.Current.AddName(
-                    (uint)Traverse.Create(NameGenerator.Current)
-                        .Method("CreateNameCode", hero.CharacterObject, GangLeaderNames(NameGenerator.Current), nameIndex)
-                        .GetValue());
-                hero.CharacterObject.StringId = originalStringId;
-                var textObject = GangLeaderNames(NameGenerator.Current)[nameIndex].CopyTextObject();
-                textObject.SetTextVariable("FIRST_NAME", hero.FirstName);
-                StringHelpers.SetCharacterProperties("HERO", hero.CharacterObject, textObject);
-                hero.SetName(textObject, hero.FirstName);
-            }
-            catch (Exception ex)
-            {
-                Mod.Log(ex);
-            }
-
+            var nameIndex = (int)Traverse.Create(NameGenerator.Current)
+                .Method("SelectNameIndex", hero, GangLeaderNames(NameGenerator.Current), 0, true, false)
+                .GetValue();
+            var originalStringId = hero.CharacterObject.StringId;
+            hero.CharacterObject.StringId = hero.CharacterObject.StringId.Replace("Bandit_Militia", "");
+            NameGenerator.Current.AddName(
+                (uint)Traverse.Create(NameGenerator.Current)
+                    .Method("CreateNameCode", hero.CharacterObject, GangLeaderNames(NameGenerator.Current), nameIndex)
+                    .GetValue());
+            hero.CharacterObject.StringId = originalStringId;
+            var textObject = GangLeaderNames(NameGenerator.Current)[nameIndex].CopyTextObject();
+            textObject.SetTextVariable("FIRST_NAME", hero.FirstName);
+            StringHelpers.SetCharacterProperties("HERO", hero.CharacterObject, textObject);
+            hero.SetName(textObject, hero.FirstName);
             hero.Clan = clan;
-            var mobileParty = MobileParty.CreateParty("Bandit_Militia", new ModBanditMilitiaPartyComponent(hero), m =>
-            {
-                m.ActualClan = clan;
-            });
-
+            var mobileParty = MobileParty.CreateParty("Bandit_Militia", new ModBanditMilitiaPartyComponent(hero), m => m.ActualClan = clan);
             mobileParty.MemberRoster.AddToCounts(hero.CharacterObject, 1, false, 0, 0, true, 0);
             return mobileParty;
         }

@@ -379,15 +379,22 @@ namespace Bandit_Militias.Patches
             }
         }
 
-        // throws with Heroes Must Die
         [HarmonyPatch(typeof(TroopRoster), "AddToCountsAtIndex")]
         public static class TroopRosterAddToCountsAtIndexPatch
         {
-            private static Exception Finalizer(Exception __exception)
+            private static Exception Finalizer(TroopRoster __instance, Exception __exception)
             {
+                // throws with Heroes Must Die
                 if (__exception is IndexOutOfRangeException)
                 {
                     Mod.Log("HACK Squelching IndexOutOfRangeException at TroopRoster.AddToCountsAtIndex");
+                    return null;
+                }
+
+                // throws during nuke of poor state
+                if (__exception is NullReferenceException)
+                {
+                    Mod.Log("HACK Squelching NullReferenceException at TroopRoster.AddToCountsAtIndex");
                     return null;
                 }
 
