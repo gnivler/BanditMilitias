@@ -36,7 +36,7 @@ namespace Bandit_Militias.Helpers
         private const float ReductionFactor = 0.8f;
         private static Clan looters;
         private static IEnumerable<Clan> synthClans;
-        private static Clan Looters => looters ??= Clan.BanditFactions.First(c => c.StringId == "looters");
+        internal static Clan Looters => looters ??= Clan.BanditFactions.First(c => c.StringId == "looters");
         private static IEnumerable<Clan> SynthClans => synthClans ??= Clan.BanditFactions.Except(new[] { Looters });
 
         internal static bool TrySplitParty(MobileParty mobileParty)
@@ -642,8 +642,8 @@ namespace Bandit_Militias.Helpers
         // leveraged to make looters convert into troop types from nearby cultures
         public static CultureObject GetMostPrevalentFromNearbySettlements(Vec2 position)
         {
-            const int arbitraryDistance = 20;
-            var settlements = Settlement.FindSettlementsAroundPosition(position, arbitraryDistance);
+            const int arbitraryDistance = 100;
+            var settlements = Settlement.FindSettlementsAroundPosition(position, arbitraryDistance, s => !s.IsHideout);
             var map = new Dictionary<CultureObject, int>();
             foreach (var settlement in settlements)
             {
@@ -665,15 +665,12 @@ namespace Bandit_Militias.Helpers
             var highest = map.Where(x =>
                 x.Value == map.Values.Max()).Select(x => x.Key);
             var result = highest.ToList().GetRandomElement();
-            return result;
+            return result ?? MBObjectManager.Instance.GetObject<CultureObject>("empire");
         }
 
         public static void ConvertLootersToKingdomCultureRecruits(ref TroopRoster troopRoster, CultureObject culture, int numberToUpgrade)
         {
-            var recruit = Recruits.Where(x =>
-                    x.Culture == Clan.All.FirstOrDefault(k => k.Culture == culture)?.Culture)
-                .ToList().GetRandomElement() ?? Recruits.ToList().GetRandomElement();
-
+            var recruit = Recruits[culture][Rng.Next(0, Recruits[culture].Count)];
             troopRoster.AddToCounts(recruit, numberToUpgrade);
         }
 
@@ -791,8 +788,8 @@ namespace Bandit_Militias.Helpers
             EquipmentHelper.AssignHeroEquipmentFromEquipment(hero, BanditEquipment.GetRandomElement());
             if (Globals.Settings.CanTrain)
             {
-                Traverse.Create(hero).Method("SetSkillValueInternal", DefaultSkills.Leadership, 150).GetValue();
-                Traverse.Create(hero).Method("SetPerkValueInternal", DefaultPerks.Leadership.VeteransRespect, true).GetValue();
+                hero.HeroDeveloper.AddPerk(DefaultPerks.Leadership.VeteransRespect);
+                hero.HeroDeveloper.AddSkillXp(DefaultSkills.Leadership, 150);
             }
 
             return hero;
@@ -838,8 +835,9 @@ namespace Bandit_Militias.Helpers
                             }
                         }
                     }
-                    var mostCommon = cultureMap.OrderByDescending(x => x.Value).First().Key;
-                    clan = mostCommon != Looters ? SynthClans.First(c => c == cultureMap.OrderByDescending(x => x.Value).First().Key) : mostCommon;
+                    clan = cultureMap.OrderByDescending(x => x.Value).First().Key == Looters
+                        ? Looters
+                        : SynthClans.First(c => c == cultureMap.OrderByDescending(x => x.Value).First().Key);
                 }
 
                 var min = Convert.ToInt32(Globals.Settings.MinPartySize);
@@ -862,7 +860,16 @@ namespace Bandit_Militias.Helpers
             }
         }
 
-        internal static void TryGrowing(MobileParty mobileParty)
+        internal static void TryImproving(MobileParty mobileParty)
+        {
+            TryGrowing(mobileParty);
+            if (Rng.NextDouble() <= Globals.Settings.TrainingChance)
+            {
+                PartyMilitiaMap[mobileParty].TrainMilitia();
+            }
+        }
+
+        private static void TryGrowing(MobileParty mobileParty)
         {
             if (Globals.Settings.GrowthPercent > 0
                 && MilitiaPowerPercent <= Globals.Settings.GlobalPowerPercent

@@ -43,11 +43,15 @@ namespace Bandit_Militias
         public override string FormatType => "json";
         public override string FolderName => "Bandit Militias";
 
-        [SettingPropertyBool("Train Militias", HintText = "\nBandit heroes will train their militias.", Order = 1, RequireRestart = false)]
+        [SettingPropertyBool("Train Militias", HintText = "\nBandit heroes will train their militias.", Order = 0, RequireRestart = false)]
         [SettingPropertyGroup("Primary Settings", GroupOrder = 0)]
         public bool CanTrain { get; private set; } = true;
 
-        [SettingPropertyDropdown("Militia XP Boost", HintText = "\nHardest grants enough XP to significantly upgrade troops.  No effect if Training is disabled.", Order = 2, RequireRestart = false)]
+       [SettingPropertyInteger("Daily Training Chance", 0, 100, HintText = "\nEach day they might train further.", Order = 1, RequireRestart = false)]
+       [SettingPropertyGroup("Primary Settings", GroupOrder = 1)]
+       public float TrainingChance { get; set; } = 10;
+        
+        [SettingPropertyDropdown("Militia XP Boost", HintText = "\nHardest grants enough XP to significantly upgrade troops.  Off grants no bonus XP.", Order = 2, RequireRestart = false)]
         [SettingPropertyGroup("Primary Settings")]
         public DropdownDefault<string> XpGift { get; private set; } = new(Globals.DifficultyXpMap.Keys, 1);
 
@@ -63,19 +67,19 @@ namespace Bandit_Militias
         [SettingPropertyGroup("Primary Settings")]
         public bool IgnoreVillagersCaravans { get; private set; } = false;
 
-        [SettingPropertyBool("BM Spawn", HintText = "\nNew BM will form spontaneously as well as by merging together normally.", Order = 5, RequireRestart = false)]
+        [SettingPropertyBool("BM Spawn", HintText = "\nNew BM will form spontaneously as well as by merging together normally.", Order = 6, RequireRestart = false)]
         [SettingPropertyGroup("Primary Settings")]
         public bool MilitiaSpawn { get; private set; } = true;
 
-        [SettingPropertyInteger("Spawn Chance Percent", 1, 100, HintText = "\nBM will spawn hourly at this likelihood.", Order = 6, RequireRestart = false)]
+        [SettingPropertyInteger("Spawn Chance Percent", 1, 100, HintText = "\nBM will spawn hourly at this likelihood.", Order = 7, RequireRestart = false)]
         [SettingPropertyGroup("Primary Settings")]
         public int SpawnChance { get; private set; } = 30;
 
-        [SettingPropertyInteger("Change Cooldown", 1, 168, HintText = "\nBM won't merge or split a second time until this many hours go by.", Order = 7, RequireRestart = false)]
+        [SettingPropertyInteger("Change Cooldown", 1, 168, HintText = "\nBM won't merge or split a second time until this many hours go by.", Order = 8, RequireRestart = false)]
         [SettingPropertyGroup("Primary Settings")]
         public int CooldownHours { get; private set; } = 24;
 
-        [SettingPropertyDropdown("Bandit Hero Gold Reward", Order = 8, RequireRestart = false)]
+        [SettingPropertyDropdown("Bandit Hero Gold Reward", Order = 9, RequireRestart = false)]
         [SettingPropertyGroup("Primary Settings")]
         public DropdownDefault<string> GoldReward { get; private set; } = new(Globals.GoldMap.Keys, 1);
 

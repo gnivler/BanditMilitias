@@ -15,7 +15,7 @@ namespace Bandit_Militias
     {
         public override void RegisterEvents()
         {
-            CampaignEvents.DailyTickPartyEvent.AddNonSerializedListener(this, Helper.TryGrowing);
+            CampaignEvents.DailyTickPartyEvent.AddNonSerializedListener(this, Helper.TryImproving);
             CampaignEvents.DailyTickPartyEvent.AddNonSerializedListener(this, DailyTickParty);
             CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, Helper.FlushMilitiaCharacterObjects);
             CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, OnDailyTickEvent);
