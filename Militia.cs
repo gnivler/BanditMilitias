@@ -22,9 +22,10 @@ namespace Bandit_Militias
         internal readonly string BannerKey;
         internal Hero Hero;
         internal CampaignTime LastMergedOrSplitDate = CampaignTime.Now;
+
         private static readonly AccessTools.FieldRef<MobileParty, bool> IsBandit =
-            AccessTools.FieldRefAccess<MobileParty, bool>("<IsBandit>k__BackingField"); 
-   
+            AccessTools.FieldRefAccess<MobileParty, bool>("<IsBandit>k__BackingField");
+
         private Militia()
         {
             Banner = Banners.GetRandomElement();
@@ -123,7 +124,7 @@ namespace Bandit_Militias
             }
         }
 
-        private void TrainMilitia()
+        internal void TrainMilitia()
         {
             try
             {
@@ -135,8 +136,7 @@ namespace Bandit_Militias
                 }
 
                 if (!Globals.Settings.CanTrain ||
-                    GlobalMilitiaPower > Globals.Settings.GlobalPowerPercent
-                    || DifficultyXpMap[Globals.Settings.XpGift.SelectedValue] == 0)
+                    MilitiaPowerPercent > Globals.Settings.GlobalPowerPercent)
                 {
                     return;
                 }
@@ -161,11 +161,10 @@ namespace Bandit_Militias
                 if (Globals.Settings.LooterUpgradePercent > 0)
                 {
                     // upgrade any looters first, then go back over and iterate further upgrades
-                    var looters = MobileParty.MemberRoster.GetTroopRoster().Where(x =>
-                        x.Character.Name.Contains("Looter")).ToList();
-                    var culture = GetMostPrevalentFromNearbySettlements(MobileParty.Position2D);
+                    var looters = MobileParty.MemberRoster.GetTroopRoster().Where(e => e.Character == Looters.BasicTroop).ToList();
                     if (looters.Any())
                     {
+                        var culture = GetMostPrevalentFromNearbySettlements(MobileParty.Position2D);
                         foreach (var looter in looters)
                         {
                             number = MobileParty.MemberRoster.GetElementCopyAtIndex(MobileParty.MemberRoster.FindIndexOfTroop(looter.Character)).Number;

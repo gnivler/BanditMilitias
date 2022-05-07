@@ -8,9 +8,16 @@ using HarmonyLib;
 using Helpers;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
+using TaleWorlds.CampaignSystem.CampaignBehaviors;
+using TaleWorlds.CampaignSystem.CharacterDevelopment;
+using TaleWorlds.CampaignSystem.Encounters;
+using TaleWorlds.CampaignSystem.Extensions;
+using TaleWorlds.CampaignSystem.GameComponents;
 using TaleWorlds.CampaignSystem.LogEntries;
-using TaleWorlds.CampaignSystem.SandBox.CampaignBehaviors;
-using TaleWorlds.CampaignSystem.SandBox.GameComponents.Map;
+using TaleWorlds.CampaignSystem.MapEvents;
+using TaleWorlds.CampaignSystem.Party;
+using TaleWorlds.CampaignSystem.Roster;
+using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
 using TaleWorlds.LinQuick;
@@ -29,7 +36,7 @@ namespace Bandit_Militias.Helpers
         private const float ReductionFactor = 0.8f;
         private static Clan looters;
         private static IEnumerable<Clan> synthClans;
-        private static Clan Looters => looters ??= Clan.BanditFactions.First(c => c.StringId == "looters");
+        internal static Clan Looters => looters ??= Clan.BanditFactions.First(c => c.StringId == "looters");
         private static IEnumerable<Clan> SynthClans => synthClans ??= Clan.BanditFactions.Except(new[] { Looters });
 
         internal static bool TrySplitParty(MobileParty mobileParty)
@@ -635,8 +642,8 @@ namespace Bandit_Militias.Helpers
         // leveraged to make looters convert into troop types from nearby cultures
         public static CultureObject GetMostPrevalentFromNearbySettlements(Vec2 position)
         {
-            const int arbitraryDistance = 20;
-            var settlements = Settlement.FindSettlementsAroundPosition(position, arbitraryDistance);
+            const int arbitraryDistance = 100;
+            var settlements = Settlement.FindSettlementsAroundPosition(position, arbitraryDistance, s => !s.IsHideout);
             var map = new Dictionary<CultureObject, int>();
             foreach (var settlement in settlements)
             {
@@ -658,15 +665,12 @@ namespace Bandit_Militias.Helpers
             var highest = map.Where(x =>
                 x.Value == map.Values.Max()).Select(x => x.Key);
             var result = highest.ToList().GetRandomElement();
-            return result;
+            return result ?? MBObjectManager.Instance.GetObject<CultureObject>("empire");
         }
 
         public static void ConvertLootersToKingdomCultureRecruits(ref TroopRoster troopRoster, CultureObject culture, int numberToUpgrade)
         {
-            var recruit = Recruits.Where(x =>
-                    x.Culture == Clan.All.FirstOrDefault(k => k.Culture == culture)?.Culture)
-                .ToList().GetRandomElement() ?? Recruits.ToList().GetRandomElement();
-
+            var recruit = Recruits[culture][Rng.Next(0, Recruits[culture].Count)];
             troopRoster.AddToCounts(recruit, numberToUpgrade);
         }
 
@@ -784,8 +788,8 @@ namespace Bandit_Militias.Helpers
             EquipmentHelper.AssignHeroEquipmentFromEquipment(hero, BanditEquipment.GetRandomElement());
             if (Globals.Settings.CanTrain)
             {
-                Traverse.Create(hero).Method("SetSkillValueInternal", DefaultSkills.Leadership, 150).GetValue();
-                Traverse.Create(hero).Method("SetPerkValueInternal", DefaultPerks.Leadership.VeteransRespect, true).GetValue();
+                hero.HeroDeveloper.AddPerk(DefaultPerks.Leadership.VeteransRespect);
+                hero.HeroDeveloper.AddSkillXp(DefaultSkills.Leadership, 150);
             }
 
             return hero;
@@ -809,21 +813,33 @@ namespace Bandit_Militias.Helpers
                 }
 
                 var settlement = Settlement.All.Where(s => !s.IsVisible).GetRandomElementInefficiently();
-                var nearbyBandits = MobileParty.FindPartiesAroundPosition(settlement.Position2D, 100).WhereQ(m => m.IsBandit);
-                var cultureMap = new Dictionary<Clan, int>();
+                var nearbyBandits = MobileParty.FindPartiesAroundPosition(settlement.Position2D, 100).WhereQ(m => m.IsBandit).ToListQ();
+                Clan clan;
+                if (!nearbyBandits.Any())
                 {
-                    foreach (var party in nearbyBandits)
+                    clan = Looters;
+                }
+                else
+                {
+                    var cultureMap = new Dictionary<Clan, int>();
                     {
-                        if (cultureMap.TryGetValue(party.ActualClan, out _))
+                        foreach (var party in nearbyBandits)
                         {
-                            cultureMap[party.ActualClan]++;
+                            if (cultureMap.ContainsKey(party.ActualClan))
+                            {
+                                cultureMap[party.ActualClan]++;
+                            }
+                            else
+                            {
+                                cultureMap.Add(party.ActualClan, 1);
+                            }
                         }
-
-                        cultureMap[party.ActualClan] = 1;
                     }
+                    clan = cultureMap.OrderByDescending(x => x.Value).First().Key == Looters
+                        ? Looters
+                        : SynthClans.First(c => c == cultureMap.OrderByDescending(x => x.Value).First().Key);
                 }
 
-                var clan = SynthClans.FirstOrDefaultQ(c => c == cultureMap.OrderByDescending(x => x.Value).First().Key) ?? Looters;
                 var min = Convert.ToInt32(Globals.Settings.MinPartySize);
                 var max = Convert.ToInt32(CalculatedMaxPartySize);
                 var roster = TroopRoster.CreateDummyTroopRoster();
@@ -831,8 +847,6 @@ namespace Bandit_Militias.Helpers
                 roster.AddToCounts(clan.BasicTroop, size);
                 roster.AddToCounts(Looters.BasicTroop, size);
                 MurderMounts(roster);
-
-
                 var militia = new Militia(settlement.GatePosition, roster, TroopRoster.CreateDummyTroopRoster());
                 // teleport new militias near the player
                 if (Globals.Settings.TestingMode)
@@ -846,7 +860,16 @@ namespace Bandit_Militias.Helpers
             }
         }
 
-        internal static void TryGrowing(MobileParty mobileParty)
+        internal static void TryImproving(MobileParty mobileParty)
+        {
+            TryGrowing(mobileParty);
+            if (Rng.NextDouble() <= Globals.Settings.TrainingChance)
+            {
+                PartyMilitiaMap[mobileParty].TrainMilitia();
+            }
+        }
+
+        private static void TryGrowing(MobileParty mobileParty)
         {
             if (Globals.Settings.GrowthPercent > 0
                 && MilitiaPowerPercent <= Globals.Settings.GlobalPowerPercent

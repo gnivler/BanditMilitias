@@ -51,12 +51,24 @@ namespace Bandit_Militias.Patches
                     "veteran_borrowed_troop",
                 };
 
-                Recruits = CharacterObject.All.Where(c =>
+                var allRecruits = CharacterObject.All.Where(c =>
                     c.Level == 11
                     && c.Occupation == Occupation.Soldier
                     && !filter.Contains(c.StringId)
                     && !c.StringId.EndsWith("_tier_1"));
 
+                foreach (var recruit in allRecruits)
+                {
+                    if (Recruits.ContainsKey(recruit.Culture))
+                    {
+                        Recruits[recruit.Culture].Add(recruit);
+                    }
+                    else
+                    {
+                        Recruits.Add(recruit.Culture, new List<CharacterObject> { recruit });
+                    }
+                }
+                
                 // used for armour
                 foreach (ItemObject.ItemTypeEnum value in Enum.GetValues(typeof(ItemObject.ItemTypeEnum)))
                 {

@@ -195,7 +195,9 @@ namespace Bandit_Militias.Patches
         {
             public static void Postfix(MobileParty mobileParty, ref ExplainedNumber __result)
             {
-                if (mobileParty.TargetParty is not null && mobileParty.TargetParty.IsBandit)
+                if (mobileParty.IsBandit
+                    && mobileParty.TargetParty is not null
+                    && mobileParty.TargetParty.IsBandit)
                 {
                     __result.AddFactor(0.15f);
                 }

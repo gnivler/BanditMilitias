@@ -9,12 +9,12 @@ using TaleWorlds.ObjectSystem;
 namespace Bandit_Militias
 {
     // ReSharper disable once ClassNeverInstantiated.Global
-    internal static class Globals
+    internal struct Globals
     {
         // merge/split criteria
         internal const float MergeDistance = 2;
-        internal static float FindRadius = 7;
-        internal static float MinDistanceFromHideout = 8;
+        internal const float FindRadius = 7;
+        internal const float MinDistanceFromHideout = 8;
 
         // holders for criteria
         internal static float CalculatedMaxPartySize;
@@ -22,29 +22,31 @@ namespace Bandit_Militias
         internal static float GlobalMilitiaPower;
         internal static float MilitiaPowerPercent;
 
-        // misc
-        internal static readonly Random Rng = new();
+        // dictionary maps
         internal static readonly Dictionary<MobileParty, Militia> PartyMilitiaMap = new();
         internal static readonly Dictionary<MobileParty, ImageIdentifierVM> PartyImageMap = new();
         internal static readonly Dictionary<ItemObject.ItemTypeEnum, List<ItemObject>> ItemTypes = new();
-        internal static readonly List<EquipmentElement> EquipmentItems = new();
-        internal static List<Settlement> Hideouts = new();
+        internal static readonly Dictionary<CultureObject, List<CharacterObject>> Recruits = new();
+
+        // misc
+        internal static readonly Random Rng = new();
+        internal static readonly Stopwatch T = new();
         internal static Settings Settings;
+        internal static List<Settlement> Hideouts = new();
+        internal static readonly List<EquipmentElement> EquipmentItems = new();
         internal static List<ItemObject> Arrows = new();
         internal static List<ItemObject> Bolts = new();
-        internal static readonly Stopwatch T = new();
         internal static readonly List<Equipment> BanditEquipment = new();
-        internal static IEnumerable<CharacterObject> Recruits;
         internal static readonly List<Banner> Banners = new();
         internal static double LastCalculated;
+
+        // ReSharper disable once InconsistentNaming
+        internal static MobilePartyTrackerVM MobilePartyTrackerVM;
 
         internal static float Variance => MBRandom.RandomFloatRanged(0.925f, 1.075f);
 
         // ArmsDealer compatibility
         internal static CultureObject BlackFlag => MBObjectManager.Instance.GetObject<CultureObject>("ad_bandit_blackflag");
-
-        // ReSharper disable once InconsistentNaming
-        internal static MobilePartyTrackerVM MobilePartyTrackerVM;
 
         internal static readonly Dictionary<string, int> DifficultyXpMap = new()
         {

@@ -18,20 +18,20 @@
         <DebugSymbols>true</DebugSymbols>
         <DebugType>full</DebugType>
         <Optimize>false</Optimize>
-        <OutputPath>bin\Debug\</OutputPath>
+        <OutputPath>bin\</OutputPath>
         <DefineConstants>DEBUG;TRACE</DefineConstants>
         <ErrorReport>prompt</ErrorReport>
         <WarningLevel>4</WarningLevel>
     </PropertyGroup>
     <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
         <PlatformTarget>x64</PlatformTarget>
-        <DebugType>embedded</DebugType>
+        <DebugType>pdbonly</DebugType>
         <Optimize>true</Optimize>
-        <OutputPath>bin\Release\</OutputPath>
+        <OutputPath>bin\</OutputPath>
         <DefineConstants>TRACE</DefineConstants>
         <ErrorReport>prompt</ErrorReport>
         <WarningLevel>4</WarningLevel>
-        <DebugSymbols>false</DebugSymbols>
+        <DebugSymbols>true</DebugSymbols>
     </PropertyGroup>
     <ItemGroup>
         <Reference Include="0Harmony, Version=2.2.1.0, Culture=neutral, PublicKeyToken=null">
@@ -292,7 +292,7 @@
     </Target>
     -->
     <PropertyGroup>
-        <PostBuildEvent>xcopy /y "N:\Repos\Bandit Militias\obj\release\Bandit Militias.???" "M:\SteamLibrary\steamapps\common\Mount %26 Blade II Bannerlord\Modules\Bandit Militias\bin\Win64_Shipping_Client"
+        <PostBuildEvent>xcopy /y "N:\Repos\Bandit Militias\bin\Bandit Militias.???" "M:\SteamLibrary\steamapps\common\Mount %26 Blade II Bannerlord\Modules\Bandit Militias\bin\Win64_Shipping_Client"
 xcopy /y "N:\Repos\Bandit Militias\SubModule.xml" "M:\SteamLibrary\steamapps\common\Mount %26 Blade II Bannerlord\Modules\Bandit Militias"</PostBuildEvent>
     </PropertyGroup>
 
