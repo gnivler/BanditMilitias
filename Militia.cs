@@ -1,13 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using HarmonyLib;
 using SandBox.View.Map;
 using SandBox.ViewModelCollection.MobilePartyTracker;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
-using TaleWorlds.LinQuick;
 using TaleWorlds.Localization;
 using static Bandit_Militias.Globals;
 using static Bandit_Militias.Helpers.Helper;
@@ -22,6 +22,8 @@ namespace Bandit_Militias
         internal readonly string BannerKey;
         internal Hero Hero;
         internal CampaignTime LastMergedOrSplitDate = CampaignTime.Now;
+
+        private static readonly MethodInfo GetLocalizedText = AccessTools.Method(typeof(MBTextManager), "GetLocalizedText");
 
         private static readonly AccessTools.FieldRef<MobileParty, bool> IsBandit =
             AccessTools.FieldRefAccess<MobileParty, bool>("<IsBandit>k__BackingField");
@@ -61,11 +63,6 @@ namespace Bandit_Militias
         public Militia(Vec2 position, TroopRoster party, TroopRoster prisoners) : this()
         {
             Spawn(position, party, prisoners);
-            if (!PartyImageMap.ContainsKey(MobileParty))
-            {
-                PartyImageMap.Add(MobileParty, new ImageIdentifierVM(Banner));
-            }
-
             TrainMilitia();
             SetMilitiaPatrol(MobileParty);
             //LogMilitiaFormed(MobileParty);
@@ -75,14 +72,12 @@ namespace Bandit_Militias
         private void Spawn(Vec2 position, TroopRoster party, TroopRoster prisoners)
         {
             var partyClan = GetMostPrevalent(party) ?? Clan.BanditFactions.First();
-            MobileParty = ModBanditMilitiaPartyComponent.CreateBanditParty(partyClan);
+            MobileParty = ModBanditMilitiaPartyComponent.CreateBanditParty(partyClan, out Hero);
+            MobileParty.PartyComponent.ChangePartyLeader(Hero);
             MobileParty.InitializeMobilePartyAroundPosition(party, prisoners, position, 0);
             IsBandit(MobileParty) = true;
             PartyMilitiaMap.Add(MobileParty, this);
             PartyImageMap.Add(MobileParty, new ImageIdentifierVM(Banner));
-            var leaderHero = MobileParty.MemberRoster.GetTroopRoster().ToListQ()[0].Character.HeroObject;
-            MobileParty.PartyComponent.ChangePartyLeader(leaderHero);
-            Hero = MobileParty.LeaderHero;
             Hero.Gold = Convert.ToInt32(MobileParty.Party.TotalStrength * GoldMap[Globals.Settings.GoldReward.SelectedValue]);
             if (MobileParty.ActualClan.Leader is null)
             {
@@ -105,8 +100,7 @@ namespace Bandit_Militias
                 }
             }
 
-            var getLocalizedText = AccessTools.Method(typeof(MBTextManager), "GetLocalizedText");
-            Name = (string)getLocalizedText.Invoke(null, new object[] { $"{Possess(Hero.FirstName.ToString())} Bandit Militia" });
+            Name = (string)GetLocalizedText.Invoke(null, new object[] { $"{Possess(Hero.FirstName.ToString())} Bandit Militia" });
             MobileParty.SetCustomName(new TextObject(Name));
             MobileParty.LeaderHero.StringId += "Bandit_Militia";
             MobileParty.ShouldJoinPlayerBattles = true;
@@ -128,13 +122,6 @@ namespace Bandit_Militias
         {
             try
             {
-                if (MobileParty.MemberRoster.Count == 0)
-                {
-                    Mod.Log("Trying to configure militia with no troops, trashing");
-                    Trash(MobileParty);
-                    return;
-                }
-
                 if (!Globals.Settings.CanTrain ||
                     MilitiaPowerPercent > Globals.Settings.GlobalPowerPercent)
                 {
@@ -176,7 +163,7 @@ namespace Bandit_Militias
 
                             var roster = MobileParty.MemberRoster;
                             roster.RemoveTroop(looter.Character, numberToUpgrade);
-                            ConvertLootersToKingdomCultureRecruits(ref roster, culture, numberToUpgrade);
+                            ConvertLootersToKingdomCultureRecruits(roster, culture, numberToUpgrade);
                         }
                     }
                 }

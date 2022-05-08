@@ -16,30 +16,18 @@ namespace Bandit_Militias.Helpers
             return Campaign.Current.VisualTrackerManager.CheckTracked(mobileParty);
         }
 
-        //[HarmonyPatch(typeof(AiPatrollingBehavior), "AiHourlyTick")]
-        //public class asidfjasoifj
-        //{
-        //    public static Exception Finalizer(Exception __exception, MobileParty mobileParty)
-        //    {
-        //        if (__exception is not null)
-        //        {
-        //            FileLog.Log(mobileParty.Name.ToString());
-        //        }
-        //
-        //        return null;
-        //    }
-        //}
-        
         internal static bool IsTooBusyToMerge(this MobileParty mobileParty)
         {
+            // moving to merge
             if (mobileParty == mobileParty?.MoveTargetParty?.MoveTargetParty)
             {
-                return false;
+                return true;
             }
 
             return mobileParty.TargetParty is not null
-                   || mobileParty.ShortTermTargetParty is not null
-                   || mobileParty.ShortTermBehavior is AiBehavior.EngageParty or AiBehavior.FleeToPoint;
+                   || mobileParty.ShortTermBehavior
+                       is AiBehavior.EngageParty
+                       or AiBehavior.FleeToPoint;
         }
 
         internal static void RemoveMilitiaHero(this Hero hero)

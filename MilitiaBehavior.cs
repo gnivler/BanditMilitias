@@ -19,9 +19,14 @@ namespace Bandit_Militias
             CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, OnDailyTickEvent);
             CampaignEvents.HourlyTickEvent.AddNonSerializedListener(this, Helper.SynthesizeBM);
             //CampaignEvents.AiHourlyTickEvent.AddNonSerializedListener(this, AiHourlyTick);
-            CampaignEvents.OnPartyRemovedEvent.AddNonSerializedListener(this, party => PartyMilitiaMap.Remove(party.MobileParty));
+            CampaignEvents.OnPartyRemovedEvent.AddNonSerializedListener(this, OnPartyRemoved);
         }
 
+        private static void OnPartyRemoved(PartyBase party)
+        {
+            PartyMilitiaMap.Remove(party.MobileParty);
+            PartyImageMap.Remove(party.MobileParty);
+        }
         private static void OnDailyTickEvent()
         {
             //RemoveHeroesWithoutParty();

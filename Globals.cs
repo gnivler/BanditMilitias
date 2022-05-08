@@ -8,7 +8,6 @@ using TaleWorlds.ObjectSystem;
 
 namespace Bandit_Militias
 {
-    // ReSharper disable once ClassNeverInstantiated.Global
     internal struct Globals
     {
         // merge/split criteria
@@ -24,6 +23,7 @@ namespace Bandit_Militias
 
         // dictionary maps
         internal static readonly Dictionary<MobileParty, Militia> PartyMilitiaMap = new();
+        // TODO check that this isn't piling up to huge number
         internal static readonly Dictionary<MobileParty, ImageIdentifierVM> PartyImageMap = new();
         internal static readonly Dictionary<ItemObject.ItemTypeEnum, List<ItemObject>> ItemTypes = new();
         internal static readonly Dictionary<CultureObject, List<CharacterObject>> Recruits = new();

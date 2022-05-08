@@ -172,7 +172,6 @@ namespace Bandit_Militias.Helpers
         internal static bool IsAvailableBanditParty(MobileParty __instance)
         {
             if (__instance.IsBandit
-                || __instance.IsBM()
                 && __instance.Party.IsMobile
                 && __instance.CurrentSettlement is null
                 && __instance.Party.MemberRoster.TotalManCount > 0
@@ -182,7 +181,7 @@ namespace Bandit_Militias.Helpers
             {
                 return true;
             }
-
+            
             return false;
         }
 
@@ -661,7 +660,7 @@ namespace Bandit_Militias.Helpers
             return result ?? MBObjectManager.Instance.GetObject<CultureObject>("empire");
         }
 
-        public static void ConvertLootersToKingdomCultureRecruits(ref TroopRoster troopRoster, CultureObject culture, int numberToUpgrade)
+        public static void ConvertLootersToKingdomCultureRecruits(TroopRoster troopRoster, CultureObject culture, int numberToUpgrade)
         {
             var recruit = Recruits[culture][Rng.Next(0, Recruits[culture].Count)];
             troopRoster.AddToCounts(recruit, numberToUpgrade);
@@ -805,6 +804,7 @@ namespace Bandit_Militias.Helpers
                     continue;
                 }
 
+                // evaluate the bandit population around a random settlement to pick what BM culture to spawn
                 var settlement = Settlement.All.Where(s => !s.IsVisible).GetRandomElementInefficiently();
                 var nearbyBandits = MobileParty.FindPartiesAroundPosition(settlement.Position2D, 100).WhereQ(m => m.IsBandit).ToListQ();
                 Clan clan;
@@ -855,10 +855,13 @@ namespace Bandit_Militias.Helpers
 
         internal static void TryImproving(MobileParty mobileParty)
         {
-            TryGrowing(mobileParty);
-            if (Rng.NextDouble() <= Globals.Settings.TrainingChance)
+            if (PartyMilitiaMap.ContainsKey(mobileParty))
             {
-                PartyMilitiaMap[mobileParty].TrainMilitia();
+                TryGrowing(mobileParty);
+                if (Rng.Next(0, 101) <= Globals.Settings.TrainingChance)
+                {
+                    PartyMilitiaMap[mobileParty].TrainMilitia();
+                }
             }
         }
 
@@ -867,13 +870,12 @@ namespace Bandit_Militias.Helpers
             if (Globals.Settings.GrowthPercent > 0
                 && MilitiaPowerPercent <= Globals.Settings.GlobalPowerPercent
                 && mobileParty.ShortTermBehavior != AiBehavior.FleeToPoint
-                && mobileParty.IsBM()
                 && mobileParty.MapEvent is null
                 && IsAvailableBanditParty(mobileParty)
                 && Rng.NextDouble() <= Globals.Settings.GrowthChance / 100f)
             {
                 var eligibleToGrow = mobileParty.MemberRoster.GetTroopRoster().Where(rosterElement =>
-                        rosterElement.Character.Tier < Globals.Settings.MaxTrainingTier
+                        rosterElement.Character.Tier <= Globals.Settings.MaxTrainingTier
                         && !rosterElement.Character.IsHero
                         && mobileParty.ShortTermBehavior != AiBehavior.FleeToPoint
                         && !mobileParty.IsVisible)

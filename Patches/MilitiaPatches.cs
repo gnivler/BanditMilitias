@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using Bandit_Militias.Helpers;
 using HarmonyLib;
@@ -51,14 +52,6 @@ namespace Bandit_Militias.Patches
                 }
 
                 lastChecked = Campaign.CurrentTime;
-                foreach (var party in MobileParty.All.WhereQ(m => m.IsBM()))
-                {
-                    if (NumMountedTroops(party.MemberRoster) > party.MemberRoster.TotalManCount - 10)
-                    {
-                        //Debugger.Break();
-                    }
-                }
-
                 var parties = MobileParty.All.Where(m =>
                         m.Party.IsMobile
                         && m.CurrentSettlement is null
@@ -68,10 +61,8 @@ namespace Bandit_Militias.Patches
                     .ToListQ();
                 for (var index = 0; index < parties.Count; index++)
                 {
-                    //T.Restart();
                     var mobileParty = parties[index];
-
-                    if (Hideouts.AnyQ(s => s.Position2D.Distance(mobileParty.Position2D) < MinDistanceFromHideout))
+                    if (Hideouts.AnyQ(s => Campaign.Current.Models.MapDistanceModel.GetDistance(mobileParty, s) < MinDistanceFromHideout))
                     {
                         continue;
                     }
@@ -83,15 +74,13 @@ namespace Bandit_Militias.Patches
 
                     var nearbyParties = MobileParty.FindPartiesAroundPosition(mobileParty.Position2D, FindRadius)
                         .Intersect(parties)
-                        .Except(new[] { mobileParty })
                         .ToListQ();
-
+                    nearbyParties.Remove(mobileParty);
                     if (!nearbyParties.Any())
                     {
                         continue;
                     }
 
-                    // TODO improve
                     if (mobileParty.ToString().Contains("manhunter")) // Calradia Expanded Kingdoms
                     {
                         continue;
@@ -107,6 +96,7 @@ namespace Bandit_Militias.Patches
                         if (BM is null)
                         {
                             Mod.Log($"{new string('*', 100)} Why is {mobileParty} not in the PartyMilitiaMap?");
+                            Debugger.Break();
                         }
                     }
 

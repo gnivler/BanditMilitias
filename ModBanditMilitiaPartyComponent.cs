@@ -46,9 +46,9 @@ namespace Bandit_Militias
             leader = newLeader;
         }
 
-        public static MobileParty CreateBanditParty(Clan clan)
+        public static MobileParty CreateBanditParty(Clan clan, out Hero hero)
         {
-            var hero = Helper.CreateHero();
+            hero = Helper.CreateHero();
             var nameIndex = (int)Traverse.Create(NameGenerator.Current)
                 .Method("SelectNameIndex", hero, GangLeaderNames(NameGenerator.Current), 0, true, false)
                 .GetValue();
