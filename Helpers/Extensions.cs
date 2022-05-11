@@ -9,8 +9,11 @@ namespace BanditMilitias.Helpers
 {
     public static class Extensions
     {
-        private static readonly AccessTools.FieldRef<CampaignObjectManager, List<Hero>> aliveHeroes = AccessTools.FieldRefAccess<CampaignObjectManager, List<Hero>>("_aliveHeroes");
-        private static readonly AccessTools.FieldRef<CampaignObjectManager, List<Hero>> deadOrDisabledHeroes = AccessTools.FieldRefAccess<CampaignObjectManager, List<Hero>>("_deadOrDisabledHeroes");
+        private static readonly AccessTools.FieldRef<CampaignObjectManager, List<Hero>> aliveHeroes =
+            AccessTools.FieldRefAccess<CampaignObjectManager, List<Hero>>("_aliveHeroes");
+
+        private static readonly AccessTools.FieldRef<CampaignObjectManager, List<Hero>> deadOrDisabledHeroes =
+            AccessTools.FieldRefAccess<CampaignObjectManager, List<Hero>>("_deadOrDisabledHeroes");
 
         internal static bool IsUsedByAQuest(this MobileParty mobileParty)
         {

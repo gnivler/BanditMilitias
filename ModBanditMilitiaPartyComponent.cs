@@ -1,10 +1,8 @@
-using System;
+using System.Net.Sockets;
 using System.Reflection;
 using BanditMilitias.Helpers;
 using HarmonyLib;
-using Helpers;
 using TaleWorlds.CampaignSystem;
-using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Party.PartyComponents;
 using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
@@ -19,12 +17,13 @@ namespace BanditMilitias
     public class ModBanditMilitiaPartyComponent : WarPartyComponent
     {
         public override Hero PartyOwner => MobileParty.ActualClan?.Leader;
-        public override Settlement HomeSettlement { get; }
-        public override Hero Leader => leader;
-        [SaveableField(1)] private Hero leader;
-        [SaveableField(2)] internal readonly Banner Banner;
-        [SaveableField(3)] internal readonly string BannerKey;
-        [SaveableField(4)] internal CampaignTime LastMergedOrSplitDate = CampaignTime.Now;
+        [SaveableField(1)] internal readonly Banner Banner;
+        [SaveableField(2)] internal readonly string BannerKey;
+        [SaveableField(3)] internal CampaignTime LastMergedOrSplitDate = CampaignTime.Now;
+        [SaveableField(4)] private static bool setBandit;
+        [field: SaveableField(5)] public override Settlement HomeSettlement { get; }
+        // Hero.HomeSettlement isn't saved for Reasons... this is just a shotgun approach to save-everything
+        [field: SaveableField(6)] public override Hero Leader { get; }
 
         [CachedData] private TextObject cachedName;
         private static readonly MethodInfo GetLocalizedText = AccessTools.Method(typeof(MBTextManager), "GetLocalizedText");
@@ -34,19 +33,24 @@ namespace BanditMilitias
             get
             {
                 cachedName ??= new TextObject((string)GetLocalizedText.Invoke(null, new object[] { $"{Possess(MobileParty.LeaderHero.FirstName.ToString())} Bandit Militia" }));
-                cachedName.SetTextVariable("IS_BANDIT", 1);
+                if (!setBandit)
+                {
+                    setBandit = true;
+                    cachedName.SetTextVariable("IS_BANDIT", 1);
+                }
+
                 return cachedName;
             }
         }
 
         public override void ChangePartyLeader(Hero newLeader)
         {
-            if (leader != newLeader)
+            if (Leader != newLeader)
             {
-                leader?.RemoveMilitiaHero();
+                Leader?.RemoveMilitiaHero();
             }
-
-            leader = newLeader;
+              
+            Traverse.Create(this).Field<Hero>("<Leader>k__BackingField").Value = newLeader;
         }
 
         //private ModBanditMilitiaPartyComponent()
@@ -62,12 +66,13 @@ namespace BanditMilitias
         //    HomeSettlement = hero.HomeSettlement;
         //}
 
-        public ModBanditMilitiaPartyComponent()
+        public ModBanditMilitiaPartyComponent(Clan heroClan)
         {
             Banner = Banners.GetRandomElement();
             BannerKey = Banner.Serialize();
-            leader = CreateHero();
-            ConfigureLeader(leader);
+            Leader = CreateHero(heroClan);
+            ConfigureLeader(Leader);
+            HomeSettlement = Leader.BornSettlement;
             //LogMilitiaFormed(MobileParty);
         }
     }

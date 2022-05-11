@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using BanditMilitias.Helpers;
 using HarmonyLib;
 using Helpers;
 using SandBox.View.Map;
@@ -16,6 +17,7 @@ using TaleWorlds.Core;
 using TaleWorlds.Engine;
 using TaleWorlds.Library;
 using TaleWorlds.LinQuick;
+using TaleWorlds.MountAndBlade;
 using static BanditMilitias.Helpers.Helper;
 using static BanditMilitias.Globals;
 
@@ -73,7 +75,7 @@ namespace BanditMilitias.Patches
                         Recruits.Add(recruit.Culture, new List<CharacterObject> { recruit });
                     }
                 }
-                
+
                 // used for armour
                 foreach (ItemObject.ItemTypeEnum value in Enum.GetValues(typeof(ItemObject.ItemTypeEnum)))
                 {
@@ -165,6 +167,28 @@ namespace BanditMilitias.Patches
                 }
 
                 return null;
+            }
+        }
+
+        [HarmonyPatch(typeof(GameStartupInfo), MethodType.Constructor)]
+        public static class asdfds
+        {
+            public static void Prefix(GameStartupInfo __instance)
+            {
+                Traverse.Create(__instance).Property<bool>("IsContinueGame").Value = true;
+            }
+        }
+
+        private static readonly AccessTools.FieldRef<Hero, Settlement> _homeSettlement = AccessTools.FieldRefAccess<Hero, Settlement>("_homeSettlement");
+        [HarmonyPatch(typeof(Hero), "UpdateHomeSettlement")]
+        public static void Postfix(Hero hero)
+        {
+            if (hero.PartyBelongedTo is not null && hero.PartyBelongedTo.IsBM())
+            {
+                if (_homeSettlement(hero) == null)
+                {
+                    _homeSettlement(hero) = hero.BornSettlement;
+                }
             }
         }
     }

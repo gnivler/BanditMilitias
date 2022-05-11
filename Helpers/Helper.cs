@@ -45,10 +45,10 @@ namespace BanditMilitias.Helpers
 
         private static readonly AccessTools.FieldRef<MobileParty, bool> IsBandit =
             AccessTools.FieldRefAccess<MobileParty, bool>("<IsBandit>k__BackingField");
-                         
+
         private static readonly AccessTools.FieldRef<NameGenerator, TextObject[]> GangLeaderNames =
             AccessTools.FieldRefAccess<NameGenerator, TextObject[]>("_gangLeaderNames");
-               
+
         internal static void Log(object input)
         {
             if (Globals.Settings is null
@@ -166,9 +166,9 @@ namespace BanditMilitias.Helpers
                 }
 
                 if (original.ActualClan is null) Debugger.Break();
-                
-                var bm1 = MobileParty.CreateParty("Bandit_Militia", new ModBanditMilitiaPartyComponent(), m => m.ActualClan = original.ActualClan);
-                var bm2 = MobileParty.CreateParty("Bandit_Militia", new ModBanditMilitiaPartyComponent(), m => m.ActualClan = original.ActualClan);
+
+                var bm1 = MobileParty.CreateParty("Bandit_Militia", new ModBanditMilitiaPartyComponent(original.ActualClan), m => m.ActualClan = original.ActualClan);
+                var bm2 = MobileParty.CreateParty("Bandit_Militia", new ModBanditMilitiaPartyComponent(original.ActualClan), m => m.ActualClan = original.ActualClan);
                 bm1.InitializeMobilePartyAroundPosition(party1, prisoners1, original.Position2D, 0);
                 bm2.InitializeMobilePartyAroundPosition(party2, prisoners2, original.Position2D, 0);
                 TrainMilitia(bm1);
@@ -411,7 +411,7 @@ namespace BanditMilitias.Helpers
 
         internal static void ReHome()
         {
-            var tempList = MobileParty.All.WhereQ(m => m.PartyComponent is ModBanditMilitiaPartyComponent && m.LeaderHero?.HomeSettlement is null).Select(x => x.LeaderHero).ToList();
+            var tempList = GetAllBMs().Where(m => m.LeaderHero?.HomeSettlement is null).Select(x => x.LeaderHero).ToList();
             Log($"Fixing {tempList.Count} null HomeSettlement heroes");
             tempList.Do(x => Traverse.Create(x).Field("_homeSettlement").SetValue(Hideouts.GetRandomElement()));
         }
@@ -791,7 +791,7 @@ namespace BanditMilitias.Helpers
         private static List<CultureObject> AllowedCultures;
         private static List<Settlement> AllowedSettlements;
 
-        internal static Hero CreateHero()
+        internal static Hero CreateHero(Clan clan)
         {
             AllowedCultures ??= new()
             {
@@ -805,6 +805,7 @@ namespace BanditMilitias.Helpers
 
             AllowedSettlements ??= Hideouts.WhereQ(s => AllowedCultures.Contains(s.Culture)).ToListQ();
             var hero = HeroCreator.CreateHeroAtOccupation(Occupation.Bandit, AllowedSettlements.GetRandomElement());
+            hero.Clan = clan;
             hero.StringId += "Bandit_Militia";
             hero.CharacterObject.StringId += "Bandit_Militia";
             if (Rng.Next(0, 2) == 0)
@@ -878,7 +879,7 @@ namespace BanditMilitias.Helpers
                 MurderMounts(roster);
 
                 //var militia = ModBanditMilitiaPartyComponent.CreateBanditParty(settlement.GatePosition, roster, TroopRoster.CreateDummyTroopRoster());
-                var militia = MobileParty.CreateParty("Bandit_Militia", new ModBanditMilitiaPartyComponent(), m => m.ActualClan = clan);
+                var militia = MobileParty.CreateParty("Bandit_Militia", new ModBanditMilitiaPartyComponent(clan), m => m.ActualClan = clan);
                 militia.MemberRoster.Add(roster.ToFlattenedRoster());
                 militia.InitializeMobilePartyAtPosition(roster, TroopRoster.CreateDummyTroopRoster(), settlement.GatePosition);
                 ConfigureMilitia(militia);
@@ -1139,20 +1140,25 @@ namespace BanditMilitias.Helpers
 
         internal static void ConfigureLeader(Hero hero)
         {
-            var nameIndex = (int)Traverse.Create(NameGenerator.Current)
-                .Method("SelectNameIndex", hero, GangLeaderNames(NameGenerator.Current), 0, true, false)
-                .GetValue();
+            NameGenerator.Current.GenerateHeroNameAndHeroFullName(hero, out var firstName, out var fullName);
+            var random = Rng.Next(0, GangLeaderNames(NameGenerator.Current).Length);
             var originalStringId = hero.CharacterObject.StringId;
             hero.CharacterObject.StringId = hero.CharacterObject.StringId.Replace("Bandit_Militia", "");
             NameGenerator.Current.AddName(
                 (uint)Traverse.Create(NameGenerator.Current)
-                    .Method("CreateNameCode", hero.CharacterObject, GangLeaderNames(NameGenerator.Current), nameIndex)
+                    .Method("CreateNameCode", hero.CharacterObject, GangLeaderNames(NameGenerator.Current), random)
                     .GetValue());
             hero.CharacterObject.StringId = originalStringId;
-            var textObject = GangLeaderNames(NameGenerator.Current)[nameIndex].CopyTextObject();
-            textObject.SetTextVariable("FIRST_NAME", hero.FirstName);
-            StringHelpers.SetCharacterProperties("HERO", hero.CharacterObject, textObject);
-            hero.SetName(textObject, hero.FirstName);
+            var textObject = GangLeaderNames(NameGenerator.Current)[random].CopyTextObject();
+            StringHelpers.SetCharacterProperties("HERO", hero.CharacterObject);
+            hero.SetName(new TextObject($"{textObject}"), hero.FirstName);
+            //hero.SetName(textObject, hero.FirstName);
+        }
+
+
+        internal static IEnumerable<MobileParty> GetAllBMs()
+        {
+            return MobileParty.All.WhereQ(m => m.PartyComponent is ModBanditMilitiaPartyComponent);
         }
         // too slow
         //private static void LogMilitiaFormed(MobileParty mobileParty)
