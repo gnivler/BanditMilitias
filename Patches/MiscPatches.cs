@@ -15,8 +15,9 @@ using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
 using TaleWorlds.Engine;
 using TaleWorlds.Library;
-using static Bandit_Militias.Helpers.Helper;
-using static Bandit_Militias.Globals;
+using TaleWorlds.LinQuick;
+using static BanditMilitias.Helpers.Helper;
+using static BanditMilitias.Globals;
 
 // ReSharper disable UnusedMember.Global
 // ReSharper disable UnusedType.Global
@@ -24,7 +25,7 @@ using static Bandit_Militias.Globals;
 // ReSharper disable RedundantAssignment
 // ReSharper disable InconsistentNaming
 
-namespace Bandit_Militias.Patches
+namespace BanditMilitias.Patches
 {
     public static class MiscPatches
     {
@@ -33,12 +34,12 @@ namespace Bandit_Militias.Patches
         {
             private static void Postfix()
             {
-                Mod.Log("MapScreen.OnInitialize");
+                Log("MapScreen.OnInitialize");
                 EquipmentItems.Clear();
                 PopulateItems();
 
                 // 1.7 changed CreateHeroAtOccupation to only fish from this: NotableAndWandererTemplates
-                // this has no effect on 1.6.5 since the property doesn't exist
+                // this has no effect on earlier versions since the property doesn't exist
                 var characterObjects =
                     CharacterObject.All.Where(c =>
                         c.Occupation is Occupation.Bandit
@@ -87,25 +88,26 @@ namespace Bandit_Militias.Patches
                     BanditEquipment.Add(BuildViableEquipmentSet());
                 }
 
-                PartyMilitiaMap.Clear();
+                PartyImageMap.Clear();
                 Hideouts = Settlement.FindAll(x => x.IsHideout).ToList();
 
                 // considers leaderless militias
-                var militias = MobileParty.All.Where(m =>
-                    m.LeaderHero is not null && m.StringId.StartsWith("Bandit_Militia")).ToList();
-
-                for (var i = 0; i < militias.Count; i++)
-                {
-                    var militia = militias[i];
-                    var recreatedMilitia = new Militia(militia);
-                    SetMilitiaPatrol(recreatedMilitia.MobileParty);
-                }
+                //var militias = MobileParty.All.Where(m =>
+                //    m.LeaderHero is not null && m.StringId.StartsWith("Bandit_Militia")).ToList();
+                //
+                //for (var i = 0; i < militias.Count; i++)
+                //{
+                //    var militia = militias[i];
+                //    var recreatedMilitia = MobileParty.CreateParty("Bandit_Militia", new ModBanditMilitiaPartyComponent(mobileParty));
+                //    SetMilitiaPatrol(recreatedMilitia.MobileParty);
+                //}
 
                 DoPowerCalculations(true);
                 FlushMilitiaCharacterObjects();
                 // 1.6 is dropping the militia settlements at some point, I haven't figured out where
                 ReHome();
-                Mod.Log($"Militias: {militias.Count} (registered {PartyMilitiaMap.Count})");
+                Log($"Militias: {MobileParty.All.CountQ(m => m.PartyComponent is ModBanditMilitiaPartyComponent)}");
+                //Log($"Militias: {militias.Count} (registered {PartyMilitiaMap.Count})");
                 RunLateManualPatches();
             }
         }

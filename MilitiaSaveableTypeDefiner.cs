@@ -1,6 +1,6 @@
 using TaleWorlds.SaveSystem;
 
-namespace Bandit_Militias
+namespace BanditMilitias
 {
     // ReSharper disable once UnusedType.Global
     // class is loaded by the game automatically

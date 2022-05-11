@@ -11,11 +11,10 @@ using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.Core;
 using TaleWorlds.InputSystem;
 using TaleWorlds.Library;
-using TaleWorlds.LinQuick;
 using TaleWorlds.Localization;
 using TaleWorlds.MountAndBlade;
-using static Bandit_Militias.Helpers.Helper;
-using static Bandit_Militias.Globals;
+using static BanditMilitias.Helpers.Helper;
+using static BanditMilitias.Globals;
 using Module = TaleWorlds.MountAndBlade.Module;
 
 // ReSharper disable ConditionIsAlwaysTrueOrFalse
@@ -23,26 +22,14 @@ using Module = TaleWorlds.MountAndBlade.Module;
 // ReSharper disable UnusedMember.Local
 // ReSharper disable InconsistentNaming
 
-namespace Bandit_Militias
+namespace BanditMilitias
 {
-    public class Mod : MBSubModuleBase
+    public class SubModule : MBSubModuleBase
     {
         internal static readonly Harmony harmony = new("ca.gnivler.bannerlord.BanditMilitias");
-
+            
         // ReSharper disable once AssignNullToNotNullAttribute
-        private static readonly string logFilename = Path.Combine(new FileInfo(@"..\..\Modules\Bandit Militias\").DirectoryName, "log.txt");
-
-        internal static void Log(object input)
-        {
-            if (Globals.Settings is null
-                || Globals.Settings?.Debug is false)
-            {
-                return;
-            }
-
-            using var sw = new StreamWriter(logFilename, true);
-            sw.WriteLine($"[{DateTime.Now.ToLongTimeString()}] {(string.IsNullOrEmpty(input.ToString()) ? "IsNullOrEmpty" : input)}");
-        }
+        internal static readonly string logFilename = Path.Combine(new FileInfo(@"..\..\Modules\BanditMilitias\").DirectoryName, "log.txt");
 
         protected override void OnSubModuleLoad()
         {
@@ -89,7 +76,7 @@ namespace Bandit_Militias
         private static void AdjustForLoadOrder()
         {
             var assemblies = AppDomain.CurrentDomain.GetAssemblies();
-            var BM = assemblies.First(a => a.FullName.StartsWith("Bandit Militias"));
+            var BM = assemblies.First(a => a.FullName.StartsWith("BanditMilitias"));
             var CEK = assemblies.FirstOrDefault(x => x.FullName.StartsWith("CalradiaExpandedKingdoms"));
             if (CEK is not null)
             {
@@ -133,40 +120,40 @@ namespace Bandit_Militias
 
             if (superKey && Input.IsKeyPressed(InputKey.F10))
             {
-                foreach (var militia in PartyMilitiaMap.Values.WhereQ(m => m.MobileParty.MemberRoster.TotalManCount < Globals.Settings.MinPartySize).OrderByDescending(x => x.MobileParty.MemberRoster.TotalManCount))
-                {
-                    //if (militia.MobileParty.MemberRoster.TotalManCount >= Globals.Settings.MinPartySize)
-                    //{
-                    //    continue;
-                    //}
-
-                    Log(militia.MobileParty.MemberRoster.TotalManCount + " " + militia.MobileParty.Food);
-                }
+                //foreach (var militia in PartyMilitiaMap.Values.WhereQ(m => m.MobileParty.MemberRoster.TotalManCount < Globals.Settings.MinPartySize).OrderByDescending(x => x.MobileParty.MemberRoster.TotalManCount))
+                //{
+                //    //if (militia.MobileParty.MemberRoster.TotalManCount >= Globals.Settings.MinPartySize)
+                //    //{
+                //    //    continue;
+                //    //}
+                //
+                //    Log(militia.MobileParty.MemberRoster.TotalManCount + " " + militia.MobileParty.Food);
+                //}
             }
 
             if (superKey && Input.IsKeyPressed(InputKey.F12))
             {
-                foreach (var militia in PartyMilitiaMap.Values.OrderBy(x => x.MobileParty.MemberRoster.TotalManCount))
-                {
-                    Log($">> {militia.Hero.Name,-30}: {militia.MobileParty.MemberRoster.TotalManCount:F1}/{militia.MobileParty.Party.TotalStrength:0}");
-                    for (int tier = 1; tier <= 6; tier++)
-                    {
-                        var count = militia.MobileParty.MemberRoster.GetTroopRoster().Where(x => x.Character.Tier == tier).Sum(x => x.Number);
-                        if (count > 0)
-                        {
-                            Log($"  Tier {tier}: {count}");
-                        }
-                    }
-
-                    Log($"Cavalry: {NumMountedTroops(militia.MobileParty.MemberRoster)} ({(float)NumMountedTroops(militia.MobileParty.MemberRoster) / militia.MobileParty.MemberRoster.TotalManCount * 100}%)");
-                    if ((float)NumMountedTroops(militia.MobileParty.MemberRoster) / (militia.MobileParty.MemberRoster.TotalManCount * 100) > militia.MobileParty.MemberRoster.TotalManCount / 2f)
-                    {
-                        Log(new string('*', 80));
-                        Log(new string('*', 80));
-                    }
-                }
-
-                Log($">>> Total {PartyMilitiaMap.Values.Count} = {PartyMilitiaMap.Values.Select(x => x.MobileParty.MemberRoster.TotalManCount).Sum()} ({MilitiaPowerPercent}%)");
+                //foreach (var militia in PartyMilitiaMap.Values.OrderBy(x => x.MobileParty.MemberRoster.TotalManCount))
+                //{
+                //    Log($">> {militia.Hero.Name,-30}: {militia.MobileParty.MemberRoster.TotalManCount:F1}/{militia.MobileParty.Party.TotalStrength:0}");
+                //    for (int tier = 1; tier <= 6; tier++)
+                //    {
+                //        var count = militia.MobileParty.MemberRoster.GetTroopRoster().Where(x => x.Character.Tier == tier).Sum(x => x.Number);
+                //        if (count > 0)
+                //        {
+                //            Log($"  Tier {tier}: {count}");
+                //        }
+                //    }
+                //
+                //    Log($"Cavalry: {NumMountedTroops(militia.MobileParty.MemberRoster)} ({(float)NumMountedTroops(militia.MobileParty.MemberRoster) / militia.MobileParty.MemberRoster.TotalManCount * 100}%)");
+                //    if ((float)NumMountedTroops(militia.MobileParty.MemberRoster) / (militia.MobileParty.MemberRoster.TotalManCount * 100) > militia.MobileParty.MemberRoster.TotalManCount / 2f)
+                //    {
+                //        Log(new string('*', 80));
+                //        Log(new string('*', 80));
+                //    }
+                //}
+                //
+                //Log($">>> Total {PartyMilitiaMap.Values.Count} = {PartyMilitiaMap.Values.Select(x => x.MobileParty.MemberRoster.TotalManCount).Sum()} ({MilitiaPowerPercent}%)");
             }
 
             if ((Input.IsKeyDown(InputKey.LeftControl) || Input.IsKeyDown(InputKey.RightControl)) &&

@@ -5,7 +5,7 @@ using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.ObjectSystem;
 
-namespace Bandit_Militias.Helpers
+namespace BanditMilitias.Helpers
 {
     public static class Extensions
     {
@@ -17,20 +17,6 @@ namespace Bandit_Militias.Helpers
             return Campaign.Current.VisualTrackerManager.CheckTracked(mobileParty);
         }
 
-        //[HarmonyPatch(typeof(AiPatrollingBehavior), "AiHourlyTick")]
-        //public class asidfjasoifj
-        //{
-        //    public static Exception Finalizer(Exception __exception, MobileParty mobileParty)
-        //    {
-        //        if (__exception is not null)
-        //        {
-        //            FileLog.Log(mobileParty.Name.ToString());
-        //        }
-        //
-        //        return null;
-        //    }
-        //}
-        
         internal static bool IsTooBusyToMerge(this MobileParty mobileParty)
         {
             if (mobileParty == mobileParty?.MoveTargetParty?.MoveTargetParty)
@@ -56,6 +42,11 @@ namespace Bandit_Militias.Helpers
         internal static bool IsBM(this MobileParty mobileParty)
         {
             return mobileParty.PartyComponent is ModBanditMilitiaPartyComponent;
+        }
+
+        internal static ModBanditMilitiaPartyComponent BM(this MobileParty mobileParty)
+        {
+            return (ModBanditMilitiaPartyComponent)mobileParty.PartyComponent;
         }
     }
 }

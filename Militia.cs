@@ -11,10 +11,10 @@ using TaleWorlds.Core;
 using TaleWorlds.Library;
 using TaleWorlds.LinQuick;
 using TaleWorlds.Localization;
-using static Bandit_Militias.Globals;
-using static Bandit_Militias.Helpers.Helper;
+using static BanditMilitias.Globals;
+using static BanditMilitias.Helpers.Helper;
 
-namespace Bandit_Militias
+namespace BanditMilitias
 {
     internal class Militia
     {
@@ -63,11 +63,6 @@ namespace Bandit_Militias
         public Militia(Vec2 position, TroopRoster party, TroopRoster prisoners) : this()
         {
             Spawn(position, party, prisoners);
-            if (!PartyImageMap.ContainsKey(MobileParty))
-            {
-                PartyImageMap.Add(MobileParty, new ImageIdentifierVM(Banner));
-            }
-
             TrainMilitia();
             SetMilitiaPatrol(MobileParty);
             //LogMilitiaFormed(MobileParty);
@@ -77,14 +72,12 @@ namespace Bandit_Militias
         private void Spawn(Vec2 position, TroopRoster party, TroopRoster prisoners)
         {
             var partyClan = GetMostPrevalent(party) ?? Clan.BanditFactions.First();
-            MobileParty = ModBanditMilitiaPartyComponent.CreateBanditParty(partyClan);
+            MobileParty = ModBanditMilitiaPartyComponent.CreateBanditParty(partyClan, out Hero);
             MobileParty.InitializeMobilePartyAroundPosition(party, prisoners, position, 0);
             IsBandit(MobileParty) = true;
             PartyMilitiaMap.Add(MobileParty, this);
             PartyImageMap.Add(MobileParty, new ImageIdentifierVM(Banner));
-            var leaderHero = MobileParty.MemberRoster.GetTroopRoster().ToListQ()[0].Character.HeroObject;
-            MobileParty.PartyComponent.ChangePartyLeader(leaderHero);
-            Hero = MobileParty.LeaderHero;
+            MobileParty.PartyComponent.ChangePartyLeader(Hero);
             Hero.Gold = Convert.ToInt32(MobileParty.Party.TotalStrength * GoldMap[Globals.Settings.GoldReward.SelectedValue]);
             if (MobileParty.ActualClan.Leader is null)
             {
@@ -132,7 +125,7 @@ namespace Bandit_Militias
             {
                 if (MobileParty.MemberRoster.Count == 0)
                 {
-                    Mod.Log("Trying to configure militia with no troops, trashing");
+                    Log("Trying to configure militia with no troops, trashing");
                     Trash(MobileParty);
                     return;
                 }
@@ -178,7 +171,7 @@ namespace Bandit_Militias
 
                             var roster = MobileParty.MemberRoster;
                             roster.RemoveTroop(looter.Character, numberToUpgrade);
-                            ConvertLootersToKingdomCultureRecruits(ref roster, culture, numberToUpgrade);
+                            ConvertLootersToKingdomCultureRecruits(roster, culture, numberToUpgrade);
                         }
                     }
                 }
@@ -200,7 +193,7 @@ namespace Bandit_Militias
                     var minNumberToUpgrade = Convert.ToInt32(Globals.Settings.UpgradeUnitsPercent / 100 * number * Rng.NextDouble());
                     minNumberToUpgrade = Math.Max(1, minNumberToUpgrade);
                     numberToUpgrade = Convert.ToInt32(Rng.Next(minNumberToUpgrade, Convert.ToInt32((number + 1) / 2f)));
-                    Mod.Log($"{MobileParty.LeaderHero.Name} is upgrading up to {numberToUpgrade} of {number} \"{troopToTrain.Character.Name}\".");
+                    Log($"{MobileParty.LeaderHero.Name} is upgrading up to {numberToUpgrade} of {number} \"{troopToTrain.Character.Name}\".");
                     var xpGain = numberToUpgrade * DifficultyXpMap[Globals.Settings.XpGift.SelectedValue];
                     MobileParty.MemberRoster.AddXpToTroop(xpGain, troopToTrain.Character);
                     Campaign.Current._partyUpgrader.UpgradeReadyTroops(MobileParty.Party);
@@ -213,7 +206,7 @@ namespace Bandit_Militias
             }
             catch (Exception ex)
             {
-                Mod.Log("Bandit Militias is failing to configure parties!  Exception: " + ex);
+                Log("Bandit Militias is failing to configure parties!  Exception: " + ex);
                 Trash(MobileParty);
             }
         }
@@ -250,11 +243,11 @@ namespace Bandit_Militias
         //    {
         //        var troopString = $"{mobileParty.Party.NumberOfAllMembers} troop" + (mobileParty.Party.NumberOfAllMembers > 1 ? "s" : "");
         //        var strengthString = $"{Math.Round(mobileParty.Party.TotalStrength)} strength";
-        //        Mod.Log($"{$"New Bandit Militia led by {mobileParty.LeaderHero.Name}",-70} | {troopString,10} | {strengthString,12} | >>> {GlobalMilitiaPower / CalculatedGlobalPowerLimit * 100}%");
+        //        LogLog($"{$"New Bandit Militia led by {mobileParty.LeaderHero.Name}",-70} | {troopString,10} | {strengthString,12} | >>> {GlobalMilitiaPower / CalculatedGlobalPowerLimit * 100}%");
         //    }
         //    catch (Exception ex)
         //    {
-        //        Mod.Log(ex);
+        //        LogLog(ex);
         //    }
         //}
     }

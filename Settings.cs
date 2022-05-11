@@ -10,7 +10,7 @@ using MCM.Abstractions.Dropdown;
 using MCM.Abstractions.Settings.Base;
 using MCM.Abstractions.Settings.Base.Global;
 
-namespace Bandit_Militias
+namespace BanditMilitias
 {
     public class Settings : AttributeGlobalSettings<Settings>
     {
@@ -41,16 +41,16 @@ namespace Bandit_Militias
         }
 
         public override string FormatType => "json";
-        public override string FolderName => "Bandit Militias";
+        public override string FolderName => "BanditMilitias";
 
         [SettingPropertyBool("Train Militias", HintText = "\nBandit heroes will train their militias.", Order = 0, RequireRestart = false)]
         [SettingPropertyGroup("Primary Settings", GroupOrder = 0)]
         public bool CanTrain { get; private set; } = true;
 
-       [SettingPropertyInteger("Daily Training Chance", 0, 100, HintText = "\nEach day they might train further.", Order = 1, RequireRestart = false)]
-       [SettingPropertyGroup("Primary Settings", GroupOrder = 1)]
-       public float TrainingChance { get; set; } = 10;
-        
+        [SettingPropertyInteger("Daily Training Chance", 0, 100, HintText = "\nEach day they might train further.", Order = 1, RequireRestart = false)]
+        [SettingPropertyGroup("Primary Settings", GroupOrder = 1)]
+        public float TrainingChance { get; set; } = 10;
+
         [SettingPropertyDropdown("Militia XP Boost", HintText = "\nHardest grants enough XP to significantly upgrade troops.  Off grants no bonus XP.", Order = 2, RequireRestart = false)]
         [SettingPropertyGroup("Primary Settings")]
         public DropdownDefault<string> XpGift { get; private set; } = new(Globals.DifficultyXpMap.Keys, 1);
@@ -139,7 +139,7 @@ namespace Bandit_Militias
         public bool TestingMode { get; set; }
 
         private string id = "BanditMilitias";
-        private string displayName = $"Bandit Militias {typeof(Settings).Assembly.GetName().Version.ToString(3)}";
+        private string displayName = $"BanditMilitias {typeof(Settings).Assembly.GetName().Version.ToString(3)}";
 
         public override string Id => id;
         public override string DisplayName => displayName;

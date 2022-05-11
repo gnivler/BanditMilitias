@@ -8,7 +8,7 @@ using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
 using TaleWorlds.ObjectSystem;
 
-namespace Bandit_Militias
+namespace BanditMilitias
 {
     // ReSharper disable once ClassNeverInstantiated.Global
     internal struct Globals
@@ -25,7 +25,6 @@ namespace Bandit_Militias
         internal static float MilitiaPowerPercent;
 
         // dictionary maps
-        internal static readonly Dictionary<MobileParty, Militia> PartyMilitiaMap = new();
         internal static readonly Dictionary<MobileParty, ImageIdentifierVM> PartyImageMap = new();
         internal static readonly Dictionary<ItemObject.ItemTypeEnum, List<ItemObject>> ItemTypes = new();
         internal static readonly Dictionary<CultureObject, List<CharacterObject>> Recruits = new();
