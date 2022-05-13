@@ -92,21 +92,9 @@ namespace BanditMilitias.Patches
 
                 PartyImageMap.Clear();
                 Hideouts = Settlement.FindAll(x => x.IsHideout).ToList();
-
-                // considers leaderless militias
-                //var militias = MobileParty.All.Where(m =>
-                //    m.LeaderHero is not null && m.StringId.StartsWith("Bandit_Militia")).ToList();
-                //
-                //for (var i = 0; i < militias.Count; i++)
-                //{
-                //    var militia = militias[i];
-                //    var recreatedMilitia = MobileParty.CreateParty("Bandit_Militia", new ModBanditMilitiaPartyComponent(mobileParty));
-                //    SetMilitiaPatrol(recreatedMilitia.MobileParty);
-                //}
-
                 DoPowerCalculations(true);
                 FlushMilitiaCharacterObjects();
-                // 1.6 is dropping the militia settlements at some point, I haven't figured out where
+                // 1.7.2 is dropping the Hero HomeSettlements at some point, I haven't figured out where
                 ReHome();
                 Log($"Militias: {MobileParty.All.CountQ(m => m.PartyComponent is ModBanditMilitiaPartyComponent)}");
                 //Log($"Militias: {militias.Count} (registered {PartyMilitiaMap.Count})");
@@ -169,17 +157,7 @@ namespace BanditMilitias.Patches
                 return null;
             }
         }
-
-        [HarmonyPatch(typeof(GameStartupInfo), MethodType.Constructor)]
-        public static class asdfds
-        {
-            public static void Prefix(GameStartupInfo __instance)
-            {
-                Traverse.Create(__instance).Property<bool>("IsContinueGame").Value = true;
-            }
-        }
-
-        private static readonly AccessTools.FieldRef<Hero, Settlement> _homeSettlement = AccessTools.FieldRefAccess<Hero, Settlement>("_homeSettlement");
+        
         [HarmonyPatch(typeof(Hero), "UpdateHomeSettlement")]
         public static void Postfix(Hero hero)
         {

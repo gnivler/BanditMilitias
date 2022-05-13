@@ -8,6 +8,7 @@ using SandBox.View.Map;
 using SandBox.ViewModelCollection;
 using SandBox.ViewModelCollection.MobilePartyTracker;
 using SandBox.ViewModelCollection.Nameplate;
+using StoryMode.GameComponents;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.AgentOrigins;
@@ -86,16 +87,15 @@ namespace BanditMilitias.Patches
 
                     var nearbyParties = MobileParty.FindPartiesAroundPosition(mobileParty.Position2D, FindRadius)
                         .Intersect(parties)
-                        .Except(new[] { mobileParty })
                         .ToListQ();
+                    nearbyParties.Remove(mobileParty);
 
                     if (!nearbyParties.Any())
                     {
                         continue;
                     }
 
-                    // TODO improve
-                    if (mobileParty.ToString().Contains("manhunter")) // Calradia Expanded Kingdoms
+                    if (mobileParty.StringId.Contains("manhunter")) // Calradia Expanded Kingdoms
                     {
                         continue;
                     }
@@ -165,15 +165,15 @@ namespace BanditMilitias.Patches
                     if (clan is null) Debugger.Break();
                     var militia = MobileParty.CreateParty("Bandit_Militia", new ModBanditMilitiaPartyComponent(clan), m => m.ActualClan = clan);
                     militia.InitializeMobilePartyAroundPosition(rosters[0], rosters[1], mobileParty.Position2D, 0);
-                    TrainMilitia(militia);
                     ConfigureMilitia(militia);
-                    //ModBanditMilitiaPartyComponent.CreateBanditParty(mobileParty.Position2D, rosters[0], rosters[1]);
+                    TrainMilitia(militia);
+                    IsBandit(militia) = true;
                     // teleport new militias near the player
                     if (Globals.Settings.TestingMode)
                     {
                         // in case a prisoner
                         var party = Hero.MainHero.PartyBelongedTo ?? Hero.MainHero.PartyBelongedToAsPrisoner.MobileParty;
-                         militia.Position2D = party.Position2D;
+                        militia.Position2D = party.Position2D;
                     }
 
                     militia.Party.Visuals.SetMapIconAsDirty();
@@ -201,8 +201,10 @@ namespace BanditMilitias.Patches
             public static void Postfix(MobileParty mobileParty, ref ExplainedNumber __result)
             {
                 if (mobileParty.IsBandit
+                    || mobileParty.IsBM()
                     && mobileParty.TargetParty is not null
-                    && mobileParty.TargetParty.IsBandit)
+                    && (mobileParty.TargetParty.IsBandit
+                        || mobileParty.TargetParty.IsBM()))
                 {
                     __result.AddFactor(0.15f);
                 }
@@ -334,7 +336,7 @@ namespace BanditMilitias.Patches
             {
                 if (__result
                     && !targetParty.IsGarrison
-                    && __instance.PartyComponent is ModBanditMilitiaPartyComponent)
+                    && __instance.IsBM())
                 {
                     if (Globals.Settings.IgnoreVillagersCaravans
                         && targetParty.IsCaravan || targetParty.IsVillager)
