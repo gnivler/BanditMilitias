@@ -9,10 +9,10 @@ namespace BanditMilitias.Helpers
 {
     public static class Extensions
     {
-        private static readonly AccessTools.FieldRef<CampaignObjectManager, List<Hero>> aliveHeroes =
+        private static readonly AccessTools.FieldRef<CampaignObjectManager, List<Hero>> AliveHeroes =
             AccessTools.FieldRefAccess<CampaignObjectManager, List<Hero>>("_aliveHeroes");
 
-        private static readonly AccessTools.FieldRef<CampaignObjectManager, List<Hero>> deadOrDisabledHeroes =
+        private static readonly AccessTools.FieldRef<CampaignObjectManager, List<Hero>> DeadOrDisabledHeroes =
             AccessTools.FieldRefAccess<CampaignObjectManager, List<Hero>>("_deadOrDisabledHeroes");
 
         public static bool IsUsedByAQuest(this MobileParty mobileParty)
@@ -29,14 +29,16 @@ namespace BanditMilitias.Helpers
 
             return mobileParty.TargetParty is not null
                    || mobileParty.ShortTermTargetParty is not null
-                   || mobileParty.ShortTermBehavior is AiBehavior.EngageParty or AiBehavior.FleeToPoint or AiBehavior.RaidSettlement;
+                   || mobileParty.ShortTermBehavior is AiBehavior.EngageParty
+                       or AiBehavior.FleeToPoint
+                       or AiBehavior.RaidSettlement;
         }
 
         public static void RemoveMilitiaHero(this Hero hero)
         {
             Traverse.Create(typeof(KillCharacterAction)).Method("MakeDead", hero).GetValue();
-            aliveHeroes(Campaign.Current.CampaignObjectManager).Remove(hero);
-            deadOrDisabledHeroes(Campaign.Current.CampaignObjectManager).Remove(hero);
+            AliveHeroes(Campaign.Current.CampaignObjectManager).Remove(hero);
+            DeadOrDisabledHeroes(Campaign.Current.CampaignObjectManager).Remove(hero);
             MBObjectManager.Instance.UnregisterObject(hero.CharacterObject);
             MBObjectManager.Instance.UnregisterObject(hero);
         }

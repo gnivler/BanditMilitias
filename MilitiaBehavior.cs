@@ -59,27 +59,23 @@ namespace BanditMilitias
                             mobileParty.Ai.SetAIState(AIState.PatrollingAroundLocation);
                             break;
                         case AIState.PatrollingAroundLocation:
-                            const double smallChance = 0.00001;
+                            const double smallChance = 0.0001;
                             const int hardCap = 5;
                             if (Globals.Rng.NextDouble() < smallChance
                                 && GetAllBMs().CountQ(BM => BM.ShortTermBehavior is AiBehavior.RaidSettlement) <= hardCap)
                             {
-                                target = SettlementHelper.FindNearestVillage(null, mobileParty);
+                                target = SettlementHelper.FindNearestVillage(v => !v.IsRaided && !v.IsUnderRaid && v.GetValue() > 0, mobileParty);
                                 SetPartyAiAction.GetActionForRaidingSettlement(mobileParty, target);
                                 mobileParty.Ai.SetAIState(AIState.Raiding);
                             }
 
                             break;
                         case AIState.InfestingVillage:
-
-
                             Debugger.Break();
                             SetPartyAiAction.GetActionForRaidingSettlement(mobileParty, target);
                             break;
                         case AIState.Raiding:
-                            Log($"{new string('*', 50)} {mobileParty.Name} Pillage! {mobileParty.ItemRoster.TotalWeight} weight, {mobileParty.LeaderHero.Gold} GOLD!");
-
-
+                            Log($"{new string('*', 50)} {mobileParty.Name + " Pillage!",-20} {mobileParty.ItemRoster.TotalWeight} weight, {mobileParty.LeaderHero.Gold} GOLD!");
                             break;
                     }
                 }

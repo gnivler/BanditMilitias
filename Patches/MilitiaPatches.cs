@@ -163,17 +163,17 @@ namespace BanditMilitias.Patches
                     var rosters = MergeRosters(mobileParty, targetParty);
                     var clan = GetMostPrevalent(rosters[0]);
                     if (clan is null) Debugger.Break();
-                    var militia = MobileParty.CreateParty("Bandit_Militia", new ModBanditMilitiaPartyComponent(clan), m => m.ActualClan = clan);
-                    InitMilitia(militia, rosters, mobileParty.Position2D);
+                    var bm = MobileParty.CreateParty("Bandit_Militia", new ModBanditMilitiaPartyComponent(clan), m => m.ActualClan = clan);
+                    InitMilitia(bm, rosters, mobileParty.Position2D);
                     // teleport new militias near the player
                     if (Globals.Settings.TestingMode)
                     {
                         // in case a prisoner
                         var party = Hero.MainHero.PartyBelongedTo ?? Hero.MainHero.PartyBelongedToAsPrisoner.MobileParty;
-                        militia.Position2D = party.Position2D;
+                        bm.Position2D = party.Position2D;
                     }
 
-                    militia.Party.Visuals.SetMapIconAsDirty();
+                    bm.Party.Visuals.SetMapIconAsDirty();
                     try
                     {
                         // can throw if Clan is null

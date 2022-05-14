@@ -29,6 +29,8 @@ using TaleWorlds.ObjectSystem;
 using TaleWorlds.TwoDimension;
 using static BanditMilitias.Globals;
 
+// ReSharper disable MemberCanBePrivate.Global
+
 // ReSharper disable InconsistentNaming  
 
 namespace BanditMilitias.Helpers
@@ -53,6 +55,9 @@ namespace BanditMilitias.Helpers
 
         private static readonly AccessTools.StructFieldRef<EquipmentElement, ItemModifier> ItemModifier =
             AccessTools.StructFieldRefAccess<EquipmentElement, ItemModifier>("<ItemModifier>k__BackingField");
+
+        public static readonly AccessTools.FieldRef<PartyBase, ItemRoster> ItemRoster =
+            AccessTools.FieldRefAccess<PartyBase, ItemRoster>("<ItemRoster>k__BackingField");
 
         public static void Log(object input)
         {
@@ -193,8 +198,8 @@ namespace BanditMilitias.Helpers
                 IsBandit(bm1) = true;
                 IsBandit(bm2) = true;
                 Log($">>> {bm1.Name} <- Split {original.Name} Split -> {bm1.Name}");
-                Traverse.Create(bm1.Party).Property("ItemRoster").SetValue(inventory1);
-                Traverse.Create(bm2.Party).Property("ItemRoster").SetValue(inventory2);
+                ItemRoster(bm1.Party) = inventory1;
+                ItemRoster(bm2.Party) = inventory2;
                 bm1.Party.Visuals.SetMapIconAsDirty();
                 bm2.Party.Visuals.SetMapIconAsDirty();
                 Trash(original);
@@ -205,6 +210,7 @@ namespace BanditMilitias.Helpers
                 Log(ex);
             }
         }
+
 
         private static readonly List<string> verbotenParties = new()
         {
@@ -892,7 +898,7 @@ namespace BanditMilitias.Helpers
 
                 //var militia = ModBanditMilitiaPartyComponent.CreateBanditParty(settlement.GatePosition, roster, TroopRoster.CreateDummyTroopRoster());
                 var militia = MobileParty.CreateParty("Bandit_Militia", new ModBanditMilitiaPartyComponent(clan), m => m.ActualClan = clan);
-                InitMilitia(militia, new [] { roster, TroopRoster.CreateDummyTroopRoster() }, militia.Position2D);
+                InitMilitia(militia, new[] { roster, TroopRoster.CreateDummyTroopRoster() }, militia.Position2D);
 
                 // teleport new militias near the player
                 if (Globals.Settings.TestingMode)

@@ -192,9 +192,9 @@ namespace BanditMilitias
         {
             try
             {
-                var internalType = AccessTools.TypeByName("DefaultMapTrackModel.GetTrackDescription>d__11");
+                var internalType = AccessTools.TypeByName("<GetTrackDescription>d__11");
                 var org = AccessTools.Method(internalType, "MoveNext");
-                harmony.Patch(org, finalizer: new HarmonyMethod(AccessTools.Method(typeof(MiscPatches), "Finalizer")));
+                harmony.Patch(org, finalizer: new HarmonyMethod(AccessTools.Method(typeof(SubModule), "Finalizer")));
 
             }
             catch (Exception ex)
