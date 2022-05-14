@@ -113,7 +113,7 @@ namespace BanditMilitias
 
         [SettingPropertyInteger("Global Power", 0, 1000, HintText = "\nMajor setting.  Setting higher means more, bigger BMs.", Order = 11, RequireRestart = false)]
         [SettingPropertyGroup("Militia Adjustments")]
-        public int GlobalPowerPercent { get; private set; } = 15;
+        public int GlobalPowerPercent { get; set; } = 15;
 
         [SettingPropertyInteger("Max Training Tier", 1, 6, HintText = "\nBM won't train any units past this tier.", Order = 13, RequireRestart = false)]
         [SettingPropertyGroup("Militia Adjustments")]
@@ -127,10 +127,10 @@ namespace BanditMilitias
         public bool Trackers { get; private set; } = false;
 
         [SettingPropertyInteger("Minimum BM Size To Track", 1, 500, HintText = "Any smaller BMs won't be tracked.", Order = 1, RequireRestart = false)]
-        public int TrackedSizeMinimum { get; internal set; } = 50;
+        public int TrackedSizeMinimum { get; private set; } = 50;
 
         [SettingPropertyBool("Random Banners", HintText = "\nBMs will have unique banners, or basic bandit clan ones.", Order = 1, RequireRestart = false)]
-        public bool RandomBanners { get; internal set; } = true;
+        public bool RandomBanners { get; set; } = true;
 
         [SettingPropertyBool("Debug Logging", HintText = "\nCreates logfile output in the mod folder.", Order = 3, RequireRestart = false)]
         public bool Debug { get; set; }

@@ -15,9 +15,9 @@ namespace BanditMilitias
 {
     public class ModBanditMilitiaPartyComponent : WarPartyComponent
     {
-        [SaveableField(1)] internal readonly Banner Banner;
-        [SaveableField(2)] internal readonly string BannerKey;
-        [SaveableField(3)] internal CampaignTime LastMergedOrSplitDate = CampaignTime.Now;
+        [SaveableField(1)] public readonly Banner Banner;
+        [SaveableField(2)] public readonly string BannerKey;
+        [SaveableField(3)] public CampaignTime LastMergedOrSplitDate = CampaignTime.Now;
         [CachedData] private TextObject cachedName;
 
         public override Hero PartyOwner => MobileParty.ActualClan?.Leader;

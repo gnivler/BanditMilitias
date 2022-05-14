@@ -15,12 +15,12 @@ namespace BanditMilitias.Helpers
         private static readonly AccessTools.FieldRef<CampaignObjectManager, List<Hero>> deadOrDisabledHeroes =
             AccessTools.FieldRefAccess<CampaignObjectManager, List<Hero>>("_deadOrDisabledHeroes");
 
-        internal static bool IsUsedByAQuest(this MobileParty mobileParty)
+        public static bool IsUsedByAQuest(this MobileParty mobileParty)
         {
             return Campaign.Current.VisualTrackerManager.CheckTracked(mobileParty);
         }
 
-        internal static bool IsTooBusyToMerge(this MobileParty mobileParty)
+        public static bool IsTooBusyToMerge(this MobileParty mobileParty)
         {
             if (mobileParty == mobileParty?.MoveTargetParty?.MoveTargetParty)
             {
@@ -29,10 +29,10 @@ namespace BanditMilitias.Helpers
 
             return mobileParty.TargetParty is not null
                    || mobileParty.ShortTermTargetParty is not null
-                   || mobileParty.ShortTermBehavior is AiBehavior.EngageParty or AiBehavior.FleeToPoint;
+                   || mobileParty.ShortTermBehavior is AiBehavior.EngageParty or AiBehavior.FleeToPoint or AiBehavior.RaidSettlement;
         }
 
-        internal static void RemoveMilitiaHero(this Hero hero)
+        public static void RemoveMilitiaHero(this Hero hero)
         {
             Traverse.Create(typeof(KillCharacterAction)).Method("MakeDead", hero).GetValue();
             aliveHeroes(Campaign.Current.CampaignObjectManager).Remove(hero);
@@ -42,12 +42,12 @@ namespace BanditMilitias.Helpers
         }
 
         // ReSharper disable once InconsistentNaming
-        internal static bool IsBM(this MobileParty mobileParty)
+        public static bool IsBM(this MobileParty mobileParty)
         {
             return mobileParty.PartyComponent is ModBanditMilitiaPartyComponent;
         }
 
-        internal static ModBanditMilitiaPartyComponent BM(this MobileParty mobileParty)
+        public static ModBanditMilitiaPartyComponent BM(this MobileParty mobileParty)
         {
             return (ModBanditMilitiaPartyComponent)mobileParty.PartyComponent;
         }

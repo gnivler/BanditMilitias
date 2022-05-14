@@ -164,10 +164,7 @@ namespace BanditMilitias.Patches
                     var clan = GetMostPrevalent(rosters[0]);
                     if (clan is null) Debugger.Break();
                     var militia = MobileParty.CreateParty("Bandit_Militia", new ModBanditMilitiaPartyComponent(clan), m => m.ActualClan = clan);
-                    militia.InitializeMobilePartyAroundPosition(rosters[0], rosters[1], mobileParty.Position2D, 0);
-                    ConfigureMilitia(militia);
-                    TrainMilitia(militia);
-                    IsBandit(militia) = true;
+                    InitMilitia(militia, rosters, mobileParty.Position2D);
                     // teleport new militias near the player
                     if (Globals.Settings.TestingMode)
                     {
@@ -263,7 +260,7 @@ namespace BanditMilitias.Patches
         }
 
         [HarmonyPatch(typeof(EnterSettlementAction), "ApplyForParty")]
-        public static class EnterSettlementActionApplyInternalPatch
+        public static class EnterSettlementActionApplypublicPatch
         {
             private static bool Prefix(MobileParty mobileParty, Settlement settlement)
             {

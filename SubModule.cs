@@ -26,10 +26,10 @@ namespace BanditMilitias
 {
     public class SubModule : MBSubModuleBase
     {
-        internal static readonly Harmony harmony = new("ca.gnivler.bannerlord.BanditMilitias");
-            
+        public static readonly Harmony harmony = new("ca.gnivler.bannerlord.BanditMilitias");
+
         // ReSharper disable once AssignNullToNotNullAttribute
-        internal static readonly string logFilename = Path.Combine(new FileInfo(@"..\..\Modules\BanditMilitias\").DirectoryName, "log.txt");
+        public static readonly string logFilename = Path.Combine(new FileInfo(@"..\..\Modules\BanditMilitias\").DirectoryName, "log.txt");
 
         protected override void OnSubModuleLoad()
         {
@@ -94,10 +94,6 @@ namespace BanditMilitias
                            && (Input.IsKeyDown(InputKey.LeftAlt) || Input.IsKeyDown(InputKey.RightAlt))
                            && (Input.IsKeyDown(InputKey.LeftShift) || Input.IsKeyDown(InputKey.RightShift));
 
-            if (superKey && Input.IsKeyPressed(InputKey.Tilde))
-            {
-                Debugger.Break();
-            }
             if (superKey && Input.IsKeyPressed(InputKey.F9))
             {
                 // debug to show all parties on map
