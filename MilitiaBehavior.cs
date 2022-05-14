@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.Linq;
 using System.Security.Cryptography;
 using BanditMilitias.Helpers;
 using HarmonyLib;
@@ -11,6 +12,8 @@ using TaleWorlds.CampaignSystem.MapEvents;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
+using TaleWorlds.LinQuick;
+using TaleWorlds.MountAndBlade.GauntletUI.Widgets;
 using static BanditMilitias.Helpers.Helper;
 
 // ReSharper disable InconsistentNaming
@@ -45,11 +48,21 @@ namespace BanditMilitias
                     switch (mobileParty.Ai.AiState)
                     {
                         case AIState.Undefined:
+                        case AIState.PatrollingAroundLocation when mobileParty.DefaultBehavior is AiBehavior.Hold or AiBehavior.None:
+                        case AIState.Raiding when mobileParty.DefaultBehavior is not AiBehavior.RaidSettlement:
+                            if (mobileParty.TargetSettlement is null)
+                            {
+                                target = SettlementHelper.GetRandomTown();
+                            }
+
                             SetPartyAiAction.GetActionForPatrollingAroundSettlement(mobileParty, target);
                             mobileParty.Ai.SetAIState(AIState.PatrollingAroundLocation);
                             break;
                         case AIState.PatrollingAroundLocation:
-                            if (Globals.Rng.NextDouble() < 0.1)
+                            const double smallChance = 0.00001;
+                            const int hardCap = 5;
+                            if (Globals.Rng.NextDouble() < smallChance
+                                && GetAllBMs().CountQ(BM => BM.ShortTermBehavior is AiBehavior.RaidSettlement) <= hardCap)
                             {
                                 target = SettlementHelper.FindNearestVillage(null, mobileParty);
                                 SetPartyAiAction.GetActionForRaidingSettlement(mobileParty, target);
@@ -58,13 +71,14 @@ namespace BanditMilitias
 
                             break;
                         case AIState.InfestingVillage:
+
+
+                            Debugger.Break();
+                            SetPartyAiAction.GetActionForRaidingSettlement(mobileParty, target);
                             break;
                         case AIState.Raiding:
-                            //Log($"{new string('*', 50)} {mobileParty.Name} {mobileParty.Position2D.Distance(target.Position2D)}");
-                            //if (target.Position2D.Distance(mobileParty.Position2D) < 3)
-                            //{
-                            //
-                            //}
+                            Log($"{new string('*', 50)} {mobileParty.Name} Pillage! {mobileParty.ItemRoster.TotalWeight} weight, {mobileParty.LeaderHero.Gold} GOLD!");
+
 
                             break;
                     }

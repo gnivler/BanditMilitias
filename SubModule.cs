@@ -3,14 +3,18 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using BanditMilitias.Helpers;
+using BanditMilitias.Patches;
 using HarmonyLib;
 using SandBox.View.Map;
 using SandBox.ViewModelCollection.MobilePartyTracker;
 using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.GameComponents;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.Core;
 using TaleWorlds.InputSystem;
 using TaleWorlds.Library;
+using TaleWorlds.LinQuick;
 using TaleWorlds.Localization;
 using TaleWorlds.MountAndBlade;
 using static BanditMilitias.Helpers.Helper;
@@ -129,27 +133,27 @@ namespace BanditMilitias
 
             if (superKey && Input.IsKeyPressed(InputKey.F12))
             {
-                //foreach (var militia in PartyMilitiaMap.Values.OrderBy(x => x.MobileParty.MemberRoster.TotalManCount))
-                //{
-                //    Log($">> {militia.Hero.Name,-30}: {militia.MobileParty.MemberRoster.TotalManCount:F1}/{militia.MobileParty.Party.TotalStrength:0}");
-                //    for (int tier = 1; tier <= 6; tier++)
-                //    {
-                //        var count = militia.MobileParty.MemberRoster.GetTroopRoster().Where(x => x.Character.Tier == tier).Sum(x => x.Number);
-                //        if (count > 0)
-                //        {
-                //            Log($"  Tier {tier}: {count}");
-                //        }
-                //    }
-                //
-                //    Log($"Cavalry: {NumMountedTroops(militia.MobileParty.MemberRoster)} ({(float)NumMountedTroops(militia.MobileParty.MemberRoster) / militia.MobileParty.MemberRoster.TotalManCount * 100}%)");
-                //    if ((float)NumMountedTroops(militia.MobileParty.MemberRoster) / (militia.MobileParty.MemberRoster.TotalManCount * 100) > militia.MobileParty.MemberRoster.TotalManCount / 2f)
-                //    {
-                //        Log(new string('*', 80));
-                //        Log(new string('*', 80));
-                //    }
-                //}
-                //
-                //Log($">>> Total {PartyMilitiaMap.Values.Count} = {PartyMilitiaMap.Values.Select(x => x.MobileParty.MemberRoster.TotalManCount).Sum()} ({MilitiaPowerPercent}%)");
+                foreach (var militia in MobileParty.All.WhereQ(m =>m.IsBM()).OrderBy(x => x.MemberRoster.TotalManCount))
+                {
+                    Log($">> {militia.LeaderHero.Name,-30}: {militia.MemberRoster.TotalManCount:F1}/{militia.Party.TotalStrength:0}");
+                    for (int tier = 1; tier <= 6; tier++)
+                    {
+                        var count = militia.MemberRoster.GetTroopRoster().Where(x => x.Character.Tier == tier).Sum(x => x.Number);
+                        if (count > 0)
+                        {
+                            Log($"  Tier {tier}: {count}");
+                        }
+                    }
+                
+                    Log($"Cavalry: {NumMountedTroops(militia.MemberRoster)} ({(float)NumMountedTroops(militia.MemberRoster) / militia.MemberRoster.TotalManCount * 100}%)");
+                    if ((float)NumMountedTroops(militia.MemberRoster) / (militia.MemberRoster.TotalManCount * 100) > militia.MemberRoster.TotalManCount / 2f)
+                    {
+                        Log(new string('*', 80));
+                        Log(new string('*', 80));
+                    }
+                }
+                
+                Log($">>> Total {MobileParty.All.CountQ(m =>m.IsBM())} = {MobileParty.All.WhereQ(m =>m.IsBM()).Select(x => x.MemberRoster.TotalManCount).Sum()} ({MilitiaPowerPercent}%)");
             }
 
             if ((Input.IsKeyDown(InputKey.LeftControl) || Input.IsKeyDown(InputKey.RightControl)) &&
@@ -188,11 +192,25 @@ namespace BanditMilitias
         {
             try
             {
+                var internalType = AccessTools.TypeByName("DefaultMapTrackModel.GetTrackDescription>d__11");
+                var org = AccessTools.Method(internalType, "MoveNext");
+                harmony.Patch(org, finalizer: new HarmonyMethod(AccessTools.Method(typeof(MiscPatches), "Finalizer")));
+
             }
             catch (Exception ex)
             {
                 Log(ex.ToString());
             }
+        }
+
+        private static Exception Finalizer(Exception __exception)
+        {
+            if (__exception is not null)
+            {
+                Debugger.Break();
+            }
+
+            return null;
         }
     }
 }
