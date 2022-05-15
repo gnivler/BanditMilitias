@@ -70,12 +70,10 @@ namespace BanditMilitias
             if (destroyer == MobileParty.MainParty.Party
                 && mobileParty.IsBM())
             {
-                foreach (var party in MobileParty.FindPartiesAroundPosition(mobileParty.Position2D, effectRadius))
+                foreach (var BM in GetCachedBMs().WhereQ(bm =>
+                             bm.MobileParty.Position2D.Distance(mobileParty.Position2D) < effectRadius))
                 {
-                    if (party.IsBM())
-                    {
-                        party.BM().Avoidance += AvoidanceIncrease();
-                    }
+                    BM.Avoidance += AvoidanceIncrease();
                 }
             }
         }
