@@ -17,7 +17,7 @@ using TaleWorlds.Core;
 using TaleWorlds.Engine;
 using TaleWorlds.Library;
 using TaleWorlds.LinQuick;
-using TaleWorlds.MountAndBlade;
+using TaleWorlds.Localization;
 using static BanditMilitias.Helpers.Helper;
 using static BanditMilitias.Globals;
 
@@ -93,10 +93,12 @@ namespace BanditMilitias.Patches
                 PartyImageMap.Clear();
                 Hideouts = Settlement.FindAll(x => x.IsHideout).ToList();
                 DoPowerCalculations(true);
-                FlushMilitiaCharacterObjects();
+                MilitiaBehavior.FlushMilitiaCharacterObjects();
                 // 1.7.2 is dropping the Hero HomeSettlements at some point, I haven't figured out where
                 ReHome();
-                Log($"Militias: {MobileParty.All.CountQ(m => m.PartyComponent is ModBanditMilitiaPartyComponent)}");
+                var bmCount = MobileParty.All.CountQ(m => m.PartyComponent is ModBanditMilitiaPartyComponent);
+                Log($"Militias: {bmCount}");
+                InformationManager.AddQuickInformation(new TextObject($"{bmCount} Bandit Militias!"));
                 //Log($"Militias: {militias.Count} (registered {PartyMilitiaMap.Count})");
                 RunLateManualPatches();
             }

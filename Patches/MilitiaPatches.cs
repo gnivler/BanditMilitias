@@ -1,14 +1,11 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
 using BanditMilitias.Helpers;
 using HarmonyLib;
 using SandBox.View.Map;
 using SandBox.ViewModelCollection;
 using SandBox.ViewModelCollection.MobilePartyTracker;
 using SandBox.ViewModelCollection.Nameplate;
-using StoryMode.GameComponents;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.AgentOrigins;
@@ -20,7 +17,6 @@ using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Roster;
 using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
-using TaleWorlds.LinQuick;
 using static BanditMilitias.Helpers.Helper;
 using static BanditMilitias.Globals;
 
@@ -34,166 +30,7 @@ namespace BanditMilitias.Patches
 {
     public static class MilitiaPatches
     {
-        private static float lastChecked;
-
-        [HarmonyPatch(typeof(Campaign), "Tick")]
-        public static class CampaignTickPatch
-        {
-            // main merge method
-            private static void Postfix()
-            {
-                if (Campaign.Current.TimeControlMode == CampaignTimeControlMode.Stop
-                    || Campaign.Current.TimeControlMode == CampaignTimeControlMode.UnstoppableFastForwardForPartyWaitTime
-                    || Campaign.Current.TimeControlMode == CampaignTimeControlMode.FastForwardStop
-                    || Campaign.Current.TimeControlMode == CampaignTimeControlMode.StoppableFastForward)
-                {
-                    return;
-                }
-
-                if (lastChecked == 0)
-                {
-                    lastChecked = Campaign.CurrentTime;
-                }
-
-                // don't run this if paused and unless 3% off power limit
-                if (Campaign.CurrentTime - lastChecked < 1f
-                    || MilitiaPowerPercent + MilitiaPowerPercent / 100 * 0.03 > Globals.Settings.GlobalPowerPercent)
-                {
-                    return;
-                }
-
-                lastChecked = Campaign.CurrentTime;
-                var parties = MobileParty.All.Where(m =>
-                        m.Party.IsMobile
-                        && m.CurrentSettlement is null
-                        && !m.IsUsedByAQuest()
-                        && m.IsBandit
-                        && m.MemberRoster.TotalManCount >= Globals.Settings.MergeableSize)
-                    .ToListQ();
-                for (var index = 0; index < parties.Count; index++)
-                {
-                    //T.Restart();
-                    var mobileParty = parties[index];
-
-                    if (Hideouts.AnyQ(s => s.Position2D.Distance(mobileParty.Position2D) < MinDistanceFromHideout))
-                    {
-                        continue;
-                    }
-
-                    if (mobileParty.IsTooBusyToMerge())
-                    {
-                        continue;
-                    }
-
-                    var nearbyParties = MobileParty.FindPartiesAroundPosition(mobileParty.Position2D, FindRadius)
-                        .Intersect(parties)
-                        .ToListQ();
-                    nearbyParties.Remove(mobileParty);
-
-                    if (!nearbyParties.Any())
-                    {
-                        continue;
-                    }
-
-                    if (mobileParty.StringId.Contains("manhunter")) // Calradia Expanded Kingdoms
-                    {
-                        continue;
-                    }
-
-                    if (mobileParty.IsBM())
-                    {
-                        if (CampaignTime.Now < mobileParty.BM()?.LastMergedOrSplitDate + CampaignTime.Hours(Globals.Settings.CooldownHours))
-                        {
-                            continue;
-                        }
-                    }
-
-                    var targetParties = nearbyParties.Where(m =>
-                        m.MemberRoster.TotalManCount + mobileParty.MemberRoster.TotalManCount >= Globals.Settings.MinPartySize
-                        && IsAvailableBanditParty(m)).ToListQ();
-
-                    var targetParty = targetParties?.GetRandomElement()?.Party;
-
-                    //SubModule.Log($">T targetParty {T.ElapsedTicks / 10000F:F3}ms.");
-                    // "nobody" is a valid answer
-                    if (targetParty is null)
-                    {
-                        continue;
-                    }
-
-                    if (targetParty.MobileParty.IsBM())
-                    {
-                        var component = (ModBanditMilitiaPartyComponent)targetParty.MobileParty.PartyComponent;
-                        CampaignTime? targetLastChangeDate = component.LastMergedOrSplitDate;
-                        if (CampaignTime.Now < targetLastChangeDate + CampaignTime.Hours(Globals.Settings.CooldownHours))
-                        {
-                            continue;
-                        }
-                    }
-
-                    var militiaTotalCount = mobileParty.MemberRoster.TotalManCount + targetParty.MemberRoster.TotalManCount;
-                    if (MilitiaPowerPercent > Globals.Settings.GlobalPowerPercent
-                        || militiaTotalCount > CalculatedMaxPartySize
-                        || militiaTotalCount < Globals.Settings.MinPartySize
-                        || NumMountedTroops(mobileParty.MemberRoster) + NumMountedTroops(targetParty.MemberRoster) > militiaTotalCount / 2)
-                    {
-                        continue;
-                    }
-
-                    //SubModule.Log($"==> counted {T.ElapsedTicks / 10000F:F3}ms.");
-                    if (mobileParty != targetParty.MobileParty.MoveTargetParty &&
-                        Campaign.Current.Models.MapDistanceModel.GetDistance(targetParty.MobileParty, mobileParty) > MergeDistance)
-                    {
-                        //SubModule.Log($"{mobileParty} seeking > {targetParty.MobileParty}");
-                        mobileParty.SetMoveEscortParty(targetParty.MobileParty);
-                        //SubModule.Log($"SetNavigationModeParty ==> {T.ElapsedTicks / 10000F:F3}ms");
-
-                        if (targetParty.MobileParty.MoveTargetParty != mobileParty)
-                        {
-                            //SubModule.Log($"{targetParty.MobileParty} seeking back > {mobileParty}");
-                            targetParty.MobileParty.SetMoveEscortParty(mobileParty);
-                            //SubModule.Log($"SetNavigationModeTargetParty ==> {T.ElapsedTicks / 10000F:F3}ms");
-                        }
-
-                        continue;
-                    }
-
-                    //SubModule.Log($"==> found settlement {T.ElapsedTicks / 10000F:F3}ms."); 
-                    // create a new party merged from the two           
-                    var rosters = MergeRosters(mobileParty, targetParty);
-                    var clan = GetMostPrevalent(rosters[0]);
-                    if (clan is null) Debugger.Break();
-                    var bm = MobileParty.CreateParty("Bandit_Militia", new ModBanditMilitiaPartyComponent(clan), m => m.ActualClan = clan);
-                    InitMilitia(bm, rosters, mobileParty.Position2D);
-                    // teleport new militias near the player
-                    if (Globals.Settings.TestingMode)
-                    {
-                        // in case a prisoner
-                        var party = Hero.MainHero.PartyBelongedTo ?? Hero.MainHero.PartyBelongedToAsPrisoner.MobileParty;
-                        bm.Position2D = party.Position2D;
-                    }
-
-                    bm.Party.Visuals.SetMapIconAsDirty();
-                    try
-                    {
-                        // can throw if Clan is null
-                        Trash(mobileParty);
-                        Trash(targetParty.MobileParty);
-                    }
-                    catch (Exception ex)
-                    {
-                        Log(ex);
-                    }
-
-                    DoPowerCalculations();
-                    //SubModule.Log($"==> Finished all work: {T.ElapsedTicks / 10000F:F3}ms.");
-                }
-
-                //SubModule.Log($"Looped ==> {T.ElapsedTicks / 10000F:F3}ms");
-            }
-        }
-
-        public static class DefaultPartySpeedCalculatingModelCalculatePureSpeedPatch
+        public static class CalculatePureSpeed
         {
             public static void Postfix(MobileParty mobileParty, ref ExplainedNumber __result)
             {

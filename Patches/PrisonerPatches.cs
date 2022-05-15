@@ -42,10 +42,10 @@ namespace BanditMilitias.Patches
                         party.Party.MobileParty.SetCustomName(new TextObject("Leaderless Bandit Militia"));
                     }
 
-                    Helper.RemoveUndersizedTracker(party.Party);
+                    RemoveUndersizedTracker(party.Party);
                 }
 
-                Helper.DoPowerCalculations();
+                DoPowerCalculations();
             }
         }
 
@@ -68,7 +68,7 @@ namespace BanditMilitias.Patches
                     // disperse small militias
                     if (party.Party.MobileParty.MemberRoster.TotalManCount < Globals.Settings.DisperseSize)
                     {
-                        Helper.Trash(party.Party.MobileParty);
+                        Trash(party.Party.MobileParty);
                         continue;
                     }
 
@@ -79,10 +79,10 @@ namespace BanditMilitias.Patches
                         heroes[i].Character.HeroObject.RemoveMilitiaHero();
                     }
 
-                    Helper.RemoveUndersizedTracker(party.Party);
+                    RemoveUndersizedTracker(party.Party);
                 }
 
-                Helper.DoPowerCalculations();
+                DoPowerCalculations();
             }
         }
     }

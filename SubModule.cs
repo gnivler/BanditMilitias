@@ -4,12 +4,10 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using BanditMilitias.Helpers;
-using BanditMilitias.Patches;
 using HarmonyLib;
 using SandBox.View.Map;
 using SandBox.ViewModelCollection.MobilePartyTracker;
 using TaleWorlds.CampaignSystem;
-using TaleWorlds.CampaignSystem.GameComponents;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.Core;
 using TaleWorlds.InputSystem;
@@ -133,7 +131,7 @@ namespace BanditMilitias
 
             if (superKey && Input.IsKeyPressed(InputKey.F12))
             {
-                foreach (var militia in MobileParty.All.WhereQ(m =>m.IsBM()).OrderBy(x => x.MemberRoster.TotalManCount))
+                foreach (var militia in MobileParty.All.WhereQ(m => m.IsBM()).OrderBy(x => x.MemberRoster.TotalManCount))
                 {
                     Log($">> {militia.LeaderHero.Name,-30}: {militia.MemberRoster.TotalManCount:F1}/{militia.Party.TotalStrength:0}");
                     for (int tier = 1; tier <= 6; tier++)
@@ -144,7 +142,7 @@ namespace BanditMilitias
                             Log($"  Tier {tier}: {count}");
                         }
                     }
-                
+
                     Log($"Cavalry: {NumMountedTroops(militia.MemberRoster)} ({(float)NumMountedTroops(militia.MemberRoster) / militia.MemberRoster.TotalManCount * 100}%)");
                     if ((float)NumMountedTroops(militia.MemberRoster) / (militia.MemberRoster.TotalManCount * 100) > militia.MemberRoster.TotalManCount / 2f)
                     {
@@ -152,8 +150,8 @@ namespace BanditMilitias
                         Log(new string('*', 80));
                     }
                 }
-                
-                Log($">>> Total {MobileParty.All.CountQ(m =>m.IsBM())} = {MobileParty.All.WhereQ(m =>m.IsBM()).Select(x => x.MemberRoster.TotalManCount).Sum()} ({MilitiaPowerPercent}%)");
+
+                Log($">>> Total {MobileParty.All.CountQ(m => m.IsBM())} = {MobileParty.All.WhereQ(m => m.IsBM()).Select(x => x.MemberRoster.TotalManCount).Sum()} ({MilitiaPowerPercent}%)");
             }
 
             if ((Input.IsKeyDown(InputKey.LeftControl) || Input.IsKeyDown(InputKey.RightControl)) &&
@@ -195,7 +193,6 @@ namespace BanditMilitias
                 var internalType = AccessTools.TypeByName("<GetTrackDescription>d__11");
                 var org = AccessTools.Method(internalType, "MoveNext");
                 harmony.Patch(org, finalizer: new HarmonyMethod(AccessTools.Method(typeof(SubModule), "Finalizer")));
-
             }
             catch (Exception ex)
             {
@@ -203,14 +200,6 @@ namespace BanditMilitias
             }
         }
 
-        private static Exception Finalizer(Exception __exception)
-        {
-            if (__exception is not null)
-            {
-                Debugger.Break();
-            }
-
-            return null;
-        }
+        private static Exception Finalizer() => null;
     }
 }
