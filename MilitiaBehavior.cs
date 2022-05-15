@@ -200,7 +200,7 @@ namespace BanditMilitias
                 //SubModule.Log($"==> found settlement {T.ElapsedTicks / 10000F:F3}ms."); 
                 // create a new party merged from the two
                 var rosters = MergeRosters(mobileParty, targetParty);
-                var averageAvoidance = mobileParty.BM()?.Avoidance + targetParty.MobileParty.BM()?.Avoidance;
+                var averageAvoidance = (mobileParty.BM()?.Avoidance + targetParty.MobileParty.BM()?.Avoidance) / 2;
                 var clan = Clan.BanditFactions.GetRandomElementInefficiently();
                 var bm = MobileParty.CreateParty("Bandit_Militia", new ModBanditMilitiaPartyComponent(clan), m => m.ActualClan = clan);
                 InitMilitia(bm, rosters, mobileParty.Position2D);
