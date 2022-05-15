@@ -18,6 +18,7 @@ using TaleWorlds.ObjectSystem;
 using TaleWorlds.TwoDimension;
 using static BanditMilitias.Helpers.Helper;
 using static BanditMilitias.Globals;
+
 // ReSharper disable MemberCanBePrivate.Global
 
 // ReSharper disable InconsistentNaming
@@ -31,8 +32,8 @@ namespace BanditMilitias
         private static IEnumerable<Clan> synthClans;
         internal static Clan Looters => looters ??= Clan.BanditFactions.First(c => c.StringId == "looters");
         private static IEnumerable<Clan> SynthClans => synthClans ??= Clan.BanditFactions.Except(new[] { Looters });
-        internal static readonly HashSet<MobileParty> Parties = new();
-        
+        internal static readonly HashSet<WeakReference<MobileParty>> Parties = new();
+
         public override void RegisterEvents()
         {
             CampaignEvents.TickEvent.AddNonSerializedListener(this, MergingTick);
@@ -45,10 +46,22 @@ namespace BanditMilitias
             {
                 if (m.IsBandit)
                 {
-                    Parties.Add(m);
+                    Parties.Add(new WeakReference<MobileParty>(m));
                 }
             });
-            CampaignEvents.MobilePartyDestroyed.AddNonSerializedListener(this, (m, p) => Parties.Remove(m));
+            CampaignEvents.MobilePartyDestroyed.AddNonSerializedListener(this, MobilePartyDestroyed);
+        }
+
+        private static void MobilePartyDestroyed(MobileParty mobileParty, PartyBase destroyer)
+        {
+            if (destroyer == MobileParty.MainParty.Party
+                && mobileParty.IsBM())
+            {
+                foreach (var BM in GetCachedBMs(true))
+                {
+                    BM.Avoidance += Rng.Next(15, 36);
+                }
+            }
         }
 
         private static void MergingTick(float dT)
@@ -66,21 +79,27 @@ namespace BanditMilitias
                 lastChecked = Campaign.CurrentTime;
             }
 
+            const int interval = 3;
             // don't run this if paused and unless 3% off power limit
-            if (Campaign.CurrentTime - lastChecked < 5
+            if (Campaign.CurrentTime - lastChecked < interval
                 || MilitiaPowerPercent + MilitiaPowerPercent / 100 * 0.03 > Globals.Settings.GlobalPowerPercent)
             {
                 return;
             }
 
             lastChecked = Campaign.CurrentTime;
-            var parties = MobileParty.All.Where(m =>
-                    m.Party.IsMobile
-                    && m.IsBandit
-                    && m.CurrentSettlement is null
-                    && !m.IsUsedByAQuest()
-                    && m.MemberRoster.TotalManCount >= Globals.Settings.MergeableSize)
-                .ToListQ();
+            var parties = new List<MobileParty>();
+            foreach (var party in Parties)
+            {
+                if (party.TryGetTarget(out var mobileParty)
+                    && mobileParty.CurrentSettlement is null
+                    && !mobileParty.IsUsedByAQuest()
+                    && mobileParty.MemberRoster.TotalManCount >= Globals.Settings.MergeableSize)
+                {
+                    parties.Add(mobileParty);
+                }
+            }
+
             for (var index = 0; index < parties.Count; index++)
             {
                 //T.Restart();
@@ -197,7 +216,6 @@ namespace BanditMilitias
             //SubModule.Log($"Looped ==> {T.ElapsedTicks / 10000F:F3}ms");
         }
 
-
         private static void OnDailyTickEvent()
         {
             RemoveHeroesWithoutParty();
@@ -210,6 +228,7 @@ namespace BanditMilitias
             {
                 if (mobileParty.IsBM())
                 {
+                    mobileParty.BM().Avoidance--;
                     var target = mobileParty.TargetSettlement;
                     switch (mobileParty.Ai.AiState)
                     {
@@ -225,17 +244,39 @@ namespace BanditMilitias
                             mobileParty.Ai.SetAIState(AIState.PatrollingAroundLocation);
                             break;
                         case AIState.PatrollingAroundLocation:
-                            const double smallChance = 0.0001;
+                            const double smallChance = 0.001;
                             const int hardCap = 5;
-                            if (Rng.NextDouble() < smallChance
-                                && GetAllBMs().CountQ(BM => BM.ShortTermBehavior is AiBehavior.RaidSettlement) <= hardCap)
+                            if (mobileParty.LeaderHero is not null
+                                && Rng.NextDouble() < smallChance
+                                && GetCachedBMs().CountQ(BM => BM.MobileParty.ShortTermBehavior is AiBehavior.RaidSettlement) <= hardCap)
                             {
-                                target = SettlementHelper.FindNearestVillage(v => !v.IsRaided && !v.IsUnderRaid && v.GetValue() > 0, mobileParty);
-                                SetPartyAiAction.GetActionForRaidingSettlement(mobileParty, target);
-                                mobileParty.Ai.SetAIState(AIState.Raiding);
-                                //MobileParty.MainParty.Position2D = mobileParty.Position2D;
-                                //MapScreen.Instance.TeleportCameraToMainParty();
+                                target = SettlementHelper.FindNearestVillage(v =>
+                                {
+                                    var viable = !v.IsRaided && !v.IsUnderRaid && v.GetValue() > 0;
+                                    if (!viable)
+                                    {
+                                        return false;
+                                    }
+
+                                    Log($"{mobileParty.BM().Avoidance}");
+                                    if (v.OwnerClan == Hero.MainHero.Clan)
+                                    {
+                                        if (Rng.NextDouble() * 100 <= mobileParty.BM().Avoidance)
+                                        {
+                                            Log($"{new string('-', 100)} {mobileParty.Name} Avoiding {v}");
+                                            return false;
+                                        }
+                                    }
+
+                                    return true;
+                                }, mobileParty);
                             }
+
+                            SetPartyAiAction.GetActionForRaidingSettlement(mobileParty, target);
+                            mobileParty.Ai.SetAIState(AIState.Raiding);
+                            //MobileParty.MainParty.Position2D = mobileParty.Position2D;
+                            //MapScreen.Instance.TeleportCameraToMainParty();
+
 
                             break;
                         case AIState.InfestingVillage:
@@ -243,9 +284,9 @@ namespace BanditMilitias
                             SetPartyAiAction.GetActionForRaidingSettlement(mobileParty, target);
                             break;
                         case AIState.Raiding:
-                            Log($"{new string('*', 50)} {mobileParty.Name + " Pillage!",-20} {mobileParty.ItemRoster.TotalWeight} weight, {mobileParty.LeaderHero.Gold} GOLD!");
-                           //MobileParty.MainParty.Position2D = mobileParty.Position2D;
-                           //MapScreen.Instance.TeleportCameraToMainParty();
+                            //Log($"{new string('*', 50)} {mobileParty.Name + " Pillage!",-20} {mobileParty.ItemRoster.TotalWeight} weight, {mobileParty.LeaderHero?.Gold} GOLD!");
+                            //MobileParty.MainParty.Position2D = mobileParty.Position2D;
+                            //MapScreen.Instance.TeleportCameraToMainParty();
                             break;
                     }
                 }

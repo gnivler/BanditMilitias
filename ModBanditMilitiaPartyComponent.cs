@@ -8,6 +8,7 @@ using TaleWorlds.Core;
 using TaleWorlds.Library;
 using TaleWorlds.Localization;
 using TaleWorlds.SaveSystem;
+using TaleWorlds.TwoDimension;
 using static BanditMilitias.Globals;
 using static BanditMilitias.Helpers.Helper;
 
@@ -18,6 +19,14 @@ namespace BanditMilitias
         [SaveableField(1)] public readonly Banner Banner;
         [SaveableField(2)] public readonly string BannerKey;
         [SaveableField(3)] public CampaignTime LastMergedOrSplitDate = CampaignTime.Now;
+        [SaveableField(4)] private float avoidance;
+
+        public float Avoidance
+        {
+            get => avoidance;
+            set => avoidance = Mathf.Clamp(value, -100, 100);
+        }
+
         [CachedData] private TextObject cachedName;
 
         public override Hero PartyOwner => MobileParty.ActualClan?.Leader;

@@ -40,6 +40,7 @@ namespace BanditMilitias
         public static readonly List<Equipment> BanditEquipment = new();
         public static readonly List<Banner> Banners = new();
         public static double LastCalculated;
+        public static double Interval;
 
         // ReSharper disable once InconsistentNaming
         public static MobilePartyTrackerVM MobilePartyTrackerVM;

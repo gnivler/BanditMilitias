@@ -311,9 +311,9 @@ namespace BanditMilitias.Helpers
             for (var index = 0; index < heroes.Count; index++)
             {
                 // firing 3.7.0...
-                Debugger.Break();
+                //Debugger.Break();
                 var hero = heroes[index];
-                //Log($">>> NULL PARTY FOR {hero.Name} - settlement: {hero.CurrentSettlement} - RemoveMilitiaHero");
+                Log($">>> NULL PARTY FOR {hero.Name} - settlement: {hero.CurrentSettlement} - RemoveMilitiaHero");
                 hero.RemoveMilitiaHero();
                 //Campaign.Current.TimeControlMode = CampaignTimeControlMode.Stop;
             }
@@ -324,10 +324,8 @@ namespace BanditMilitias.Helpers
             PartyImageMap.Clear();
             var hasLogged = false;
             var partiesToRemove = MobileParty.All.WhereQ(m => m.PartyComponent is ModBanditMilitiaPartyComponent).ToListQ();
-            if (partiesToRemove.Any()) Debugger.Break();
             foreach (var mobileParty in partiesToRemove)
             {
-               
                 if (!hasLogged)
                 {
                     Log($">>> FLUSH {partiesToRemove.Count} Bandit Militias parties");
@@ -347,7 +345,7 @@ namespace BanditMilitias.Helpers
                     continue;
                 }
 
-                Debugger.Break();
+
                 for (var i = 0; i < settlement.Party.PrisonRoster.Count; i++)
                 {
                     try
@@ -355,6 +353,7 @@ namespace BanditMilitias.Helpers
                         var prisoner = settlement.Party.PrisonRoster.GetCharacterAtIndex(i);
                         if (prisoner.StringId.Contains("Bandit_Militia"))
                         {
+                            Debugger.Break();
                             Log($">>> FLUSH BM hero prisoner {prisoner.HeroObject.Name} at {settlement.Name}.");
                             settlement.Party.PrisonRoster.AddToCounts(prisoner, -1);
                             prisoner.HeroObject.RemoveMilitiaHero();
@@ -394,13 +393,6 @@ namespace BanditMilitias.Helpers
                 prisoner.RemoveMilitiaHero();
                 //Log($"{new string('=', 80)}");
             }
-        }
-
-        public static void ReHome()
-        {
-            var tempList = GetAllBMs().Where(m => m.LeaderHero is not null && m.LeaderHero.HomeSettlement is null).Select(m => m.LeaderHero).ToList();
-            Log($"Fixing {tempList.Count} null HomeSettlement heroes");
-            tempList.Do(h => _homeSettlement(h) = Hideouts.GetRandomElement());
         }
 
         public static void RemoveBMHeroesFromClanLeaderships()
@@ -700,16 +692,6 @@ namespace BanditMilitias.Helpers
             }
         }
 
-        private static readonly AccessTools.FieldRef<MobileParty, bool> aiBehaviorResetNeeded =
-            AccessTools.FieldRefAccess<MobileParty, bool>("_aiBehaviorResetNeeded");
-
-        public static void SetMilitiaPatrol(MobileParty mobileParty)
-        {
-            mobileParty.SetMovePatrolAroundSettlement(Settlement.All.GetRandomElement());
-            //mobileParty.RecalculateShortTermAi();
-            //aiBehaviorResetNeeded(mobileParty) = false;
-        }
-
         public static void RunLateManualPatches()
         {
             var original = AccessTools.Method(typeof(DefaultPartySpeedCalculatingModel), "CalculatePureSpeed");
@@ -738,6 +720,7 @@ namespace BanditMilitias.Helpers
 
         private static List<CultureObject> AllowedCultures;
         private static List<Settlement> AllowedSettlements;
+        private static IEnumerable<ModBanditMilitiaPartyComponent> AllBMs;
 
         public static Hero CreateHero(Clan clan)
         {
@@ -977,19 +960,24 @@ namespace BanditMilitias.Helpers
             hero.SetName(new TextObject($"{textObject}"), hero.FirstName);
         }
 
-        public static IEnumerable<MobileParty> GetAllBMs()
+        public static IEnumerable<ModBanditMilitiaPartyComponent> GetCachedBMs(bool forceRefresh = false)
         {
-            return MobileParty.All.WhereQ(m => m.PartyComponent is ModBanditMilitiaPartyComponent);
+            if (forceRefresh || Interval < CampaignTime.Now.ToHours - 1)
+            {
+                Interval = CampaignTime.Now.ToHours;
+                AllBMs = MobileParty.All.WhereQ(m => m.PartyComponent is ModBanditMilitiaPartyComponent).SelectQ(m => m.PartyComponent as ModBanditMilitiaPartyComponent);
+            }
+
+            return AllBMs;
         }
 
         public static void InitMilitia(MobileParty militia, TroopRoster[] rosters, Vec2 position)
         {
             militia.InitializeMobilePartyAtPosition(rosters[0], rosters[1], position);
             IsBandit(militia) = true;
-            MilitiaBehavior.Parties.Add(militia);
+            MilitiaBehavior.Parties.Add(new WeakReference<MobileParty>(militia));
             ConfigureMilitia(militia);
             TrainMilitia(militia);
-            SetMilitiaPatrol(militia);
         }
 
         // too slow

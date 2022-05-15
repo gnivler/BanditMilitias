@@ -8,11 +8,13 @@ using Helpers;
 using SandBox.View.Map;
 using SandBox.ViewModelCollection.MobilePartyTracker;
 using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.CharacterDevelopment;
 using TaleWorlds.CampaignSystem.Extensions;
 using TaleWorlds.CampaignSystem.GameComponents;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Settlements;
+using TaleWorlds.CampaignSystem.ViewModelCollection.Craft;
 using TaleWorlds.Core;
 using TaleWorlds.Engine;
 using TaleWorlds.Library;
@@ -94,8 +96,6 @@ namespace BanditMilitias.Patches
                 Hideouts = Settlement.FindAll(x => x.IsHideout).ToList();
                 DoPowerCalculations(true);
                 MilitiaBehavior.FlushMilitiaCharacterObjects();
-                // 1.7.2 is dropping the Hero HomeSettlements at some point, I haven't figured out where
-                ReHome();
                 var bmCount = MobileParty.All.CountQ(m => m.PartyComponent is ModBanditMilitiaPartyComponent);
                 Log($"Militias: {bmCount}");
                 InformationManager.AddQuickInformation(new TextObject($"{bmCount} Bandit Militias!"));
@@ -159,16 +159,14 @@ namespace BanditMilitias.Patches
                 return null;
             }
         }
-        
-        [HarmonyPatch(typeof(Hero), "UpdateHomeSettlement")]
-        public static void Postfix(Hero hero)
+
+        [HarmonyPatch(typeof(ChangeVillageStateAction), "ApplyInternal")]
+        public static class ChangeVillageStateActionApplyInternal
         {
-            if (hero.PartyBelongedTo is not null && hero.PartyBelongedTo.IsBM())
+            public static Exception Finalizer(Exception __exception)
             {
-                if (_homeSettlement(hero) == null)
-                {
-                    _homeSettlement(hero) = hero.BornSettlement;
-                }
+                if (__exception is not null) Debugger.Break();
+                return null;
             }
         }
     }

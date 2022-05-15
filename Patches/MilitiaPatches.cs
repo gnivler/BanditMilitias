@@ -104,7 +104,6 @@ namespace BanditMilitias.Patches
                 if (mobileParty.PartyComponent is ModBanditMilitiaPartyComponent)
                 {
                     Log($"Preventing {mobileParty} from entering {settlement.Name}");
-                    SetMilitiaPatrol(mobileParty);
                     return false;
                 }
 
