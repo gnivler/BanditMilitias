@@ -64,16 +64,18 @@ namespace BanditMilitias
 
         private static void MobilePartyDestroyed(MobileParty mobileParty, PartyBase destroyer)
         {
-            const float effectRadius = 20;
+            const float effectRadius = 100;
             int AvoidanceIncrease() => Rng.Next(20, 51);
             Parties.Remove(mobileParty);
             if (destroyer == MobileParty.MainParty.Party
                 && mobileParty.IsBM())
             {
-                foreach (var BM in GetCachedBMs().WhereQ(bm =>
-                             bm.MobileParty.Position2D.Distance(mobileParty.Position2D) < effectRadius))
+                foreach (var party in MobileParty.FindPartiesAroundPosition(mobileParty.Position2D, effectRadius))
                 {
-                    BM.Avoidance += AvoidanceIncrease();
+                    if (party.IsBM())
+                    {
+                        party.BM().Avoidance += AvoidanceIncrease();
+                    }
                 }
             }
         }
