@@ -41,7 +41,7 @@ namespace BanditMilitias.Helpers
         private static List<CultureObject> AllowedCultures;
         private static List<Settlement> AllowedSettlements;
         private static IEnumerable<ModBanditMilitiaPartyComponent> AllBMs;
-       
+
         public static readonly AccessTools.FieldRef<MobileParty, bool> IsBandit =
             AccessTools.FieldRefAccess<MobileParty, bool>("<IsBandit>k__BackingField");
 
@@ -187,6 +187,8 @@ namespace BanditMilitias.Helpers
                 };
                 InitMilitia(bm1, rosters1, original.Position2D);
                 InitMilitia(bm2, rosters2, original.Position2D);
+                bm1.BM().Avoidance = original.BM().Avoidance;
+                bm2.BM().Avoidance = original.BM().Avoidance;
                 Log($">>> {bm1.Name} <- Split {original.Name} Split -> {bm1.Name}");
                 ItemRoster(bm1.Party) = inventory1;
                 ItemRoster(bm2.Party) = inventory2;
@@ -278,6 +280,7 @@ namespace BanditMilitias.Helpers
         public static void Trash(MobileParty mobileParty)
         {
             mobileParty.LeaderHero?.RemoveMilitiaHero();
+            MilitiaBehavior.Parties.Remove(mobileParty);
             if (mobileParty.ActualClan is not null)
             {
                 DestroyPartyAction.Apply(null, mobileParty);
@@ -956,7 +959,7 @@ namespace BanditMilitias.Helpers
         {
             militia.InitializeMobilePartyAtPosition(rosters[0], rosters[1], position);
             IsBandit(militia) = true;
-            MilitiaBehavior.Parties.Add(new WeakReference<MobileParty>(militia));
+            MilitiaBehavior.Parties.Add(militia);
             ConfigureMilitia(militia);
             TrainMilitia(militia);
         }

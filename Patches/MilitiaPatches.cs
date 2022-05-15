@@ -178,6 +178,12 @@ namespace BanditMilitias.Patches
                         return;
                     }
 
+                    if (Rng.NextDouble() * 100 < __instance.BM().Avoidance)
+                    {
+                        __result = false;
+                        return;
+                    }
+
                     var party1Strength = __instance.GetTotalStrengthWithFollowers();
                     var party2Strength = targetParty.GetTotalStrengthWithFollowers();
                     float delta;
