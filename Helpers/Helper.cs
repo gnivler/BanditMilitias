@@ -38,7 +38,10 @@ namespace BanditMilitias.Helpers
         public static List<ItemObject> Mounts;
         public static List<ItemObject> Saddles;
         private const float ReductionFactor = 0.8f;
-
+        private static List<CultureObject> AllowedCultures;
+        private static List<Settlement> AllowedSettlements;
+        private static IEnumerable<ModBanditMilitiaPartyComponent> AllBMs;
+       
         public static readonly AccessTools.FieldRef<MobileParty, bool> IsBandit =
             AccessTools.FieldRefAccess<MobileParty, bool>("<IsBandit>k__BackingField");
 
@@ -624,8 +627,9 @@ namespace BanditMilitias.Helpers
                 CalculatedMaxPartySize = Math.Max(CalculatedMaxPartySize, Globals.Settings.MinPartySize);
                 LastCalculated = CampaignTime.Now.ToHours;
                 CalculatedGlobalPowerLimit = parties.Sum(p => p.Party.TotalStrength) * Variance;
-                GlobalMilitiaPower = MobileParty.All.WhereQ(m => m.PartyComponent is ModBanditMilitiaPartyComponent).SumQ(m => m.Party.TotalStrength);
+                GlobalMilitiaPower = GetCachedBMs(true).SumQ(m => m.Party.TotalStrength);
                 MilitiaPowerPercent = GlobalMilitiaPower / CalculatedGlobalPowerLimit * 100;
+                MilitiaPartyAveragePower = GlobalMilitiaPower / GetCachedBMs().CountQ();
             }
         }
 
@@ -717,10 +721,6 @@ namespace BanditMilitias.Helpers
         {
             return troopRoster.GetTroopRoster().Where(x => x.Character.Equipment[10].Item is not null).Sum(e => e.Number);
         }
-
-        private static List<CultureObject> AllowedCultures;
-        private static List<Settlement> AllowedSettlements;
-        private static IEnumerable<ModBanditMilitiaPartyComponent> AllBMs;
 
         public static Hero CreateHero(Clan clan)
         {
@@ -945,7 +945,8 @@ namespace BanditMilitias.Helpers
             if (forceRefresh || Interval < CampaignTime.Now.ToHours - 1)
             {
                 Interval = CampaignTime.Now.ToHours;
-                AllBMs = MobileParty.All.WhereQ(m => m.PartyComponent is ModBanditMilitiaPartyComponent).SelectQ(m => m.PartyComponent as ModBanditMilitiaPartyComponent);
+                AllBMs = MobileParty.All.WhereQ(m => m.PartyComponent is ModBanditMilitiaPartyComponent)
+                    .SelectQ(m => m.PartyComponent as ModBanditMilitiaPartyComponent).ToListQ();
             }
 
             return AllBMs;

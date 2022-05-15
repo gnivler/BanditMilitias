@@ -9,6 +9,7 @@ using SandBox.View.Map;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.ComponentInterfaces;
+using TaleWorlds.CampaignSystem.Map;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Roster;
 using TaleWorlds.CampaignSystem.Settlements;
@@ -56,12 +57,16 @@ namespace BanditMilitias
 
         private static void MobilePartyDestroyed(MobileParty mobileParty, PartyBase destroyer)
         {
+            const float effectRadius = 20;
+            int AvoidanceIncrease() => Rng.Next(20, 51);
+
             if (destroyer == MobileParty.MainParty.Party
                 && mobileParty.IsBM())
             {
-                foreach (var BM in GetCachedBMs(true))
+                foreach (var BM in GetCachedBMs().WhereQ(bm =>
+                             bm.MobileParty.Position2D.Distance(mobileParty.Position2D) < effectRadius))
                 {
-                    BM.Avoidance += Rng.Next(15, 36);
+                    BM.Avoidance += AvoidanceIncrease();
                 }
             }
         }
@@ -248,7 +253,7 @@ namespace BanditMilitias
                             const double smallChance = 0.001;
                             const int hardCap = 5;
                             if (mobileParty.LeaderHero is not null
-                                && mobileParty.Party.TotalStrength > GetCachedBMs().SelectQ(bm => bm.MobileParty.Party.TotalStrength).Average()
+                                && mobileParty.Party.TotalStrength > MilitiaPartyAveragePower
                                 && Rng.NextDouble() < smallChance
                                 && GetCachedBMs().CountQ(BM => BM.MobileParty.ShortTermBehavior is AiBehavior.RaidSettlement) <= hardCap)
                             {
