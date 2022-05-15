@@ -8,12 +8,14 @@ using Helpers;
 using SandBox.View.Map;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
+using TaleWorlds.CampaignSystem.ComponentInterfaces;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Roster;
 using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
 using TaleWorlds.LinQuick;
+using TaleWorlds.Localization;
 using TaleWorlds.ObjectSystem;
 using TaleWorlds.TwoDimension;
 using static BanditMilitias.Helpers.Helper;
@@ -186,8 +188,7 @@ namespace BanditMilitias
                 //SubModule.Log($"==> found settlement {T.ElapsedTicks / 10000F:F3}ms."); 
                 // create a new party merged from the two           
                 var rosters = MergeRosters(mobileParty, targetParty);
-                var clan = GetMostPrevalent(rosters[0]);
-                if (clan is null) Debugger.Break();
+                var clan = Clan.BanditFactions.GetRandomElementInefficiently();
                 var bm = MobileParty.CreateParty("Bandit_Militia", new ModBanditMilitiaPartyComponent(clan), m => m.ActualClan = clan);
                 InitMilitia(bm, rosters, mobileParty.Position2D);
                 // teleport new militias near the player
@@ -247,31 +248,43 @@ namespace BanditMilitias
                             const double smallChance = 0.001;
                             const int hardCap = 5;
                             if (mobileParty.LeaderHero is not null
+                                && mobileParty.Party.TotalStrength > GetCachedBMs().SelectQ(bm => bm.MobileParty.Party.TotalStrength).Average()
                                 && Rng.NextDouble() < smallChance
                                 && GetCachedBMs().CountQ(BM => BM.MobileParty.ShortTermBehavior is AiBehavior.RaidSettlement) <= hardCap)
                             {
-                                target = SettlementHelper.FindNearestVillage(v =>
+                                target = SettlementHelper.FindNearestVillage(s =>
                                 {
-                                    var viable = v.IsVillage && !v.IsRaided && !v.IsUnderRaid && v.GetValue() > 0;
+                                    if (s.GetValue() <= 0)
+                                    {
+                                        return false;
+                                    }
+
+                                    var viable = !s.IsRaided && !s.IsUnderRaid;
                                     if (!viable)
                                     {
                                         return false;
                                     }
 
-                                    if (v.OwnerClan == Hero.MainHero.Clan)
+                                    if (s.OwnerClan == Hero.MainHero.Clan)
                                     {
                                         if (Rng.NextDouble() * 100 <= mobileParty.BM().Avoidance)
                                         {
-                                            Log($"{new string('-', 100)} {mobileParty.Name} Avoiding {v}");
+                                            Log($"{new string('-', 100)} {mobileParty.Name} Avoiding {s}");
                                             return false;
                                         }
                                     }
 
                                     return true;
                                 }, mobileParty);
+                                if (target?.OwnerClan == Hero.MainHero.Clan)
+                                {
+                                    InformationManager.AddQuickInformation(new TextObject($"{mobileParty.Name} is raiding your village {target?.Name} near {target?.Town?.Name}!"));
+                                }
+
                                 SetPartyAiAction.GetActionForRaidingSettlement(mobileParty, target);
                                 mobileParty.Ai.SetAIState(AIState.Raiding);
                             }
+
                             break;
                         case AIState.InfestingVillage:
                             Debugger.Break();

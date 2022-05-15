@@ -920,31 +920,6 @@ namespace BanditMilitias.Helpers
             }
         }
 
-        public static Clan GetMostPrevalent(TroopRoster troopRoster)
-        {
-            var map = new Dictionary<CultureObject, int>();
-            var troopTypes = troopRoster.GetTroopRoster().Select(t => t.Character).ToList();
-            foreach (var clan in Clan.BanditFactions)
-            {
-                for (var i = 0; i < troopTypes.Count && troopTypes[i].Culture == clan.Culture; i++)
-                {
-                    var troop = troopRoster.GetElementCopyAtIndex(i);
-                    var count = troop.Number;
-                    if (map.ContainsKey(troop.Character.Culture))
-                    {
-                        map[troop.Character.Culture] += count;
-                    }
-                    else
-                    {
-                        map.Add(troop.Character.Culture, count);
-                    }
-                }
-            }
-
-            var faction = Clan.BanditFactions.FirstOrDefault(c => c.Culture == map.OrderByDescending(y => y.Value).FirstOrDefault().Key);
-            return faction;
-        }
-
         public static void ConfigureLeader(Hero hero)
         {
             if (hero.HomeSettlement is null)
