@@ -35,31 +35,38 @@ namespace BanditMilitias
         private static IEnumerable<Clan> synthClans;
         internal static Clan Looters => looters ??= Clan.BanditFactions.First(c => c.StringId == "looters");
         private static IEnumerable<Clan> SynthClans => synthClans ??= Clan.BanditFactions.Except(new[] { Looters });
-        internal static readonly HashSet<WeakReference<MobileParty>> Parties = new();
+        internal static readonly HashSet<MobileParty> Parties = new();
 
         public override void RegisterEvents()
         {
             CampaignEvents.TickEvent.AddNonSerializedListener(this, MergingTick);
-            CampaignEvents.DailyTickPartyEvent.AddNonSerializedListener(this, TryImproving);
+            CampaignEvents.DailyTickPartyEvent.AddNonSerializedListener(this, DailyTickPartyEvent);
             CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, FlushMilitiaCharacterObjects);
             CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, OnDailyTickEvent);
             CampaignEvents.HourlyTickEvent.AddNonSerializedListener(this, SynthesizeBM);
             CampaignEvents.HourlyTickPartyEvent.AddNonSerializedListener(this, HourlyTickPartyEvent);
             CampaignEvents.MobilePartyCreated.AddNonSerializedListener(this, m =>
             {
+                // this fires before IsBandit is set, so BM are not added here
                 if (m.IsBandit)
                 {
-                    Parties.Add(new WeakReference<MobileParty>(m));
+                    Parties.Add(m);
                 }
             });
             CampaignEvents.MobilePartyDestroyed.AddNonSerializedListener(this, MobilePartyDestroyed);
+            CampaignEvents.OnPartyRemovedEvent.AddNonSerializedListener(this, MobilePartyRemoved);
+        }
+
+        private static void MobilePartyRemoved(PartyBase party)
+        {
+            Parties.Remove(party?.MobileParty);
         }
 
         private static void MobilePartyDestroyed(MobileParty mobileParty, PartyBase destroyer)
         {
             const float effectRadius = 20;
             int AvoidanceIncrease() => Rng.Next(20, 51);
-
+            Parties.Remove(mobileParty);
             if (destroyer == MobileParty.MainParty.Party
                 && mobileParty.IsBM())
             {
@@ -98,12 +105,12 @@ namespace BanditMilitias
             var parties = new List<MobileParty>();
             foreach (var party in Parties)
             {
-                if (party.TryGetTarget(out var mobileParty)
-                    && mobileParty.CurrentSettlement is null
-                    && !mobileParty.IsUsedByAQuest()
-                    && mobileParty.MemberRoster.TotalManCount >= Globals.Settings.MergeableSize)
+                if (party.IsBandit
+                    && party.CurrentSettlement is null
+                    && !party.IsUsedByAQuest()
+                    && party.MemberRoster.TotalManCount >= Globals.Settings.MergeableSize)
                 {
-                    parties.Add(mobileParty);
+                    parties.Add(party);
                 }
             }
 
@@ -191,11 +198,17 @@ namespace BanditMilitias
                 }
 
                 //SubModule.Log($"==> found settlement {T.ElapsedTicks / 10000F:F3}ms."); 
-                // create a new party merged from the two           
+                // create a new party merged from the two
                 var rosters = MergeRosters(mobileParty, targetParty);
+                var averageAvoidance = mobileParty.BM()?.Avoidance + targetParty.MobileParty.BM()?.Avoidance;
                 var clan = Clan.BanditFactions.GetRandomElementInefficiently();
                 var bm = MobileParty.CreateParty("Bandit_Militia", new ModBanditMilitiaPartyComponent(clan), m => m.ActualClan = clan);
                 InitMilitia(bm, rosters, mobileParty.Position2D);
+                if (averageAvoidance.HasValue)
+                {
+                    bm.BM().Avoidance = averageAvoidance.Value;
+                }
+
                 // teleport new militias near the player
                 if (Globals.Settings.TestingMode)
                 {
@@ -293,7 +306,6 @@ namespace BanditMilitias
                             break;
                         case AIState.InfestingVillage:
                             Debugger.Break();
-                            SetPartyAiAction.GetActionForRaidingSettlement(mobileParty, target);
                             break;
                         case AIState.Raiding:
                             //Log($"{new string('*', 50)} {mobileParty.Name + " Pillage!",-20} {mobileParty.ItemRoster.TotalWeight} weight, {mobileParty.LeaderHero?.Gold} GOLD!");
@@ -309,10 +321,16 @@ namespace BanditMilitias
             }
         }
 
-        public static void TryImproving(MobileParty mobileParty)
+        public static void DailyTickPartyEvent(MobileParty mobileParty)
         {
             if (mobileParty.IsBM())
             {
+                foreach (var BM in MobileParty.FindPartiesAroundPosition(mobileParty.Position2D, 50)
+                             .WhereQ(m => m.IsBM()).SelectQ(m => m.BM()))
+                {
+                    BM.Avoidance += mobileParty.BM().Avoidance / 3;
+                }
+
                 TryGrowing(mobileParty);
                 if (Rng.NextDouble() <= Globals.Settings.TrainingChance)
                 {
