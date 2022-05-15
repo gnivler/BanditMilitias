@@ -252,13 +252,12 @@ namespace BanditMilitias
                             {
                                 target = SettlementHelper.FindNearestVillage(v =>
                                 {
-                                    var viable = !v.IsRaided && !v.IsUnderRaid && v.GetValue() > 0;
+                                    var viable = v.IsVillage && !v.IsRaided && !v.IsUnderRaid && v.GetValue() > 0;
                                     if (!viable)
                                     {
                                         return false;
                                     }
 
-                                    Log($"{mobileParty.BM().Avoidance}");
                                     if (v.OwnerClan == Hero.MainHero.Clan)
                                     {
                                         if (Rng.NextDouble() * 100 <= mobileParty.BM().Avoidance)
@@ -270,14 +269,9 @@ namespace BanditMilitias
 
                                     return true;
                                 }, mobileParty);
+                                SetPartyAiAction.GetActionForRaidingSettlement(mobileParty, target);
+                                mobileParty.Ai.SetAIState(AIState.Raiding);
                             }
-
-                            SetPartyAiAction.GetActionForRaidingSettlement(mobileParty, target);
-                            mobileParty.Ai.SetAIState(AIState.Raiding);
-                            //MobileParty.MainParty.Position2D = mobileParty.Position2D;
-                            //MapScreen.Instance.TeleportCameraToMainParty();
-
-
                             break;
                         case AIState.InfestingVillage:
                             Debugger.Break();

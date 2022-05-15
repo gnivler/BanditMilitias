@@ -947,6 +947,11 @@ namespace BanditMilitias.Helpers
 
         public static void ConfigureLeader(Hero hero)
         {
+            if (hero.HomeSettlement is null)
+            {
+                _homeSettlement(hero) = hero.BornSettlement;
+            }
+
             var random = Rng.Next(0, GangLeaderNames(NameGenerator.Current).Length);
             var originalStringId = hero.CharacterObject.StringId;
             hero.CharacterObject.StringId = hero.CharacterObject.StringId.Replace("Bandit_Militia", "");

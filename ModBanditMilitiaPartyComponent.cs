@@ -54,6 +54,7 @@ namespace BanditMilitias
             Traverse.Create(this).Field<Hero>("<Leader>k__BackingField").Value = newLeader;
         }
 
+       
         public ModBanditMilitiaPartyComponent(Clan heroClan)
         {
             Banner = Banners.GetRandomElement();

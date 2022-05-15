@@ -159,15 +159,5 @@ namespace BanditMilitias.Patches
                 return null;
             }
         }
-
-        [HarmonyPatch(typeof(ChangeVillageStateAction), "ApplyInternal")]
-        public static class ChangeVillageStateActionApplyInternal
-        {
-            public static Exception Finalizer(Exception __exception)
-            {
-                if (__exception is not null) Debugger.Break();
-                return null;
-            }
-        }
     }
 }
