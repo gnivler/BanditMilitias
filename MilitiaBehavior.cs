@@ -272,13 +272,7 @@ namespace BanditMilitias
                             {
                                 target = SettlementHelper.FindNearestVillage(s =>
                                 {
-                                    if (s.GetValue() <= 0)
-                                    {
-                                        return false;
-                                    }
-
-                                    var viable = !s.IsRaided && !s.IsUnderRaid;
-                                    if (!viable)
+                                    if (s.IsRaided || s.IsUnderRaid || s.GetValue() <= 0)
                                     {
                                         return false;
                                     }
@@ -325,12 +319,7 @@ namespace BanditMilitias
         {
             if (mobileParty.IsBM())
             {
-                foreach (var BM in MobileParty.FindPartiesAroundPosition(mobileParty.Position2D, 50)
-                             .WhereQ(m => m.IsBM()).SelectQ(m => m.BM()))
-                {
-                    BM.Avoidance += mobileParty.BM().Avoidance / 3;
-                }
-
+                AdjustAvoidance(mobileParty);
                 TryGrowing(mobileParty);
                 if (Rng.NextDouble() <= Globals.Settings.TrainingChance)
                 {
@@ -340,6 +329,25 @@ namespace BanditMilitias
                 //SetMilitiaPatrol(mobileParty);
                 TrySplitParty(mobileParty);
             }
+        }
+
+        public static void AdjustAvoidance(MobileParty mobileParty)
+        {
+            //Log($"{mobileParty.Name} starting Avoidance {mobileParty.BM().Avoidance}");
+            const float increment = 5;
+            foreach (var BM in MobileParty.FindPartiesAroundPosition(mobileParty.Position2D, 50)
+                         .WhereQ(m => m.IsBM()).SelectQ(m => m.BM()))
+            {
+                if (mobileParty.BM().Avoidance < BM.Avoidance)
+                {
+                    mobileParty.BM().Avoidance += increment;
+                }
+                else if (mobileParty.BM().Avoidance > BM.Avoidance)
+                {
+                    mobileParty.BM().Avoidance -= increment;
+                }
+            }
+            //Log($"{mobileParty.Name} finished Avoidance {mobileParty.BM().Avoidance}");
         }
 
         private static void TryGrowing(MobileParty mobileParty)

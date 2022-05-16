@@ -178,7 +178,8 @@ namespace BanditMilitias.Patches
                         return;
                     }
 
-                    if (Rng.NextDouble() * 100 < __instance.BM().Avoidance)
+                    if (targetParty != MobileParty.MainParty
+                        && Rng.NextDouble() * 100 < __instance.BM().Avoidance)
                     {
                         __result = false;
                         return;
