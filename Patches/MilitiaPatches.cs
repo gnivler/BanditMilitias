@@ -183,7 +183,7 @@ namespace BanditMilitias.Patches
                         && __instance.BM().Avoidance.TryGetValue(targetParty.LeaderHero, out var heroAvoidance)
                         && Rng.NextDouble() * 100 < heroAvoidance)
                     {
-                        Log($"{new string('-', 100)} Avoided attacking {targetParty}");
+                        Log($"{new string('-', 100)} {__instance.Name} avoided attacking {targetParty.Name}");
                         __result = false;
                         return;
                     }
