@@ -226,7 +226,8 @@ namespace BanditMilitias.Helpers
                 && __instance.MapEvent is null
                 && __instance.Party.MemberRoster.TotalManCount > 0
                 && !__instance.IsTooBusyToMerge()
-                && !__instance.IsUsedByAQuest()
+                // unfortunately this also means "tracked" BMs too but their distance, so doesn't matter?
+                && !__instance.IsUsedByAQuest() 
                 && !verbotenParties.Contains(__instance.StringId))
             {
                 return true;

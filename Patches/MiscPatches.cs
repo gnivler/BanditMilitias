@@ -2,11 +2,14 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using BanditMilitias.Helpers;
 using HarmonyLib;
 using Helpers;
+using SandBox.View;
 using SandBox.View.Map;
 using SandBox.ViewModelCollection.MobilePartyTracker;
 using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.CampaignBehaviors.AiBehaviors;
 using TaleWorlds.CampaignSystem.CharacterDevelopment;
 using TaleWorlds.CampaignSystem.Extensions;
 using TaleWorlds.CampaignSystem.GameComponents;
@@ -98,6 +101,7 @@ namespace BanditMilitias.Patches
                 InformationManager.AddQuickInformation(new TextObject($"{bmCount} Bandit Militias!"));
                 //Log($"Militias: {militias.Count} (registered {PartyMilitiaMap.Count})");
                 RunLateManualPatches();
+                Campaign.Current.CampaignBehaviorManager.RemoveBehavior<AiBanditPatrollingBehavior>();
             }
         }
 
@@ -177,6 +181,12 @@ namespace BanditMilitias.Patches
                 AccessTools.Method(typeof(CampaignBehaviorBase.SaveableCampaignBehaviorTypeDefiner),
                     "ConstructContainerDefinition").Invoke(__instance, new object[] { typeof(Dictionary<Hero, float>) });
             }
+        }
+
+        [HarmonyPatch(typeof(AiBanditPatrollingBehavior), "AiHourlyTick")]
+        public class AiBanditPatrollingBehaviorAiHourlyTick
+        {
+            public static bool Prefix(MobileParty mobileParty) => !mobileParty.IsBandit;
         }
     }
 }

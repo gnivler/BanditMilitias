@@ -45,9 +45,12 @@ namespace BanditMilitias
         {
             CampaignEvents.VillageBeingRaided.AddNonSerializedListener(this, v =>
             {
-                //if (v.Owner?.MobileParty?.LeaderHero == Hero.MainHero)
+                if (v.Settlement.Party?.MapEvent is not null
+                    && v.Settlement.Party.MapEvent.PartiesOnSide(BattleSideEnum.Attacker)
+                        .AnyQ(m => m.Party?.MobileParty is not null && m.Party.MobileParty.IsBM())
+                    && v.Settlement.Party.MobileParty.IsBM())
                 {
-                    InformationManager.AddQuickInformation(new TextObject($"{v.Name} is being raided!"));
+                    InformationManager.AddQuickInformation(new TextObject($"{v.Name} is being raided by {v.Settlement.Party.MapEvent.PartiesOnSide(BattleSideEnum.Attacker).First()}!"));
                 }
             });
             CampaignEvents.RaidCompletedEvent.AddNonSerializedListener(this, (b, m) =>
@@ -202,8 +205,8 @@ namespace BanditMilitias
                 }
 
                 var militiaTotalCount = mobileParty.MemberRoster.TotalManCount + targetParty.MemberRoster.TotalManCount;
-                if (MilitiaPowerPercent > Globals.Settings.GlobalPowerPercent
-                    || militiaTotalCount > CalculatedMaxPartySize
+                if (Globals.MilitiaPowerPercent > Globals.Settings.GlobalPowerPercent
+                    || militiaTotalCount > Globals.CalculatedMaxPartySize
                     || militiaTotalCount < Globals.Settings.MinPartySize
                     || NumMountedTroops(mobileParty.MemberRoster) + NumMountedTroops(targetParty.MemberRoster) > militiaTotalCount / 2)
                 {
@@ -211,8 +214,8 @@ namespace BanditMilitias
                 }
 
                 //SubModule.Log($"==> counted {T.ElapsedTicks / 10000F:F3}ms.");
-                if (mobileParty != targetParty.MobileParty.MoveTargetParty &&
-                    Campaign.Current.Models.MapDistanceModel.GetDistance(targetParty.MobileParty, mobileParty) > MergeDistance)
+                if (mobileParty != targetParty.MobileParty.MoveTargetParty
+                    && Campaign.Current.Models.MapDistanceModel.GetDistance(targetParty.MobileParty, mobileParty) > MergeDistance)
                 {
                     //SubModule.Log($"{mobileParty} seeking > {targetParty.MobileParty}");
                     mobileParty.SetMoveEscortParty(mobileParty);
