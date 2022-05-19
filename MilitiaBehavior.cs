@@ -6,6 +6,7 @@ using BanditMilitias.Helpers;
 using HarmonyLib;
 using Helpers;
 using SandBox.View.Map;
+using StoryMode.GameComponents;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.ComponentInterfaces;
@@ -17,6 +18,7 @@ using TaleWorlds.Core;
 using TaleWorlds.Library;
 using TaleWorlds.LinQuick;
 using TaleWorlds.Localization;
+using TaleWorlds.MountAndBlade;
 using TaleWorlds.MountAndBlade.GauntletUI.Widgets;
 using TaleWorlds.ObjectSystem;
 using TaleWorlds.TwoDimension;
@@ -78,7 +80,14 @@ namespace BanditMilitias
                 foreach (var BM in GetCachedBMs().WhereQ(bm =>
                              bm.MobileParty.Position2D.Distance(mobileParty.Position2D) < effectRadius))
                 {
-                    BM.Avoidance += AvoidanceIncrease();
+                    if (BM.Avoidance.TryGetValue(destroyer.LeaderHero, out _))
+                    {
+                        BM.Avoidance[destroyer.LeaderHero] += AvoidanceIncrease();
+                    }
+                    else
+                    {
+                        BM.Avoidance.Add(destroyer.LeaderHero, AvoidanceIncrease());
+                    }
                 }
             }
         }
@@ -204,13 +213,46 @@ namespace BanditMilitias
                 //SubModule.Log($"==> found settlement {T.ElapsedTicks / 10000F:F3}ms."); 
                 // create a new party merged from the two
                 var rosters = MergeRosters(mobileParty, targetParty);
-                var averageAvoidance = (mobileParty.BM()?.Avoidance + targetParty.MobileParty.BM()?.Avoidance) / 2;
-                var clan = Rng.Next(0, 2) == 0 ? mobileParty.ActualClan : targetParty.MobileParty.ActualClan;
+                //var averageAvoidance = (mobileParty.BM()?.Avoidance.Values.Sum() + targetParty.MobileParty.BM()?.Avoidance.Values.Sum()) / 2;
+                var clan = mobileParty.ActualClan ?? targetParty.MobileParty.ActualClan ?? Clan.BanditFactions.GetRandomElementInefficiently();
                 var bm = MobileParty.CreateParty("Bandit_Militia", new ModBanditMilitiaPartyComponent(clan), m => m.ActualClan = clan);
                 InitMilitia(bm, rosters, mobileParty.Position2D);
-                if (averageAvoidance.HasValue)
+                //if (averageAvoidance.HasValue)
+                //{
+                //    bm.BM().Avoidance = averageAvoidance.Value;
+                //}
+
+                var calculatedAvoidance = new Dictionary<Hero, float>();
+                if (mobileParty.IsBM())
                 {
-                    bm.BM().Avoidance = averageAvoidance.Value;
+                    foreach (var entry in mobileParty.BM()!.Avoidance)
+                    {
+                        if (!calculatedAvoidance.ContainsKey(entry.Key))
+                        {
+                            calculatedAvoidance.Add(entry.Key, entry.Value);
+                        }
+                        else
+                        {
+                            calculatedAvoidance[entry.Key] += entry.Value;
+                            calculatedAvoidance[entry.Key] /= 2;
+                        }
+                    }
+
+                    if (targetParty.MobileParty.BM() is not null)
+                    {
+                        foreach (var entry in targetParty.MobileParty.BM().Avoidance)
+                        {
+                            if (!calculatedAvoidance.ContainsKey(entry.Key))
+                            {
+                                calculatedAvoidance.Add(entry.Key, entry.Value);
+                            }
+                            else
+                            {
+                                calculatedAvoidance[entry.Key] += entry.Value;
+                                calculatedAvoidance[entry.Key] /= 2;
+                            }
+                        }
+                    }
                 }
 
                 // teleport new militias near the player
@@ -251,9 +293,13 @@ namespace BanditMilitias
             {
                 if (mobileParty.IsBM())
                 {
+                    var bm = mobileParty.BM();
                     if (CampaignTime.Now.ToHours % 3 == 0)
                     {
-                        mobileParty.BM().Avoidance--;
+                        foreach (var kvp in bm.Avoidance)
+                        {
+                            bm.Avoidance[kvp.Key]--;
+                        }
                     }
 
                     if (cap == 0)
@@ -288,13 +334,12 @@ namespace BanditMilitias
                                         return false;
                                     }
 
-                                    if (s.OwnerClan == Hero.MainHero.Clan)
+                                    var militia = mobileParty.BM();
+                                    if (militia.Avoidance.ContainsKey(mobileParty.LeaderHero)
+                                        && Rng.NextDouble() * 100 <= militia.Avoidance[mobileParty.LeaderHero])
                                     {
-                                        if (Rng.NextDouble() * 100 <= mobileParty.BM().Avoidance)
-                                        {
-                                            Log($"{new string('-', 100)} {mobileParty.Name} Avoiding {s}");
-                                            return false;
-                                        }
+                                        Log($"{new string('-', 100)} {mobileParty.Name} Avoiding {s}");
+                                        return false;
                                     }
 
                                     return true;
@@ -345,17 +390,23 @@ namespace BanditMilitias
         public static void AdjustAvoidance(MobileParty mobileParty)
         {
             //Log($"{mobileParty.Name} starting Avoidance {mobileParty.BM().Avoidance}");
-            foreach (var BM in Parties.WhereQ(m => m.IsBM())
-                         .WhereQ(m => m.Position2D.Distance(mobileParty.Position2D) < 50)
+            foreach (var BM in Parties.WhereQ(m => m.IsBM()
+                                                   && m.LeaderHero is not null
+                                                   && m.Position2D.Distance(mobileParty.Position2D) < 50)
                          .SelectQ(m => m.BM()))
             {
-                if (mobileParty.BM().Avoidance < BM.Avoidance)
+                var militia = mobileParty.BM();
+                foreach (var kvp in militia.Avoidance)
                 {
-                    mobileParty.BM().Avoidance += increment;
-                }
-                else if (mobileParty.BM().Avoidance > BM.Avoidance)
-                {
-                    mobileParty.BM().Avoidance -= increment;
+                    if (kvp.Value < BM.Avoidance[kvp.Key])
+                    {
+                        militia.Avoidance[BM.Leader] += increment;
+                    }
+
+                    if (kvp.Value > BM.Avoidance[kvp.Key])
+                    {
+                        militia.Avoidance[BM.Leader] -= increment;
+                    }
                 }
             }
             //Log($"{mobileParty.Name} finished Avoidance {mobileParty.BM().Avoidance}");

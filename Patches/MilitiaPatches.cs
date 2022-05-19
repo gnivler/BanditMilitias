@@ -176,106 +176,108 @@ namespace BanditMilitias.Patches
                         return;
                     }
 
-                    if (targetParty != MobileParty.MainParty
-                        && Rng.NextDouble() * 100 < __instance.BM().Avoidance)
+
+                    if (targetParty.LeaderHero is not null
+                        && __instance.BM().Avoidance.TryGetValue(targetParty.LeaderHero, out var heroAvoidance)
+                        && Rng.NextDouble() * 100 < heroAvoidance)
                     {
                         __result = false;
                         return;
                     }
-
-                    var party1Strength = __instance.GetTotalStrengthWithFollowers();
-                    var party2Strength = targetParty.GetTotalStrengthWithFollowers();
-                    float delta;
-                    if (party1Strength > party2Strength)
-                    {
-                        delta = party1Strength - party2Strength;
-                    }
-                    else
-                    {
-                        delta = party2Strength - party1Strength;
-                    }
-
-                    var deltaPercent = delta / party1Strength * 100;
-                    __result = deltaPercent <= Globals.Settings.MaxStrengthDeltaPercent;
                 }
+
+                var party1Strength = __instance.GetTotalStrengthWithFollowers();
+                var party2Strength = targetParty.GetTotalStrengthWithFollowers();
+                float delta;
+                if (party1Strength > party2Strength)
+                {
+                    delta = party1Strength - party2Strength;
+                }
+                else
+                {
+                    delta = party2Strength - party1Strength;
+                }
+
+                var deltaPercent = delta / party1Strength * 100;
+                __result = deltaPercent <= Globals.Settings.MaxStrengthDeltaPercent;
             }
         }
+    }
 
-        // force Heroes to die in simulated combat
-        [HarmonyPriority(Priority.High)]
-        [HarmonyPatch(typeof(SPScoreboardVM), "TroopNumberChanged")]
-        public static class SPScoreboardVMTroopNumberChangedPatch
+    // force Heroes to die in simulated combat
+    [HarmonyPriority(Priority.High)]
+    [HarmonyPatch(typeof(SPScoreboardVM), "TroopNumberChanged")]
+    public static class SPScoreboardVMTroopNumberChangedPatch
+    {
+        private static void Prefix(BasicCharacterObject character, ref int numberDead, ref int numberWounded)
         {
-            private static void Prefix(BasicCharacterObject character, ref int numberDead, ref int numberWounded)
+            var c = (CharacterObject)character;
+            if (numberWounded > 0
+                && c.HeroObject?.PartyBelongedTo is not null
+                && c.HeroObject.PartyBelongedTo.IsBM())
             {
-                var c = (CharacterObject)character;
-                if (numberWounded > 0
-                    && c.HeroObject?.PartyBelongedTo is not null
-                    && c.HeroObject.PartyBelongedTo.IsBM())
-                {
-                    numberDead = 1;
-                    numberWounded = 0;
-                }
+                numberDead = 1;
+                numberWounded = 0;
             }
         }
+    }
 
-        [HarmonyPatch(typeof(TroopRoster), "AddToCountsAtIndex")]
-        public static class TroopRosterAddToCountsAtIndexPatch
+    [HarmonyPatch(typeof(TroopRoster), "AddToCountsAtIndex")]
+    public static class TroopRosterAddToCountsAtIndexPatch
+    {
+        private static Exception Finalizer(TroopRoster __instance, Exception __exception)
         {
-            private static Exception Finalizer(TroopRoster __instance, Exception __exception)
+            // throws with Heroes Must Die
+            if (__exception is IndexOutOfRangeException)
             {
-                // throws with Heroes Must Die
-                if (__exception is IndexOutOfRangeException)
-                {
-                    Log("HACK Squelching IndexOutOfRangeException at TroopRoster.AddToCountsAtIndex");
-                    return null;
-                }
+                Log("HACK Squelching IndexOutOfRangeException at TroopRoster.AddToCountsAtIndex");
+                return null;
+            }
 
-                // throws during nuke of poor state
-                if (__exception is NullReferenceException)
-                {
-                    Log("HACK Squelching NullReferenceException at TroopRoster.AddToCountsAtIndex");
-                    return null;
-                }
+            // throws during nuke of poor state
+            if (__exception is NullReferenceException)
+            {
+                Log("HACK Squelching NullReferenceException at TroopRoster.AddToCountsAtIndex");
+                return null;
+            }
 
-                return __exception;
+            return __exception;
+        }
+    }
+
+    // changes the optional Tracker icons to match banners
+    [HarmonyPatch(typeof(MobilePartyTrackItemVM), "UpdateProperties")]
+    public static class MobilePartyTrackItemVMUpdatePropertiesPatch
+    {
+        public static void Postfix(MobilePartyTrackItemVM __instance, ref ImageIdentifierVM ____factionVisualBind)
+        {
+            if (__instance.TrackedParty is not null
+                && PartyImageMap.ContainsKey(__instance.TrackedParty))
+            {
+                ____factionVisualBind = PartyImageMap[__instance.TrackedParty];
             }
         }
+    }
 
-        // changes the optional Tracker icons to match banners
-        [HarmonyPatch(typeof(MobilePartyTrackItemVM), "UpdateProperties")]
-        public static class MobilePartyTrackItemVMUpdatePropertiesPatch
+    // skip the regular bandit AI stuff, looks at moving into hideouts
+    // and other stuff I don't really want happening
+    [HarmonyPatch(typeof(AiBanditPatrollingBehavior), "AiHourlyTick")]
+    public static class AiBanditPatrollingBehaviorAiHourlyTickPatch
+    {
+        public static bool Prefix(MobileParty mobileParty)
         {
-            public static void Postfix(MobilePartyTrackItemVM __instance, ref ImageIdentifierVM ____factionVisualBind)
-            {
-                if (__instance.TrackedParty is not null
-                    && PartyImageMap.ContainsKey(__instance.TrackedParty))
-                {
-                    ____factionVisualBind = PartyImageMap[__instance.TrackedParty];
-                }
-            }
+            return !mobileParty.IsBM();
         }
+    }
 
-        // skip the regular bandit AI stuff, looks at moving into hideouts
-        // and other stuff I don't really want happening
-        [HarmonyPatch(typeof(AiBanditPatrollingBehavior), "AiHourlyTick")]
-        public static class AiBanditPatrollingBehaviorAiHourlyTickPatch
+    [HarmonyPatch(typeof(DefaultMobilePartyFoodConsumptionModel), "DoesPartyConsumeFood")]
+    public static class DefaultMobilePartyFoodConsumptionModelDoesPartyConsumeFoodPatch
+    {
+        public static void Postfix(MobileParty mobileParty, ref bool __result)
         {
-            public static bool Prefix(MobileParty mobileParty)
+            if (mobileParty.IsBM())
             {
-                return !mobileParty.IsBM();
-            }
-        }
-
-        [HarmonyPatch(typeof(DefaultMobilePartyFoodConsumptionModel), "DoesPartyConsumeFood")]
-        public static class DefaultMobilePartyFoodConsumptionModelDoesPartyConsumeFoodPatch
-        {
-            public static void Postfix(MobileParty mobileParty, ref bool __result)
-            {
-                if (mobileParty.IsBM())
-                {
-                    __result = false;
-                }
+                __result = false;
             }
         }
     }

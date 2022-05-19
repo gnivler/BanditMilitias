@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Reflection;
 using BanditMilitias.Helpers;
 using HarmonyLib;
@@ -19,13 +20,7 @@ namespace BanditMilitias
         [SaveableField(1)] public readonly Banner Banner;
         [SaveableField(2)] public readonly string BannerKey;
         [SaveableField(3)] public CampaignTime LastMergedOrSplitDate = CampaignTime.Now;
-        [SaveableField(4)] private float avoidance;
-
-        public float Avoidance
-        {
-            get => avoidance;
-            set => avoidance = Mathf.Clamp(value, -100, 100);
-        }
+        [SaveableField(4)] internal Dictionary<Hero, float> Avoidance = new();
 
         [CachedData] private TextObject cachedName;
 
