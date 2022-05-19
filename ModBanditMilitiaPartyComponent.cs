@@ -9,7 +9,6 @@ using TaleWorlds.Core;
 using TaleWorlds.Library;
 using TaleWorlds.Localization;
 using TaleWorlds.SaveSystem;
-using TaleWorlds.TwoDimension;
 using static BanditMilitias.Globals;
 using static BanditMilitias.Helpers.Helper;
 
@@ -33,7 +32,7 @@ namespace BanditMilitias
         {
             get
             {
-                cachedName ??= new TextObject((string)GetLocalizedText.Invoke(null, new object[] { $"{Possess(Leader.FirstName.ToString())} Bandit Militia" }));
+                cachedName ??= new TextObject((string)GetLocalizedText.Invoke(null, new object[] { $"{Possess(Leader?.FirstName.ToString())?? "FUCKED UP"} Bandit Militia" }));
                 cachedName.SetTextVariable("IS_BANDIT", 1);
                 return cachedName;
             }

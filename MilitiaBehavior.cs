@@ -1,27 +1,20 @@
-    using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using BanditMilitias.Helpers;
 using HarmonyLib;
 using Helpers;
-using NetworkMessages.FromServer;
-using SandBox.View.Map;
-using StoryMode.GameComponents;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
-using TaleWorlds.CampaignSystem.ComponentInterfaces;
-using TaleWorlds.CampaignSystem.Map;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Roster;
 using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
-    using TaleWorlds.GauntletUI;
-    using TaleWorlds.Library;
+using TaleWorlds.Library;
 using TaleWorlds.LinQuick;
 using TaleWorlds.Localization;
 using TaleWorlds.MountAndBlade;
-using TaleWorlds.MountAndBlade.GauntletUI.Widgets;
 using TaleWorlds.ObjectSystem;
 using TaleWorlds.TwoDimension;
 using static BanditMilitias.Helpers.Helper;
@@ -36,16 +29,17 @@ namespace BanditMilitias
     public class MilitiaBehavior : CampaignBehaviorBase
     {
         private static float lastChecked;
-        internal const double smallChance = 0.001;
-        internal static int cap;
-        private const int interval = 3;
+        private const double smallChance = 0.001;
+        private static int cap;
+        private const int CheckInterval = 1;
         private const float increment = 5;
         private const float effectRadius = 100;
+        private const int AdjustRadius = 50;
         private static Clan looters;
-        private static IEnumerable<Clan> synthClans;
         internal static Clan Looters => looters ??= Clan.BanditFactions.First(c => c.StringId == "looters");
+        private static IEnumerable<Clan> synthClans;
         private static IEnumerable<Clan> SynthClans => synthClans ??= Clan.BanditFactions.Except(new[] { Looters });
-        internal static HashSet<MobileParty> Parties = new();
+        internal static List<MobileParty> Parties = new();
 
         public override void RegisterEvents()
         {
@@ -89,13 +83,22 @@ namespace BanditMilitias
         {
             int AvoidanceIncrease() => Rng.Next(20, 51);
             Parties.Remove(mobileParty);
-            if (destroyer == MobileParty.MainParty.Party
-                && mobileParty.IsBM())
+            if (mobileParty.IsBM())
             {
+                if (destroyer?.LeaderHero is null)
+                {
+                    return;
+                }
+
+                if (mobileParty.BM().Avoidance.ContainsKey(destroyer.LeaderHero))
+                {
+                    mobileParty.BM().Avoidance.Remove(destroyer.LeaderHero);
+                }
+
                 foreach (var BM in GetCachedBMs().WhereQ(bm =>
                              bm.MobileParty.Position2D.Distance(mobileParty.Position2D) < effectRadius))
                 {
-                    if (BM.Avoidance.TryGetValue(destroyer.LeaderHero, out _))
+                    if (BM.Avoidance.ContainsKey(destroyer.LeaderHero))
                     {
                         BM.Avoidance[destroyer.LeaderHero] += AvoidanceIncrease();
                     }
@@ -123,7 +126,7 @@ namespace BanditMilitias
             }
 
             // don't run this if paused and unless 3% off power limit
-            if (Campaign.CurrentTime - lastChecked < interval
+            if (Campaign.CurrentTime - lastChecked < CheckInterval
                 || MilitiaPowerPercent + MilitiaPowerPercent / 100 * 0.03 > Globals.Settings.GlobalPowerPercent)
             {
                 return;
@@ -191,8 +194,7 @@ namespace BanditMilitias
 
                 if (targetParty.MobileParty.IsBM())
                 {
-                    var component = (ModBanditMilitiaPartyComponent)targetParty.MobileParty.PartyComponent;
-                    CampaignTime? targetLastChangeDate = component.LastMergedOrSplitDate;
+                    CampaignTime? targetLastChangeDate = mobileParty.BM()?.LastMergedOrSplitDate;
                     if (CampaignTime.Now < targetLastChangeDate + CampaignTime.Hours(Globals.Settings.CooldownHours))
                     {
                         continue;
@@ -213,8 +215,7 @@ namespace BanditMilitias
                     Campaign.Current.Models.MapDistanceModel.GetDistance(targetParty.MobileParty, mobileParty) > MergeDistance)
                 {
                     //SubModule.Log($"{mobileParty} seeking > {targetParty.MobileParty}");
-                    SetPartyAiAction.GetActionForEscortingParty(mobileParty, targetParty.MobileParty);
-                    //mobileParty.SetMoveEscortParty(targetParty.MobileParty);
+                    mobileParty.SetMoveEscortParty(mobileParty);
                     //SubModule.Log($"SetNavigationModeParty ==> {T.ElapsedTicks / 10000F:F3}ms");
                     if (targetParty.MobileParty.MoveTargetParty != mobileParty)
                     {
@@ -229,15 +230,9 @@ namespace BanditMilitias
                 //SubModule.Log($"==> found settlement {T.ElapsedTicks / 10000F:F3}ms."); 
                 // create a new party merged from the two
                 var rosters = MergeRosters(mobileParty, targetParty);
-                //var averageAvoidance = (mobileParty.BM()?.Avoidance.Values.Sum() + targetParty.MobileParty.BM()?.Avoidance.Values.Sum()) / 2;
                 var clan = mobileParty.ActualClan ?? targetParty.MobileParty.ActualClan ?? Clan.BanditFactions.GetRandomElementInefficiently();
                 var bm = MobileParty.CreateParty("Bandit_Militia", new ModBanditMilitiaPartyComponent(clan), m => m.ActualClan = clan);
                 InitMilitia(bm, rosters, mobileParty.Position2D);
-                //if (averageAvoidance.HasValue)
-                //{
-                //    bm.BM().Avoidance = averageAvoidance.Value;
-                //}
-
                 var calculatedAvoidance = new Dictionary<Hero, float>();
                 if (mobileParty.IsBM())
                 {
@@ -307,14 +302,13 @@ namespace BanditMilitias
         {
             try
             {
-                if (mobileParty.IsBM())
+                if (mobileParty.PartyComponent is ModBanditMilitiaPartyComponent BM)
                 {
-                    var bm = mobileParty.BM();
                     if (CampaignTime.Now.ToHours % 3 == 0)
                     {
-                        foreach (var kvp in bm.Avoidance)
+                        foreach (var kvp in BM.Avoidance)
                         {
-                            bm.Avoidance[kvp.Key]--;
+                            BM.Avoidance[kvp.Key] -= increment;
                         }
                     }
 
@@ -341,17 +335,17 @@ namespace BanditMilitias
                             if (mobileParty.LeaderHero is not null
                                 && mobileParty.Party.TotalStrength > MilitiaPartyAveragePower
                                 && Rng.NextDouble() < smallChance
-                                && GetCachedBMs().CountQ(BM => BM.MobileParty.ShortTermBehavior is AiBehavior.RaidSettlement) <= cap)
+                                && GetCachedBMs().CountQ(m => m.MobileParty.ShortTermBehavior is AiBehavior.RaidSettlement) <= cap)
                             {
                                 target = SettlementHelper.FindNearestVillage(s =>
                                 {
-                                    if (s.IsRaided || s.IsUnderRaid || s.GetValue() <= 0)
+                                    if (s.IsRaided || s.IsUnderRaid || s.Owner is null || s.GetValue() <= 0)
                                     {
                                         return false;
                                     }
 
-                                    if (bm.Avoidance.ContainsKey(mobileParty.LeaderHero)
-                                        && Rng.NextDouble() * 100 <= bm.Avoidance[mobileParty.LeaderHero])
+                                    if (BM.Avoidance.TryGetValue(s.Owner, out _)
+                                        && Rng.NextDouble() * 100 <= BM.Avoidance[s.Owner])
                                     {
                                         Log($"{new string('-', 100)} {mobileParty.Name} Avoiding {s}");
                                         return false;
@@ -390,7 +384,11 @@ namespace BanditMilitias
         {
             if (mobileParty.IsBM())
             {
-                AdjustAvoidance(mobileParty);
+                if ((int)CampaignTime.Now.ToWeeks % CampaignTime.DaysInWeek == 0)
+                {
+                    AdjustAvoidance(mobileParty);
+                }
+
                 TryGrowing(mobileParty);
                 if (Rng.NextDouble() <= Globals.Settings.TrainingChance)
                 {
@@ -405,22 +403,23 @@ namespace BanditMilitias
         public static void AdjustAvoidance(MobileParty mobileParty)
         {
             //Log($"{mobileParty.Name} starting Avoidance {mobileParty.BM().Avoidance}");
-            foreach (var BM in Parties.WhereQ(m => m.IsBM()
-                                                   && m.LeaderHero is not null
-                                                   && m.Position2D.Distance(mobileParty.Position2D) < 50)
-                         .SelectQ(m => m.BM()))
+            foreach (var party in Parties.WhereQ(m => m.IsBM()
+                                                      && m.LeaderHero is not null
+                                                      && m.Position2D.Distance(mobileParty.Position2D) < AdjustRadius))
             {
-                var militia = mobileParty.BM();
-                foreach (var kvp in militia.Avoidance)
+                var BM = party.BM();
+                foreach (var kvp in BM.Avoidance)
                 {
-                    if (kvp.Value < BM.Avoidance[kvp.Key])
+                    if (BM.Avoidance.ContainsKey(kvp.Key))
                     {
-                        militia.Avoidance[BM.Leader] += increment;
-                    }
-
-                    if (kvp.Value > BM.Avoidance[kvp.Key])
-                    {
-                        militia.Avoidance[BM.Leader] -= increment;
+                        if (kvp.Value > BM.Avoidance[kvp.Key])
+                        {
+                            BM.Avoidance[kvp.Key] -= increment;
+                        }
+                        else if (kvp.Value < BM.Avoidance[kvp.Key])
+                        {
+                            BM.Avoidance[kvp.Key] += increment;
+                        }
                     }
                 }
             }
@@ -576,6 +575,7 @@ namespace BanditMilitias
 
         public override void SyncData(IDataStore dataStore)
         {
+            Parties = Parties.Distinct().ToListQ();
             dataStore.SyncData("Parties", ref Parties);
         }
     }

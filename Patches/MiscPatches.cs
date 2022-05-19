@@ -2,28 +2,21 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Threading.Tasks;
-using BanditMilitias.Helpers;
 using HarmonyLib;
 using Helpers;
 using SandBox.View.Map;
 using SandBox.ViewModelCollection.MobilePartyTracker;
 using TaleWorlds.CampaignSystem;
-using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.CharacterDevelopment;
 using TaleWorlds.CampaignSystem.Extensions;
 using TaleWorlds.CampaignSystem.GameComponents;
-using TaleWorlds.CampaignSystem.MapEvents;
 using TaleWorlds.CampaignSystem.Party;
-using TaleWorlds.CampaignSystem.Roster;
 using TaleWorlds.CampaignSystem.Settlements;
-using TaleWorlds.CampaignSystem.ViewModelCollection.Craft;
 using TaleWorlds.Core;
 using TaleWorlds.Engine;
 using TaleWorlds.Library;
 using TaleWorlds.LinQuick;
 using TaleWorlds.Localization;
-using TaleWorlds.MountAndBlade;
 using static BanditMilitias.Helpers.Helper;
 using static BanditMilitias.Globals;
 
@@ -45,14 +38,6 @@ namespace BanditMilitias.Patches
                 Log("MapScreen.OnInitialize");
                 EquipmentItems.Clear();
                 PopulateItems();
-                //foreach (var clan in Clan.BanditFactions)
-                //{
-                //    foreach (var otherClan in Clan.BanditFactions.Except(new[] { clan }))
-                //    {
-                //        FactionManager.DeclareWar(clan.MapFaction, otherClan, true);
-                //    }
-                //}
-
 
                 // 1.7 changed CreateHeroAtOccupation to only fish from this: NotableAndWandererTemplates
                 // this has no effect on earlier versions since the property doesn't exist
@@ -181,6 +166,16 @@ namespace BanditMilitias.Patches
                 {
                     __result = true;
                 }
+            }
+        }
+
+        [HarmonyPatch(typeof(SaveableCampaignTypeDefiner), "DefineContainerDefinitions")]
+        public class SaveableCampaignTypeDefinerDefineContainerDefinitions
+        {
+            public static void Postfix(SaveableCampaignTypeDefiner __instance)
+            {
+                AccessTools.Method(typeof(CampaignBehaviorBase.SaveableCampaignBehaviorTypeDefiner),
+                    "ConstructContainerDefinition").Invoke(__instance, new object[] { typeof(Dictionary<Hero, float>) });
             }
         }
     }

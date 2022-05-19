@@ -11,9 +11,7 @@ using SandBox.View.Map;
 using SandBox.ViewModelCollection.MobilePartyTracker;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
-using TaleWorlds.CampaignSystem.CampaignBehaviors;
 using TaleWorlds.CampaignSystem.CharacterDevelopment;
-using TaleWorlds.CampaignSystem.Encounters;
 using TaleWorlds.CampaignSystem.Extensions;
 using TaleWorlds.CampaignSystem.GameComponents;
 using TaleWorlds.CampaignSystem.LogEntries;
@@ -56,16 +54,17 @@ namespace BanditMilitias.Helpers
         public static readonly AccessTools.FieldRef<PartyBase, ItemRoster> ItemRoster =
             AccessTools.FieldRefAccess<PartyBase, ItemRoster>("<ItemRoster>k__BackingField");
 
-        public static void Log(object input)
+        public static bool Log(object input)
         {
             if (Globals.Settings is null
                 || Globals.Settings?.Debug is false)
             {
-                return;
+                return false;
             }
 
             using var sw = new StreamWriter(SubModule.logFilename, true);
             sw.WriteLine($"[{DateTime.Now.ToLongTimeString()}] {(string.IsNullOrEmpty(input?.ToString()) ? "IsNullOrEmpty" : input)}");
+            return true;
         }
 
         public static bool TrySplitParty(MobileParty mobileParty)
@@ -189,7 +188,7 @@ namespace BanditMilitias.Helpers
                 InitMilitia(bm2, rosters2, original.Position2D);
                 bm1.BM().Avoidance = original.BM().Avoidance;
                 bm2.BM().Avoidance = original.BM().Avoidance;
-                Log($">>> {bm1.Name} <- Split {original.Name} Split -> {bm1.Name}");
+                Log($">>> {bm1.Name} <- Split {original.Name} Split -> {bm2.Name}");
                 ItemRoster(bm1.Party) = inventory1;
                 ItemRoster(bm2.Party) = inventory2;
                 bm1.Party.Visuals.SetMapIconAsDirty();
@@ -320,7 +319,7 @@ namespace BanditMilitias.Helpers
                 // firing 3.7.0...
                 //Debugger.Break();
                 var hero = heroes[index];
-                Log($">>> NULL PARTY FOR {hero.Name} - settlement: {hero.CurrentSettlement} - RemoveMilitiaHero");
+                Log($">>> NULL PARTY FOR {hero.Name} - settlement: {hero.CurrentSettlement} - RemoveMilitiaHero ({hero.IsPrisoner})");
                 hero.RemoveMilitiaHero();
                 //Campaign.Current.TimeControlMode = CampaignTimeControlMode.Stop;
             }
@@ -360,8 +359,8 @@ namespace BanditMilitias.Helpers
                         var prisoner = settlement.Party.PrisonRoster.GetCharacterAtIndex(i);
                         if (prisoner.StringId.Contains("Bandit_Militia"))
                         {
-                            Debugger.Break();
-                            Log($">>> FLUSH BM hero prisoner {prisoner.HeroObject.Name} at {settlement.Name}.");
+                            //Debugger.Break();
+                            Log($">>> FLUSH BM hero prisoner {prisoner.HeroObject?.Name} at {settlement.Name}.");
                             settlement.Party.PrisonRoster.AddToCounts(prisoner, -1);
                             prisoner.HeroObject.RemoveMilitiaHero();
                         }
