@@ -13,6 +13,7 @@ using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.CharacterDevelopment;
 using TaleWorlds.CampaignSystem.Extensions;
 using TaleWorlds.CampaignSystem.GameComponents;
+using TaleWorlds.CampaignSystem.MapEvents;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Roster;
 using TaleWorlds.CampaignSystem.Settlements;
@@ -44,6 +45,14 @@ namespace BanditMilitias.Patches
                 Log("MapScreen.OnInitialize");
                 EquipmentItems.Clear();
                 PopulateItems();
+                //foreach (var clan in Clan.BanditFactions)
+                //{
+                //    foreach (var otherClan in Clan.BanditFactions.Except(new[] { clan }))
+                //    {
+                //        FactionManager.DeclareWar(clan.MapFaction, otherClan, true);
+                //    }
+                //}
+
 
                 // 1.7 changed CreateHeroAtOccupation to only fish from this: NotableAndWandererTemplates
                 // this has no effect on earlier versions since the property doesn't exist
@@ -160,6 +169,18 @@ namespace BanditMilitias.Patches
                 }
 
                 return null;
+            }
+        }
+
+        [HarmonyPatch(typeof(Clan), "IsAtWarWith")]
+        public class ClanIsAtWarWith
+        {
+            public static void Postfix(Clan __instance, ref bool __result)
+            {
+                if (__instance.MapFaction.IsBanditFaction)
+                {
+                    __result = true;
+                }
             }
         }
     }

@@ -224,6 +224,7 @@ namespace BanditMilitias.Helpers
             if (__instance.IsBandit
                 && __instance.Party.IsMobile
                 && __instance.CurrentSettlement is null
+                && __instance.MapEvent is null
                 && __instance.Party.MemberRoster.TotalManCount > 0
                 && !__instance.IsTooBusyToMerge()
                 && !__instance.IsUsedByAQuest()

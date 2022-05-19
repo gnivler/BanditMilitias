@@ -193,6 +193,9 @@ namespace BanditMilitias
                 var internalType = AccessTools.TypeByName("<GetTrackDescription>d__11");
                 var org = AccessTools.Method(internalType, "MoveNext");
                 harmony.Patch(org, finalizer: new HarmonyMethod(AccessTools.Method(typeof(SubModule), "Finalizer")));
+                //internalType = AccessTools.TypeByName("ManagedCallbacks.ScriptingInterfaceOfIScene");
+                //org = AccessTools.Method(internalType, "GetPathBetweenAIFaceIndices");
+                //harmony.Patch(org, prefix: new HarmonyMethod(AccessTools.Method(typeof(SubModule), "Prefix")));
             }
             catch (Exception ex)
             {
@@ -201,5 +204,17 @@ namespace BanditMilitias
         }
 
         private static Exception Finalizer() => null;
+        //private static Type internalType = AccessTools.TypeByName("ManagedCallbacks.ScriptingInterfaceOfIScene");
+        //private static PinnedArrayData<Vec2> pinnedArrayData;
+        //private static bool Prefix(object __instance, UIntPtr scenePointer, Int32 startingAiFace, Int32 endingAiFace, Vec2 startingPosition, Vec2 endingPosition, Single agentRadius, Vec2[] result, ref Int32 pathSize)
+        //{
+        //    pinnedArrayData = new PinnedArrayData<Vec2>(result);
+        //    IntPtr pointer = pinnedArrayData.Pointer;
+        //    var call = AccessTools.Method(internalType, "call_GetPathBetweenAIFaceIndicesDelegate");
+        //    var gate = call.Invoke(__instance, new object[]
+        //        { scenePointer, startingAiFace, endingAiFace, startingPosition, endingPosition, agentRadius, pointer, pathSize });
+        //    pinnedArrayData.Dispose();
+        //    return (bool) gate;
+        //}
     }
 }
