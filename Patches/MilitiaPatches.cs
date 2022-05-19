@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using BanditMilitias.Helpers;
 using HarmonyLib;
+using Helpers;
 using SandBox.View.Map;
 using SandBox.ViewModelCollection;
 using SandBox.ViewModelCollection.MobilePartyTracker;
@@ -95,13 +96,15 @@ namespace BanditMilitias.Patches
         }
 
         [HarmonyPatch(typeof(EnterSettlementAction), "ApplyForParty")]
-        public static class EnterSettlementActionApplypublicPatch
+        public static class EnterSettlementActionApplyForPartyPatch
         {
             private static bool Prefix(MobileParty mobileParty, Settlement settlement)
             {
                 if (mobileParty.PartyComponent is ModBanditMilitiaPartyComponent)
                 {
                     Log($"Preventing {mobileParty} from entering {settlement.Name}");
+                    SetPartyAiAction.GetActionForPatrollingAroundSettlement(mobileParty, SettlementHelper.GetRandomTown());
+                    mobileParty.Ai.SetAIState(AIState.PatrollingAroundLocation);
                     return false;
                 }
 
@@ -176,11 +179,11 @@ namespace BanditMilitias.Patches
                         return;
                     }
 
-
                     if (targetParty.LeaderHero is not null
                         && __instance.BM().Avoidance.TryGetValue(targetParty.LeaderHero, out var heroAvoidance)
                         && Rng.NextDouble() * 100 < heroAvoidance)
                     {
+                        Log($"{new string('-', 100)} Avoided attacking {targetParty}");
                         __result = false;
                         return;
                     }

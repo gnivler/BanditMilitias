@@ -20,7 +20,7 @@ namespace BanditMilitias
         [SaveableField(1)] public readonly Banner Banner;
         [SaveableField(2)] public readonly string BannerKey;
         [SaveableField(3)] public CampaignTime LastMergedOrSplitDate = CampaignTime.Now;
-        [SaveableField(4)] internal Dictionary<Hero, float> Avoidance = new();
+        [SaveableField(4)] public Dictionary<Hero, float> Avoidance = new();
 
         [CachedData] private TextObject cachedName;
 
@@ -49,7 +49,7 @@ namespace BanditMilitias
             Traverse.Create(this).Field<Hero>("<Leader>k__BackingField").Value = newLeader;
         }
 
-       
+
         public ModBanditMilitiaPartyComponent(Clan heroClan)
         {
             Banner = Banners.GetRandomElement();

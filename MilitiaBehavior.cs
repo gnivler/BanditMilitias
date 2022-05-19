@@ -1,10 +1,11 @@
-using System;
+    using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using BanditMilitias.Helpers;
 using HarmonyLib;
 using Helpers;
+using NetworkMessages.FromServer;
 using SandBox.View.Map;
 using StoryMode.GameComponents;
 using TaleWorlds.CampaignSystem;
@@ -15,7 +16,8 @@ using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Roster;
 using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
-using TaleWorlds.Library;
+    using TaleWorlds.GauntletUI;
+    using TaleWorlds.Library;
 using TaleWorlds.LinQuick;
 using TaleWorlds.Localization;
 using TaleWorlds.MountAndBlade;
@@ -47,12 +49,25 @@ namespace BanditMilitias
 
         public override void RegisterEvents()
         {
+            CampaignEvents.VillageBeingRaided.AddNonSerializedListener(this, v =>
+            {
+                //if (v.Owner?.MobileParty?.LeaderHero == Hero.MainHero)
+                {
+                    InformationManager.AddQuickInformation(new TextObject($"{v.Name} is being raided!"));
+                }
+            });
+            CampaignEvents.RaidCompletedEvent.AddNonSerializedListener(this, (b, m) =>
+            {
+                {
+                    InformationManager.AddQuickInformation(new TextObject($"{m.MapEventSettlement?.Name} successfully raided!"));
+                }
+            });
             CampaignEvents.TickEvent.AddNonSerializedListener(this, MergingTick);
             CampaignEvents.DailyTickPartyEvent.AddNonSerializedListener(this, DailyTickPartyEvent);
             CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, FlushMilitiaCharacterObjects);
             CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, OnDailyTickEvent);
             CampaignEvents.HourlyTickEvent.AddNonSerializedListener(this, SynthesizeBM);
-            CampaignEvents.HourlyTickPartyEvent.AddNonSerializedListener(this, HourlyTickPartyEvent);
+            CampaignEvents.HourlyTickPartyEvent.AddNonSerializedListener(this, AiTickPartyEvent);
             CampaignEvents.OnPartyRemovedEvent.AddNonSerializedListener(this, MobilePartyRemoved);
             CampaignEvents.MobilePartyDestroyed.AddNonSerializedListener(this, MobilePartyDestroyed);
             CampaignEvents.MobilePartyCreated.AddNonSerializedListener(this, m =>
@@ -198,7 +213,8 @@ namespace BanditMilitias
                     Campaign.Current.Models.MapDistanceModel.GetDistance(targetParty.MobileParty, mobileParty) > MergeDistance)
                 {
                     //SubModule.Log($"{mobileParty} seeking > {targetParty.MobileParty}");
-                    mobileParty.SetMoveEscortParty(targetParty.MobileParty);
+                    SetPartyAiAction.GetActionForEscortingParty(mobileParty, targetParty.MobileParty);
+                    //mobileParty.SetMoveEscortParty(targetParty.MobileParty);
                     //SubModule.Log($"SetNavigationModeParty ==> {T.ElapsedTicks / 10000F:F3}ms");
                     if (targetParty.MobileParty.MoveTargetParty != mobileParty)
                     {
@@ -287,7 +303,7 @@ namespace BanditMilitias
             FlushPrisoners();
         }
 
-        public static void HourlyTickPartyEvent(MobileParty mobileParty)
+        public static void AiTickPartyEvent(MobileParty mobileParty)
         {
             try
             {
@@ -334,9 +350,8 @@ namespace BanditMilitias
                                         return false;
                                     }
 
-                                    var militia = mobileParty.BM();
-                                    if (militia.Avoidance.ContainsKey(mobileParty.LeaderHero)
-                                        && Rng.NextDouble() * 100 <= militia.Avoidance[mobileParty.LeaderHero])
+                                    if (bm.Avoidance.ContainsKey(mobileParty.LeaderHero)
+                                        && Rng.NextDouble() * 100 <= bm.Avoidance[mobileParty.LeaderHero])
                                     {
                                         Log($"{new string('-', 100)} {mobileParty.Name} Avoiding {s}");
                                         return false;
@@ -557,6 +572,7 @@ namespace BanditMilitias
             //Log($"{new string('=', 80)}\nBMs: {PartyMilitiaMap.Count,-4} Power: {GlobalMilitiaPower} / Power Limit: {CalculatedGlobalPowerLimit} = {GlobalMilitiaPower / CalculatedGlobalPowerLimit * 100:f2}% (limit {Globals.Settings.GlobalPowerPercent}%)");
             //Log("");
         }
+
 
         public override void SyncData(IDataStore dataStore)
         {
