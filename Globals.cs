@@ -11,7 +11,7 @@ using TaleWorlds.ObjectSystem;
 namespace BanditMilitias
 {
     // ReSharper disable once ClassNeverInstantiated.Global
-    public struct Globals
+    public class Globals
     {
         // merge/split criteria
         public const float MergeDistance = 2;
@@ -41,7 +41,7 @@ namespace BanditMilitias
         public static readonly List<Equipment> BanditEquipment = new();
         public static readonly List<Banner> Banners = new();
         public static double LastCalculated;
-        public static double Interval;
+        public static double PartyCacheInterval;
 
         // ReSharper disable once InconsistentNaming
         public static MobilePartyTrackerVM MobilePartyTrackerVM;

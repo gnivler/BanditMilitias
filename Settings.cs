@@ -75,7 +75,7 @@ namespace BanditMilitias
         [SettingPropertyGroup("Primary Settings")]
         public int SpawnChance { get; private set; } = 30;
 
-        [SettingPropertyInteger("Change Cooldown", 1, 168, HintText = "\nBM won't merge or split a second time until this many hours go by.", Order = 8, RequireRestart = false)]
+        [SettingPropertyInteger("Change Cooldown", 0, 168, HintText = "\nBM won't merge or split a second time until this many hours go by.", Order = 8, RequireRestart = false)]
         [SettingPropertyGroup("Primary Settings")]
         public int CooldownHours { get; private set; } = 24;
 
@@ -87,17 +87,17 @@ namespace BanditMilitias
         [SettingPropertyGroup("Size Adjustments", GroupOrder = 2)]
         public int DisperseSize { get; private set; } = 20;
 
-        [SettingPropertyInteger("Minimum Size", 0, 100, HintText = "\nNo BMs smaller than this will form.", Order = 1, RequireRestart = false)]
+        [SettingPropertyInteger("Minimum Size", 1, 100, HintText = "\nNo BMs smaller than this will form.", Order = 1, RequireRestart = false)]
         [SettingPropertyGroup("Size Adjustments")]
         public int MinPartySize { get; private set; } = 20;
 
-        [SettingPropertyInteger("Mergeable party size", 10, 100, HintText = "\nSmall looter and bandit parties won't merge.", Order = 1, RequireRestart = false)]
+        [SettingPropertyInteger("Mergeable party size", 1, 100, HintText = "\nSmall looter and bandit parties won't merge.", Order = 1, RequireRestart = false)]
         [SettingPropertyGroup("Size Adjustments")]
         public int MergeableSize { get; private set; } = 10;
 
         [SettingPropertyInteger("Random Split Chance", 0, 100, HintText = "\nHow likely BM is to split when large enough.", Order = 2, RequireRestart = false)]
         [SettingPropertyGroup("Militia Adjustments", GroupOrder = 1)]
-        public int RandomSplitChance { get; private set; } = 25;
+        public int RandomSplitChance { get; private set; } = 10;
 
         [SettingPropertyInteger("Max Item Value", 1000, 1000000, HintText = "\nLimit the per-piece value of equipment given to the Heroes.\nMostly for when other mods give you Hero loot.", Order = 7, RequireRestart = false)]
         [SettingPropertyGroup("Militia Adjustments")]

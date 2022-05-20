@@ -7,6 +7,7 @@ using HarmonyLib;
 using Helpers;
 using SandBox.View.Map;
 using SandBox.ViewModelCollection.MobilePartyTracker;
+using StoryMode.GameComponents;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.Party;
@@ -14,6 +15,7 @@ using TaleWorlds.CampaignSystem.Roster;
 using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
 using TaleWorlds.Engine;
+using TaleWorlds.InputSystem;
 using TaleWorlds.Library;
 using TaleWorlds.LinQuick;
 using TaleWorlds.Localization;
@@ -134,38 +136,23 @@ namespace BanditMilitias
 
             // don't run this if paused and unless 3% off power limit
             if (Campaign.CurrentTime - lastChecked < CheckInterval
-                || MilitiaPowerPercent + MilitiaPowerPercent / 100 * 0.03 > Globals.Settings.GlobalPowerPercent)
+                || Globals.MilitiaPowerPercent + 1 > Globals.Settings.GlobalPowerPercent)
             {
                 return;
             }
 
             lastChecked = Campaign.CurrentTime;
-            var parties = new List<MobileParty>(MobileParty.All.WhereQ(m => m.IsBandit));
-            foreach (var party in Parties)
-            {
-                if (party.CurrentSettlement is null
-                    && !party.IsUsedByAQuest()
-                    && party.MemberRoster.TotalManCount >= Globals.Settings.MergeableSize)
-                {
-                    parties.Add(party);
-                }
-            }
-
+            var parties = MobileParty.AllBanditParties.Concat(Parties).ToListQ();
             for (var index = 0; index < parties.Count; index++)
             {
                 //T.Restart();
                 var mobileParty = parties[index];
-                if (Hideouts.AnyQ(s => s.Position2D.Distance(mobileParty.Position2D) < MinDistanceFromHideout))
+                if (Settlement.FindSettlementsAroundPosition(mobileParty.Position2D, MinDistanceFromHideout, s => s.IsHideout).Any())
                 {
                     continue;
                 }
 
-                if (mobileParty.IsTooBusyToMerge())
-                {
-                    continue;
-                }
-
-                var nearbyParties = MobileParty.FindPartiesAroundPosition(mobileParty.Position2D, FindRadius)
+                var nearbyParties = MobileParty.FindPartiesAroundPosition(mobileParty.Position2D, 50)
                     .Intersect(parties)
                     .ToListQ();
                 //var nearbyParties = parties.WhereQ(m => m.Position2D.Distance(mobileParty.Position2D) <= FindRadius).ToListQ();
@@ -180,12 +167,10 @@ namespace BanditMilitias
                     continue;
                 }
 
-                if (mobileParty.IsBM())
+                if (mobileParty.IsBM()
+                    && CampaignTime.Now < mobileParty.BM().LastMergedOrSplitDate + CampaignTime.Hours(Globals.Settings.CooldownHours))
                 {
-                    if (CampaignTime.Now < mobileParty.BM()?.LastMergedOrSplitDate + CampaignTime.Hours(Globals.Settings.CooldownHours))
-                    {
-                        continue;
-                    }
+                    continue;
                 }
 
                 var targetParties = nearbyParties.Where(m =>
@@ -201,7 +186,7 @@ namespace BanditMilitias
 
                 if (targetParty.MobileParty.IsBM())
                 {
-                    CampaignTime? targetLastChangeDate = targetParty.MobileParty.BM()?.LastMergedOrSplitDate;
+                    CampaignTime? targetLastChangeDate = targetParty.MobileParty.BM().LastMergedOrSplitDate;
                     if (CampaignTime.Now < targetLastChangeDate + CampaignTime.Hours(Globals.Settings.CooldownHours))
                     {
                         continue;
@@ -219,22 +204,12 @@ namespace BanditMilitias
 
                 //SubModule.Log($"==> counted {T.ElapsedTicks / 10000F:F3}ms.");
                 if (mobileParty != targetParty.MobileParty.MoveTargetParty
-                    && Campaign.Current.Models.MapDistanceModel.GetDistance(targetParty.MobileParty, mobileParty) > 5)
+                    && Campaign.Current.Models.MapDistanceModel.GetDistance(targetParty.MobileParty, mobileParty) > MergeDistance)
                 {
                     //SubModule.Log($"{mobileParty} seeking > {targetParty.MobileParty}");
-                    mobileParty.SetMoveEscortParty(mobileParty);
-                    mobileParty.Ai.SetAIState(AIState.PatrollingAroundLocation);
-                    //mobileParty.Ai.SetDoNotMakeNewDecisions(true);
-                    //SubModule.Log($"SetNavigationModeParty ==> {T.ElapsedTicks / 10000F:F3}ms");
-                    if (targetParty.MobileParty.MoveTargetParty != mobileParty)
-                    {
-                        //SubModule.Log($"{targetParty.MobileParty} seeking back > {mobileParty}");
-                        targetParty.MobileParty.SetMoveEscortParty(mobileParty);
-                        targetParty.MobileParty.Ai.SetAIState(AIState.PatrollingAroundLocation);
-                        //targetParty.MobileParty.Ai.SetDoNotMakeNewDecisions(true);
-                        //SubModule.Log($"SetNavigationModeTargetParty ==> {T.ElapsedTicks / 10000F:F3}ms");
-                    }
-
+                    Traverse.Create(mobileParty).Method("SetAiBehavior", AiBehavior.EscortParty, targetParty, targetParty.Position2D).GetValue();
+                    Traverse.Create(targetParty.MobileParty).Method("SetAiBehavior", AiBehavior.EscortParty, mobileParty, mobileParty.Position2D).GetValue();
+                    //SubModule.Log($"SetNavigationModeTargetParty ==> {T.ElapsedTicks / 10000F:F3}ms");
                     continue;
                 }
 
@@ -480,7 +455,7 @@ namespace BanditMilitias
             }
 
             for (var i = 0;
-                 MilitiaPowerPercent <= Globals.Settings.GlobalPowerPercent
+                 MilitiaPowerPercent + 5 <= Globals.Settings.GlobalPowerPercent
                  && i < (Globals.Settings.GlobalPowerPercent - MilitiaPowerPercent) / 24f;
                  i++)
             {
@@ -529,8 +504,6 @@ namespace BanditMilitias
                 roster.AddToCounts(clan.BasicTroop, size);
                 roster.AddToCounts(Looters.BasicTroop, size);
                 MurderMounts(roster);
-
-                //var militia = ModBanditMilitiaPartyComponent.CreateBanditParty(settlement.GatePosition, roster, TroopRoster.CreateDummyTroopRoster());
                 var bm = MobileParty.CreateParty("Bandit_Militia", new ModBanditMilitiaPartyComponent(clan), m => m.ActualClan = clan);
                 InitMilitia(bm, new[] { roster, TroopRoster.CreateDummyTroopRoster() }, settlement.GatePosition);
 
@@ -541,9 +514,6 @@ namespace BanditMilitias
                     var party = Hero.MainHero.PartyBelongedTo ?? Hero.MainHero.PartyBelongedToAsPrisoner.MobileParty;
                     bm.Position2D = party.Position2D;
                 }
-
-                DoPowerCalculations();
-                return;
             }
 
             DoPowerCalculations();
