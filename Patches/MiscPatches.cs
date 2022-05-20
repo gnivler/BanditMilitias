@@ -101,7 +101,6 @@ namespace BanditMilitias.Patches
                 InformationManager.AddQuickInformation(new TextObject($"{bmCount} Bandit Militias!"));
                 //Log($"Militias: {militias.Count} (registered {PartyMilitiaMap.Count})");
                 RunLateManualPatches();
-                Campaign.Current.CampaignBehaviorManager.RemoveBehavior<AiBanditPatrollingBehavior>();
             }
         }
 
@@ -183,11 +182,11 @@ namespace BanditMilitias.Patches
             }
         }
 
-        [HarmonyPatch(typeof(AiBanditPatrollingBehavior), "AiHourlyTick")]
-        public class AiBanditPatrollingBehaviorAiHourlyTick
-        {
-            public static bool Prefix(MobileParty mobileParty) => !mobileParty.IsBandit;
-        }
+        //[HarmonyPatch(typeof(AiBanditPatrollingBehavior), "AiHourlyTick")]
+        //public class AiBanditPatrollingBehaviorAiHourlyTick
+        //{
+        //    public static bool Prefix(MobileParty mobileParty) => !mobileParty.IsBandit;
+        //}
 
         //[HarmonyPatch(typeof(AiVisitSettlementBehavior), "CalculateVisitHideoutScoresForBanditParty")]
         //public class AiVisitSettlementBehaviorCalculateVisitHideoutScoresForBanditParty

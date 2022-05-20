@@ -5,12 +5,15 @@ using System.Linq;
 using BanditMilitias.Helpers;
 using HarmonyLib;
 using Helpers;
+using SandBox.View.Map;
+using SandBox.ViewModelCollection.MobilePartyTracker;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Roster;
 using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
+using TaleWorlds.Engine;
 using TaleWorlds.Library;
 using TaleWorlds.LinQuick;
 using TaleWorlds.Localization;
@@ -49,7 +52,7 @@ namespace BanditMilitias
                     && v.Settlement.Party.MapEvent.PartiesOnSide(BattleSideEnum.Attacker)
                         .AnyQ(m => m.Party.MobileParty is not null && m.Party.MobileParty.IsBM()))
                 {
-                    InformationManager.AddQuickInformation(new TextObject($"{v.Name} is being raided by {v.Settlement.Party.MapEvent.PartiesOnSide(BattleSideEnum.Attacker).First()}!"));
+                    InformationManager.AddQuickInformation(new TextObject($"{v.Name} is being raided by {v.Settlement.Party.MapEvent.PartiesOnSide(BattleSideEnum.Attacker).First().Party.Name}!"));
                 }
             });
             CampaignEvents.RaidCompletedEvent.AddNonSerializedListener(this, (b, m) =>
@@ -78,7 +81,7 @@ namespace BanditMilitias
 
         private static void MobilePartyRemoved(PartyBase party)
         {
-            Parties.Remove(party?.MobileParty);
+            Parties.Remove(party.MobileParty);
         }
 
         private static void MobilePartyDestroyed(MobileParty mobileParty, PartyBase destroyer)
@@ -135,7 +138,7 @@ namespace BanditMilitias
             }
 
             lastChecked = Campaign.CurrentTime;
-            var parties = new List<MobileParty>();
+            var parties = new List<MobileParty>(MobileParty.All.WhereQ(m => m.IsBandit));
             foreach (var party in Parties)
             {
                 if (party.CurrentSettlement is null
@@ -160,10 +163,10 @@ namespace BanditMilitias
                     continue;
                 }
 
-                //var nearbyParties = MobileParty.FindPartiesAroundPosition(mobileParty.Position2D, FindRadius)
-                //    .Intersect(parties)
-                //    .ToListQ();
-                var nearbyParties = Parties.WhereQ(m => m.Position2D.Distance(mobileParty.Position2D) <= FindRadius).ToListQ();
+                var nearbyParties = MobileParty.FindPartiesAroundPosition(mobileParty.Position2D, FindRadius)
+                    .Intersect(parties)
+                    .ToListQ();
+                //var nearbyParties = parties.WhereQ(m => m.Position2D.Distance(mobileParty.Position2D) <= FindRadius).ToListQ();
                 nearbyParties.Remove(mobileParty);
                 if (!nearbyParties.Any())
                 {
@@ -196,7 +199,7 @@ namespace BanditMilitias
 
                 if (targetParty.MobileParty.IsBM())
                 {
-                    CampaignTime? targetLastChangeDate = mobileParty.BM()?.LastMergedOrSplitDate;
+                    CampaignTime? targetLastChangeDate = targetParty.MobileParty.BM()?.LastMergedOrSplitDate;
                     if (CampaignTime.Now < targetLastChangeDate + CampaignTime.Hours(Globals.Settings.CooldownHours))
                     {
                         continue;
@@ -214,15 +217,17 @@ namespace BanditMilitias
 
                 //SubModule.Log($"==> counted {T.ElapsedTicks / 10000F:F3}ms.");
                 if (mobileParty != targetParty.MobileParty.MoveTargetParty
-                    && Campaign.Current.Models.MapDistanceModel.GetDistance(targetParty.MobileParty, mobileParty) > MergeDistance)
+                    && Campaign.Current.Models.MapDistanceModel.GetDistance(targetParty.MobileParty, mobileParty) > 5)
                 {
                     //SubModule.Log($"{mobileParty} seeking > {targetParty.MobileParty}");
                     mobileParty.SetMoveEscortParty(mobileParty);
+                    mobileParty.Ai.SetDoNotMakeNewDecisions(true);
                     //SubModule.Log($"SetNavigationModeParty ==> {T.ElapsedTicks / 10000F:F3}ms");
                     if (targetParty.MobileParty.MoveTargetParty != mobileParty)
                     {
                         //SubModule.Log($"{targetParty.MobileParty} seeking back > {mobileParty}");
                         targetParty.MobileParty.SetMoveEscortParty(mobileParty);
+                        targetParty.MobileParty.Ai.SetDoNotMakeNewDecisions(true);
                         //SubModule.Log($"SetNavigationModeTargetParty ==> {T.ElapsedTicks / 10000F:F3}ms");
                     }
 
@@ -236,9 +241,9 @@ namespace BanditMilitias
                 var bm = MobileParty.CreateParty("Bandit_Militia", new ModBanditMilitiaPartyComponent(clan), m => m.ActualClan = clan);
                 InitMilitia(bm, rosters, mobileParty.Position2D);
                 var calculatedAvoidance = new Dictionary<Hero, float>();
-                if (mobileParty.IsBM())
+                if (mobileParty.PartyComponent is ModBanditMilitiaPartyComponent BM1)
                 {
-                    foreach (var entry in mobileParty.BM()!.Avoidance)
+                    foreach (var entry in BM1.Avoidance)
                     {
                         if (!calculatedAvoidance.ContainsKey(entry.Key))
                         {
@@ -251,9 +256,9 @@ namespace BanditMilitias
                         }
                     }
 
-                    if (targetParty.MobileParty.BM() is not null)
+                    if (targetParty.MobileParty.PartyComponent is ModBanditMilitiaPartyComponent BM2)
                     {
-                        foreach (var entry in targetParty.MobileParty.BM().Avoidance)
+                        foreach (var entry in BM2.Avoidance)
                         {
                             if (!calculatedAvoidance.ContainsKey(entry.Key))
                             {
@@ -338,7 +343,7 @@ namespace BanditMilitias
                                         return false;
                                     }
 
-                                    if (BM.Avoidance.TryGetValue(s.Owner, out _)
+                                    if (BM.Avoidance.ContainsKey(s.Owner)
                                         && Rng.NextDouble() * 100 <= BM.Avoidance[s.Owner])
                                     {
                                         Log($"{new string('-', 100)} {mobileParty.Name} Avoiding {s}");

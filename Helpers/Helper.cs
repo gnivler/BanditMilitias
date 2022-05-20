@@ -290,6 +290,7 @@ namespace BanditMilitias.Helpers
 
         public static void Nuke()
         {
+            Globals.MobilePartyTrackerVM.Trackers.Clear();
             FlushBanditMilitias();
             MilitiaBehavior.FlushMilitiaCharacterObjects();
             FlushPrisoners();
@@ -958,6 +959,11 @@ namespace BanditMilitias.Helpers
 
         public static void InitMilitia(MobileParty militia, TroopRoster[] rosters, Vec2 position)
         {
+            var index = Globals.MobilePartyTrackerVM.Trackers.FindIndexQ(t => t.TrackedParty == militia);
+            if (index >= 0)
+            {
+                Globals.MobilePartyTrackerVM.Trackers.RemoveAt(index);
+            }
             militia.InitializeMobilePartyAtPosition(rosters[0], rosters[1], position);
             IsBandit(militia) = true;
             MilitiaBehavior.Parties.Add(militia);
