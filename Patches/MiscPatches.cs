@@ -120,55 +120,34 @@ namespace BanditMilitias.Patches
         {
             public static Exception Finalizer(Exception __exception, PartyBase party, FeatObject feat)
             {
-                if (__exception is not null)
+                if (__exception is not null
+                    && party.LeaderHero.Culture.Name is null)
                 {
+                    party.LeaderHero.Culture = Clan.BanditFactions.GetRandomElementInefficiently().Culture;
+                    Log($"{party.LeaderHero} has a fucked up Culture - fixed");
                     Debugger.Break();
+                    return null;
                 }
 
-                return null;
+                return __exception;
             }
         }
 
         // TODO find root causes, remove finalizers
-        // maybe BM heroes being considered for troop upgrade - no upgrade targets though
+        // BM heroes seem to have null UpgradeTargets[] at load time, randomly
         [HarmonyPatch(typeof(DefaultPartyTroopUpgradeModel), "CanTroopGainXp")]
         public static class DefaultPartyTroopUpgradeModelCanTroopGainXp
         {
-            public static Exception Finalizer(Exception __exception, PartyBase owner, CharacterObject character)
+            public static Exception Finalizer(Exception __exception, PartyBase owner)
             {
-                if (__exception is not null)
+                if (__exception is not null
+                    && owner.MobileParty is not null
+                    && owner.MobileParty.IsBM())
                 {
-                    Debugger.Break();
+                    return null;
                 }
 
-                return null;
-            }
-        }
-
-        // TODO find root causes, remove finalizers
-        [HarmonyPatch(typeof(Hero), "SetInitialValuesFromCharacter")]
-        public class HeroSetInitialValuesFromCharacter
-        {
-            public static Exception Finalizer(Hero __instance, CharacterObject characterObject, Exception __exception)
-            {
-                if (__exception is not null)
-                {
-                    Debugger.Break();
-                }
-
-                return null;
-            }
-        }
-
-        [HarmonyPatch(typeof(Clan), "IsAtWarWith")]
-        public class ClanIsAtWarWith
-        {
-            public static void Postfix(Clan __instance, ref bool __result)
-            {
-                if (__instance.MapFaction.IsBanditFaction)
-                {
-                    __result = true;
-                }
+                return __exception;
             }
         }
 
@@ -181,17 +160,5 @@ namespace BanditMilitias.Patches
                     "ConstructContainerDefinition").Invoke(__instance, new object[] { typeof(Dictionary<Hero, float>) });
             }
         }
-
-        //[HarmonyPatch(typeof(AiBanditPatrollingBehavior), "AiHourlyTick")]
-        //public class AiBanditPatrollingBehaviorAiHourlyTick
-        //{
-        //    public static bool Prefix(MobileParty mobileParty) => !mobileParty.IsBandit;
-        //}
-
-        //[HarmonyPatch(typeof(AiVisitSettlementBehavior), "CalculateVisitHideoutScoresForBanditParty")]
-        //public class AiVisitSettlementBehaviorCalculateVisitHideoutScoresForBanditParty
-        //{
-        //    public static bool Prefix(MobileParty mobileParty) => !mobileParty.IsBandit;
-        //}
     }
 }

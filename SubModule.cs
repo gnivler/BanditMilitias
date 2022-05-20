@@ -15,6 +15,7 @@ using TaleWorlds.Library;
 using TaleWorlds.LinQuick;
 using TaleWorlds.Localization;
 using TaleWorlds.MountAndBlade;
+using TaleWorlds.ObjectSystem;
 using static BanditMilitias.Helpers.Helper;
 using static BanditMilitias.Globals;
 using Module = TaleWorlds.MountAndBlade.Module;
@@ -118,15 +119,15 @@ namespace BanditMilitias
 
             if (superKey && Input.IsKeyPressed(InputKey.F10))
             {
-                //foreach (var militia in PartyMilitiaMap.Values.WhereQ(m => m.MobileParty.MemberRoster.TotalManCount < Globals.Settings.MinPartySize).OrderByDescending(x => x.MobileParty.MemberRoster.TotalManCount))
-                //{
-                //    //if (militia.MobileParty.MemberRoster.TotalManCount >= Globals.Settings.MinPartySize)
-                //    //{
-                //    //    continue;
-                //    //}
-                //
-                //    Log(militia.MobileParty.MemberRoster.TotalManCount + " " + militia.MobileParty.Food);
-                //}
+                MobileParty.MainParty.ItemRoster.AddToCounts(MBObjectManager.Instance.GetObject<ItemObject>("grain"), 10000);
+                foreach (var bm in MilitiaBehavior.Parties.WhereQ(m => m.IsBM()).SelectQ(m => m.BM()))
+                {
+                    Log(bm.Name);
+                    foreach (var kvp in bm.Avoidance)
+                    {
+                        Log($"\t{kvp.Key,-20}{kvp.Value}");
+                    }
+                }
             }
 
             if (superKey && Input.IsKeyPressed(InputKey.F12))
@@ -204,17 +205,5 @@ namespace BanditMilitias
         }
 
         private static Exception Finalizer() => null;
-        //private static Type internalType = AccessTools.TypeByName("ManagedCallbacks.ScriptingInterfaceOfIScene");
-        //private static PinnedArrayData<Vec2> pinnedArrayData;
-        //private static bool Prefix(object __instance, UIntPtr scenePointer, Int32 startingAiFace, Int32 endingAiFace, Vec2 startingPosition, Vec2 endingPosition, Single agentRadius, Vec2[] result, ref Int32 pathSize)
-        //{
-        //    pinnedArrayData = new PinnedArrayData<Vec2>(result);
-        //    IntPtr pointer = pinnedArrayData.Pointer;
-        //    var call = AccessTools.Method(internalType, "call_GetPathBetweenAIFaceIndicesDelegate");
-        //    var gate = call.Invoke(__instance, new object[]
-        //        { scenePointer, startingAiFace, endingAiFace, startingPosition, endingPosition, agentRadius, pointer, pathSize });
-        //    pinnedArrayData.Dispose();
-        //    return (bool) gate;
-        //}
     }
 }

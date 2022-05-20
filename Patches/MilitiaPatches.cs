@@ -230,7 +230,7 @@ namespace BanditMilitias.Patches
     {
         private static Exception Finalizer(TroopRoster __instance, Exception __exception)
         {
-            // throws with Heroes Must Die
+            // throws with Heroes Must Die (old)
             if (__exception is IndexOutOfRangeException)
             {
                 Log("HACK Squelching IndexOutOfRangeException at TroopRoster.AddToCountsAtIndex");
@@ -240,7 +240,6 @@ namespace BanditMilitias.Patches
             // throws during nuke of poor state
             if (__exception is NullReferenceException)
             {
-                Log("HACK Squelching NullReferenceException at TroopRoster.AddToCountsAtIndex");
                 return null;
             }
 

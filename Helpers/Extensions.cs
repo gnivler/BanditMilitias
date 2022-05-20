@@ -22,11 +22,6 @@ namespace BanditMilitias.Helpers
 
         public static bool IsTooBusyToMerge(this MobileParty mobileParty)
         {
-            if (mobileParty == mobileParty?.MoveTargetParty?.MoveTargetParty)
-            {
-                return false;
-            }
-
             return mobileParty.TargetParty is not null
                    || mobileParty.ShortTermTargetParty is not null
                    || mobileParty.ShortTermBehavior is AiBehavior.EngageParty

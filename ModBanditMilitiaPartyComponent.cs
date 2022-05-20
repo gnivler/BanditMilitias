@@ -20,19 +20,20 @@ namespace BanditMilitias
         [SaveableField(2)] public readonly string BannerKey;
         [SaveableField(3)] public CampaignTime LastMergedOrSplitDate = CampaignTime.Now;
         [SaveableField(4)] public Dictionary<Hero, float> Avoidance = new();
-
+        [SaveableField(5)] private Hero leader;
         [CachedData] private TextObject cachedName;
 
+        public override Hero Leader => leader;
         public override Hero PartyOwner => MobileParty.ActualClan?.Leader;
+
         public override Settlement HomeSettlement { get; }
-        public override Hero Leader { get; }
         private static readonly MethodInfo GetLocalizedText = AccessTools.Method(typeof(MBTextManager), "GetLocalizedText");
 
         public override TextObject Name
         {
             get
             {
-                cachedName ??= new TextObject((string)GetLocalizedText.Invoke(null, new object[] { $"{Possess(Leader?.FirstName.ToString())?? "FUCKED UP"} Bandit Militia" }));
+                cachedName ??= new TextObject((string)GetLocalizedText.Invoke(null, new object[] { $"{Possess(Leader.FirstName.ToString())} Bandit Militia" }));
                 cachedName.SetTextVariable("IS_BANDIT", 1);
                 return cachedName;
             }
@@ -56,7 +57,7 @@ namespace BanditMilitias
             var hero = CreateHero(heroClan);
             ConfigureLeader(hero);
             HomeSettlement = hero.BornSettlement;
-            Leader = hero;
+            leader = hero;
             //LogMilitiaFormed(MobileParty);
         }
     }
