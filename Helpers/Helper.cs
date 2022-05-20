@@ -227,7 +227,7 @@ namespace BanditMilitias.Helpers
                 && __instance.Party.MemberRoster.TotalManCount > 0
                 && !__instance.IsTooBusyToMerge()
                 // unfortunately this also means "tracked" BMs too but their distance, so doesn't matter?
-                && !__instance.IsUsedByAQuest() 
+                && !__instance.IsUsedByAQuest()
                 && !verbotenParties.Contains(__instance.StringId))
             {
                 return true;
@@ -959,11 +959,13 @@ namespace BanditMilitias.Helpers
 
         public static void InitMilitia(MobileParty militia, TroopRoster[] rosters, Vec2 position)
         {
+            Traverse.Create(militia.LeaderHero.CharacterObject).Property<CharacterObject[]>("UpgradeTargets").Value = Array.Empty<CharacterObject>();
             var index = Globals.MobilePartyTrackerVM.Trackers.FindIndexQ(t => t.TrackedParty == militia);
             if (index >= 0)
             {
                 Globals.MobilePartyTrackerVM.Trackers.RemoveAt(index);
             }
+
             militia.InitializeMobilePartyAtPosition(rosters[0], rosters[1], position);
             IsBandit(militia) = true;
             MilitiaBehavior.Parties.Add(militia);

@@ -47,7 +47,7 @@ namespace BanditMilitias.Patches
                 var characterObjects =
                     CharacterObject.All.Where(c =>
                         c.Occupation is Occupation.Bandit
-                        && c.Name.Contains("Boss")).ToList().GetReadOnlyList();
+                        && c.Name.ToString().EndsWith("Boss")).ToList().GetReadOnlyList();
 
                 foreach (var clan in Clan.BanditFactions)
                 {

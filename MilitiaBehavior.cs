@@ -57,8 +57,10 @@ namespace BanditMilitias
             });
             CampaignEvents.RaidCompletedEvent.AddNonSerializedListener(this, (b, m) =>
             {
+                if (m.PartiesOnSide(BattleSideEnum.Attacker)
+                    .AnyQ(m => m.Party.MobileParty is not null && m.Party.MobileParty.IsBM()))
                 {
-                    InformationManager.AddQuickInformation(new TextObject($"{m.MapEventSettlement?.Name} successfully raided!"));
+                    InformationManager.AddQuickInformation(new TextObject($"{m.MapEventSettlement?.Name} successfully raided!  {m.PartiesOnSide(BattleSideEnum.Attacker).First().Party.Name} is fat with loot!"));
                 }
             });
             CampaignEvents.TickEvent.AddNonSerializedListener(this, MergingTick);
@@ -221,13 +223,15 @@ namespace BanditMilitias
                 {
                     //SubModule.Log($"{mobileParty} seeking > {targetParty.MobileParty}");
                     mobileParty.SetMoveEscortParty(mobileParty);
-                    mobileParty.Ai.SetDoNotMakeNewDecisions(true);
+                    mobileParty.Ai.SetAIState(AIState.PatrollingAroundLocation);
+                    //mobileParty.Ai.SetDoNotMakeNewDecisions(true);
                     //SubModule.Log($"SetNavigationModeParty ==> {T.ElapsedTicks / 10000F:F3}ms");
                     if (targetParty.MobileParty.MoveTargetParty != mobileParty)
                     {
                         //SubModule.Log($"{targetParty.MobileParty} seeking back > {mobileParty}");
                         targetParty.MobileParty.SetMoveEscortParty(mobileParty);
-                        targetParty.MobileParty.Ai.SetDoNotMakeNewDecisions(true);
+                        targetParty.MobileParty.Ai.SetAIState(AIState.PatrollingAroundLocation);
+                        //targetParty.MobileParty.Ai.SetDoNotMakeNewDecisions(true);
                         //SubModule.Log($"SetNavigationModeTargetParty ==> {T.ElapsedTicks / 10000F:F3}ms");
                     }
 
@@ -346,7 +350,7 @@ namespace BanditMilitias
                                     if (BM.Avoidance.ContainsKey(s.Owner)
                                         && Rng.NextDouble() * 100 <= BM.Avoidance[s.Owner])
                                     {
-                                        Log($"{new string('-', 100)} {mobileParty.Name} Avoiding {s}");
+                                        Log($"{new string('-', 100)} {mobileParty.Name} avoided pillaging {s}");
                                         return false;
                                     }
 
