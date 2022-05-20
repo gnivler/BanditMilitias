@@ -188,5 +188,11 @@ namespace BanditMilitias.Patches
         {
             public static bool Prefix(MobileParty mobileParty) => !mobileParty.IsBandit;
         }
+
+        //[HarmonyPatch(typeof(AiVisitSettlementBehavior), "CalculateVisitHideoutScoresForBanditParty")]
+        //public class AiVisitSettlementBehaviorCalculateVisitHideoutScoresForBanditParty
+        //{
+        //    public static bool Prefix(MobileParty mobileParty) => !mobileParty.IsBandit;
+        //}
     }
 }

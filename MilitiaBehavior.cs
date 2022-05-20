@@ -47,8 +47,7 @@ namespace BanditMilitias
             {
                 if (v.Settlement.Party?.MapEvent is not null
                     && v.Settlement.Party.MapEvent.PartiesOnSide(BattleSideEnum.Attacker)
-                        .AnyQ(m => m.Party?.MobileParty is not null && m.Party.MobileParty.IsBM())
-                    && v.Settlement.Party.MobileParty.IsBM())
+                        .AnyQ(m => m.Party.MobileParty is not null && m.Party.MobileParty.IsBM()))
                 {
                     InformationManager.AddQuickInformation(new TextObject($"{v.Name} is being raided by {v.Settlement.Party.MapEvent.PartiesOnSide(BattleSideEnum.Attacker).First()}!"));
                 }

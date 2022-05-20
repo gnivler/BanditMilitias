@@ -46,7 +46,7 @@ namespace BanditMilitias.Helpers
         // ReSharper disable once InconsistentNaming
         public static bool IsBM(this MobileParty mobileParty)
         {
-            return mobileParty.PartyComponent is ModBanditMilitiaPartyComponent;
+            return mobileParty?.PartyComponent is ModBanditMilitiaPartyComponent;
         }
 
         public static ModBanditMilitiaPartyComponent BM(this MobileParty mobileParty)
