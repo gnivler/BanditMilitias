@@ -1,16 +1,17 @@
 using System.Linq;
-using Bandit_Militias.Helpers;
+using BanditMilitias.Helpers;
 using HarmonyLib;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
 using TaleWorlds.LinQuick;
 using TaleWorlds.Localization;
+using static BanditMilitias.Helpers.Helper;
 
 // ReSharper disable UnusedType.Global
 // ReSharper disable InconsistentNaming
 // ReSharper disable UnusedMember.Local
 
-namespace Bandit_Militias.Patches
+namespace BanditMilitias.Patches
 {
     public static class PrisonerPatches
     {
@@ -32,7 +33,7 @@ namespace Bandit_Militias.Patches
                     var heroes = party.Party.MemberRoster.RemoveIf(t => t.Character.IsHero).ToListQ();
                     for (var i = 0; i < heroes.Count; i++)
                     {
-                        Mod.Log($">>> Killing {heroes[i].Character.Name} ({heroes[i].Character.StringId}) at FinishBattle.");
+                        Log($">>> Killing {heroes[i].Character.Name} ({heroes[i].Character.StringId}) at FinishBattle.");
                         heroes[i].Character.HeroObject.RemoveMilitiaHero();
                     }
 
@@ -41,10 +42,10 @@ namespace Bandit_Militias.Patches
                         party.Party.MobileParty.SetCustomName(new TextObject("Leaderless Bandit Militia"));
                     }
 
-                    Helper.RemoveUndersizedTracker(party.Party);
+                    RemoveUndersizedTracker(party.Party);
                 }
 
-                Helper.DoPowerCalculations();
+                DoPowerCalculations();
             }
         }
 
@@ -67,21 +68,21 @@ namespace Bandit_Militias.Patches
                     // disperse small militias
                     if (party.Party.MobileParty.MemberRoster.TotalManCount < Globals.Settings.DisperseSize)
                     {
-                        Helper.Trash(party.Party.MobileParty);
+                        Trash(party.Party.MobileParty);
                         continue;
                     }
 
                     var heroes = party.Party.MemberRoster.RemoveIf(t => t.Character.IsHero).ToListQ();
                     for (var i = 0; i < heroes.Count; i++)
                     {
-                        Mod.Log($">>> Killing {heroes[i].Character.Name} at LootDefeatedParties.");
+                        Log($">>> Killing {heroes[i].Character.Name} at LootDefeatedParties.");
                         heroes[i].Character.HeroObject.RemoveMilitiaHero();
                     }
 
-                    Helper.RemoveUndersizedTracker(party.Party);
+                    RemoveUndersizedTracker(party.Party);
                 }
 
-                Helper.DoPowerCalculations();
+                DoPowerCalculations();
             }
         }
     }

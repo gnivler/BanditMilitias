@@ -1,22 +1,25 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using Bandit_Militias.Helpers;
+using BanditMilitias.Helpers;
 using HarmonyLib;
+using Helpers;
 using SandBox.View.Map;
 using SandBox.ViewModelCollection;
 using SandBox.ViewModelCollection.MobilePartyTracker;
 using SandBox.ViewModelCollection.Nameplate;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
+using TaleWorlds.CampaignSystem.AgentOrigins;
+using TaleWorlds.CampaignSystem.CampaignBehaviors.AiBehaviors;
+using TaleWorlds.CampaignSystem.Encounters;
+using TaleWorlds.CampaignSystem.GameComponents;
 using TaleWorlds.CampaignSystem.GameMenus;
-using TaleWorlds.CampaignSystem.SandBox.CampaignBehaviors.AiBehaviors;
-using TaleWorlds.CampaignSystem.SandBox.GameComponents.Map;
+using TaleWorlds.CampaignSystem.Party;
+using TaleWorlds.CampaignSystem.Roster;
+using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
-using TaleWorlds.LinQuick;
-using static Bandit_Militias.Helpers.Helper;
-using static Bandit_Militias.Globals;
+using static BanditMilitias.Helpers.Helper;
+using static BanditMilitias.Globals;
 
 // ReSharper disable UnusedMember.Global 
 // ReSharper disable UnusedType.Global   
@@ -24,164 +27,11 @@ using static Bandit_Militias.Globals;
 // ReSharper disable RedundantAssignment  
 // ReSharper disable InconsistentNaming
 
-namespace Bandit_Militias.Patches
+namespace BanditMilitias.Patches
 {
     public static class MilitiaPatches
     {
-        private static float lastChecked;
-
-        [HarmonyPatch(typeof(Campaign), "Tick")]
-        public static class CampaignTickPatch
-        {
-            // main merge method
-            private static void Postfix()
-            {
-                if (Campaign.Current.TimeControlMode == CampaignTimeControlMode.Stop
-                    || Campaign.Current.TimeControlMode == CampaignTimeControlMode.UnstoppableFastForwardForPartyWaitTime
-                    || Campaign.Current.TimeControlMode == CampaignTimeControlMode.FastForwardStop
-                    || Campaign.Current.TimeControlMode == CampaignTimeControlMode.StoppableFastForward)
-                {
-                    return;
-                }
-
-                // don't run this if paused and unless 3% off power limit
-                if (Campaign.CurrentTime - lastChecked < 1f
-                    || MilitiaPowerPercent + MilitiaPowerPercent / 100 * 0.03 > Globals.Settings.GlobalPowerPercent)
-                {
-                    return;
-                }
-
-                lastChecked = Campaign.CurrentTime;
-                var parties = MobileParty.All.Where(m =>
-                        m.Party.IsMobile
-                        && m.CurrentSettlement is null
-                        && !m.IsUsedByAQuest()
-                        && m.IsBandit
-                        && m.MemberRoster.TotalManCount >= Globals.Settings.MergeableSize)
-                    .ToListQ();
-                for (var index = 0; index < parties.Count; index++)
-                {
-                    var mobileParty = parties[index];
-                    if (Hideouts.AnyQ(s => Campaign.Current.Models.MapDistanceModel.GetDistance(mobileParty, s) < MinDistanceFromHideout))
-                    {
-                        continue;
-                    }
-
-                    if (mobileParty.IsTooBusyToMerge())
-                    {
-                        continue;
-                    }
-
-                    var nearbyParties = MobileParty.FindPartiesAroundPosition(mobileParty.Position2D, FindRadius)
-                        .Intersect(parties)
-                        .ToListQ();
-                    nearbyParties.Remove(mobileParty);
-                    if (!nearbyParties.Any())
-                    {
-                        continue;
-                    }
-
-                    if (mobileParty.ToString().Contains("manhunter")) // Calradia Expanded Kingdoms
-                    {
-                        continue;
-                    }
-
-                    if (mobileParty.IsBM() && PartyMilitiaMap.TryGetValue(mobileParty, out var BM))
-                    {
-                        if (CampaignTime.Now < BM?.LastMergedOrSplitDate + CampaignTime.Hours(Globals.Settings.CooldownHours))
-                        {
-                            continue;
-                        }
-
-                        if (BM is null)
-                        {
-                            Mod.Log($"{new string('*', 100)} Why is {mobileParty} not in the PartyMilitiaMap?");
-                            Debugger.Break();
-                        }
-                    }
-
-                    var targetParties = nearbyParties.Where(m =>
-                        m.MemberRoster.TotalManCount + mobileParty.MemberRoster.TotalManCount >= Globals.Settings.MinPartySize
-                        && IsAvailableBanditParty(m)).ToListQ();
-
-                    var targetParty = targetParties?.GetRandomElement()?.Party;
-
-                    //Mod.Log($">T targetParty {T.ElapsedTicks / 10000F:F3}ms.");
-                    // "nobody" is a valid answer
-                    if (targetParty is null)
-                    {
-                        continue;
-                    }
-
-                    if (targetParty.MobileParty.IsBM())
-                    {
-                        CampaignTime? targetLastChangeDate = PartyMilitiaMap[targetParty.MobileParty].LastMergedOrSplitDate;
-                        if (CampaignTime.Now < targetLastChangeDate + CampaignTime.Hours(Globals.Settings.CooldownHours))
-                        {
-                            continue;
-                        }
-                    }
-
-                    var militiaTotalCount = mobileParty.MemberRoster.TotalManCount + targetParty.MemberRoster.TotalManCount;
-                    if (MilitiaPowerPercent > Globals.Settings.GlobalPowerPercent
-                        || militiaTotalCount > CalculatedMaxPartySize
-                        || militiaTotalCount < Globals.Settings.MinPartySize
-                        || NumMountedTroops(mobileParty.MemberRoster) + NumMountedTroops(targetParty.MemberRoster) > militiaTotalCount / 2)
-                    {
-                        continue;
-                    }
-
-                    //Mod.Log($"==> counted {T.ElapsedTicks / 10000F:F3}ms.");
-                    if (mobileParty != targetParty.MobileParty.MoveTargetParty &&
-                        Campaign.Current.Models.MapDistanceModel.GetDistance(targetParty.MobileParty, mobileParty) > MergeDistance)
-                    {
-                        //Mod.Log($"{mobileParty} seeking > {targetParty.MobileParty}");
-                        mobileParty.SetMoveEscortParty(targetParty.MobileParty);
-                        //Mod.Log($"SetNavigationModeParty ==> {T.ElapsedTicks / 10000F:F3}ms");
-
-                        if (targetParty.MobileParty.MoveTargetParty != mobileParty)
-                        {
-                            //Mod.Log($"{targetParty.MobileParty} seeking back > {mobileParty}");
-                            targetParty.MobileParty.SetMoveEscortParty(mobileParty);
-                            //Mod.Log($"SetNavigationModeTargetParty ==> {T.ElapsedTicks / 10000F:F3}ms");
-                        }
-
-                        continue;
-                    }
-
-                    //Mod.Log($"==> found settlement {T.ElapsedTicks / 10000F:F3}ms."); 
-                    // create a new party merged from the two           
-                    var rosters = MergeRosters(mobileParty, targetParty);
-                    var militia = new Militia(mobileParty.Position2D, rosters[0], rosters[1]);
-                    // teleport new militias near the player
-                    if (Globals.Settings.TestingMode)
-                    {
-                        // in case a prisoner
-                        var party = Hero.MainHero.PartyBelongedTo ?? Hero.MainHero.PartyBelongedToAsPrisoner.MobileParty;
-                        militia.MobileParty.Position2D = party.Position2D;
-                    }
-
-                    militia.MobileParty.Party.Visuals.SetMapIconAsDirty();
-                    try
-                    {
-                        // can throw if Clan is null
-                        Trash(mobileParty);
-                        Trash(targetParty.MobileParty);
-                    }
-                    catch (Exception ex)
-                    {
-                        Mod.Log(ex);
-                    }
-
-                    DoPowerCalculations();
-                    //Mod.Log($"==> Finished all work: {T.ElapsedTicks / 10000F:F3}ms.");
-                }
-
-                //Mod.Log($"Looped ==> {T.ElapsedTicks / 10000F:F3}ms");
-            }
-        }
-
-        public static class DefaultPartySpeedCalculatingModelCalculatePureSpeedPatch
+        public static class CalculatePureSpeed
         {
             public static void Postfix(MobileParty mobileParty, ref ExplainedNumber __result)
             {
@@ -208,7 +58,8 @@ namespace Bandit_Militias.Patches
                     characterObject.HeroObject?.PartyBelongedTo is not null &&
                     characterObject.HeroObject.PartyBelongedTo.IsBM())
                 {
-                    bannerKey = PartyMilitiaMap[characterObject.HeroObject.PartyBelongedTo].BannerKey;
+                    var component = (ModBanditMilitiaPartyComponent)characterObject.HeroObject.PartyBelongedTo.PartyComponent;
+                    bannerKey = component.BannerKey;
                 }
             }
         }
@@ -223,10 +74,7 @@ namespace Bandit_Militias.Patches
                     __instance.MobileParty is not null &&
                     __instance.MobileParty.IsBM())
                 {
-                    if (PartyMilitiaMap.ContainsKey(__instance.MobileParty))
-                    {
-                        __result = PartyMilitiaMap[__instance.MobileParty].Banner;
-                    }
+                    __result = __instance.MobileParty.BM().Banner;
                 }
             }
         }
@@ -242,20 +90,21 @@ namespace Bandit_Militias.Patches
                     party.MobileParty is not null &&
                     party.MobileParty.IsBM())
                 {
-                    __result = PartyMilitiaMap[party.MobileParty]?.Banner;
+                    __result = party.MobileParty?.BM().Banner;
                 }
             }
         }
 
         [HarmonyPatch(typeof(EnterSettlementAction), "ApplyForParty")]
-        public static class EnterSettlementActionApplyInternalPatch
+        public static class EnterSettlementActionApplyForPartyPatch
         {
             private static bool Prefix(MobileParty mobileParty, Settlement settlement)
             {
                 if (mobileParty.PartyComponent is ModBanditMilitiaPartyComponent)
                 {
-                    Mod.Log($"Preventing {mobileParty} from entering {settlement.Name}");
-                    SetMilitiaPatrol(mobileParty);
+                    Log($"Preventing {mobileParty} from entering {settlement.Name}");
+                    SetPartyAiAction.GetActionForPatrollingAroundSettlement(mobileParty, SettlementHelper.GetRandomTown());
+                    mobileParty.Ai.SetAIState(AIState.PatrollingAroundLocation);
                     return false;
                 }
 
@@ -267,7 +116,7 @@ namespace Bandit_Militias.Patches
         [HarmonyPatch(typeof(PartyNameplateVM), "RefreshDynamicProperties")]
         public static class PartyNameplateVMRefreshDynamicPropertiesPatch
         {
-            private static readonly Dictionary<MobileParty, string> Map = new Dictionary<MobileParty, string>();
+            private static readonly Dictionary<MobileParty, string> Map = new();
 
             private static void Postfix(PartyNameplateVM __instance, ref string ____fullNameBind)
             {
@@ -282,7 +131,7 @@ namespace Bandit_Militias.Patches
                 if (Map.ContainsKey(__instance.Party))
                 {
                     ____fullNameBind = Map[__instance.Party];
-                    //Mod.Log(T.ElapsedTicks);
+                    //SubModule.Log(T.ElapsedTicks);
                     return;
                 }
 
@@ -291,9 +140,9 @@ namespace Bandit_Militias.Patches
                     return;
                 }
 
-                Map.Add(__instance.Party, PartyMilitiaMap[__instance.Party].Name);
+                Map.Add(__instance.Party, __instance.Party.BM().Name.ToString());
                 ____fullNameBind = Map[__instance.Party];
-                //Mod.Log(T.ElapsedTicks);
+                //SubModule.Log(T.ElapsedTicks);
             }
         }
 
@@ -321,7 +170,7 @@ namespace Bandit_Militias.Patches
             {
                 if (__result
                     && !targetParty.IsGarrison
-                    && __instance.PartyComponent is ModBanditMilitiaPartyComponent)
+                    && __instance.IsBM())
                 {
                     if (Globals.Settings.IgnoreVillagersCaravans
                         && targetParty.IsCaravan || targetParty.IsVillager)
@@ -330,99 +179,107 @@ namespace Bandit_Militias.Patches
                         return;
                     }
 
-                    var party1Strength = __instance.GetTotalStrengthWithFollowers();
-                    var party2Strength = targetParty.GetTotalStrengthWithFollowers();
-                    float delta;
-                    if (party1Strength > party2Strength)
+                    if (targetParty.LeaderHero is not null
+                        && __instance.BM().Avoidance.TryGetValue(targetParty.LeaderHero, out var heroAvoidance)
+                        && Rng.NextDouble() * 100 < heroAvoidance)
                     {
-                        delta = party1Strength - party2Strength;
+                        Log($"{new string('-', 100)} {__instance.Name} avoided attacking {targetParty.Name}");
+                        __result = false;
+                        return;
                     }
-                    else
-                    {
-                        delta = party2Strength - party1Strength;
-                    }
-
-                    var deltaPercent = delta / party1Strength * 100;
-                    __result = deltaPercent <= Globals.Settings.MaxStrengthDeltaPercent;
                 }
+
+                var party1Strength = __instance.GetTotalStrengthWithFollowers();
+                var party2Strength = targetParty.GetTotalStrengthWithFollowers();
+                float delta;
+                if (party1Strength > party2Strength)
+                {
+                    delta = party1Strength - party2Strength;
+                }
+                else
+                {
+                    delta = party2Strength - party1Strength;
+                }
+
+                var deltaPercent = delta / party1Strength * 100;
+                __result = deltaPercent <= Globals.Settings.MaxStrengthDeltaPercent;
             }
         }
+    }
 
-        // force Heroes to die in simulated combat
-        [HarmonyPriority(Priority.High)]
-        [HarmonyPatch(typeof(SPScoreboardVM), "TroopNumberChanged")]
-        public static class SPScoreboardVMTroopNumberChangedPatch
+    // force Heroes to die in simulated combat
+    [HarmonyPriority(Priority.High)]
+    [HarmonyPatch(typeof(SPScoreboardVM), "TroopNumberChanged")]
+    public static class SPScoreboardVMTroopNumberChangedPatch
+    {
+        private static void Prefix(BasicCharacterObject character, ref int numberDead, ref int numberWounded)
         {
-            private static void Prefix(BasicCharacterObject character, ref int numberDead, ref int numberWounded)
+            var c = (CharacterObject)character;
+            if (numberWounded > 0
+                && c.HeroObject?.PartyBelongedTo is not null
+                && c.HeroObject.PartyBelongedTo.IsBM())
             {
-                var c = (CharacterObject)character;
-                if (numberWounded > 0
-                    && c.HeroObject?.PartyBelongedTo is not null
-                    && c.HeroObject.PartyBelongedTo.IsBM())
-                {
-                    numberDead = 1;
-                    numberWounded = 0;
-                }
+                numberDead = 1;
+                numberWounded = 0;
             }
         }
+    }
 
-        [HarmonyPatch(typeof(TroopRoster), "AddToCountsAtIndex")]
-        public static class TroopRosterAddToCountsAtIndexPatch
+    [HarmonyPatch(typeof(TroopRoster), "AddToCountsAtIndex")]
+    public static class TroopRosterAddToCountsAtIndexPatch
+    {
+        private static Exception Finalizer(TroopRoster __instance, Exception __exception)
         {
-            private static Exception Finalizer(TroopRoster __instance, Exception __exception)
+            // throws with Heroes Must Die (old)
+            if (__exception is IndexOutOfRangeException)
             {
-                // throws with Heroes Must Die
-                if (__exception is IndexOutOfRangeException)
-                {
-                    Mod.Log("HACK Squelching IndexOutOfRangeException at TroopRoster.AddToCountsAtIndex");
-                    return null;
-                }
+                Log("HACK Squelching IndexOutOfRangeException at TroopRoster.AddToCountsAtIndex");
+                return null;
+            }
 
-                // throws during nuke of poor state
-                if (__exception is NullReferenceException)
-                {
-                    Mod.Log("HACK Squelching NullReferenceException at TroopRoster.AddToCountsAtIndex");
-                    return null;
-                }
+            // throws during nuke of poor state
+            if (__exception is NullReferenceException)
+            {
+                return null;
+            }
 
-                return __exception;
+            return __exception;
+        }
+    }
+
+    // changes the optional Tracker icons to match banners
+    [HarmonyPatch(typeof(MobilePartyTrackItemVM), "UpdateProperties")]
+    public static class MobilePartyTrackItemVMUpdatePropertiesPatch
+    {
+        public static void Postfix(MobilePartyTrackItemVM __instance, ref ImageIdentifierVM ____factionVisualBind)
+        {
+            if (__instance.TrackedParty is not null
+                && PartyImageMap.ContainsKey(__instance.TrackedParty))
+            {
+                ____factionVisualBind = PartyImageMap[__instance.TrackedParty];
             }
         }
+    }
 
-        // changes the optional Tracker icons to match banners
-        [HarmonyPatch(typeof(MobilePartyTrackItemVM), "UpdateProperties")]
-        public static class MobilePartyTrackItemVMUpdatePropertiesPatch
+    // skip the regular bandit AI stuff, looks at moving into hideouts
+    // and other stuff I don't really want happening
+    [HarmonyPatch(typeof(AiBanditPatrollingBehavior), "AiHourlyTick")]
+    public static class AiBanditPatrollingBehaviorAiHourlyTickPatch
+    {
+        public static bool Prefix(MobileParty mobileParty)
         {
-            public static void Postfix(MobilePartyTrackItemVM __instance, ref ImageIdentifierVM ____factionVisualBind)
-            {
-                if (__instance.TrackedParty is not null
-                    && PartyImageMap.ContainsKey(__instance.TrackedParty))
-                {
-                    ____factionVisualBind = PartyImageMap[__instance.TrackedParty];
-                }
-            }
+            return false;//!mobileParty.IsBM();
         }
+    }
 
-        // skip the regular bandit AI stuff, looks at moving into hideouts
-        // and other stuff I don't really want happening
-        [HarmonyPatch(typeof(AiBanditPatrollingBehavior), "AiHourlyTick")]
-        public static class AiBanditPatrollingBehaviorAiHourlyTickPatch
+    [HarmonyPatch(typeof(DefaultMobilePartyFoodConsumptionModel), "DoesPartyConsumeFood")]
+    public static class DefaultMobilePartyFoodConsumptionModelDoesPartyConsumeFoodPatch
+    {
+        public static void Postfix(MobileParty mobileParty, ref bool __result)
         {
-            public static bool Prefix(MobileParty mobileParty)
+            if (mobileParty.IsBM())
             {
-                return !mobileParty.IsBM();
-            }
-        }
-
-        [HarmonyPatch(typeof(DefaultMobilePartyFoodConsumptionModel), "DoesPartyConsumeFood")]
-        public static class DefaultMobilePartyFoodConsumptionModelDoesPartyConsumeFoodPatch
-        {
-            public static void Postfix(MobileParty mobileParty, ref bool __result)
-            {
-                if (mobileParty.IsBM())
-                {
-                    __result = false;
-                }
+                __result = false;
             }
         }
     }

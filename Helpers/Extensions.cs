@@ -2,47 +2,55 @@ using System.Collections.Generic;
 using HarmonyLib;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
+using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.ObjectSystem;
 
-namespace Bandit_Militias.Helpers
+namespace BanditMilitias.Helpers
 {
     public static class Extensions
     {
-        private static readonly AccessTools.FieldRef<CampaignObjectManager, List<Hero>> aliveHeroes = AccessTools.FieldRefAccess<CampaignObjectManager, List<Hero>>("_aliveHeroes");
-        private static readonly AccessTools.FieldRef<CampaignObjectManager, List<Hero>> deadOrDisabledHeroes = AccessTools.FieldRefAccess<CampaignObjectManager, List<Hero>>("_deadOrDisabledHeroes");
+        private static readonly AccessTools.FieldRef<CampaignObjectManager, List<Hero>> AliveHeroes =
+            AccessTools.FieldRefAccess<CampaignObjectManager, List<Hero>>("_aliveHeroes");
 
-        internal static bool IsUsedByAQuest(this MobileParty mobileParty)
+        private static readonly AccessTools.FieldRef<CampaignObjectManager, List<Hero>> DeadOrDisabledHeroes =
+            AccessTools.FieldRefAccess<CampaignObjectManager, List<Hero>>("_deadOrDisabledHeroes");
+
+        public static bool IsUsedByAQuest(this MobileParty mobileParty)
         {
             return Campaign.Current.VisualTrackerManager.CheckTracked(mobileParty);
         }
 
-        internal static bool IsTooBusyToMerge(this MobileParty mobileParty)
+        public static bool IsTooBusyToMerge(this MobileParty mobileParty)
         {
-            // moving to merge
-            if (mobileParty == mobileParty?.MoveTargetParty?.MoveTargetParty)
-            {
-                return true;
-            }
-
             return mobileParty.TargetParty is not null
-                   || mobileParty.ShortTermBehavior
-                       is AiBehavior.EngageParty
-                       or AiBehavior.FleeToPoint;
+                   || mobileParty.ShortTermTargetParty is not null
+                   || mobileParty.ShortTermBehavior is AiBehavior.EngageParty
+                       or AiBehavior.FleeToPoint
+                       or AiBehavior.RaidSettlement;
         }
 
-        internal static void RemoveMilitiaHero(this Hero hero)
+        public static void RemoveMilitiaHero(this Hero hero)
         {
             Traverse.Create(typeof(KillCharacterAction)).Method("MakeDead", hero).GetValue();
-            aliveHeroes(Campaign.Current.CampaignObjectManager).Remove(hero);
-            deadOrDisabledHeroes(Campaign.Current.CampaignObjectManager).Remove(hero);
+            AliveHeroes(Campaign.Current.CampaignObjectManager).Remove(hero);
+            DeadOrDisabledHeroes(Campaign.Current.CampaignObjectManager).Remove(hero);
             MBObjectManager.Instance.UnregisterObject(hero.CharacterObject);
             MBObjectManager.Instance.UnregisterObject(hero);
         }
 
         // ReSharper disable once InconsistentNaming
-        internal static bool IsBM(this MobileParty mobileParty)
+        public static bool IsBM(this MobileParty mobileParty)
         {
-            return mobileParty.PartyComponent is ModBanditMilitiaPartyComponent;
+            return mobileParty?.PartyComponent is ModBanditMilitiaPartyComponent;
+        }
+
+        public static ModBanditMilitiaPartyComponent BM(this MobileParty mobileParty)
+        {
+            if (mobileParty.PartyComponent is ModBanditMilitiaPartyComponent bm)
+            {
+                return bm;
+            }
+            return null;
         }
     }
 }

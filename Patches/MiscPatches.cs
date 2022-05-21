@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using BanditMilitias.Helpers;
 using HarmonyLib;
 using Helpers;
 using SandBox.View.Map;
@@ -11,8 +12,10 @@ using TaleWorlds.CampaignSystem.SandBox.GameComponents;
 using TaleWorlds.Core;
 using TaleWorlds.Engine;
 using TaleWorlds.Library;
-using static Bandit_Militias.Helpers.Helper;
-using static Bandit_Militias.Globals;
+using TaleWorlds.LinQuick;
+using TaleWorlds.Localization;
+using static BanditMilitias.Helpers.Helper;
+using static BanditMilitias.Globals;
 
 // ReSharper disable UnusedMember.Global
 // ReSharper disable UnusedType.Global
@@ -20,7 +23,7 @@ using static Bandit_Militias.Globals;
 // ReSharper disable RedundantAssignment
 // ReSharper disable InconsistentNaming
 
-namespace Bandit_Militias.Patches
+namespace BanditMilitias.Patches
 {
     public static class MiscPatches
     {
@@ -29,16 +32,16 @@ namespace Bandit_Militias.Patches
         {
             private static void Postfix()
             {
-                Mod.Log("MapScreen.OnInitialize");
+                Log("MapScreen.OnInitialize");
                 EquipmentItems.Clear();
                 PopulateItems();
 
                 // 1.7 changed CreateHeroAtOccupation to only fish from this: NotableAndWandererTemplates
-                // this has no effect on 1.6.5 since the property doesn't exist
+                // this has no effect on earlier versions since the property doesn't exist
                 var characterObjects =
                     CharacterObject.All.Where(c =>
                         c.Occupation is Occupation.Bandit
-                        && c.Name.Contains("Boss")).ToList().GetReadOnlyList();
+                        && c.Name.ToString().EndsWith("Boss")).ToList().GetReadOnlyList();
 
                 foreach (var clan in Clan.BanditFactions)
                 {
@@ -68,7 +71,7 @@ namespace Bandit_Militias.Patches
                         Recruits.Add(recruit.Culture, new List<CharacterObject> { recruit });
                     }
                 }
-                
+
                 // used for armour
                 foreach (ItemObject.ItemTypeEnum value in Enum.GetValues(typeof(ItemObject.ItemTypeEnum)))
                 {
@@ -83,25 +86,14 @@ namespace Bandit_Militias.Patches
                     BanditEquipment.Add(BuildViableEquipmentSet());
                 }
 
-                PartyMilitiaMap.Clear();
+                PartyImageMap.Clear();
                 Hideouts = Settlement.FindAll(x => x.IsHideout).ToList();
-
-                // considers leaderless militias
-                var militias = MobileParty.All.Where(m =>
-                    m.LeaderHero is not null && m.StringId.StartsWith("Bandit_Militia")).ToList();
-
-                for (var i = 0; i < militias.Count; i++)
-                {
-                    var militia = militias[i];
-                    var recreatedMilitia = new Militia(militia);
-                    SetMilitiaPatrol(recreatedMilitia.MobileParty);
-                }
-
                 DoPowerCalculations(true);
-                FlushMilitiaCharacterObjects();
-                // 1.6 is dropping the militia settlements at some point, I haven't figured out where
-                ReHome();
-                Mod.Log($"Militias: {militias.Count} (registered {PartyMilitiaMap.Count})");
+                MilitiaBehavior.FlushMilitiaCharacterObjects();
+                var bmCount = MobileParty.All.CountQ(m => m.PartyComponent is ModBanditMilitiaPartyComponent);
+                Log($"Militias: {bmCount}");
+                InformationManager.AddQuickInformation(new TextObject($"{bmCount} Bandit Militias!"));
+                //Log($"Militias: {militias.Count} (registered {PartyMilitiaMap.Count})");
                 RunLateManualPatches();
             }
         }
@@ -122,43 +114,44 @@ namespace Bandit_Militias.Patches
         {
             public static Exception Finalizer(Exception __exception, PartyBase party, FeatObject feat)
             {
-                if (__exception is not null)
+                if (__exception is not null
+                    && party.LeaderHero.Culture.Name is null)
                 {
+                    party.LeaderHero.Culture = Clan.BanditFactions.GetRandomElementInefficiently().Culture;
+                    Log($"{party.LeaderHero} has a fucked up Culture - fixed");
                     Debugger.Break();
+                    return null;
                 }
 
-                return null;
+                return __exception;
             }
         }
 
         // TODO find root causes, remove finalizers
-        // maybe BM heroes being considered for troop upgrade - no upgrade targets though
+        // BM heroes seem to have null UpgradeTargets[] at load time, randomly
         [HarmonyPatch(typeof(DefaultPartyTroopUpgradeModel), "CanTroopGainXp")]
         public static class DefaultPartyTroopUpgradeModelCanTroopGainXp
         {
-            public static Exception Finalizer(Exception __exception, PartyBase owner, CharacterObject character)
+            public static Exception Finalizer(Exception __exception, PartyBase owner)
             {
-                if (__exception is not null)
+                if (__exception is not null
+                    && owner.MobileParty is not null
+                    && owner.MobileParty.IsBM())
                 {
-                    Debugger.Break();
+                    return null;
                 }
 
-                return null;
+                return __exception;
             }
         }
 
-        // TODO find root causes, remove finalizers
-        [HarmonyPatch(typeof(Hero), "SetInitialValuesFromCharacter")]
-        public class HeroSetInitialValuesFromCharacter
+        [HarmonyPatch(typeof(SaveableCampaignTypeDefiner), "DefineContainerDefinitions")]
+        public class SaveableCampaignTypeDefinerDefineContainerDefinitions
         {
-            public static Exception Finalizer(Hero __instance, CharacterObject characterObject, Exception __exception)
+            public static void Postfix(SaveableCampaignTypeDefiner __instance)
             {
-                if (__exception is not null)
-                {
-                    Debugger.Break();
-                }
-
-                return null;
+                AccessTools.Method(typeof(CampaignBehaviorBase.SaveableCampaignBehaviorTypeDefiner),
+                    "ConstructContainerDefinition").Invoke(__instance, new object[] { typeof(Dictionary<Hero, float>) });
             }
         }
     }

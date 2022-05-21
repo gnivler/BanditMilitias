@@ -10,7 +10,7 @@ using MCM.Abstractions.Dropdown;
 using MCM.Abstractions.Settings.Base;
 using MCM.Abstractions.Settings.Base.Global;
 
-namespace Bandit_Militias
+namespace BanditMilitias
 {
     public class Settings : AttributeGlobalSettings<Settings>
     {
@@ -41,16 +41,16 @@ namespace Bandit_Militias
         }
 
         public override string FormatType => "json";
-        public override string FolderName => "Bandit Militias";
+        public override string FolderName => "BanditMilitias";
 
         [SettingPropertyBool("Train Militias", HintText = "\nBandit heroes will train their militias.", Order = 0, RequireRestart = false)]
         [SettingPropertyGroup("Primary Settings", GroupOrder = 0)]
         public bool CanTrain { get; private set; } = true;
 
-       [SettingPropertyInteger("Daily Training Chance", 0, 100, HintText = "\nEach day they might train further.", Order = 1, RequireRestart = false)]
-       [SettingPropertyGroup("Primary Settings", GroupOrder = 1)]
-       public float TrainingChance { get; set; } = 10;
-        
+        [SettingPropertyInteger("Daily Training Chance", 0, 100, HintText = "\nEach day they might train further.", Order = 1, RequireRestart = false)]
+        [SettingPropertyGroup("Primary Settings", GroupOrder = 1)]
+        public float TrainingChance { get; set; } = 10;
+
         [SettingPropertyDropdown("Militia XP Boost", HintText = "\nHardest grants enough XP to significantly upgrade troops.  Off grants no bonus XP.", Order = 2, RequireRestart = false)]
         [SettingPropertyGroup("Primary Settings")]
         public DropdownDefault<string> XpGift { get; private set; } = new(Globals.DifficultyXpMap.Keys, 1);
@@ -75,7 +75,7 @@ namespace Bandit_Militias
         [SettingPropertyGroup("Primary Settings")]
         public int SpawnChance { get; private set; } = 30;
 
-        [SettingPropertyInteger("Change Cooldown", 1, 168, HintText = "\nBM won't merge or split a second time until this many hours go by.", Order = 8, RequireRestart = false)]
+        [SettingPropertyInteger("Change Cooldown", 0, 168, HintText = "\nBM won't merge or split a second time until this many hours go by.", Order = 8, RequireRestart = false)]
         [SettingPropertyGroup("Primary Settings")]
         public int CooldownHours { get; private set; } = 24;
 
@@ -87,17 +87,17 @@ namespace Bandit_Militias
         [SettingPropertyGroup("Size Adjustments", GroupOrder = 2)]
         public int DisperseSize { get; private set; } = 20;
 
-        [SettingPropertyInteger("Minimum Size", 0, 100, HintText = "\nNo BMs smaller than this will form.", Order = 1, RequireRestart = false)]
+        [SettingPropertyInteger("Minimum Size", 1, 100, HintText = "\nNo BMs smaller than this will form.", Order = 1, RequireRestart = false)]
         [SettingPropertyGroup("Size Adjustments")]
         public int MinPartySize { get; private set; } = 20;
 
-        [SettingPropertyInteger("Mergeable party size", 10, 100, HintText = "\nSmall looter and bandit parties won't merge.", Order = 1, RequireRestart = false)]
+        [SettingPropertyInteger("Mergeable party size", 1, 100, HintText = "\nSmall looter and bandit parties won't merge.", Order = 1, RequireRestart = false)]
         [SettingPropertyGroup("Size Adjustments")]
         public int MergeableSize { get; private set; } = 10;
 
         [SettingPropertyInteger("Random Split Chance", 0, 100, HintText = "\nHow likely BM is to split when large enough.", Order = 2, RequireRestart = false)]
         [SettingPropertyGroup("Militia Adjustments", GroupOrder = 1)]
-        public int RandomSplitChance { get; private set; } = 25;
+        public int RandomSplitChance { get; private set; } = 10;
 
         [SettingPropertyInteger("Max Item Value", 1000, 1000000, HintText = "\nLimit the per-piece value of equipment given to the Heroes.\nMostly for when other mods give you Hero loot.", Order = 7, RequireRestart = false)]
         [SettingPropertyGroup("Militia Adjustments")]
@@ -113,7 +113,7 @@ namespace Bandit_Militias
 
         [SettingPropertyInteger("Global Power", 0, 1000, HintText = "\nMajor setting.  Setting higher means more, bigger BMs.", Order = 11, RequireRestart = false)]
         [SettingPropertyGroup("Militia Adjustments")]
-        public int GlobalPowerPercent { get; private set; } = 15;
+        public int GlobalPowerPercent { get; set; } = 15;
 
         [SettingPropertyInteger("Max Training Tier", 1, 6, HintText = "\nBM won't train any units past this tier.", Order = 13, RequireRestart = false)]
         [SettingPropertyGroup("Militia Adjustments")]
@@ -127,10 +127,10 @@ namespace Bandit_Militias
         public bool Trackers { get; private set; } = false;
 
         [SettingPropertyInteger("Minimum BM Size To Track", 1, 500, HintText = "Any smaller BMs won't be tracked.", Order = 1, RequireRestart = false)]
-        public int TrackedSizeMinimum { get; internal set; } = 50;
+        public int TrackedSizeMinimum { get; private set; } = 50;
 
         [SettingPropertyBool("Random Banners", HintText = "\nBMs will have unique banners, or basic bandit clan ones.", Order = 1, RequireRestart = false)]
-        public bool RandomBanners { get; internal set; } = true;
+        public bool RandomBanners { get; set; } = true;
 
         [SettingPropertyBool("Debug Logging", HintText = "\nCreates logfile output in the mod folder.", Order = 3, RequireRestart = false)]
         public bool Debug { get; set; }
@@ -139,7 +139,7 @@ namespace Bandit_Militias
         public bool TestingMode { get; set; }
 
         private string id = "BanditMilitias";
-        private string displayName = $"Bandit Militias {typeof(Settings).Assembly.GetName().Version.ToString(3)}";
+        private string displayName = $"BanditMilitias {typeof(Settings).Assembly.GetName().Version.ToString(3)}";
 
         public override string Id => id;
         public override string DisplayName => displayName;

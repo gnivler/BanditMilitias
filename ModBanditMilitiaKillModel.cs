@@ -3,7 +3,7 @@ using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
 using TaleWorlds.MountAndBlade;
 
-namespace Bandit_Militias
+namespace BanditMilitias
 {
     public class ModBanditMilitiaKillModel : DefaultAgentDecideKilledOrUnconsciousModel
     {
