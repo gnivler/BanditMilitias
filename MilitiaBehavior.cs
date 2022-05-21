@@ -28,10 +28,8 @@ namespace BanditMilitias
 {
     public class MilitiaBehavior : CampaignBehaviorBase
     {
-        private static float lastChecked;
         private const double smallChance = 0.001;
         private static int cap;
-        private const int CheckInterval = 1;
         private const float increment = 5;
         private const float effectRadius = 100;
         private const int AdjustRadius = 50;
@@ -45,7 +43,9 @@ namespace BanditMilitias
         {
             CampaignEvents.VillageBeingRaided.AddNonSerializedListener(this, v =>
             {
-                if (v.Settlement.Party?.MapEvent is not null
+                if (Globals.Settings.ShowRaids
+                    && v.Owner?.LeaderHero == Hero.MainHero
+                    && v.Settlement.Party?.MapEvent is not null
                     && v.Settlement.Party.MapEvent.PartiesOnSide(BattleSideEnum.Attacker)
                         .AnyQ(m => m.Party.MobileParty is not null && m.Party.MobileParty.IsBM()))
                 {

@@ -132,11 +132,15 @@ namespace BanditMilitias
         [SettingPropertyBool("Random Banners", HintText = "\nBMs will have unique banners, or basic bandit clan ones.", Order = 1, RequireRestart = false)]
         public bool RandomBanners { get; set; } = true;
 
+        [SettingPropertyBool("Village raid notices", HintText = "\\When your fiefs are raided you'll see a banner message.", Order = 2, RequireRestart = false)]
+        public bool ShowRaids { get; set; } = true;
+
         [SettingPropertyBool("Debug Logging", HintText = "\nCreates logfile output in the mod folder.", Order = 3, RequireRestart = false)]
         public bool Debug { get; set; }
 
         [SettingPropertyBool("Testing Mode", HintText = "Teleports BMs to you.", Order = 4, RequireRestart = false)]
         public bool TestingMode { get; set; }
+
 
         private string id = "BanditMilitias";
         private string displayName = $"BanditMilitias {typeof(Settings).Assembly.GetName().Version.ToString(3)}";
