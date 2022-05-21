@@ -8,7 +8,7 @@
     <Nullable>disable</Nullable>
     <ModuleName>$(MSBuildProjectName)</ModuleName>
     <GameFolder>$(BANNERLORD_GAME_DIR)</GameFolder>
-    <GameVersion>1.7.2</GameVersion>
+    <GameVersion>1.7.1</GameVersion>
     <PackageVersion>3.7.0</PackageVersion>
   </PropertyGroup>
 
