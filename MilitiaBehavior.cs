@@ -286,7 +286,9 @@ namespace BanditMilitias
                             mobileParty.Ai.SetAIState(AIState.PatrollingAroundLocation);
                             break;
                         case AIState.PatrollingAroundLocation:
-                            if (mobileParty.LeaderHero is not null
+                            // PILLAGE!
+                            if (Globals.Settings.AllowPillaging
+                                && mobileParty.LeaderHero is not null
                                 && mobileParty.Party.TotalStrength > MilitiaPartyAveragePower
                                 && Rng.NextDouble() < smallChance
                                 && GetCachedBMs().CountQ(m => m.MobileParty.ShortTermBehavior is AiBehavior.RaidSettlement) <= cap)
