@@ -268,7 +268,6 @@ namespace BanditMilitias.Helpers
 
         public static void Trash(MobileParty mobileParty)
         {
-            MilitiaBehavior.Parties.Remove(mobileParty);
             mobileParty.LeaderHero?.RemoveMilitiaHero();
 
             if (mobileParty.ActualClan is not null)
@@ -370,7 +369,6 @@ namespace BanditMilitias.Helpers
                 hero.RemoveMilitiaHero();
             }
 
-            MilitiaBehavior.Parties.Clear();
             PartyImageMap.Clear();
         }
 
@@ -950,7 +948,6 @@ namespace BanditMilitias.Helpers
 
             militia.InitializeMobilePartyAtPosition(rosters[0], rosters[1], position);
             IsBandit(militia) = true;
-            MilitiaBehavior.Parties.Add(militia);
             ConfigureMilitia(militia);
             TrainMilitia(militia);
         }

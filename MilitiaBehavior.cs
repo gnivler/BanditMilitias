@@ -33,7 +33,6 @@ namespace BanditMilitias
         internal static Clan Looters => looters ??= Clan.BanditFactions.First(c => c.StringId == "looters");
         private static IEnumerable<Clan> synthClans;
         private static IEnumerable<Clan> SynthClans => synthClans ??= Clan.BanditFactions.Except(new[] { Looters });
-        internal static List<MobileParty> Parties = new();
 
         public override void RegisterEvents()
         {
@@ -62,27 +61,18 @@ namespace BanditMilitias
             CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, OnDailyTickEvent);
             CampaignEvents.HourlyTickEvent.AddNonSerializedListener(this, SynthesizeBM);
             CampaignEvents.HourlyTickPartyEvent.AddNonSerializedListener(this, DetermineActivity);
-            CampaignEvents.OnPartyRemovedEvent.AddNonSerializedListener(this, MobilePartyRemoved);
             CampaignEvents.MobilePartyDestroyed.AddNonSerializedListener(this, MobilePartyDestroyed);
-            CampaignEvents.MobilePartyCreated.AddNonSerializedListener(this, m =>
-            {
-                // this fires before IsBandit is set, so BM are not added here
-                if (m.IsBandit)
-                {
-                    Parties.Add(m);
-                }
-            });
         }
 
-        private static void MobilePartyRemoved(PartyBase party)
-        {
-            Parties.Remove(party.MobileParty);
-        }
 
         private static void MobilePartyDestroyed(MobileParty mobileParty, PartyBase destroyer)
         {
+            if (!Globals.Settings.AllowPillaging)
+            {
+                return;
+            }
+
             int AvoidanceIncrease() => Rng.Next(20, 51);
-            Parties.Remove(mobileParty);
             if (mobileParty.IsBM())
             {
                 if (destroyer?.LeaderHero is null)
@@ -340,7 +330,8 @@ namespace BanditMilitias
         {
             if (mobileParty.IsBM())
             {
-                if ((int)CampaignTime.Now.ToWeeks % CampaignTime.DaysInWeek == 0)
+                if ((int)CampaignTime.Now.ToWeeks % CampaignTime.DaysInWeek == 0
+                    && Globals.Settings.AllowPillaging)
                 {
                     AdjustAvoidance(mobileParty);
                 }
@@ -359,11 +350,9 @@ namespace BanditMilitias
         public static void AdjustAvoidance(MobileParty mobileParty)
         {
             //Log($"{mobileParty.Name} starting Avoidance {mobileParty.BM().Avoidance}");
-            foreach (var party in Parties.WhereQ(m => m.IsBM()
-                                                      && m.LeaderHero is not null
-                                                      && m.Position2D.Distance(mobileParty.Position2D) < AdjustRadius))
+            foreach (var BM in GetCachedBMs(true)
+                         .WhereQ(bm => bm.Leader is not null && bm.MobileParty.Position2D.Distance(mobileParty.Position2D) < AdjustRadius))
             {
-                var BM = party.BM();
                 foreach (var kvp in BM.Avoidance)
                 {
                     if (BM.Avoidance.ContainsKey(kvp.Key))
@@ -526,8 +515,6 @@ namespace BanditMilitias
 
         public override void SyncData(IDataStore dataStore)
         {
-            Parties = Parties.Distinct().ToListQ();
-            dataStore.SyncData("Parties", ref Parties);
         }
     }
 }

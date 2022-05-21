@@ -119,14 +119,6 @@ namespace BanditMilitias
             if (superKey && Input.IsKeyPressed(InputKey.F10))
             {
                 MobileParty.MainParty.ItemRoster.AddToCounts(MBObjectManager.Instance.GetObject<ItemObject>("grain"), 10000);
-                foreach (var bm in MilitiaBehavior.Parties.WhereQ(m => m.IsBM()).SelectQ(m => m.BM()))
-                {
-                    Log(bm.Name);
-                    foreach (var kvp in bm.Avoidance)
-                    {
-                        Log($"\t{kvp.Key,-20}{kvp.Value}");
-                    }
-                }
             }
 
             if (superKey && Input.IsKeyPressed(InputKey.F12))
