@@ -5,21 +5,16 @@ using System.Linq;
 using BanditMilitias.Helpers;
 using HarmonyLib;
 using Helpers;
-using SandBox.View.Map;
-using SandBox.ViewModelCollection.MobilePartyTracker;
-using StoryMode.GameComponents;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
+using TaleWorlds.CampaignSystem.CampaignBehaviors.AiBehaviors;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Roster;
 using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
-using TaleWorlds.Engine;
-using TaleWorlds.InputSystem;
 using TaleWorlds.Library;
 using TaleWorlds.LinQuick;
 using TaleWorlds.Localization;
-using TaleWorlds.MountAndBlade;
 using TaleWorlds.ObjectSystem;
 using TaleWorlds.TwoDimension;
 using static BanditMilitias.Helpers.Helper;
@@ -60,17 +55,17 @@ namespace BanditMilitias
             CampaignEvents.RaidCompletedEvent.AddNonSerializedListener(this, (b, m) =>
             {
                 if (m.PartiesOnSide(BattleSideEnum.Attacker)
-                    .AnyQ(m => m.Party.MobileParty is not null && m.Party.MobileParty.IsBM()))
+                    .AnyQ(mep => mep.Party.MobileParty is not null && mep.Party.MobileParty.IsBM()))
                 {
-                    InformationManager.AddQuickInformation(new TextObject($"{m.MapEventSettlement?.Name} successfully raided!  {m.PartiesOnSide(BattleSideEnum.Attacker).First().Party.Name} is fat with loot!"));
+                    InformationManager.AddQuickInformation(new TextObject($"{m.MapEventSettlement?.Name} raided!  {m.PartiesOnSide(BattleSideEnum.Attacker).First().Party.Name} is fat with loot near {SettlementHelper.FindNearestTown().Name}!"));
                 }
             });
-            CampaignEvents.TickEvent.AddNonSerializedListener(this, MergingTick);
+            CampaignEvents.AiHourlyTickEvent.AddNonSerializedListener(this, AiHourlyTickEvent);
             CampaignEvents.DailyTickPartyEvent.AddNonSerializedListener(this, DailyTickPartyEvent);
             CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, FlushMilitiaCharacterObjects);
             CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, OnDailyTickEvent);
             CampaignEvents.HourlyTickEvent.AddNonSerializedListener(this, SynthesizeBM);
-            CampaignEvents.HourlyTickPartyEvent.AddNonSerializedListener(this, AiTickPartyEvent);
+            CampaignEvents.HourlyTickPartyEvent.AddNonSerializedListener(this, DetermineActivity);
             CampaignEvents.OnPartyRemovedEvent.AddNonSerializedListener(this, MobilePartyRemoved);
             CampaignEvents.MobilePartyDestroyed.AddNonSerializedListener(this, MobilePartyDestroyed);
             CampaignEvents.MobilePartyCreated.AddNonSerializedListener(this, m =>
@@ -119,110 +114,110 @@ namespace BanditMilitias
             }
         }
 
-        private static void MergingTick(float dT)
+        private static void AiHourlyTickEvent(MobileParty bandit, PartyThinkParams partyThinkParams)
         {
-            if (Campaign.Current.TimeControlMode == CampaignTimeControlMode.Stop
-                || Campaign.Current.TimeControlMode == CampaignTimeControlMode.UnstoppableFastForwardForPartyWaitTime
-                || Campaign.Current.TimeControlMode == CampaignTimeControlMode.FastForwardStop
-                || Campaign.Current.TimeControlMode == CampaignTimeControlMode.StoppableFastForward)
+            if (!bandit.IsBandit)
             {
                 return;
             }
 
-            if (lastChecked == 0)
+            if (Settlement.FindSettlementsAroundPosition(bandit.Position2D, MinDistanceFromHideout, s => s.IsHideout).Any())
             {
-                lastChecked = Campaign.CurrentTime;
-            }
-
-            // don't run this if paused and unless 3% off power limit
-            if (Campaign.CurrentTime - lastChecked < CheckInterval
-                || Globals.MilitiaPowerPercent + 1 > Globals.Settings.GlobalPowerPercent)
-            {
+                DetermineActivity(bandit);
                 return;
             }
 
-            lastChecked = Campaign.CurrentTime;
-            var parties = MobileParty.AllBanditParties.Concat(Parties).ToListQ();
-            for (var index = 0; index < parties.Count; index++)
+            var nearbyBandits = MobileParty.FindPartiesAroundPosition(bandit.Position2D, FindRadius * 3).WhereQ(m => m.IsBandit).ToListQ();
+            nearbyBandits.Remove(bandit);
+            if (!nearbyBandits.Any())
             {
-                //T.Restart();
-                var mobileParty = parties[index];
-                if (Settlement.FindSettlementsAroundPosition(mobileParty.Position2D, MinDistanceFromHideout, s => s.IsHideout).Any())
+                DetermineActivity(bandit);
+                return;
+            }
+
+            if (bandit.IsBM()
+                && CampaignTime.Now < bandit.BM().LastMergedOrSplitDate + CampaignTime.Hours(Globals.Settings.CooldownHours))
+            {
+                DetermineActivity(bandit);
+                return;
+            }
+
+            var targetParties = nearbyBandits.Where(m =>
+                m.MemberRoster.TotalManCount + bandit.MemberRoster.TotalManCount >= Globals.Settings.MinPartySize
+                && IsAvailableBanditParty(m)).ToListQ();
+
+            MobileParty mergeTarget = default;
+            foreach (var target in targetParties.OrderByQ(m => m.Position2D.Distance(bandit.Position2D)))
+            {
+                var militiaTotalCount = bandit.MemberRoster.TotalManCount + target.MemberRoster.TotalManCount;
+                if (militiaTotalCount < Globals.Settings.MinPartySize
+                    || militiaTotalCount > Globals.CalculatedMaxPartySize
+                    || militiaTotalCount < Globals.Settings.MinPartySize)
+
                 {
                     continue;
                 }
 
-                var nearbyParties = MobileParty.FindPartiesAroundPosition(mobileParty.Position2D, 50)
-                    .Intersect(parties)
-                    .ToListQ();
-                //var nearbyParties = parties.WhereQ(m => m.Position2D.Distance(mobileParty.Position2D) <= FindRadius).ToListQ();
-                nearbyParties.Remove(mobileParty);
-                if (!nearbyParties.Any())
+                if (target.IsBM())
                 {
-                    continue;
-                }
-
-                if (mobileParty.StringId.Contains("manhunter")) // Calradia Expanded Kingdoms
-                {
-                    continue;
-                }
-
-                if (mobileParty.IsBM()
-                    && CampaignTime.Now < mobileParty.BM().LastMergedOrSplitDate + CampaignTime.Hours(Globals.Settings.CooldownHours))
-                {
-                    continue;
-                }
-
-                var targetParties = nearbyParties.Where(m =>
-                    m.MemberRoster.TotalManCount + mobileParty.MemberRoster.TotalManCount >= Globals.Settings.MinPartySize
-                    && IsAvailableBanditParty(m)).ToListQ();
-                var targetParty = targetParties.GetRandomElement()?.Party;
-                //SubModule.Log($">T targetParty {T.ElapsedTicks / 10000F:F3}ms.");
-                // "nobody" is a valid answer
-                if (targetParty is null)
-                {
-                    continue;
-                }
-
-                if (targetParty.MobileParty.IsBM())
-                {
-                    CampaignTime? targetLastChangeDate = targetParty.MobileParty.BM().LastMergedOrSplitDate;
+                    CampaignTime? targetLastChangeDate = target.BM().LastMergedOrSplitDate;
                     if (CampaignTime.Now < targetLastChangeDate + CampaignTime.Hours(Globals.Settings.CooldownHours))
                     {
                         continue;
                     }
                 }
 
-                var militiaTotalCount = mobileParty.MemberRoster.TotalManCount + targetParty.MemberRoster.TotalManCount;
-                if (Globals.MilitiaPowerPercent > Globals.Settings.GlobalPowerPercent
-                    || militiaTotalCount > Globals.CalculatedMaxPartySize
-                    || militiaTotalCount < Globals.Settings.MinPartySize
-                    || NumMountedTroops(mobileParty.MemberRoster) + NumMountedTroops(targetParty.MemberRoster) > militiaTotalCount / 2)
+                if (NumMountedTroops(bandit.MemberRoster) + NumMountedTroops(target.MemberRoster) > militiaTotalCount / 2)
                 {
                     continue;
                 }
 
-                //SubModule.Log($"==> counted {T.ElapsedTicks / 10000F:F3}ms.");
-                if (mobileParty != targetParty.MobileParty.MoveTargetParty
-                    && Campaign.Current.Models.MapDistanceModel.GetDistance(targetParty.MobileParty, mobileParty) > MergeDistance)
+                mergeTarget = target;
+                break;
+            }
+
+            if (mergeTarget is null)
+            {
+                DetermineActivity(bandit);
+                return;
+            }
+
+            //SubModule.Log($"==> counted {T.ElapsedTicks / 10000F:F3}ms.");
+            if (Campaign.Current.Models.MapDistanceModel.GetDistance(mergeTarget, bandit) > MergeDistance)
+            {
+                //SubModule.Log($"{mobileParty} seeking > {targetParty.MobileParty}")
+                AccessTools.Method(typeof(MobileParty), "SetAiBehavior")
+                    .Invoke(bandit, new object[] { AiBehavior.EscortParty, mergeTarget.Party, mergeTarget.Position2D });
+                AccessTools.Method(typeof(MobileParty), "SetAiBehavior")
+                    .Invoke(mergeTarget, new object[] { AiBehavior.EscortParty, bandit.Party, bandit.Position2D });
+                return;
+            }
+
+            //SubModule.Log($"==> found settlement {T.ElapsedTicks / 10000F:F3}ms."); 
+            // create a new party merged from the two
+            var rosters = MergeRosters(bandit, mergeTarget.Party);
+            var clan = bandit.ActualClan ?? mergeTarget.ActualClan ?? Clan.BanditFactions.GetRandomElementInefficiently();
+            var bm = MobileParty.CreateParty("Bandit_Militia", new ModBanditMilitiaPartyComponent(clan), m => m.ActualClan = clan);
+            InitMilitia(bm, rosters, bandit.Position2D);
+            var calculatedAvoidance = new Dictionary<Hero, float>();
+            if (bandit.PartyComponent is ModBanditMilitiaPartyComponent BM1)
+            {
+                foreach (var entry in BM1.Avoidance)
                 {
-                    //SubModule.Log($"{mobileParty} seeking > {targetParty.MobileParty}");
-                    Traverse.Create(mobileParty).Method("SetAiBehavior", AiBehavior.EscortParty, targetParty, targetParty.Position2D).GetValue();
-                    Traverse.Create(targetParty.MobileParty).Method("SetAiBehavior", AiBehavior.EscortParty, mobileParty, mobileParty.Position2D).GetValue();
-                    //SubModule.Log($"SetNavigationModeTargetParty ==> {T.ElapsedTicks / 10000F:F3}ms");
-                    continue;
+                    if (!calculatedAvoidance.ContainsKey(entry.Key))
+                    {
+                        calculatedAvoidance.Add(entry.Key, entry.Value);
+                    }
+                    else
+                    {
+                        calculatedAvoidance[entry.Key] += entry.Value;
+                        calculatedAvoidance[entry.Key] /= 2;
+                    }
                 }
 
-                //SubModule.Log($"==> found settlement {T.ElapsedTicks / 10000F:F3}ms."); 
-                // create a new party merged from the two
-                var rosters = MergeRosters(mobileParty, targetParty);
-                var clan = mobileParty.ActualClan ?? targetParty.MobileParty.ActualClan ?? Clan.BanditFactions.GetRandomElementInefficiently();
-                var bm = MobileParty.CreateParty("Bandit_Militia", new ModBanditMilitiaPartyComponent(clan), m => m.ActualClan = clan);
-                InitMilitia(bm, rosters, mobileParty.Position2D);
-                var calculatedAvoidance = new Dictionary<Hero, float>();
-                if (mobileParty.PartyComponent is ModBanditMilitiaPartyComponent BM1)
+                if (mergeTarget.PartyComponent is ModBanditMilitiaPartyComponent BM2)
                 {
-                    foreach (var entry in BM1.Avoidance)
+                    foreach (var entry in BM2.Avoidance)
                     {
                         if (!calculatedAvoidance.ContainsKey(entry.Key))
                         {
@@ -234,49 +229,34 @@ namespace BanditMilitias
                             calculatedAvoidance[entry.Key] /= 2;
                         }
                     }
-
-                    if (targetParty.MobileParty.PartyComponent is ModBanditMilitiaPartyComponent BM2)
-                    {
-                        foreach (var entry in BM2.Avoidance)
-                        {
-                            if (!calculatedAvoidance.ContainsKey(entry.Key))
-                            {
-                                calculatedAvoidance.Add(entry.Key, entry.Value);
-                            }
-                            else
-                            {
-                                calculatedAvoidance[entry.Key] += entry.Value;
-                                calculatedAvoidance[entry.Key] /= 2;
-                            }
-                        }
-                    }
                 }
-
-                // teleport new militias near the player
-                if (Globals.Settings.TestingMode)
-                {
-                    // in case a prisoner
-                    var party = Hero.MainHero.PartyBelongedTo ?? Hero.MainHero.PartyBelongedToAsPrisoner.MobileParty;
-                    bm.Position2D = party.Position2D;
-                }
-
-                bm.Party.Visuals.SetMapIconAsDirty();
-                try
-                {
-                    // can throw if Clan is null
-                    Trash(mobileParty);
-                    Trash(targetParty.MobileParty);
-                }
-                catch (Exception ex)
-                {
-                    Log(ex);
-                }
-
-                DoPowerCalculations();
-                //SubModule.Log($"==> Finished all work: {T.ElapsedTicks / 10000F:F3}ms.");
             }
-            //SubModule.Log($"Looped ==> {T.ElapsedTicks / 10000F:F3}ms");
+
+            // teleport new militias near the player
+            if (Globals.Settings.TestingMode)
+            {
+                // in case a prisoner
+                var party = Hero.MainHero.PartyBelongedTo ?? Hero.MainHero.PartyBelongedToAsPrisoner.MobileParty;
+                bm.Position2D = party.Position2D;
+            }
+
+            bm.Party.Visuals.SetMapIconAsDirty();
+            try
+            {
+                // can throw if Clan is null
+                Trash(bandit);
+                Trash(mergeTarget);
+            }
+            catch (Exception ex)
+            {
+                Log(ex);
+            }
+
+            DoPowerCalculations();
+            //SubModule.Log($"==> Finished all work: {T.ElapsedTicks / 10000F:F3}ms.");
         }
+        //SubModule.Log($"Looped ==> {T.ElapsedTicks / 10000F:F3}ms");
+
 
         private static void OnDailyTickEvent()
         {
@@ -284,7 +264,7 @@ namespace BanditMilitias
             FlushPrisoners();
         }
 
-        public static void AiTickPartyEvent(MobileParty mobileParty)
+        public static void DetermineActivity(MobileParty mobileParty)
         {
             try
             {

@@ -268,7 +268,7 @@ namespace BanditMilitias.Patches
     {
         public static bool Prefix(MobileParty mobileParty)
         {
-            return !mobileParty.IsBM();
+            return false;//!mobileParty.IsBM();
         }
     }
 

@@ -165,7 +165,6 @@ namespace BanditMilitias.Helpers
                     party1.AddToCounts(party1.GetCharacterAtIndex(Rng.Next(1, party1.Count)), 1);
                 }
 
-                // pretty sure this is never true ...
                 while (party2.TotalManCount < Globals.Settings.MinPartySize)
                 {
                     party2.AddToCounts(party2.GetCharacterAtIndex(Rng.Next(1, party2.Count)), 1);
