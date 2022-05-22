@@ -122,27 +122,33 @@ namespace BanditMilitias
         [SettingPropertyInteger("Ignore Weaker Parties", 0, 100, HintText = "\n10 means any party 10% weaker will be ignored.\n100 attacks without restriction.", Order = 9, RequireRestart = false)]
         [SettingPropertyGroup("Militia Adjustments")]
         public int MaxStrengthDeltaPercent { get; private set; } = 10;
-        
+
         [SettingPropertyBool("AllowPillaging", HintText = "\nAllow PILLAGING!.", Order = 10, RequireRestart = false)]
         [SettingPropertyGroup("Militia Adjustments")]
         public bool AllowPillaging { get; private set; } = true;
 
-        [SettingPropertyBool("Militia Map Markers", HintText = "\nHave omniscient view of BMs.", Order = 0, RequireRestart = false)]
+        [SettingPropertyText("Bandit Militia String", Order = 0, HintText = "Box may appear empty but still works.", RequireRestart = false)]
+        public string BanditMilitiaString { get; set; } = "Bandit Militia";
+
+        [SettingPropertyText("Leaderless Bandit Militia String", Order = 1, HintText = "Box may appear empty but still works.", RequireRestart = false)]
+        public string LeaderlessBanditMilitiaString { get; set; } = "Leaderless Bandit Militia";
+
+        [SettingPropertyBool("Militia Map Markers", HintText = "\nHave omniscient view of BMs.", Order = 2, RequireRestart = false)]
         public bool Trackers { get; private set; } = false;
 
-        [SettingPropertyInteger("Minimum BM Size To Track", 1, 500, HintText = "Any smaller BMs won't be tracked.", Order = 1, RequireRestart = false)]
+        [SettingPropertyInteger("Minimum BM Size To Track", 1, 500, HintText = "Any smaller BMs won't be tracked.", Order = 3, RequireRestart = false)]
         public int TrackedSizeMinimum { get; private set; } = 50;
 
-        [SettingPropertyBool("Random Banners", HintText = "\nBMs will have unique banners, or basic bandit clan ones.", Order = 1, RequireRestart = false)]
+        [SettingPropertyBool("Random Banners", HintText = "\nBMs will have unique banners, or basic bandit clan ones.", Order = 4, RequireRestart = false)]
         public bool RandomBanners { get; set; } = true;
 
-        [SettingPropertyBool("Village raid notices", HintText = "\\When your fiefs are raided you'll see a banner message.", Order = 2, RequireRestart = false)]
+        [SettingPropertyBool("Village raid notices", HintText = "\\When your fiefs are raided you'll see a banner message.", Order = 5, RequireRestart = false)]
         public bool ShowRaids { get; set; } = true;
 
-        [SettingPropertyBool("Debug Logging", HintText = "\nCreates logfile output in the mod folder.", Order = 3, RequireRestart = false)]
+        [SettingPropertyBool("Debug Logging", HintText = "\nCreates logfile output in the mod folder.", Order = 6, RequireRestart = false)]
         public bool Debug { get; set; }
 
-        [SettingPropertyBool("Testing Mode", HintText = "Teleports BMs to you.", Order = 4, RequireRestart = false)]
+        [SettingPropertyBool("Testing Mode", HintText = "Teleports BMs to you.", Order = 7, RequireRestart = false)]
         public bool TestingMode { get; set; }
 
 
