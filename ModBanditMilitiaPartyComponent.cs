@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Reflection;
 using BanditMilitias.Helpers;
 using HarmonyLib;
@@ -31,7 +32,7 @@ namespace BanditMilitias
         {
             get
             {
-                cachedName ??= new TextObject((string)GetLocalizedText.Invoke(null, new object[] { $"{Possess(Leader.FirstName.ToString())} Bandit Militia" }));
+                cachedName ??= new TextObject((string)GetLocalizedText.Invoke(null, new object[] { $"{Possess(Leader.FirstName.ToString())} {Globals.Settings.BanditMilitiaString}" }));
                 cachedName.SetTextVariable("IS_BANDIT", 1);
                 return cachedName;
             }
@@ -46,7 +47,6 @@ namespace BanditMilitias
 
             Traverse.Create(this).Field<Hero>("<Leader>k__BackingField").Value = newLeader;
         }
-
 
         public ModBanditMilitiaPartyComponent(Clan heroClan)
         {

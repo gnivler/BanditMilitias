@@ -18,6 +18,7 @@ using TaleWorlds.Core;
 using TaleWorlds.Library;
 using TaleWorlds.LinQuick;
 using TaleWorlds.Localization;
+using TaleWorlds.MountAndBlade.GauntletUI.Widgets.Menu.Overlay;
 using TaleWorlds.ObjectSystem;
 using static BanditMilitias.Globals;
 
@@ -323,7 +324,7 @@ namespace BanditMilitias.Helpers
             {
                 if (!hasLogged)
                 {
-                    Log($">>> FLUSH {partiesToRemove.Count} Bandit Militias");
+                    Log($">>> FLUSH {partiesToRemove.Count} {Globals.Settings.BanditMilitiaString}");
                     hasLogged = true;
                 }
 
@@ -422,6 +423,7 @@ namespace BanditMilitias.Helpers
         }
 
         // Bob's Bandit Militia vs Ross' Bandit Militia
+        // apologies to non-English players, I don't know how to localize this
         public static string Possess(string input)
         {
             // game tries to redraw the PartyNamePlateVM after combat with multiple militias
@@ -458,12 +460,65 @@ namespace BanditMilitias.Helpers
                 "Grapeshot"
             };
 
+            var verbotenItemsStringIds = new List<string>
+            {
+                "bound_adarga",
+                "old_kite_sparring_shield_shoulder",
+                "old_horsemans_kite_shield_shoulder",
+                "western_riders_kite_sparring_shield_shoulder",
+                "old_horsemans_kite_shield",
+                "banner_mid",
+                "banner_big",
+                "campaign_banner_small",
+                "battania_targe_b_sparring",
+                "eastern_spear_1_t2_blunt",
+                "khuzait_polearm_1_t4_blunt",
+                "eastern_javelin_1_t2_blunt",
+                "aserai_axe_2_t2_blunt",
+                "battania_2haxe_1_t2_blunt",
+                "western_javelin_1_t2_blunt",
+                "empire_lance_1_t3_blunt",
+                "billhook_polearm_t2_blunt",
+                "vlandia_lance_1_t3_blunt",
+                "sturgia_axe_2_t2_blunt",
+                "northern_throwing_axe_1_t1_blunt",
+                "northern_spear_1_t2_blunt",
+                "torch",
+                "wooden_sword_t1",
+                "wooden_sword_t2",
+                "wooden_2hsword_t1",
+                "practice_spear_t1",
+                "horse_whip",
+                "push_fork",
+                "mod_banner_1",
+                "mod_banner_2",
+                "mod_banner_3",
+                "throwing_stone",
+                "ballista_projectile",
+                "ballista_projectile_burning",
+                "boulder",
+                "pot",
+                "grapeshot_stack",
+                "grapeshot_fire_stack",
+                "grapeshot_projectile",
+                "grapeshot_fire_projectile",
+                "bound_desert_round_sparring_shield",
+                "northern_round_sparring_shield",
+                "western_riders_kite_sparring_shield",
+                "western_kite_sparring_shield",
+                "oval_shield",
+                "old_kite_sparring_shield ",
+                "western_kite_sparring_shield_shoulder"
+            };
+
             var verbotenSaddles = new List<string>
             {
                 "celtic_frost",
                 "saddle_of_aeneas",
                 "fortunas_choice",
-                "aseran_village_harness"
+                "aseran_village_harness",
+                "bandit_saddle_steppe",
+                "bandit_saddle_desert"
             };
 
             Mounts = Items.All.Where(i => i.ItemType == ItemObject.ItemTypeEnum.Horse).Where(i => !i.StringId.Contains("unmountable")).ToList();
@@ -486,7 +541,7 @@ namespace BanditMilitias.Helpers
                 all = Items.All.Where(i => !i.IsCivilian).ToList();
             }
 
-            all.RemoveAll(i => verbotenItems.Contains(i.Name.ToString()));
+            all.RemoveAll(item => verbotenItemsStringIds.Contains(item.StringId));
             Arrows = all.Where(i => i.ItemType == ItemObject.ItemTypeEnum.Arrows).ToList();
             Bolts = all.Where(i => i.ItemType == ItemObject.ItemTypeEnum.Bolts).ToList();
             var oneHanded = all.Where(i => i.ItemType == ItemObject.ItemTypeEnum.OneHandedWeapon);
@@ -713,16 +768,6 @@ namespace BanditMilitias.Helpers
 
         public static Hero CreateHero(Clan clan)
         {
-            //AllowedCultures ??= new()
-            //{
-            //    MBObjectManager.Instance.GetObject<CultureObject>("looters"),
-            //    MBObjectManager.Instance.GetObject<CultureObject>("mountain_bandits"),
-            //    MBObjectManager.Instance.GetObject<CultureObject>("forest_bandits"),
-            //    MBObjectManager.Instance.GetObject<CultureObject>("desert_bandits"),
-            //    MBObjectManager.Instance.GetObject<CultureObject>("steppe_bandits"),
-            //    MBObjectManager.Instance.GetObject<CultureObject>("sea_bandits")
-            //};
-
             var hero = HeroCreator.CreateHeroAtOccupation(Occupation.Bandit, Hideouts.GetRandomElementInefficiently());
             hero.Clan = clan;
             hero.StringId += "Bandit_Militia";
@@ -794,12 +839,12 @@ namespace BanditMilitias.Helpers
                 if (mount.HorseComponent.Monster.MonsterUsage == "camel")
                 {
                     mobileParty.BM().Leader.BattleEquipment[11] = new EquipmentElement(Saddles.Where(saddle =>
-                        saddle.Name.ToString().ToLower().Contains("camel")).ToList().GetRandomElement());
+                        saddle.StringId.Contains("camel")).ToList().GetRandomElement());
                 }
                 else
                 {
                     mobileParty.BM().Leader.BattleEquipment[11] = new EquipmentElement(Saddles.Where(saddle =>
-                        !saddle.Name.ToString().ToLower().Contains("camel")).ToList().GetRandomElement());
+                        !saddle.StringId.Contains("camel")).ToList().GetRandomElement());
                 }
             }
 

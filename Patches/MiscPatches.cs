@@ -41,7 +41,7 @@ namespace BanditMilitias.Patches
                 var characterObjects =
                     CharacterObject.All.Where(c =>
                         c.Occupation is Occupation.Bandit
-                        && c.Name.ToString().EndsWith("Boss")).ToList().GetReadOnlyList();
+                        && c.StringId.EndsWith("boss")).ToList().GetReadOnlyList();
 
                 foreach (var clan in Clan.BanditFactions)
                 {
@@ -92,7 +92,6 @@ namespace BanditMilitias.Patches
                 MilitiaBehavior.FlushMilitiaCharacterObjects();
                 var bmCount = MobileParty.All.CountQ(m => m.PartyComponent is ModBanditMilitiaPartyComponent);
                 Log($"Militias: {bmCount}");
-                InformationManager.AddQuickInformation(new TextObject($"{bmCount} Bandit Militias!"));
                 //Log($"Militias: {militias.Count} (registered {PartyMilitiaMap.Count})");
                 RunLateManualPatches();
             }

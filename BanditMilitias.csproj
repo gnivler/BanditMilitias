@@ -14,7 +14,7 @@
 
 
   <ItemGroup>
- <PackageReference Include="Bannerlord.MCM" Version="4.6.0"/>
+ <PackageReference Include="Bannerlord.MCM" Version="4.6.0" />
 <!--    <PackageReference Include="Bannerlord.ReferenceAssemblies.Core.EarlyAccess" Version="1.7.2.310327" />-->
 <!--    <PackageReference Include="Bannerlord.ReferenceAssemblies.CustomBattle.EarlyAccess" Version="1.7.2.310327" />-->
 <!--    <PackageReference Include="Bannerlord.ReferenceAssemblies.EarlyAccess" Version="1.7.2.310327" />-->
@@ -50,15 +50,6 @@
     <Compile Remove="obj\**" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="Mono.Cecil">
-      <HintPath>..\..\BannerlordRefs\1.7.1\Mono.Cecil.dll</HintPath>
-    </Reference>
-    <Reference Include="Mono.Cecil.Rocks">
-      <HintPath>..\..\BannerlordRefs\1.7.1\Mono.Cecil.Rocks.dll</HintPath>
-    </Reference>
-    <Reference Include="Mono.Options">
-      <HintPath>..\..\BannerlordRefs\1.7.1\Mono.Options.dll</HintPath>
-    </Reference>
     <Reference Include="Newtonsoft.Json">
       <HintPath>..\..\BannerlordRefs\1.7.1\Newtonsoft.Json.dll</HintPath>
     </Reference>
@@ -203,9 +194,6 @@
     <Reference Include="TaleWorlds.MountAndBlade.Helpers">
       <HintPath>..\..\BannerlordRefs\1.7.1\TaleWorlds.MountAndBlade.Helpers.dll</HintPath>
     </Reference>
-    <Reference Include="TaleWorlds.MountAndBlade.Launcher.Library">
-      <HintPath>..\..\BannerlordRefs\1.7.1\TaleWorlds.MountAndBlade.Launcher.Library.dll</HintPath>
-    </Reference>
     <Reference Include="TaleWorlds.MountAndBlade.Launcher.Steam">
       <HintPath>..\..\BannerlordRefs\1.7.1\TaleWorlds.MountAndBlade.Launcher.Steam.dll</HintPath>
     </Reference>
@@ -242,17 +230,11 @@
     <Reference Include="TaleWorlds.PlayerServices">
       <HintPath>..\..\BannerlordRefs\1.7.1\TaleWorlds.PlayerServices.dll</HintPath>
     </Reference>
-    <Reference Include="TaleWorlds.PowerText">
-      <HintPath>..\..\BannerlordRefs\1.7.1\TaleWorlds.PowerText.dll</HintPath>
-    </Reference>
     <Reference Include="TaleWorlds.PSAI">
       <HintPath>..\..\BannerlordRefs\1.7.1\TaleWorlds.PSAI.dll</HintPath>
     </Reference>
     <Reference Include="TaleWorlds.SaveSystem">
       <HintPath>..\..\BannerlordRefs\1.7.1\TaleWorlds.SaveSystem.dll</HintPath>
-    </Reference>
-    <Reference Include="TaleWorlds.ScreenSystem">
-      <HintPath>..\..\BannerlordRefs\1.7.1\TaleWorlds.ScreenSystem.dll</HintPath>
     </Reference>
     <Reference Include="TaleWorlds.Starter.DotNetCore">
       <HintPath>..\..\BannerlordRefs\1.7.1\TaleWorlds.Starter.DotNetCore.dll</HintPath>

@@ -39,7 +39,7 @@ namespace BanditMilitias.Patches
 
                     if (party.Party.MobileParty.LeaderHero is null)
                     {
-                        party.Party.MobileParty.SetCustomName(new TextObject("Leaderless Bandit Militia"));
+                        party.Party.MobileParty.SetCustomName(new TextObject(Globals.Settings.LeaderlessBanditMilitiaString));
                     }
 
                     RemoveUndersizedTracker(party.Party);
