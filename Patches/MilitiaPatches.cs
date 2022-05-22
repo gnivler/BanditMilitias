@@ -182,22 +182,22 @@ namespace BanditMilitias.Patches
                         __result = false;
                         return;
                     }
-                }
 
-                var party1Strength = __instance.GetTotalStrengthWithFollowers();
-                var party2Strength = targetParty.GetTotalStrengthWithFollowers();
-                float delta;
-                if (party1Strength > party2Strength)
-                {
-                    delta = party1Strength - party2Strength;
-                }
-                else
-                {
-                    delta = party2Strength - party1Strength;
-                }
+                    var party1Strength = __instance.GetTotalStrengthWithFollowers();
+                    var party2Strength = targetParty.GetTotalStrengthWithFollowers();
+                    float delta;
+                    if (party1Strength > party2Strength)
+                    {
+                        delta = party1Strength - party2Strength;
+                    }
+                    else
+                    {
+                        delta = party2Strength - party1Strength;
+                    }
 
-                var deltaPercent = delta / party1Strength * 100;
-                __result = deltaPercent <= Globals.Settings.MaxStrengthDeltaPercent;
+                    var deltaPercent = delta / party1Strength * 100;
+                    __result = deltaPercent <= Globals.Settings.MaxStrengthDeltaPercent;
+                }
             }
         }
     }
@@ -261,10 +261,7 @@ namespace BanditMilitias.Patches
     [HarmonyPatch(typeof(AiBanditPatrollingBehavior), "AiHourlyTick")]
     public static class AiBanditPatrollingBehaviorAiHourlyTickPatch
     {
-        public static bool Prefix(MobileParty mobileParty)
-        {
-            return false;//!mobileParty.IsBM();
-        }
+        public static bool Prefix(MobileParty mobileParty) => false;
     }
 
     [HarmonyPatch(typeof(DefaultMobilePartyFoodConsumptionModel), "DoesPartyConsumeFood")]
