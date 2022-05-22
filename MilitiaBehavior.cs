@@ -7,6 +7,9 @@ using HarmonyLib;
 using Helpers;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
+using TaleWorlds.CampaignSystem.Party;
+using TaleWorlds.CampaignSystem.Roster;
+using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
 using TaleWorlds.LinQuick;
@@ -49,8 +52,9 @@ namespace BanditMilitias
             });
             CampaignEvents.RaidCompletedEvent.AddNonSerializedListener(this, (b, m) =>
             {
-                if (m.PartiesOnSide(BattleSideEnum.Attacker)
-                    .AnyQ(mep => mep.Party.MobileParty is not null && mep.Party.MobileParty.IsBM()))
+                if (Globals.Settings.ShowRaids
+                    && m.PartiesOnSide(BattleSideEnum.Attacker)
+                        .AnyQ(mep => mep.Party.MobileParty is not null && mep.Party.MobileParty.IsBM()))
                 {
                     InformationManager.AddQuickInformation(new TextObject($"{m.MapEventSettlement?.Name} raided!  {m.PartiesOnSide(BattleSideEnum.Attacker).First().Party.Name} is fat with loot near {SettlementHelper.FindNearestTown().Name}!"));
                 }

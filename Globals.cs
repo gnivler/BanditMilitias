@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using SandBox.ViewModelCollection.MobilePartyTracker;
 using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.Party;
+using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
 using TaleWorlds.ObjectSystem;
 
@@ -21,8 +23,8 @@ namespace BanditMilitias
         public static float CalculatedGlobalPowerLimit;
         public static float GlobalMilitiaPower;
         public static float MilitiaPowerPercent;
-        public  static float MilitiaPartyAveragePower;
-        
+        public static float MilitiaPartyAveragePower;
+
         // dictionary maps
         public static readonly Dictionary<MobileParty, ImageIdentifierVM> PartyImageMap = new();
         public static readonly Dictionary<ItemObject.ItemTypeEnum, List<ItemObject>> ItemTypes = new();
