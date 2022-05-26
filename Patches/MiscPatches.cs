@@ -9,6 +9,7 @@ using SandBox.View.Map;
 using SandBox.ViewModelCollection.MobilePartyTracker;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.CharacterDevelopment;
+using TaleWorlds.CampaignSystem.Encounters;
 using TaleWorlds.CampaignSystem.Extensions;
 using TaleWorlds.CampaignSystem.GameComponents;
 using TaleWorlds.CampaignSystem.Party;
@@ -17,7 +18,6 @@ using TaleWorlds.Core;
 using TaleWorlds.Engine;
 using TaleWorlds.Library;
 using TaleWorlds.LinQuick;
-using TaleWorlds.Localization;
 using static BanditMilitias.Helpers.Helper;
 using static BanditMilitias.Globals;
 
@@ -34,11 +34,12 @@ namespace BanditMilitias.Patches
         [HarmonyPatch(typeof(MapScreen), "OnInitialize")]
         public static class MapScreenOnInitializePatch
         {
-            private static void Postfix()
+            public static void Postfix()
             {
                 Log("MapScreen.OnInitialize");
                 EquipmentItems.Clear();
                 PopulateItems();
+                RaidCap = Convert.ToInt32(Settlement.FindAll(s => s.IsVillage).CountQ() / 10f);
 
                 // 1.7 changed CreateHeroAtOccupation to only fish from this: NotableAndWandererTemplates
                 // this has no effect on earlier versions since the property doesn't exist
@@ -104,7 +105,7 @@ namespace BanditMilitias.Patches
         [HarmonyPatch(typeof(MobilePartyTrackerVM), MethodType.Constructor, typeof(Camera), typeof(Action<Vec2>))]
         public static class MobilePartyTrackerVMCtorPatch
         {
-            private static void Postfix(MobilePartyTrackerVM __instance)
+            public static void Postfix(MobilePartyTrackerVM __instance)
             {
                 Globals.MobilePartyTrackerVM = __instance;
             }

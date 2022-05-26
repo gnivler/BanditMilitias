@@ -15,7 +15,7 @@ namespace BanditMilitias
     {
         // merge/split criteria
         public const float MergeDistance = 2;
-        public const float FindRadius = 7;
+        public const float FindRadius = 30;
         public const float MinDistanceFromHideout = 8;
 
         // holders for criteria
@@ -42,7 +42,8 @@ namespace BanditMilitias
         public static readonly List<Banner> Banners = new();
         public static double LastCalculated;
         public static double PartyCacheInterval;
-
+        public static int RaidCap;
+        
         // ReSharper disable once InconsistentNaming
         public static MobilePartyTrackerVM MobilePartyTrackerVM;
 

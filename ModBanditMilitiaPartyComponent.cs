@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Reflection;
 using BanditMilitias.Helpers;
 using HarmonyLib;
@@ -22,7 +21,7 @@ namespace BanditMilitias
         [SaveableField(3)] public CampaignTime LastMergedOrSplitDate = CampaignTime.Now;
         [SaveableField(4)] public Dictionary<Hero, float> Avoidance = new();
         [SaveableField(5)] private Hero leader;
-        [CachedData] private TextObject cachedName;
+        [CachedData] public TextObject cachedName;
 
         public override Hero Leader => leader;
         public override Hero PartyOwner => MobileParty.ActualClan?.Leader;
@@ -48,6 +47,12 @@ namespace BanditMilitias
             }
 
             Traverse.Create(this).Field<Hero>("<Leader>k__BackingField").Value = newLeader;
+        }
+
+        protected override void OnInitialize()
+        {
+            base.OnInitialize();
+            IsBandit(MobileParty) = true;
         }
 
         public ModBanditMilitiaPartyComponent(Clan heroClan)
