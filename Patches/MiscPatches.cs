@@ -43,14 +43,14 @@ namespace BanditMilitias.Patches
 
                 // 1.7 changed CreateHeroAtOccupation to only fish from this: NotableAndWandererTemplates
                 // this has no effect on earlier versions since the property doesn't exist
-                var characterObjects =
+                var banditBosses =
                     CharacterObject.All.Where(c =>
                         c.Occupation is Occupation.Bandit
                         && c.StringId.EndsWith("boss")).ToList().GetReadOnlyList();
 
                 foreach (var clan in Clan.BanditFactions)
                 {
-                    Traverse.Create(clan.Culture).Property<IReadOnlyList<CharacterObject>>("NotableAndWandererTemplates").Value = characterObjects;
+                    Traverse.Create(clan.Culture).Property<IReadOnlyList<CharacterObject>>("NotableAndWandererTemplates").Value = banditBosses;
                 }
 
                 var filter = new List<string>

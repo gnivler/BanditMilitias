@@ -256,7 +256,7 @@ namespace BanditMilitias
                         && mobileParty.LeaderHero is not null
                         && mobileParty.Party.TotalStrength > MilitiaPartyAveragePower
                         && Rng.NextDouble() < SmallChance
-                        && GetCachedBMs().CountQ(m => m.MobileParty.ShortTermBehavior is AiBehavior.RaidSettlement) <= RaidCap)
+                        && GetCachedBMs().CountQ(m => m.MobileParty.ShortTermBehavior is AiBehavior.RaidSettlement) < RaidCap)
                     {
                         target = SettlementHelper.FindNearestVillage(s =>
                         {
