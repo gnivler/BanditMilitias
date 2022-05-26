@@ -158,48 +158,5 @@ namespace BanditMilitias.Patches
                     "ConstructContainerDefinition").Invoke(__instance, new object[] { typeof(Dictionary<Hero, float>) });
             }
         }
-
-        [HarmonyPatch(typeof(EncounterManager), "HandleEncounterForMobileParty")]
-        public class akdsfjaoijfewioj
-        {
-            public static Exception Finalizer(Exception __exception, MobileParty mobileParty, float dt)
-            {
-                if (__exception is not null)
-                {
-                    Debugger.Break();
-                    if (mobileParty.IsActive && mobileParty.AttachedTo == null && mobileParty.MapEventSide == null && (mobileParty.CurrentSettlement == null || mobileParty.IsGarrison) && (mobileParty.BesiegedSettlement == null || mobileParty.ShortTermBehavior == AiBehavior.AssaultSettlement) && (Traverse.Create(mobileParty).Field<bool>("IsCurrentlyEngagingParty").Value || Traverse.Create(mobileParty).Field<bool>("IsCurrentlyEngagingSettlement").Value || (mobileParty.AiBehaviorMapEntity != null && mobileParty.ShortTermBehavior == AiBehavior.GoToPoint && !(mobileParty.AiBehaviorMapEntity is Settlement) && !(mobileParty.AiBehaviorMapEntity is MobileParty) && (mobileParty.Party != PartyBase.MainParty || PlayerEncounter.Current == null))) && (!Traverse.Create(mobileParty).Field<bool>("IsCurrentlyEngagingSettlement").Value || mobileParty.ShortTermTargetSettlement == null || mobileParty.ShortTermTargetSettlement != mobileParty.CurrentSettlement) && (!Traverse.Create(mobileParty).Field<bool>("IsCurrentlyEngagingParty").Value || (mobileParty.ShortTermTargetParty.IsActive && (mobileParty.ShortTermTargetParty.CurrentSettlement == null || (mobileParty.ShortTermTargetParty.MapEvent != null && (mobileParty.ShortTermTargetParty.MapEvent.GetLeaderParty(BattleSideEnum.Attacker).MapFaction == mobileParty.MapFaction || mobileParty.ShortTermTargetParty.MapEvent.GetLeaderParty(BattleSideEnum.Defender).MapFaction == mobileParty.MapFaction))))))
-                    {
-                        return null;
-                    }
-                    Vec2 targetPoint = default;
-                    float neededMaximumDistanceForEncountering = default;
-
-                    AccessTools.Method(typeof(EncounterManager), "GetEncounterTargetPoint").Invoke(null, new object[]
-                    {
-                        dt, mobileParty, targetPoint, neededMaximumDistanceForEncountering
-                    });
-                    float length = (mobileParty.Position2D - targetPoint).Length;
-                    if ((mobileParty.BesiegedSettlement == null || mobileParty.BesiegedSettlement != mobileParty.TargetSettlement) && (double)length >= (double)neededMaximumDistanceForEncountering)
-                        return null;
-                    mobileParty.AiBehaviorMapEntity.OnPartyInteraction(mobileParty);
-                }
-
-                return null;
-            }
-        }
-
-        [HarmonyPatch(typeof(MobileParty), "GetNearbyPartyToFlee")]
-        public static class Mobilasdfsd
-        {
-            static Exception Finalizer(MobileParty __instance, Exception __exception)
-            {
-                if (__exception is not null)
-                {
-                    Debugger.Break();
-                }
-
-                return null;
-            }
-        }
     }
 }
