@@ -21,29 +21,31 @@ using TaleWorlds.Core;
 using static BanditMilitias.Helpers.Helper;
 using static BanditMilitias.Globals;
 
-// ReSharper disable UnusedMember.Global 
-// ReSharper disable UnusedType.Global   
-// ReSharper disable UnusedMember.Local   
-// ReSharper disable RedundantAssignment  
+// ReSharper disable UnusedMember.Global
+// ReSharper disable UnusedType.Global
+// ReSharper disable UnusedMember.Local
+// ReSharper disable RedundantAssignment
 // ReSharper disable InconsistentNaming
 
 namespace BanditMilitias.Patches
 {
     public static class MilitiaPatches
     {
-        public static class CalculatePureSpeed
+        [HarmonyPatch(typeof(MobileParty), "ComputeSpeed")]
+        public static class MobilePartyComputeSpeed
         {
-            public static void Postfix(MobileParty mobileParty, ref ExplainedNumber __result)
+            public static void Postfix(MobileParty __instance, ref float __result)
             {
-                if (mobileParty.IsBandit
-                    && mobileParty.TargetParty is not null
-                    && mobileParty.TargetParty.IsBandit)
+                if (__instance is null) Log("PING");
+                if (__instance.IsBandit
+                    && __instance.TargetParty is not null
+                    && __instance.TargetParty.IsBandit)
                 {
-                    __result.AddFactor(0.15f);
+                    __result *= 1.15f;
                 }
-                else if (mobileParty.IsBM())
+                else if (__instance.IsBM())
                 {
-                    __result.AddFactor(-0.15f);
+                    __result = Math.Max(1, __result * 0.85f);
                 }
             }
         }
@@ -74,7 +76,7 @@ namespace BanditMilitias.Patches
                     __instance.MobileParty is not null &&
                     __instance.MobileParty.IsBM())
                 {
-                    __result = __instance.MobileParty.BM().Banner;
+                    __result = __instance.MobileParty.GetBM().Banner;
                 }
             }
         }
@@ -90,7 +92,7 @@ namespace BanditMilitias.Patches
                     party.MobileParty is not null &&
                     party.MobileParty.IsBM())
                 {
-                    __result = party.MobileParty?.BM().Banner;
+                    __result = party.MobileParty?.GetBM().Banner;
                 }
             }
         }
@@ -118,7 +120,7 @@ namespace BanditMilitias.Patches
         {
             private static readonly Dictionary<MobileParty, string> Map = new();
 
-            private static void Postfix(PartyNameplateVM __instance, ref string ____fullNameBind)
+            public static void Postfix(PartyNameplateVM __instance, ref string ____fullNameBind)
             {
                 //T.Restart();
                 // Leader is null after a battle, crashes after-action
@@ -140,7 +142,7 @@ namespace BanditMilitias.Patches
                     return;
                 }
 
-                Map.Add(__instance.Party, __instance.Party.BM().Name.ToString());
+                Map.Add(__instance.Party, __instance.Party.GetBM().Name.ToString());
                 ____fullNameBind = Map[__instance.Party];
                 //SubModule.Log(T.ElapsedTicks);
             }
@@ -150,7 +152,7 @@ namespace BanditMilitias.Patches
         [HarmonyPatch(typeof(PlayerEncounter), "DoMeetingInternal")]
         public static class PlayerEncounterDoMeetingInternalPatch
         {
-            private static bool Prefix(PartyBase ____encounteredParty)
+            public static bool Prefix(PartyBase ____encounteredParty)
             {
                 if (____encounteredParty.MobileParty.IsBM())
                 {
@@ -166,7 +168,7 @@ namespace BanditMilitias.Patches
         [HarmonyPatch(typeof(MobileParty), "CanAttack")]
         public static class MobilePartyCanAttackPatch
         {
-            private static void Postfix(MobileParty __instance, MobileParty targetParty, ref bool __result)
+            public static void Postfix(MobileParty __instance, MobileParty targetParty, ref bool __result)
             {
                 if (__result
                     && !targetParty.IsGarrison
@@ -179,8 +181,8 @@ namespace BanditMilitias.Patches
                         return;
                     }
 
-                    if (targetParty.LeaderHero is not null
-                        && __instance.BM().Avoidance.TryGetValue(targetParty.LeaderHero, out var heroAvoidance)
+                    if (__result
+                        && __instance.GetBM().Avoidance.TryGetValue(targetParty.Owner, out var heroAvoidance)
                         && Rng.NextDouble() * 100 < heroAvoidance)
                     {
                         Log($"{new string('-', 100)} {__instance.Name} avoided attacking {targetParty.Name}");
@@ -205,78 +207,79 @@ namespace BanditMilitias.Patches
                 }
             }
         }
-    }
 
-    // force Heroes to die in simulated combat
-    [HarmonyPriority(Priority.High)]
-    [HarmonyPatch(typeof(SPScoreboardVM), "TroopNumberChanged")]
-    public static class SPScoreboardVMTroopNumberChangedPatch
-    {
-        private static void Prefix(BasicCharacterObject character, ref int numberDead, ref int numberWounded)
+
+        // force Heroes to die in simulated combat
+        [HarmonyPriority(Priority.High)]
+        [HarmonyPatch(typeof(SPScoreboardVM), "TroopNumberChanged")]
+        public static class SPScoreboardVMTroopNumberChangedPatch
         {
-            var c = (CharacterObject)character;
-            if (numberWounded > 0
-                && c.HeroObject?.PartyBelongedTo is not null
-                && c.HeroObject.PartyBelongedTo.IsBM())
+            public static void Prefix(BasicCharacterObject character, ref int numberDead, ref int numberWounded)
             {
-                numberDead = 1;
-                numberWounded = 0;
+                var c = (CharacterObject)character;
+                if (numberWounded > 0
+                    && c.HeroObject?.PartyBelongedTo is not null
+                    && c.HeroObject.PartyBelongedTo.IsBM())
+                {
+                    numberDead = 1;
+                    numberWounded = 0;
+                }
             }
         }
-    }
 
-    [HarmonyPatch(typeof(TroopRoster), "AddToCountsAtIndex")]
-    public static class TroopRosterAddToCountsAtIndexPatch
-    {
-        private static Exception Finalizer(TroopRoster __instance, Exception __exception)
+        [HarmonyPatch(typeof(TroopRoster), "AddToCountsAtIndex")]
+        public static class TroopRosterAddToCountsAtIndexPatch
         {
-            // throws with Heroes Must Die (old)
-            if (__exception is IndexOutOfRangeException)
+            public static Exception Finalizer(TroopRoster __instance, Exception __exception)
             {
-                Log("HACK Squelching IndexOutOfRangeException at TroopRoster.AddToCountsAtIndex");
-                return null;
-            }
+                // throws with Heroes Must Die (old)
+                if (__exception is IndexOutOfRangeException)
+                {
+                    Log("HACK Squelching IndexOutOfRangeException at TroopRoster.AddToCountsAtIndex");
+                    return null;
+                }
 
-            // throws during nuke of poor state
-            if (__exception is NullReferenceException)
-            {
-                return null;
-            }
+                // throws during nuke of poor state
+                if (__exception is NullReferenceException)
+                {
+                    return null;
+                }
 
-            return __exception;
-        }
-    }
-
-    // changes the optional Tracker icons to match banners
-    [HarmonyPatch(typeof(MobilePartyTrackItemVM), "UpdateProperties")]
-    public static class MobilePartyTrackItemVMUpdatePropertiesPatch
-    {
-        public static void Postfix(MobilePartyTrackItemVM __instance, ref ImageIdentifierVM ____factionVisualBind)
-        {
-            if (__instance.TrackedParty is not null
-                && PartyImageMap.ContainsKey(__instance.TrackedParty))
-            {
-                ____factionVisualBind = PartyImageMap[__instance.TrackedParty];
+                return __exception;
             }
         }
-    }
 
-    // skip the regular bandit AI stuff, looks at moving into hideouts
-    // and other stuff I don't really want happening
-    [HarmonyPatch(typeof(AiBanditPatrollingBehavior), "AiHourlyTick")]
-    public static class AiBanditPatrollingBehaviorAiHourlyTickPatch
-    {
-        public static bool Prefix(MobileParty mobileParty) => false;
-    }
-
-    [HarmonyPatch(typeof(DefaultMobilePartyFoodConsumptionModel), "DoesPartyConsumeFood")]
-    public static class DefaultMobilePartyFoodConsumptionModelDoesPartyConsumeFoodPatch
-    {
-        public static void Postfix(MobileParty mobileParty, ref bool __result)
+        // changes the optional Tracker icons to match banners
+        [HarmonyPatch(typeof(MobilePartyTrackItemVM), "UpdateProperties")]
+        public static class MobilePartyTrackItemVMUpdatePropertiesPatch
         {
-            if (mobileParty.IsBM())
+            public static void Postfix(MobilePartyTrackItemVM __instance, ref ImageIdentifierVM ____factionVisualBind)
             {
-                __result = false;
+                if (__instance.TrackedParty is not null
+                    && PartyImageMap.ContainsKey(__instance.TrackedParty))
+                {
+                    ____factionVisualBind = PartyImageMap[__instance.TrackedParty];
+                }
+            }
+        }
+
+        // skip the regular bandit AI stuff, looks at moving into hideouts
+        // and other stuff I don't really want happening
+        [HarmonyPatch(typeof(AiBanditPatrollingBehavior), "AiHourlyTick")]
+        public static class AiBanditPatrollingBehaviorAiHourlyTickPatch
+        {
+            public static bool Prefix(MobileParty mobileParty) => false;
+        }
+
+        [HarmonyPatch(typeof(DefaultMobilePartyFoodConsumptionModel), "DoesPartyConsumeFood")]
+        public static class DefaultMobilePartyFoodConsumptionModelDoesPartyConsumeFoodPatch
+        {
+            public static void Postfix(MobileParty mobileParty, ref bool __result)
+            {
+                if (mobileParty.IsBM())
+                {
+                    __result = false;
+                }
             }
         }
     }

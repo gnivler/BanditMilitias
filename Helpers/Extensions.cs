@@ -44,11 +44,11 @@ namespace BanditMilitias.Helpers
             return mobileParty?.PartyComponent is ModBanditMilitiaPartyComponent;
         }
 
-        public static ModBanditMilitiaPartyComponent BM(this MobileParty mobileParty)
+        public static ModBanditMilitiaPartyComponent GetBM(this MobileParty mobileParty)
         {
-            if (mobileParty.PartyComponent is ModBanditMilitiaPartyComponent bm)
+            if (mobileParty.PartyComponent is ModBanditMilitiaPartyComponent BM)
             {
-                return bm;
+                return BM;
             }
             return null;
         }

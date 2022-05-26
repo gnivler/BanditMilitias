@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using BanditMilitias.Patches;
 using HarmonyLib;
 using Helpers;
 using SandBox.View.Map;
@@ -13,7 +12,6 @@ using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.CharacterDevelopment;
 using TaleWorlds.CampaignSystem.Extensions;
-using TaleWorlds.CampaignSystem.GameComponents;
 using TaleWorlds.CampaignSystem.LogEntries;
 using TaleWorlds.CampaignSystem.MapEvents;
 using TaleWorlds.CampaignSystem.Party;
@@ -23,7 +21,6 @@ using TaleWorlds.Core;
 using TaleWorlds.Library;
 using TaleWorlds.LinQuick;
 using TaleWorlds.Localization;
-using TaleWorlds.MountAndBlade.GauntletUI.Widgets.Menu.Overlay;
 using TaleWorlds.ObjectSystem;
 using static BanditMilitias.Globals;
 
@@ -38,8 +35,8 @@ namespace BanditMilitias.Helpers
         public static List<ItemObject> Saddles;
 
         private const float ReductionFactor = 0.8f;
-
-        //private static List<CultureObject> AllowedCultures;
+        private const float SplitDivisor = 2;
+        private const float RemovedHero = 1;
         private static IEnumerable<ModBanditMilitiaPartyComponent> AllBMs;
 
         public static readonly AccessTools.FieldRef<MobileParty, bool> IsBandit =
@@ -56,6 +53,7 @@ namespace BanditMilitias.Helpers
         public static readonly AccessTools.FieldRef<PartyBase, ItemRoster> ItemRoster =
             AccessTools.FieldRefAccess<PartyBase, ItemRoster>("<ItemRoster>k__BackingField");
 
+        // ReSharper disable once UnusedMethodReturnValue.Global
         public static bool Log(object input)
         {
             if (Globals.Settings is null
@@ -71,10 +69,8 @@ namespace BanditMilitias.Helpers
 
         public static bool TrySplitParty(MobileParty mobileParty)
         {
-            const float splitDivisor = 2;
-            const float removedHero = 1;
             if (MilitiaPowerPercent > Globals.Settings.GlobalPowerPercent
-                || mobileParty.Party.MemberRoster.TotalManCount / splitDivisor - removedHero < Globals.Settings.MinPartySize
+                || mobileParty.Party.MemberRoster.TotalManCount / SplitDivisor - RemovedHero < Globals.Settings.MinPartySize
                 || !mobileParty.IsBM()
                 || mobileParty.IsTooBusyToMerge())
             {
@@ -187,8 +183,8 @@ namespace BanditMilitias.Helpers
                 };
                 InitMilitia(bm1, rosters1, original.Position2D);
                 InitMilitia(bm2, rosters2, original.Position2D);
-                bm1.BM().Avoidance = original.BM().Avoidance;
-                bm2.BM().Avoidance = original.BM().Avoidance;
+                bm1.GetBM().Avoidance = original.GetBM().Avoidance;
+                bm2.GetBM().Avoidance = original.GetBM().Avoidance;
                 Log($">>> {bm1.Name} <- Split {original.Name} Split -> {bm2.Name}");
                 ItemRoster(bm1.Party) = inventory1;
                 ItemRoster(bm2.Party) = inventory2;
@@ -444,27 +440,6 @@ namespace BanditMilitias.Helpers
 
         public static void PopulateItems()
         {
-            var verbotenItems = new List<string>
-            {
-                "Sparring",
-                "Trash Item",
-                "Torch",
-                "Horse Whip",
-                "Push Fork",
-                "Bound Crossbow",
-                "Hoe",
-                "Scythe",
-                "Stone",
-                "Crafted",
-                "Wooden",
-                "Practice",
-                "Ballista",
-                "Boulder",
-                "Fire Pot",
-                "Banner",
-                "Grapeshot"
-            };
-
             var verbotenItemsStringIds = new List<string>
             {
                 "bound_adarga",
@@ -711,8 +686,9 @@ namespace BanditMilitias.Helpers
             return result ?? MBObjectManager.Instance.GetObject<CultureObject>("empire");
         }
 
-        public static void ConvertLootersToKingdomCultureRecruits(TroopRoster troopRoster, CultureObject culture, int numberToUpgrade)
+        public static void ConvertLootersToRecruits(TroopRoster troopRoster, CultureObject culture, int numberToUpgrade)
         {
+            troopRoster.RemoveTroop(MilitiaBehavior.Looters.BasicTroop, numberToUpgrade);
             var recruit = Recruits[culture][Rng.Next(0, Recruits[culture].Count)];
             troopRoster.AddToCounts(recruit, numberToUpgrade);
         }
@@ -747,11 +723,6 @@ namespace BanditMilitias.Helpers
 
         public static void RunLateManualPatches()
         {
-            var original = AccessTools.Method(typeof(DefaultPartySpeedCalculatingModel), "CalculatePureSpeed");
-            var postfix = AccessTools.Method(
-                typeof(MilitiaPatches.CalculatePureSpeed),
-                nameof(MilitiaPatches.CalculatePureSpeed.Postfix));
-            SubModule.harmony.Patch(original, postfix: new HarmonyMethod(postfix));
         }
 
         public static void RemoveUndersizedTracker(PartyBase party)
@@ -795,7 +766,7 @@ namespace BanditMilitias.Helpers
         }
 
 
-        internal static void MurderMounts(TroopRoster troopRoster)
+        public static void MurderMounts(TroopRoster troopRoster)
         {
             var numMounted = NumMountedTroops(troopRoster);
             var mountedTroops = troopRoster.ToFlattenedRoster().Troops.WhereQ(t => t.IsMounted && !t.IsHero).ToListQ();
@@ -821,39 +792,39 @@ namespace BanditMilitias.Helpers
         public static void ConfigureMilitia(MobileParty mobileParty)
         {
             mobileParty.LeaderHero.Gold = Convert.ToInt32(mobileParty.Party.TotalStrength * GoldMap[Globals.Settings.GoldReward.SelectedValue]);
-            mobileParty.MemberRoster.AddToCounts(mobileParty.BM().Leader.CharacterObject, 1, false, 0, 0, true, 0);
+            mobileParty.MemberRoster.AddToCounts(mobileParty.GetBM().Leader.CharacterObject, 1, false, 0, 0, true, 0);
             IsBandit(mobileParty) = true;
             if (PartyImageMap.ContainsKey(mobileParty))
             {
-                PartyImageMap[mobileParty] = new ImageIdentifierVM(mobileParty.BM().Banner);
+                PartyImageMap[mobileParty] = new ImageIdentifierVM(mobileParty.GetBM().Banner);
             }
             else
             {
-                PartyImageMap.Add(mobileParty, new ImageIdentifierVM(mobileParty.BM().Banner));
+                PartyImageMap.Add(mobileParty, new ImageIdentifierVM(mobileParty.GetBM().Banner));
             }
 
             if (mobileParty.ActualClan.Leader is null)
             {
-                mobileParty.ActualClan.SetLeader(mobileParty.BM().Leader);
+                mobileParty.ActualClan.SetLeader(mobileParty.GetBM().Leader);
             }
 
             if (Rng.Next(0, 2) == 0)
             {
                 var mount = Mounts.GetRandomElement();
-                mobileParty.BM().Leader.BattleEquipment[10] = new EquipmentElement(mount);
+                mobileParty.GetBM().Leader.BattleEquipment[10] = new EquipmentElement(mount);
                 if (mount.HorseComponent.Monster.MonsterUsage == "camel")
                 {
-                    mobileParty.BM().Leader.BattleEquipment[11] = new EquipmentElement(Saddles.Where(saddle =>
+                    mobileParty.GetBM().Leader.BattleEquipment[11] = new EquipmentElement(Saddles.Where(saddle =>
                         saddle.StringId.Contains("camel")).ToList().GetRandomElement());
                 }
                 else
                 {
-                    mobileParty.BM().Leader.BattleEquipment[11] = new EquipmentElement(Saddles.Where(saddle =>
+                    mobileParty.GetBM().Leader.BattleEquipment[11] = new EquipmentElement(Saddles.Where(saddle =>
                         !saddle.StringId.Contains("camel")).ToList().GetRandomElement());
                 }
             }
 
-            mobileParty.SetCustomName(mobileParty.BM().Name);
+            mobileParty.SetCustomName(mobileParty.GetBM().Name);
             mobileParty.LeaderHero.StringId += "Bandit_Militia";
             var tracker = Globals.MobilePartyTrackerVM.Trackers.FirstOrDefault(t => t.TrackedParty == mobileParty);
             if (Globals.Settings.Trackers
@@ -915,9 +886,7 @@ namespace BanditMilitias.Helpers
                                 continue;
                             }
 
-                            var roster = mobileParty.MemberRoster;
-                            roster.RemoveTroop(looter.Character, numberToUpgrade);
-                            ConvertLootersToKingdomCultureRecruits(roster, culture, numberToUpgrade);
+                            ConvertLootersToRecruits(mobileParty.MemberRoster, culture, numberToUpgrade);
                         }
                     }
                 }
@@ -998,7 +967,6 @@ namespace BanditMilitias.Helpers
             }
 
             militia.InitializeMobilePartyAtPosition(rosters[0], rosters[1], position);
-            IsBandit(militia) = true;
             ConfigureMilitia(militia);
             TrainMilitia(militia);
         }
@@ -1017,5 +985,13 @@ namespace BanditMilitias.Helpers
         //        LogLog(ex);
         //    }
         //}
+
+        public static void Meow()
+        {
+            if (SubModule.MEOWMEOW)
+            {
+                Debugger.Break();
+            }
+        }
     }
 }

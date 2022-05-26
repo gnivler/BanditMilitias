@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -29,6 +28,7 @@ namespace BanditMilitias
 {
     public class SubModule : MBSubModuleBase
     {
+        public static bool MEOWMEOW = Environment.MachineName == "MEOWMEOW";
         public static readonly Harmony harmony = new("ca.gnivler.bannerlord.BanditMilitias");
 
         // ReSharper disable once AssignNullToNotNullAttribute
@@ -36,7 +36,7 @@ namespace BanditMilitias
 
         protected override void OnSubModuleLoad()
         {
-            if (Environment.MachineName == "MEOWMEOW")
+            if (MEOWMEOW)
             {
                 AccessTools.Field(typeof(Module), "_splashScreenPlayed").SetValue(Module.CurrentModule, true);
             }
@@ -106,9 +106,25 @@ namespace BanditMilitias
                 }
             }
 
-            if (superKey && Input.IsKeyPressed(InputKey.Tilde))
+            if (MEOWMEOW && Input.IsKeyPressed(InputKey.Tilde))
             {
-                Debugger.Break();
+                //Debugger.Break();
+                //var crud = MobileParty.All.Where(m => m.Name.ToString().EndsWith("Bandit Militia")).ToList();
+                //for (var i = 0; i < crud.Count; i++)
+                //{
+                //    Trash(crud[i]);
+                //}
+
+
+                Nuke();
+                for (var i = 0; i < MobileParty.AllBanditParties.Count; i++)
+                {
+                    //Traverse.Create(MobileParty.AllBanditParties[i]).Property<MobileParty>("AiBehaviorPartyBase").Value = null;
+                    //Traverse.Create(MobileParty.AllBanditParties[i].AiBehaviorPartyBase).Property<MobileParty>("MobileParty").Value = null;
+
+                    MobileParty.AllBanditParties[i].MapEvent?.FinalizeEvent();
+                    Trash(MobileParty.AllBanditParties[i]);
+                }
             }
 
             if (superKey && Input.IsKeyPressed(InputKey.F11))
