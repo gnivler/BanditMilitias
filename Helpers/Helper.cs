@@ -739,7 +739,7 @@ namespace BanditMilitias.Helpers
 
         public static int NumMountedTroops(TroopRoster troopRoster)
         {
-            return troopRoster.GetTroopRoster().Where(x => x.Character.Equipment[10].Item is not null).Sum(e => e.Number);
+            return troopRoster.GetTroopRoster().Where(e => e.Character.Equipment[10].Item is not null).Sum(e => e.Number);
         }
 
         public static Hero CreateHero(Clan clan)
@@ -769,7 +769,8 @@ namespace BanditMilitias.Helpers
         public static void MurderMounts(TroopRoster troopRoster)
         {
             var numMounted = NumMountedTroops(troopRoster);
-            var mountedTroops = troopRoster.ToFlattenedRoster().Troops.WhereQ(t => t.IsMounted && !t.IsHero).ToListQ();
+            var mountedTroops = troopRoster.ToFlattenedRoster().Troops
+                .WhereQ(c => !c.BattleEquipments.First()[10].IsEmpty && !c.IsHero).ToListQ();
             mountedTroops.Shuffle();
             // remove horses past 50% of the BM
             if (numMounted > troopRoster.TotalManCount / 2)
@@ -991,6 +992,21 @@ namespace BanditMilitias.Helpers
             if (SubModule.MEOWMEOW)
             {
                 Debugger.Break();
+            }
+        }
+
+        public static void DecreaseAvoidance(List<Hero> loserHeroes, MapEventParty mep)
+        {
+            foreach (var loserHero in loserHeroes)
+            {
+                if (mep.Party.MobileParty.GetBM().Avoidance.TryGetValue(loserHero, out _))
+                {
+                    mep.Party.MobileParty.GetBM().Avoidance[loserHero] -= MilitiaBehavior.Increment;
+                }
+                else
+                {
+                    mep.Party.MobileParty.GetBM().Avoidance.Add(loserHero, Globals.Rng.Next(15, 35));
+                }
             }
         }
     }

@@ -36,7 +36,7 @@ namespace BanditMilitias.Patches
                     var heroes = party.Party.MemberRoster.RemoveIf(t => t.Character.IsHero).ToListQ();
                     for (var i = 0; i < heroes.Count; i++)
                     {
-                        Log($">>> Killing {heroes[i].Character.Name} ({heroes[i].Character.StringId}) at FinishBattle.");
+                        Log($"<<< Killing {heroes[i].Character.Name} ({heroes[i].Character.StringId}) at FinishBattle.");
                         heroes[i].Character.HeroObject.RemoveMilitiaHero();
                     }
 
@@ -80,7 +80,7 @@ namespace BanditMilitias.Patches
                     var heroes = party.Party.MemberRoster.RemoveIf(t => t.Character.IsHero).ToListQ();
                     for (var i = 0; i < heroes.Count; i++)
                     {
-                        Log($">>> Killing {heroes[i].Character.Name} at LootDefeatedParties.");
+                        Log($"<<< Killing {heroes[i].Character.Name} at LootDefeatedParties.");
                         heroes[i].Character.HeroObject.RemoveMilitiaHero();
                     }
 
@@ -100,95 +100,122 @@ namespace BanditMilitias.Patches
                     return;
                 }
 
-                var loserHeroes = __instance.PartiesOnSide(__instance.WinningSide).SelectQ(mep => mep.Party.Owner).Where(h => h is not null).ToListQ();
+                var loserHeroes = __instance.PartiesOnSide(__instance.DefeatedSide)
+                    .SelectQ(mep => mep.Party.Owner).Where(h => h is not null).ToListQ();
 
                 //    winnerBMs.Select(mep => mep.Party.MemberRoster.GetCharacterAtIndex(
                 var lootedItems = Traverse.Create(lootCollector).Property<ItemRoster>("LootedItems")
                     .Value.OrderByDescending(i => i.EquipmentElement.ItemValue).ToListQ();
-                var wearableGear = lootedItems.WhereQ(i => i.EquipmentElement.Item.ItemType is
-                    ItemObject.ItemTypeEnum.Horse
-                    or ItemObject.ItemTypeEnum.OneHandedWeapon
-                    or ItemObject.ItemTypeEnum.TwoHandedWeapon
-                    or ItemObject.ItemTypeEnum.Polearm
-                    or ItemObject.ItemTypeEnum.Arrows
-                    or ItemObject.ItemTypeEnum.Bolts
-                    or ItemObject.ItemTypeEnum.Shield
-                    or ItemObject.ItemTypeEnum.Bow
-                    or ItemObject.ItemTypeEnum.Crossbow
-                    or ItemObject.ItemTypeEnum.Thrown
-                    or ItemObject.ItemTypeEnum.HeadArmor
-                    or ItemObject.ItemTypeEnum.BodyArmor
-                    or ItemObject.ItemTypeEnum.LegArmor
-                    or ItemObject.ItemTypeEnum.HandArmor
-                    or ItemObject.ItemTypeEnum.Pistol
-                    or ItemObject.ItemTypeEnum.Musket
-                    or ItemObject.ItemTypeEnum.Bullets
-                    or ItemObject.ItemTypeEnum.ChestArmor
-                    or ItemObject.ItemTypeEnum.Cape
-                    or ItemObject.ItemTypeEnum.HorseHarness).ToListQ();
+                var usableEquipment = lootedItems.WhereQ(i => i.EquipmentElement.Item.ItemType is
+                        ItemObject.ItemTypeEnum.Horse
+                        or ItemObject.ItemTypeEnum.OneHandedWeapon
+                        or ItemObject.ItemTypeEnum.TwoHandedWeapon
+                        or ItemObject.ItemTypeEnum.Polearm
+                        or ItemObject.ItemTypeEnum.Arrows
+                        or ItemObject.ItemTypeEnum.Bolts
+                        or ItemObject.ItemTypeEnum.Shield
+                        or ItemObject.ItemTypeEnum.Bow
+                        or ItemObject.ItemTypeEnum.Crossbow
+                        or ItemObject.ItemTypeEnum.Thrown
+                        or ItemObject.ItemTypeEnum.HeadArmor
+                        or ItemObject.ItemTypeEnum.BodyArmor
+                        or ItemObject.ItemTypeEnum.LegArmor
+                        or ItemObject.ItemTypeEnum.HandArmor
+                        or ItemObject.ItemTypeEnum.Pistol
+                        or ItemObject.ItemTypeEnum.Musket
+                        or ItemObject.ItemTypeEnum.Bullets
+                        or ItemObject.ItemTypeEnum.ChestArmor
+                        or ItemObject.ItemTypeEnum.Cape
+                        or ItemObject.ItemTypeEnum.HorseHarness)
+                    .OrderByDescending(i => i.EquipmentElement.ItemValue).ToListQ();
 
-                if (!wearableGear.Any())
+                usableEquipment.RemoveAll(e => e.EquipmentElement.Item.StringId == "mule");
+                if (!usableEquipment.Any())
                 {
                     return;
                 }
 
                 //  individuated troops for gear upgrades
                 List<CharacterObject> bigBagOfTroops = new();
-                foreach (var mep in winnerBMs)
+                foreach (var BM in winnerBMs)
                 {
-                    foreach (var loserHero in loserHeroes)
-                    {
-                        if (mep.Party.MobileParty.GetBM().Avoidance.TryGetValue(loserHero, out _))
-                        {
-                            mep.Party.MobileParty.GetBM().Avoidance[loserHero] -= MilitiaBehavior.Increment;
-                        }
-                        else
-                        {
-                            mep.Party.MobileParty.GetBM().Avoidance.Add(loserHero, Globals.Rng.Next(15, 35));
-                        }
-                    }
+                    bigBagOfTroops.AddRange(BM.Party.MemberRoster.ToFlattenedRoster().Troops);
+                    DecreaseAvoidance(loserHeroes, BM);
+                }
 
-                    foreach (var rosterElement in mep.Party.MemberRoster.GetTroopRoster())
-                    {
-                        for (var count = 0; count < rosterElement.Number; count++)
-                        {
-                            bigBagOfTroops.Add(rosterElement.Character);
-                        }
-                    }
+                // perf short-circuit prevent over-stuffing cavalry
+                if (usableEquipment.AllQ(i => i.EquipmentElement.Item.HasHorseComponent)
+                    && winnerBMs.AllQ(BM => BM.Party.MobileParty.MemberRoster.MountedCount() > BM.Party.MobileParty.MemberRoster.TotalManCount / 2))
+                {
+                    return;
                 }
 
                 bigBagOfTroops.Shuffle();
                 // find upgrades (seems like only horses with vanilla 1.7.2)
-                foreach (var characterObject in bigBagOfTroops)
+                for (var item = 0; item < usableEquipment.Count; item++)
                 {
-                    for (var index = 0; index < Equipment.EquipmentSlotLength; index++)
+                    var possibleUpgrade = usableEquipment[item];
+                    bool superBreak = default;
+                    foreach (var troop in bigBagOfTroops)
                     {
-                        var currentItem = characterObject.FirstBattleEquipment[index];
-                        if (currentItem.Item is null)
+                        if (possibleUpgrade.Amount == 0)
                         {
-                            continue;
+                            break;
                         }
 
-                        ItemRosterElement bestOfType = default;
-                        if (wearableGear.AnyQ(i => i.EquipmentElement.Item.ItemType == currentItem.Item.ItemType))
+                        // simple record of slots yet to try
+                        var slots = new List<int>();
+                        for (var s = 0; s < Equipment.EquipmentSlotLength; s++)
                         {
-                            bestOfType = wearableGear.First(i => i.EquipmentElement.Item.ItemType == currentItem.Item.ItemType);
+                            slots.Add(s);
                         }
 
-                        if (currentItem.ItemValue < bestOfType.EquipmentElement.ItemValue)
+                        // go through each inventory slot in random order
+                        slots.Shuffle();
+                        for (var slot = slots[0]; slots.Count > 0; slots.RemoveAt(0))
                         {
-                            //Debugger.Break();
-                            characterObject.FirstBattleEquipment[index] = bestOfType.EquipmentElement;
-                            if (--bestOfType.Amount == 0)
+                            if (slot == 10 && troop.FindParty().MemberRoster.MountedCount() > troop.FindParty().MemberRoster.TotalManCount / 2)
                             {
-                                if (!currentItem.IsEmpty)
+                                superBreak = true;
+                                break;
+                            }
+
+                            if (Equipment.IsItemFitsToSlot((EquipmentIndex)slot, possibleUpgrade.EquipmentElement.Item))
+                            {
+                                var currentItem = troop.FirstBattleEquipment[slot];
+                                if (currentItem.ItemValue < possibleUpgrade.EquipmentElement.ItemValue)
                                 {
-                                    lootedItems.Add(new ItemRosterElement(currentItem.Item, 1));
+                                    Log($"Upgrading {troop} with {possibleUpgrade.EquipmentElement.Item.StringId}.");
+                                    troop.FirstBattleEquipment[slot] = possibleUpgrade.EquipmentElement;
+                                    if (--possibleUpgrade.Amount == 0)
+                                    {
+                                        // put anything replaced, back into the loot pile for others
+                                        if (!currentItem.IsEmpty)
+                                        {
+                                            Log($"Returning {currentItem.Item.Name} to loot pile.");
+                                            lootedItems.Add(new ItemRosterElement(currentItem.Item, 1));
+                                        }
+
+                                        lootedItems.Remove(possibleUpgrade);
+                                    }
                                 }
 
-                                lootedItems.Remove(bestOfType);
+                                // regardless of whether it was an upgrade, it matched the slot so move on
+                                // therefore it's not going to currently check if This Weapon is better than All Weapons.
+                                // just a slot comparison
+                                break;
                             }
                         }
+
+                        if (superBreak)
+                        {
+                            break;
+                        }
+                    }
+
+                    if (superBreak)
+                    {
+                        break;
                     }
                 }
             }

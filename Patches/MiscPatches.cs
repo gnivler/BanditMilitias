@@ -8,6 +8,7 @@ using Helpers;
 using SandBox.View.Map;
 using SandBox.ViewModelCollection.MobilePartyTracker;
 using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.CampaignBehaviors.AiBehaviors;
 using TaleWorlds.CampaignSystem.CharacterDevelopment;
 using TaleWorlds.CampaignSystem.Encounters;
 using TaleWorlds.CampaignSystem.Extensions;
@@ -92,7 +93,7 @@ namespace BanditMilitias.Patches
                 }
 
                 PartyImageMap.Clear();
-                Hideouts = Settlement.FindAll(x => x.IsHideout).ToList();
+                Hideouts = Settlement.FindAll(s => s.IsHideout && s.Culture.Name is not null).ToListQ();
                 DoPowerCalculations(true);
                 MilitiaBehavior.FlushMilitiaCharacterObjects();
                 var bmCount = MobileParty.All.CountQ(m => m.PartyComponent is ModBanditMilitiaPartyComponent);
@@ -113,6 +114,7 @@ namespace BanditMilitias.Patches
 
         // TODO find root causes, remove finalizers
         // not sure where to start
+        // hasn't thrown since 3.7.x
         [HarmonyPatch(typeof(PartyBaseHelper), "HasFeat")]
         public static class PartyBaseHelperHasFeat
         {

@@ -1,8 +1,11 @@
 using System.Collections.Generic;
+using System.Linq;
 using HarmonyLib;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.Party;
+using TaleWorlds.CampaignSystem.Roster;
+using TaleWorlds.LinQuick;
 using TaleWorlds.ObjectSystem;
 
 namespace BanditMilitias.Helpers
@@ -51,6 +54,16 @@ namespace BanditMilitias.Helpers
                 return BM;
             }
             return null;
+        }
+
+        public static MobileParty FindParty(this CharacterObject characterObject)
+        {
+            return MobileParty.All.FirstOrDefaultQ(m => m.MemberRoster.Contains(characterObject));
+        }
+
+        public static int MountedCount(this TroopRoster troopRoster)
+        {
+            return troopRoster.GetTroopRoster().Count(t => !t.Character.BattleEquipments.First()[10].IsEmpty);
         }
     }
 }

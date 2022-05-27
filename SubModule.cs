@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using BanditMilitias.Helpers;
+using BanditMilitias.Patches;
 using HarmonyLib;
 using SandBox.View.Map;
 using SandBox.ViewModelCollection.MobilePartyTracker;
@@ -108,7 +110,7 @@ namespace BanditMilitias
 
             if (MEOWMEOW && Input.IsKeyPressed(InputKey.Tilde))
             {
-                //Debugger.Break();
+                Debugger.Break();
                 //var crud = MobileParty.All.Where(m => m.Name.ToString().EndsWith("Bandit Militia")).ToList();
                 //for (var i = 0; i < crud.Count; i++)
                 //{
@@ -116,15 +118,15 @@ namespace BanditMilitias
                 //}
 
 
-                Nuke();
-                for (var i = 0; i < MobileParty.AllBanditParties.Count; i++)
-                {
-                    //Traverse.Create(MobileParty.AllBanditParties[i]).Property<MobileParty>("AiBehaviorPartyBase").Value = null;
-                    //Traverse.Create(MobileParty.AllBanditParties[i].AiBehaviorPartyBase).Property<MobileParty>("MobileParty").Value = null;
-
-                    MobileParty.AllBanditParties[i].MapEvent?.FinalizeEvent();
-                    Trash(MobileParty.AllBanditParties[i]);
-                }
+                //Nuke();
+                //for (var i = 0; i < MobileParty.AllBanditParties.Count; i++)
+                //{
+                //    //Traverse.Create(MobileParty.AllBanditParties[i]).Property<MobileParty>("AiBehaviorPartyBase").Value = null;
+                //    //Traverse.Create(MobileParty.AllBanditParties[i].AiBehaviorPartyBase).Property<MobileParty>("MobileParty").Value = null;
+                //
+                //    MobileParty.AllBanditParties[i].MapEvent?.FinalizeEvent();
+                //    Trash(MobileParty.AllBanditParties[i]);
+                //}
             }
 
             if (superKey && Input.IsKeyPressed(InputKey.F11))
@@ -202,9 +204,6 @@ namespace BanditMilitias
                 var internalType = AccessTools.TypeByName("<GetTrackDescription>d__11");
                 var org = AccessTools.Method(internalType, "MoveNext");
                 harmony.Patch(org, finalizer: new HarmonyMethod(AccessTools.Method(typeof(SubModule), "Finalizer")));
-                //internalType = AccessTools.TypeByName("ManagedCallbacks.ScriptingInterfaceOfIScene");
-                //org = AccessTools.Method(internalType, "GetPathBetweenAIFaceIndices");
-                //harmony.Patch(org, prefix: new HarmonyMethod(AccessTools.Method(typeof(SubModule), "Prefix")));
             }
             catch (Exception ex)
             {
