@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Reflection;
 using BanditMilitias.Helpers;
 using HarmonyLib;
@@ -24,7 +25,7 @@ namespace BanditMilitias
         [CachedData] public TextObject cachedName;
 
         public override Hero Leader => leader;
-        public override Hero PartyOwner => MobileParty?.ActualClan?.Leader ?? new Hero("Default_Hero_Bandit_Militia");
+        public override Hero PartyOwner => MobileParty.ActualClan?.Leader;// ?? new Hero("Default_Hero_Bandit_Militia");
 
         public override Settlement HomeSettlement { get; }
         private static readonly MethodInfo GetLocalizedText = AccessTools.Method(typeof(MBTextManager), "GetLocalizedText");
@@ -52,6 +53,7 @@ namespace BanditMilitias
         protected override void OnInitialize()
         {
             base.OnInitialize();
+            if (MobileParty is null) Debugger.Break();
             IsBandit(MobileParty) = true;
         }
 

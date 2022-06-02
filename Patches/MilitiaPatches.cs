@@ -182,7 +182,8 @@ namespace BanditMilitias.Patches
                     }
 
                     if (__result
-                        && __instance.GetBM().Avoidance.TryGetValue(targetParty.Owner, out var heroAvoidance)
+                        && targetParty.LeaderHero is not null
+                        && __instance.GetBM().Avoidance.TryGetValue(targetParty.LeaderHero, out var heroAvoidance)
                         && Rng.NextDouble() * 100 < heroAvoidance)
                     {
                         Log($"||| {__instance.Name} avoided attacking {targetParty.Name}");
