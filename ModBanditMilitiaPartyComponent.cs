@@ -24,7 +24,7 @@ namespace BanditMilitias
         [CachedData] public TextObject cachedName;
 
         public override Hero Leader => leader;
-        public override Hero PartyOwner => MobileParty.ActualClan?.Leader;
+        public override Hero PartyOwner => MobileParty?.ActualClan?.Leader ?? new Hero("Default_Hero_Bandit_Militia");
 
         public override Settlement HomeSettlement { get; }
         private static readonly MethodInfo GetLocalizedText = AccessTools.Method(typeof(MBTextManager), "GetLocalizedText");
