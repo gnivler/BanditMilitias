@@ -33,6 +33,7 @@ namespace BanditMilitias.Helpers
     {
         public static List<ItemObject> Mounts;
         public static List<ItemObject> Saddles;
+        public static List<Settlement> Hideouts;
 
         private const float ReductionFactor = 0.8f;
         private const float SplitDivisor = 2;
@@ -52,6 +53,16 @@ namespace BanditMilitias.Helpers
 
         public static readonly AccessTools.FieldRef<PartyBase, ItemRoster> ItemRoster =
             AccessTools.FieldRefAccess<PartyBase, ItemRoster>("<ItemRoster>k__BackingField");
+
+        public static readonly AccessTools.FieldRef<BasicCharacterObject, MBEquipmentRoster> EquipmentRoster =
+            AccessTools.FieldRefAccess<BasicCharacterObject, MBEquipmentRoster>("_equipmentRoster");
+
+        public static readonly AccessTools.FieldRef<MBEquipmentRoster, List<Equipment>> Equipments =
+            AccessTools.FieldRefAccess<MBEquipmentRoster, List<Equipment>>("_equipments");
+
+        // ReSharper disable once StringLiteralTypo
+        public static readonly AccessTools.FieldRef<CharacterObject, bool> HiddenInEncyclopedia =
+            AccessTools.FieldRefAccess<CharacterObject, bool>("<HiddenInEncylopedia>k__BackingField");
 
         // ReSharper disable once UnusedMethodReturnValue.Global
         public static bool Log(object input)
@@ -167,7 +178,7 @@ namespace BanditMilitias.Helpers
                     party2.AddToCounts(party2.GetCharacterAtIndex(Rng.Next(1, party2.Count)), 1);
                 }
 
-                if (original.ActualClan is null) Debugger.Break();
+                if (original.ActualClan is null) Meow();
 
                 var bm1 = MobileParty.CreateParty("Bandit_Militia", new ModBanditMilitiaPartyComponent(original.ActualClan), m => m.ActualClan = original.ActualClan);
                 var bm2 = MobileParty.CreateParty("Bandit_Militia", new ModBanditMilitiaPartyComponent(original.ActualClan), m => m.ActualClan = original.ActualClan);
@@ -277,22 +288,24 @@ namespace BanditMilitias.Helpers
             {
                 DestroyPartyAction.Apply(null, mobileParty);
             }
+
+            Traverse.Create(Campaign.Current.CampaignObjectManager).Field<List<MobileParty>>("_partiesWithoutPartyComponent").Value.Remove(mobileParty);
         }
 
         public static void Nuke()
         {
             FlushBanditMilitias();
-            MilitiaBehavior.FlushMilitiaCharacterObjects();
+            FlushMilitiaCharacterObjects();
             FlushPrisoners();
             FlushMapEvents();
             RemoveBMHeroesFromClanLeaderships();
             // written to deal with escapee-BM heroes clogging up the logs
-            FlushObjectManager();
+            FlushPrisonerLogs();
             // TODO remove this temporary fix
             RemoveHeroesWithoutParty();
         }
 
-        private static void FlushObjectManager()
+        private static void FlushPrisonerLogs()
         {
             List<LogEntry> remove = new();
             remove.AddRange(Campaign.Current.LogEntryHistory.GameActionLogs.WhereQ(l => l is TakePrisonerLogEntry entry && entry.Prisoner.StringId.Contains("Bandit_Militia")));
@@ -320,7 +333,10 @@ namespace BanditMilitias.Helpers
         private static void FlushBanditMilitias()
         {
             var hasLogged = false;
-            var partiesToRemove = MobileParty.All.WhereQ(m => m.PartyComponent is ModBanditMilitiaPartyComponent).ToListQ();
+            var partiesToRemove = MobileParty.All
+                .WhereQ(m => m.PartyComponent is ModBanditMilitiaPartyComponent)
+                .Concat(Traverse.Create(Campaign.Current.CampaignObjectManager).Field<List<MobileParty>>("_partiesWithoutPartyComponent").Value
+                    .WhereQ(m => m.StringId.Contains("Bandit_Militia"))).ToListQ();
             foreach (var mobileParty in partiesToRemove)
             {
                 if (!hasLogged)
@@ -332,6 +348,7 @@ namespace BanditMilitias.Helpers
                 Trash(mobileParty);
             }
 
+            Traverse.Create(Campaign.Current.CampaignObjectManager).Field<List<MobileParty>>("_partiesWithoutPartyComponent").Value.RemoveAll(m => m.StringId.Contains("Bandit_Militia"));
             // still needed post 1.7?
             // prisoners somehow of settlements
             foreach (var settlement in Settlement.All)
@@ -374,8 +391,8 @@ namespace BanditMilitias.Helpers
 
             PartyImageMap.Clear();
         }
-
-
+        
+        // deprecated
         public static void FlushPrisoners()
         {
             // stupid overkill, 0-sequences
@@ -391,6 +408,18 @@ namespace BanditMilitias.Helpers
                 //Log($">>> PRISONER {prisoner.Name,-20}: {prisoner.IsPrisoner} ({prisoner.PartyBelongedToAsPrisoner is not null})");
                 prisoner.RemoveMilitiaHero();
                 //Log($"{new string('=', 80)}");
+            }
+
+            foreach (var prisonRoster in MobileParty.All.SelectQ(m => m.PrisonRoster))
+            {
+                foreach (var element in prisonRoster.ToFlattenedRoster())
+                {
+                    if (element.Troop.StringId.Contains("Bandit_Militia"))
+                    {
+                        Debugger.Break();
+                        prisonRoster.RemoveTroop(element.Troop);
+                    }
+                }
             }
         }
 
@@ -665,7 +694,7 @@ namespace BanditMilitias.Helpers
             var map = new Dictionary<CultureObject, int>();
             foreach (var settlement in settlements)
             {
-                if (map.ContainsKey(settlement.Culture))
+                if (map.TryGetValue(settlement.Culture, out _))
                 {
                     map[settlement.Culture]++;
                 }
@@ -744,7 +773,7 @@ namespace BanditMilitias.Helpers
 
         public static Hero CreateHero(Clan clan)
         {
-            var hero = HeroCreator.CreateHeroAtOccupation(Occupation.Bandit, Hideouts.GetRandomElementInefficiently());
+            var hero = HeroCreator.CreateHeroAtOccupation(Occupation.Bandit, Hideouts.GetRandomElement());
             hero.Clan = clan;
             hero.StringId += "Bandit_Militia";
             hero.CharacterObject.StringId += "Bandit_Militia";
@@ -795,7 +824,7 @@ namespace BanditMilitias.Helpers
             mobileParty.LeaderHero.Gold = Convert.ToInt32(mobileParty.Party.TotalStrength * GoldMap[Globals.Settings.GoldReward.SelectedValue]);
             mobileParty.MemberRoster.AddToCounts(mobileParty.GetBM().Leader.CharacterObject, 1, false, 0, 0, true, 0);
             IsBandit(mobileParty) = true;
-            if (PartyImageMap.ContainsKey(mobileParty))
+            if (PartyImageMap.TryGetValue(mobileParty, out _))
             {
                 PartyImageMap[mobileParty] = new ImageIdentifierVM(mobileParty.GetBM().Banner);
             }
@@ -909,7 +938,7 @@ namespace BanditMilitias.Helpers
                     var minNumberToUpgrade = Convert.ToInt32(Globals.Settings.UpgradeUnitsPercent / 100 * number * Rng.NextDouble());
                     minNumberToUpgrade = Math.Max(1, minNumberToUpgrade);
                     numberToUpgrade = Convert.ToInt32(Rng.Next(minNumberToUpgrade, Convert.ToInt32((number + 1) / 2f)));
-                    Log($"{mobileParty.LeaderHero.Name} is upgrading up to {numberToUpgrade} of {number} \"{troopToTrain.Character.Name}\".");
+                    Log($"^^^ {mobileParty.LeaderHero.Name} is upgrading up to {numberToUpgrade} of {number} \"{troopToTrain.Character.Name}\".");
                     var xpGain = numberToUpgrade * DifficultyXpMap[Globals.Settings.XpGift.SelectedValue];
                     mobileParty.MemberRoster.AddXpToTroop(xpGain, troopToTrain.Character);
                     Campaign.Current._partyUpgrader.UpgradeReadyTroops(mobileParty.Party);
@@ -989,10 +1018,7 @@ namespace BanditMilitias.Helpers
 
         public static void Meow()
         {
-            if (SubModule.MEOWMEOW)
-            {
-                Debugger.Break();
-            }
+            if (SubModule.MEOWMEOW) Debugger.Break();
         }
 
         public static void DecreaseAvoidance(List<Hero> loserHeroes, MapEventParty mep)
@@ -1000,14 +1026,265 @@ namespace BanditMilitias.Helpers
             foreach (var loserHero in loserHeroes)
             {
                 if (mep.Party.MobileParty.GetBM().Avoidance.TryGetValue(loserHero, out _))
-                {
                     mep.Party.MobileParty.GetBM().Avoidance[loserHero] -= MilitiaBehavior.Increment;
-                }
                 else
-                {
                     mep.Party.MobileParty.GetBM().Avoidance.Add(loserHero, Globals.Rng.Next(15, 35));
+            }
+        }
+
+        public static void UpgradeEquipment(PartyBase party, ItemRoster loot)
+        {
+            try
+            {
+                var lootedItems = loot.OrderByDescending(i => i.EquipmentElement.ItemValue).ToListQ();
+                var usableEquipment = lootedItems.WhereQ(i => i.EquipmentElement.Item.ItemType is
+                        ItemObject.ItemTypeEnum.Horse
+                        or ItemObject.ItemTypeEnum.OneHandedWeapon
+                        or ItemObject.ItemTypeEnum.TwoHandedWeapon
+                        or ItemObject.ItemTypeEnum.Polearm
+                        or ItemObject.ItemTypeEnum.Arrows
+                        or ItemObject.ItemTypeEnum.Bolts
+                        or ItemObject.ItemTypeEnum.Shield
+                        or ItemObject.ItemTypeEnum.Bow
+                        or ItemObject.ItemTypeEnum.Crossbow
+                        or ItemObject.ItemTypeEnum.Thrown
+                        or ItemObject.ItemTypeEnum.HeadArmor
+                        or ItemObject.ItemTypeEnum.BodyArmor
+                        or ItemObject.ItemTypeEnum.LegArmor
+                        or ItemObject.ItemTypeEnum.HandArmor
+                        or ItemObject.ItemTypeEnum.Pistol
+                        or ItemObject.ItemTypeEnum.Musket
+                        or ItemObject.ItemTypeEnum.Bullets
+                        or ItemObject.ItemTypeEnum.ChestArmor
+                        or ItemObject.ItemTypeEnum.Cape
+                        or ItemObject.ItemTypeEnum.HorseHarness)
+                    .OrderByDescending(i => i.EquipmentElement.ItemValue).ToListQ();
+
+                usableEquipment.RemoveAll(e => e.EquipmentElement.Item.StringId == "mule");
+                if (!usableEquipment.Any())
+                {
+                    return;
+                }
+
+                // short-circuit to prevent over-stuffing cavalry
+                if (usableEquipment.AllQ(i => i.EquipmentElement.Item.HasHorseComponent)
+                    && party.MobileParty.MemberRoster.CountMounted() > party.MobileParty.MemberRoster.TotalManCount / 2)
+                {
+                    return;
+                }
+
+                var troops = party.MemberRoster.ToFlattenedRoster().Troops.OrderByDescending(e => e.Level)
+                    .ThenByDescending(e => e.Equipment.GetTotalWeightOfArmor(true) + e.Equipment.GetTotalWeightOfWeapons()).ToListQ();
+                foreach (var troop in troops)
+                {
+                    bool wasUpgraded = default;
+                    CharacterObject customCO = default;
+                    for (var index = 0; index < usableEquipment.Count; index++)
+                    {
+                        var itemReturned = false;
+                        var possibleUpgrade = usableEquipment[index];
+                        // TODO continue on shields if there is a shield equipped
+                        var rangedSlot = -1;
+                        // assume that sane builds are coming in (no double bows, missing ammo)
+                        if (possibleUpgrade.EquipmentElement.Item.HasWeaponComponent)
+                        {
+                            if (possibleUpgrade.EquipmentElement.Item.ItemType is
+                                    ItemObject.ItemTypeEnum.Bow
+                                    or ItemObject.ItemTypeEnum.Crossbow
+                                    or ItemObject.ItemTypeEnum.Pistol
+                                    or ItemObject.ItemTypeEnum.Musket
+                                && possibleUpgrade.EquipmentElement.Item.PrimaryWeapon.WeaponClass is not
+                                    (WeaponClass.Javelin or WeaponClass.Stone))
+                            {
+                                for (var slot = 0; slot < 4; slot++)
+                                {
+                                    if (troop.FirstBattleEquipment[slot].Item?.PrimaryWeapon is not null
+                                        && troop.FirstBattleEquipment[slot].Item.PrimaryWeapon.IsRangedWeapon)
+                                    {
+                                        rangedSlot = slot;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            if (rangedSlot < 0) continue;
+
+                            // bow is an upgrade so take it and take the ammo
+                            if (DoPossibleUpgrade(loot, troop, possibleUpgrade, usableEquipment, ref wasUpgraded, ref itemReturned, ref customCO, rangedSlot))
+                            {
+                                var ammo = possibleUpgrade.EquipmentElement.Item.ItemType switch
+                                {
+                                    ItemObject.ItemTypeEnum.Bow => usableEquipment.FirstOrDefaultQ(e => e.EquipmentElement.Item.ItemType is ItemObject.ItemTypeEnum.Arrows),
+                                    ItemObject.ItemTypeEnum.Crossbow => usableEquipment.FirstOrDefaultQ(e => e.EquipmentElement.Item.ItemType is ItemObject.ItemTypeEnum.Bolts),
+                                    ItemObject.ItemTypeEnum.Musket or ItemObject.ItemTypeEnum.Pistol =>
+                                        usableEquipment.FirstOrDefaultQ(e => e.EquipmentElement.Item.ItemType is ItemObject.ItemTypeEnum.Bullets),
+                                    _ => default
+                                };
+
+                                // BUG insufficient ammo drops?  weird.  moving on
+                                if (ammo.IsEmpty) continue;
+
+                                possibleUpgrade = new ItemRosterElement(ammo.EquipmentElement.Item, 1);
+                                if (DoPossibleUpgrade(loot, troop, possibleUpgrade, usableEquipment, ref itemReturned, ref wasUpgraded, ref customCO))
+                                {
+                                    usableEquipment.Remove(ammo);
+                                }
+                            }
+
+                            if (itemReturned)
+                            {
+                                index = -1;
+                            }
+
+                            continue;
+                        }
+
+                        // simple record of slots yet to try
+                        var slots = new List<int>();
+                        for (var s = 0; s < Equipment.EquipmentSlotLength; s++) slots.Add(s);
+                        // go through each inventory slot in random order
+                        slots.Shuffle();
+                        for (var slot = slots[0]; slots.Count > 0; slots.RemoveAt(0))
+                        {
+                            // if it's a horse slot but we already have enough, skip to next upgrade EquipmentElement
+                            if (slot == 10 && party.MemberRoster.CountMounted() > party.MemberRoster.TotalManCount / 2) break;
+                            if (Equipment.IsItemFitsToSlot((EquipmentIndex)slot, possibleUpgrade.EquipmentElement.Item))
+                            {
+                                if (DoPossibleUpgrade(loot, troop, possibleUpgrade, usableEquipment, ref itemReturned, ref wasUpgraded, ref customCO))
+                                {
+                                    if (itemReturned)
+                                    {
+                                        index = -1;
+                                    }
+
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    // replace the CO if we upgraded
+                    if (wasUpgraded
+                        && !troop.IsHero
+                        && !party.MemberRoster.GetTroopRoster().AnyQ(e => e.Character.StringId == customCO.StringId))
+                    {
+                        party.MemberRoster.Add(new TroopRosterElement(customCO) { Number = 1 });
+                        party.MemberRoster.RemoveTroop(troop);
+                    }
+                }
+
+                //if (SubModule.MEOWMEOW)
+                //{
+                //    MobileParty.MainParty.Position2D = party.Position2D;
+                //    Campaign.Current.TimeControlMode = CampaignTimeControlMode.Stop;
+                //    MapScreen.Instance.TeleportCameraToMainParty();
+                //}
+            }
+            catch (Exception ex)
+            {
+                Log(ex);
+                Meow();
+            }
+        }
+
+        public static int GetLowestValueSlotThatFits(Equipment equipment, ItemRosterElement possibleUpgrade)
+        {
+            var lowestValue = -1;
+            var targetSlot = -1;
+            for (var slot = 0; slot < Equipment.EquipmentSlotLength; slot++)
+            {
+                if (!Equipment.IsItemFitsToSlot((EquipmentIndex)slot, possibleUpgrade.EquipmentElement.Item)) continue;
+                if (equipment[slot].ItemValue > lowestValue)
+                {
+                    lowestValue = equipment[slot].ItemValue;
+                    targetSlot = slot;
                 }
             }
+
+            return targetSlot;
+        }
+
+        public static bool DoPossibleUpgrade(ItemRoster loot, CharacterObject troop, ItemRosterElement possibleUpgrade,
+            List<ItemRosterElement> usableEquipment, ref bool wasUpgraded, ref bool itemReturned, ref CharacterObject customCO, int slotOverride = -1)
+        {
+            try
+            {
+                // current item where it's the right kind
+                var targetSlot = slotOverride < 0 ? GetLowestValueSlotThatFits(troop.FirstBattleEquipment, possibleUpgrade) : slotOverride;
+                var currentItem = troop.FirstBattleEquipment[targetSlot];
+                if (currentItem.ItemValue < possibleUpgrade.EquipmentElement.ItemValue)
+                {
+                    // goal here is only generate one custom CharacterObject, if receiving an already customized one it can be further customized as-is 
+                    if (!troop.StringId.Contains("Bandit_Militia"))
+                    {
+                        customCO = CharacterObject.CreateFrom(troop, false);
+                        Traverse.Create(customCO).Method("SetName", new TextObject($"Custom {customCO.Name}")).GetValue();
+                        customCO.StringId += $"_Bandit_Militia_Troop_{Guid.NewGuid()}";
+                        HiddenInEncyclopedia(customCO) = true;
+                        var currentEquipment = customCO.Equipment.Clone();
+                        Equipments(EquipmentRoster(customCO)).Clear();
+                        Equipments(EquipmentRoster(customCO)).Add(currentEquipment);
+                    }
+                    else
+                    {
+                        customCO = troop;
+                    }
+
+                    Log($"### Upgrading {customCO.StringId} ({customCO.OriginalCharacter?.StringId}) {currentItem.Item?.Name.ToString() ?? "empty slot"} with {possibleUpgrade.EquipmentElement.Item.Name}");
+                    if (possibleUpgrade.Amount == 0)
+                        loot.Remove(possibleUpgrade);
+                    customCO.Equipment[targetSlot] = possibleUpgrade.EquipmentElement;
+                    if (--possibleUpgrade.Amount == 0)
+                    {
+                        // put anything replaced back into the bag
+                        if (!currentItem.IsEmpty)
+                        {
+                            usableEquipment.Add(new ItemRosterElement(currentItem.Item, 1));
+                            usableEquipment = usableEquipment.OrderByDescending(i => i.EquipmentElement.ItemValue).ToListQ();
+                            itemReturned = true;
+                        }
+
+                        usableEquipment.Remove(possibleUpgrade);
+                    }
+
+                    wasUpgraded = true;
+                    return true;
+                }
+            }
+            catch (Exception e)
+            {
+                Debugger.Break();
+            }
+
+            return false;
+        }
+
+        public static void FlushMilitiaCharacterObjects()
+        {
+            foreach (var roster in MobileParty.All.SelectQ(m => m.MemberRoster))
+            {
+                roster.RemoveIf(e => e.Character.StringId.Contains("Bandit_Militia"));
+            }
+
+            foreach (var roster in MobileParty.All.SelectQ(m => m.PrisonRoster))
+            {
+                roster.RemoveIf(e => e.Character.StringId.Contains("Bandit_Militia"));
+            }
+
+            var COs = MBObjectManager.Instance.GetObjectTypeList<CharacterObject>().WhereQ(t => t.StringId.Contains("Bandit_Militia"));
+            var list = COs.Concat(MobileParty.All.SelectMany(m => m.MemberRoster.GetTroopRoster())
+                .Concat(MobileParty.All.SelectMany(m => m.PrisonRoster.GetTroopRoster()))
+                .WhereQ(t => t.Character.StringId.Contains("Bandit_Militia")).SelectQ(t => t.Character)).ToListQ();
+            for (var index = 0; index < list.Count; index++)
+            {
+                var co = list[index];
+                Log($"Unregistering {co.StringId}");
+                MBObjectManager.Instance.UnregisterObject(co);
+            }
+
+            //Log("");
+            //Log($"{new string('=', 80)}\nBMs: {PartyMilitiaMap.Count,-4} Power: {GlobalMilitiaPower} / Power Limit: {CalculatedGlobalPowerLimit} = {GlobalMilitiaPower / CalculatedGlobalPowerLimit * 100:f2}% (limit {Globals.Settings.GlobalPowerPercent}%)");
+            //Log("");
         }
     }
 }

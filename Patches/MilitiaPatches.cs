@@ -73,7 +73,7 @@ namespace BanditMilitias.Patches
             private static void Postfix(PartyBase __instance, ref Banner __result)
             {
                 if (Globals.Settings.RandomBanners &&
-                    __instance.MobileParty is not null &&
+                    __instance.IsMobile &&
                     __instance.MobileParty.IsBM())
                 {
                     __result = __instance.MobileParty.GetBM().Banner;
@@ -89,7 +89,7 @@ namespace BanditMilitias.Patches
             {
                 var party = (PartyBase)__instance.BattleCombatant;
                 if (Globals.Settings.RandomBanners &&
-                    party.MobileParty is not null &&
+                    party.IsMobile &&
                     party.MobileParty.IsBM())
                 {
                     __result = party.MobileParty?.GetBM().Banner;
@@ -130,9 +130,9 @@ namespace BanditMilitias.Patches
                     return;
                 }
 
-                if (Map.ContainsKey(__instance.Party))
+                if (Map.TryGetValue(__instance.Party, out var name))
                 {
-                    ____fullNameBind = Map[__instance.Party];
+                    ____fullNameBind = name;
                     //SubModule.Log(T.ElapsedTicks);
                     return;
                 }
@@ -181,8 +181,7 @@ namespace BanditMilitias.Patches
                         return;
                     }
 
-                    if (__result
-                        && targetParty.LeaderHero is not null
+                    if (targetParty.LeaderHero is not null 
                         && __instance.GetBM().Avoidance.TryGetValue(targetParty.LeaderHero, out var heroAvoidance)
                         && Rng.NextDouble() * 100 < heroAvoidance)
                     {
@@ -256,10 +255,9 @@ namespace BanditMilitias.Patches
         {
             public static void Postfix(MobilePartyTrackItemVM __instance, ref ImageIdentifierVM ____factionVisualBind)
             {
-                if (__instance.TrackedParty is not null
-                    && PartyImageMap.ContainsKey(__instance.TrackedParty))
+                if (PartyImageMap.TryGetValue(__instance.TrackedParty, out var image))
                 {
-                    ____factionVisualBind = PartyImageMap[__instance.TrackedParty];
+                    ____factionVisualBind = image;
                 }
             }
         }

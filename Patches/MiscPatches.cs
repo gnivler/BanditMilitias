@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using BanditMilitias.Helpers;
 using HarmonyLib;
@@ -8,9 +7,7 @@ using Helpers;
 using SandBox.View.Map;
 using SandBox.ViewModelCollection.MobilePartyTracker;
 using TaleWorlds.CampaignSystem;
-using TaleWorlds.CampaignSystem.CampaignBehaviors.AiBehaviors;
 using TaleWorlds.CampaignSystem.CharacterDevelopment;
-using TaleWorlds.CampaignSystem.Encounters;
 using TaleWorlds.CampaignSystem.Extensions;
 using TaleWorlds.CampaignSystem.GameComponents;
 using TaleWorlds.CampaignSystem.Party;
@@ -32,6 +29,29 @@ namespace BanditMilitias.Patches
 {
     public static class MiscPatches
     {
+        //[HarmonyPatch(typeof(BattleCampaignBehavior), "CollectLoots")]
+        //public static class MapEventSideDistributeLootAmongWinners
+        //{
+        //    public static void Prefix(MapEvent mapEvent, PartyBase party, ref ItemRoster loot)
+        //    {
+        //        if (!mapEvent.HasWinner || !party.IsMobile || !party.MobileParty.IsBM()) return;
+        //        if (LootRecord.TryGetValue(party.MapEventSide, out var equipment))
+        //        {
+        //            foreach (var e in equipment)
+        //            {
+        //                loot.AddToCounts(e, 1);
+        //            }
+        //        }
+        //
+        //        if (loot.AnyQ(i => !i.IsEmpty))
+        //        {
+        //            UpgradeEquipment(party, loot);
+        //        }
+        //
+        //        Globals.LootRecord.Remove(party.MobileParty.MapEventSide);
+        //    }
+        //}
+
         [HarmonyPatch(typeof(MapScreen), "OnInitialize")]
         public static class MapScreenOnInitializePatch
         {
@@ -45,9 +65,8 @@ namespace BanditMilitias.Patches
                 // 1.7 changed CreateHeroAtOccupation to only fish from this: NotableAndWandererTemplates
                 // this has no effect on earlier versions since the property doesn't exist
                 var banditBosses =
-                    CharacterObject.All.Where(c =>
-                        c.Occupation is Occupation.Bandit
-                        && c.StringId.EndsWith("boss")).ToList().GetReadOnlyList();
+                    CharacterObject.All.Where(c => c.Occupation is Occupation.Bandit
+                                                   && c.StringId.EndsWith("boss")).ToList().GetReadOnlyList();
 
                 foreach (var clan in Clan.BanditFactions)
                 {
@@ -79,10 +98,11 @@ namespace BanditMilitias.Patches
                 }
 
                 // used for armour
-                foreach (ItemObject.ItemTypeEnum value in Enum.GetValues(typeof(ItemObject.ItemTypeEnum)))
+                foreach (ItemObject.ItemTypeEnum itemType in Enum.GetValues(typeof(ItemObject.ItemTypeEnum)))
                 {
-                    ItemTypes[value] = Items.All.Where(x =>
-                        x.Type == value && x.Value >= 1000 && x.Value <= Globals.Settings.MaxItemValue).ToList();
+                    ItemTypes[itemType] = Items.All.Where(i => i.Type == itemType
+                                                               && i.Value >= 1000
+                                                               && i.Value <= Globals.Settings.MaxItemValue).ToList();
                 }
 
                 // front-load
@@ -92,12 +112,11 @@ namespace BanditMilitias.Patches
                     BanditEquipment.Add(BuildViableEquipmentSet());
                 }
 
+                Hideouts = Settlement.FindAll(s => s.IsHideout).ToListQ();
                 PartyImageMap.Clear();
-                Hideouts = Settlement.FindAll(s => s.IsHideout && s.Culture.Name is not null).ToListQ();
                 DoPowerCalculations(true);
-                MilitiaBehavior.FlushMilitiaCharacterObjects();
                 var bmCount = MobileParty.All.CountQ(m => m.PartyComponent is ModBanditMilitiaPartyComponent);
-                Log($"Militias: {bmCount}");
+                Log($"Militias: {bmCount}."); //  Custom troops: {MobileParty.All.SelectMany(m => m.MemberRoster.ToFlattenedRoster()).CountQ(e => e.Troop.StringId.Contains("Bandit_Militia"))}.  Troop prisoners: {MobileParty.All.SelectMany(m => m.PrisonRoster.ToFlattenedRoster()).CountQ(e => e.Troop.StringId.Contains("Bandit_Militia"))}.");
                 //Log($"Militias: {militias.Count} (registered {PartyMilitiaMap.Count})");
                 RunLateManualPatches();
             }
@@ -125,7 +144,7 @@ namespace BanditMilitias.Patches
                 {
                     party.LeaderHero.Culture = Clan.BanditFactions.GetRandomElementInefficiently().Culture;
                     Log($"{party.LeaderHero} has a fucked up Culture - fixed");
-                    Debugger.Break();
+                    Meow();
                     return null;
                 }
 

@@ -34,7 +34,8 @@ namespace BanditMilitias
         {
             get
             {
-                cachedName ??= new TextObject((string)GetLocalizedText.Invoke(null, new object[] { $"{Possess(Leader.FirstName.ToString())} {Globals.Settings.BanditMilitiaString}" }));
+                cachedName ??= new TextObject((string)GetLocalizedText.Invoke(
+                    null, new object[] { $"{Possess(Leader.FirstName.ToString())} {Globals.Settings.BanditMilitiaString}" }));
                 cachedName.SetTextVariable("IS_BANDIT", 1);
                 return cachedName;
             }

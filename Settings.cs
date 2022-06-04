@@ -27,14 +27,15 @@ namespace BanditMilitias
                 CooldownHours = 8,
                 DisperseSize = 30,
                 RandomSplitChance = 50,
-                MergeableSize = 30,
+                MergeableSize = 10,
                 GrowthChance = 100,
                 GrowthPercent = 3,
                 MilitiaSpawn = true,
-                MaxItemValue = 8000,
+                SpawnChance = 50,
+                MaxItemValue = 10000,
                 LooterUpgradePercent = 66,
                 UpgradeUnitsPercent = 33,
-                GlobalPowerPercent = 25,
+                GlobalPowerPercent = 33,
                 MaxTrainingTier = 5,
             });
             return basePresets;

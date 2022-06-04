@@ -4,7 +4,6 @@ using System.Diagnostics;
 using SandBox.ViewModelCollection.MobilePartyTracker;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Party;
-using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
 using TaleWorlds.ObjectSystem;
 
@@ -15,7 +14,7 @@ namespace BanditMilitias
     {
         // merge/split criteria
         public const float MergeDistance = 2;
-        public const float FindRadius = 30;
+        public const float FindRadius = 20;
         public const float MinDistanceFromHideout = 8;
 
         // holders for criteria
@@ -34,7 +33,6 @@ namespace BanditMilitias
         public static readonly Random Rng = new();
         public static readonly Stopwatch T = new();
         public static Settings Settings;
-        public static List<Settlement> Hideouts = new();
         public static readonly List<EquipmentElement> EquipmentItems = new();
         public static List<ItemObject> Arrows = new();
         public static List<ItemObject> Bolts = new();
@@ -43,7 +41,8 @@ namespace BanditMilitias
         public static double LastCalculated;
         public static double PartyCacheInterval;
         public static int RaidCap;
-        
+        //public static Dictionary<MapEventSide, List<EquipmentElement>> LootRecord = new();
+
         // ReSharper disable once InconsistentNaming
         public static MobilePartyTrackerVM MobilePartyTrackerVM;
 

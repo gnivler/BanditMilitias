@@ -37,8 +37,8 @@ namespace BanditMilitias.Helpers
             Traverse.Create(typeof(KillCharacterAction)).Method("MakeDead", hero).GetValue();
             AliveHeroes(Campaign.Current.CampaignObjectManager).Remove(hero);
             DeadOrDisabledHeroes(Campaign.Current.CampaignObjectManager).Remove(hero);
-            MBObjectManager.Instance.UnregisterObject(hero.CharacterObject);
             MBObjectManager.Instance.UnregisterObject(hero);
+            MBObjectManager.Instance.UnregisterObject(hero.CharacterObject);
         }
 
         // ReSharper disable once InconsistentNaming
@@ -53,6 +53,7 @@ namespace BanditMilitias.Helpers
             {
                 return BM;
             }
+
             return null;
         }
 
@@ -61,9 +62,9 @@ namespace BanditMilitias.Helpers
             return MobileParty.All.FirstOrDefaultQ(m => m.MemberRoster.Contains(characterObject));
         }
 
-        public static int MountedCount(this TroopRoster troopRoster)
+        public static int CountMounted(this TroopRoster troopRoster)
         {
-            return troopRoster.GetTroopRoster().Count(t => !t.Character.BattleEquipments.First()[10].IsEmpty);
+            return troopRoster.GetTroopRoster().WhereQ(t =>  !t.Character.FirstBattleEquipment[10].IsEmpty).Sum(t => t.Number);
         }
     }
 }

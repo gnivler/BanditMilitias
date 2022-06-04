@@ -1,11 +1,7 @@
-using System.Collections.Generic;
 using System.Linq;
 using BanditMilitias.Helpers;
 using HarmonyLib;
-using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.MapEvents;
-using TaleWorlds.CampaignSystem.Roster;
-using TaleWorlds.Core;
 using TaleWorlds.LinQuick;
 using TaleWorlds.Localization;
 using static BanditMilitias.Helpers.Helper;
@@ -24,7 +20,7 @@ namespace BanditMilitias.Patches
         {
             public static void Prefix(MapEvent __instance)
             {
-                if (__instance.DefeatedSide is BattleSideEnum.None)
+                if (!__instance.HasWinner)
                 {
                     return;
                 }
@@ -36,7 +32,7 @@ namespace BanditMilitias.Patches
                     var heroes = party.Party.MemberRoster.RemoveIf(t => t.Character.IsHero).ToListQ();
                     for (var i = 0; i < heroes.Count; i++)
                     {
-                        Log($"<<< Killing {heroes[i].Character.Name} ({heroes[i].Character.StringId}) at FinishBattle.");
+                        Log($"<<< Killing {heroes[i].Character.Name} ({heroes[i].Character.StringId}) at FinishBattle");
                         heroes[i].Character.HeroObject.RemoveMilitiaHero();
                     }
 
@@ -60,16 +56,13 @@ namespace BanditMilitias.Patches
         {
             public static void Prefix(MapEvent __instance, object lootCollector)
             {
-                if (__instance.DefeatedSide is BattleSideEnum.None)
-                {
-                    return;
-                }
-
+                if (__instance.HasWinner) return;
                 var loserBMs = __instance.PartiesOnSide(__instance.DefeatedSide)
                     .Where(p => p.Party?.MobileParty?.PartyComponent is ModBanditMilitiaPartyComponent);
 
                 foreach (var party in loserBMs)
                 {
+                    // Globals.LootRecord.Remove(party.Party.MapEventSide);
                     // disperse small militias
                     if (party.Party.MobileParty.MemberRoster.TotalManCount < Globals.Settings.DisperseSize)
                     {
@@ -89,6 +82,28 @@ namespace BanditMilitias.Patches
 
 
                 DoPowerCalculations();
+            }
+
+            public static void Postfix(MapEvent __instance, object lootCollector)
+            {
+                //var casualties = Traverse.Create(lootCollector).Field<TroopRoster>("<CasualtiesInBattle>k__BackingField").Value;
+                //foreach (var troop in casualties.GetTroopRoster())
+                //{
+                //    if (troop.Character.StringId.Contains("_Bandit_Militia_Troop_"))
+                //    {
+                //        Log($"{new string('#', 100)} UnregisterObject CASUALTY {troop.Character.StringId}");
+                //        MBObjectManager.Instance.UnregisterObject(troop.Character);
+                //        TroopTracker.RemoveByCharacter(troop.Character);
+                //    }
+                //}
+
+                var winnerBMs = __instance.PartiesOnSide(__instance.WinningSide)
+                    .Where(p => p.Party?.MobileParty?.PartyComponent is ModBanditMilitiaPartyComponent).ToListQ();
+                if (!winnerBMs.Any()) return;
+
+                var loserHeroes = __instance.PartiesOnSide(__instance.DefeatedSide)
+                    .SelectQ(mep => mep.Party.Owner).Where(h => h is not null).ToListQ();
+                foreach (var BM in winnerBMs) DecreaseAvoidance(loserHeroes, BM);
             }
         }
     }

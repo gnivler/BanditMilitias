@@ -33,6 +33,7 @@ namespace BanditMilitias
         public static Clan Looters => looters ??= Clan.BanditFactions.First(c => c.StringId == "looters");
         private static IEnumerable<Clan> synthClans;
         private static IEnumerable<Clan> SynthClans => synthClans ??= Clan.BanditFactions.Except(new[] { Looters });
+        public static List<CharacterObject> CustomTroops = new();
 
         public override void RegisterEvents()
         {
@@ -42,7 +43,7 @@ namespace BanditMilitias
                     && v.Owner?.LeaderHero == Hero.MainHero
                     && v.Settlement.Party?.MapEvent is not null
                     && v.Settlement.Party.MapEvent.PartiesOnSide(BattleSideEnum.Attacker)
-                        .AnyQ(m => m.Party.MobileParty is not null && m.Party.MobileParty.IsBM()))
+                        .AnyQ(m => m.Party.IsMobile && m.Party.MobileParty.IsBM()))
                 {
                     InformationManager.AddQuickInformation(new TextObject($"{v.Name} is being raided by {v.Settlement.Party.MapEvent.PartiesOnSide(BattleSideEnum.Attacker).First().Party.Name}!"));
                 }
@@ -51,7 +52,7 @@ namespace BanditMilitias
             {
                 if (Globals.Settings.ShowRaids
                     && m.PartiesOnSide(BattleSideEnum.Attacker)
-                        .AnyQ(mep => mep.Party.MobileParty is not null && mep.Party.MobileParty.IsBM()))
+                        .AnyQ(mep => mep.Party.IsMobile && mep.Party.MobileParty.IsBM()))
                 {
                     InformationManager.AddQuickInformation(new TextObject($"{m.MapEventSettlement?.Name} raided!  {m.PartiesOnSide(BattleSideEnum.Attacker).First().Party.Name} is fat with loot near {SettlementHelper.FindNearestTown().Name}!"));
                 }
@@ -61,7 +62,22 @@ namespace BanditMilitias
             CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, OnDailyTickEvent);
             CampaignEvents.HourlyTickEvent.AddNonSerializedListener(this, SynthesizeBM);
             CampaignEvents.MobilePartyDestroyed.AddNonSerializedListener(this, MobilePartyDestroyed);
+            //CampaignEvents.MapEventEnded.AddNonSerializedListener(this, MapEventEnded);
         }
+
+        //public static void MapEventEnded(MapEvent mapEvent)
+        //{
+        //    MapEventSide Loser()
+        //    {
+        //        return mapEvent.BattleState == BattleState.DefenderVictory
+        //            ? mapEvent.AttackerSide
+        //            : mapEvent.DefenderSide;
+        //    }
+        //
+        //
+        //    if (!mapEvent.HasWinner) return;
+        //    Globals.LootRecord.Remove(Loser());
+        //}
 
         private static void MobilePartyDestroyed(MobileParty mobileParty, PartyBase destroyer)
         {
@@ -72,11 +88,7 @@ namespace BanditMilitias
                 return;
             }
 
-            if (mobileParty.GetBM().Avoidance.TryGetValue(destroyer.LeaderHero, out _))
-            {
-                mobileParty.GetBM().Avoidance.Remove(destroyer.LeaderHero);
-            }
-
+            destroyer.MobileParty.GetBM()?.Avoidance.Remove(mobileParty.LeaderHero);
             foreach (var BM in GetCachedBMs().WhereQ(bm =>
                          bm.MobileParty.Position2D.Distance(mobileParty.Position2D) < EffectRadius))
             {
@@ -93,10 +105,7 @@ namespace BanditMilitias
 
         private static void TickPartialHourlyAiEvent(MobileParty mobileParty)
         {
-            if (mobileParty.PartyComponent is not (BanditPartyComponent or ModBanditMilitiaPartyComponent))
-            {
-                return;
-            }
+            if (mobileParty.PartyComponent is not (BanditPartyComponent or ModBanditMilitiaPartyComponent)) return;
 
             // near any Hideouts?
             if (mobileParty.PartyComponent is ModBanditMilitiaPartyComponent
@@ -182,7 +191,7 @@ namespace BanditMilitias
             {
                 foreach (var entry in BM.Avoidance)
                 {
-                    if (!calculatedAvoidance.ContainsKey(entry.Key))
+                    if (!calculatedAvoidance.TryGetValue(entry.Key, out _))
                     {
                         calculatedAvoidance.Add(entry.Key, entry.Value);
                     }
@@ -230,7 +239,6 @@ namespace BanditMilitias
 
         private static void OnDailyTickEvent()
         {
-            FlushMilitiaCharacterObjects();
             RemoveHeroesWithoutParty();
             FlushPrisoners();
         }
@@ -303,7 +311,6 @@ namespace BanditMilitias
             }
         }
 
-
         public static void DailyTickPartyEvent(MobileParty mobileParty)
         {
             if (mobileParty.IsBM())
@@ -349,7 +356,7 @@ namespace BanditMilitias
             //Log($"{mobileParty.Name} finished Avoidance {mobileParty.BM().Avoidance}");
         }
 
-        private static void TryGrowing(MobileParty mobileParty)
+        public static void TryGrowing(MobileParty mobileParty)
         {
             if (Globals.Settings.GrowthPercent > 0
                 && MilitiaPowerPercent <= Globals.Settings.GlobalPowerPercent
@@ -400,7 +407,7 @@ namespace BanditMilitias
             }
 
             for (var i = 0;
-                 MilitiaPowerPercent + 5 <= Globals.Settings.GlobalPowerPercent
+                 MilitiaPowerPercent + 1 <= Globals.Settings.GlobalPowerPercent
                  && i < (Globals.Settings.GlobalPowerPercent - MilitiaPowerPercent) / 24f;
                  i++)
             {

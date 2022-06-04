@@ -4,11 +4,11 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using BanditMilitias.Helpers;
-using BanditMilitias.Patches;
 using HarmonyLib;
 using SandBox.View.Map;
 using SandBox.ViewModelCollection.MobilePartyTracker;
 using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.GameComponents;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.Core;
 using TaleWorlds.InputSystem;
@@ -180,6 +180,8 @@ namespace BanditMilitias
 
                     DoPowerCalculations(true);
                     InformationManager.AddQuickInformation(new TextObject("BANDIT MILITIAS CLEARED"));
+                    var bmCount = MobileParty.All.CountQ(m => m.PartyComponent is ModBanditMilitiaPartyComponent);
+                    Log($"Militias: {bmCount}.  Custom troops: {MobileParty.All.SelectMany(m => m.MemberRoster.ToFlattenedRoster()).CountQ(e => e.Troop.StringId.Contains("_Bandit_Militia_Troop_"))}.  Troop prisoners: {MobileParty.All.SelectMany(m => m.PrisonRoster.ToFlattenedRoster()).CountQ(e => e.Troop.StringId.Contains("_Bandit_Militia_Troop_"))}.");
                 }
                 catch (Exception ex)
                 {
@@ -197,6 +199,14 @@ namespace BanditMilitias
             }
         }
 
+        public override void OnGameInitializationFinished(Game game)
+        {
+            base.OnGameInitializationFinished(game);
+            var wageModel = AccessTools.Method(typeof(DefaultPartyWageModel), "GetTotalWage");
+            harmony.Patch(wageModel, finalizer: new HarmonyMethod(AccessTools.Method(typeof(Hacks), "GetTotalWageFinalizer")));
+        }
+
+
         private static void RunManualPatches()
         {
             try
@@ -211,6 +221,10 @@ namespace BanditMilitias
             }
         }
 
-        private static Exception Finalizer() => null;
+        private static Exception Finalizer(Exception __exception)
+        {
+            if (__exception is not null) Meow();
+            return null;
+        }
     }
 }
