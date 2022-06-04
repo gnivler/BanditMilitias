@@ -202,8 +202,6 @@ namespace BanditMilitias
         public override void OnGameInitializationFinished(Game game)
         {
             base.OnGameInitializationFinished(game);
-            var wageModel = AccessTools.Method(typeof(DefaultPartyWageModel), "GetTotalWage");
-            harmony.Patch(wageModel, finalizer: new HarmonyMethod(AccessTools.Method(typeof(Hacks), "GetTotalWageFinalizer")));
         }
 
 
