@@ -7,17 +7,20 @@ using Helpers;
 using SandBox.View.Map;
 using SandBox.ViewModelCollection.MobilePartyTracker;
 using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.CampaignBehaviors;
 using TaleWorlds.CampaignSystem.CharacterDevelopment;
 using TaleWorlds.CampaignSystem.Extensions;
 using TaleWorlds.CampaignSystem.GameComponents;
+using TaleWorlds.CampaignSystem.MapEvents;
 using TaleWorlds.CampaignSystem.Party;
+using TaleWorlds.CampaignSystem.Roster;
 using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
 using TaleWorlds.Engine;
 using TaleWorlds.Library;
 using TaleWorlds.LinQuick;
 using static BanditMilitias.Helpers.Helper;
-using static BanditMilitias.Globals;
+using static BanditMilitias.Globals;     
 
 // ReSharper disable UnusedMember.Global
 // ReSharper disable UnusedType.Global
@@ -29,28 +32,18 @@ namespace BanditMilitias.Patches
 {
     public static class MiscPatches
     {
-        //[HarmonyPatch(typeof(BattleCampaignBehavior), "CollectLoots")]
-        //public static class MapEventSideDistributeLootAmongWinners
-        //{
-        //    public static void Prefix(MapEvent mapEvent, PartyBase party, ref ItemRoster loot)
-        //    {
-        //        if (!mapEvent.HasWinner || !party.IsMobile || !party.MobileParty.IsBM()) return;
-        //        if (LootRecord.TryGetValue(party.MapEventSide, out var equipment))
-        //        {
-        //            foreach (var e in equipment)
-        //            {
-        //                loot.AddToCounts(e, 1);
-        //            }
-        //        }
-        //
-        //        if (loot.AnyQ(i => !i.IsEmpty))
-        //        {
-        //            UpgradeEquipment(party, loot);
-        //        }
-        //
-        //        Globals.LootRecord.Remove(party.MobileParty.MapEventSide);
-        //    }
-        //}
+        [HarmonyPatch(typeof(BattleCampaignBehavior), "CollectLoots")]
+        public static class MapEventSideDistributeLootAmongWinners
+        {
+            public static void Prefix(MapEvent mapEvent, PartyBase party, ref ItemRoster loot)
+            {
+                if (!mapEvent.HasWinner || !party.IsMobile || !party.MobileParty.IsBM()) return;
+                if (loot.AnyQ(i => !i.IsEmpty))
+                {
+                    UpgradeEquipment(party, loot);
+                }
+            }
+        }
 
         [HarmonyPatch(typeof(MapScreen), "OnInitialize")]
         public static class MapScreenOnInitializePatch

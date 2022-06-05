@@ -359,9 +359,7 @@ namespace BanditMilitias.Helpers
                     continue;
                 }
 
-
                 for (var i = 0; i < settlement.Party.PrisonRoster.Count; i++)
-                {
                     try
                     {
                         var prisoner = settlement.Party.PrisonRoster.GetCharacterAtIndex(i);
@@ -377,7 +375,6 @@ namespace BanditMilitias.Helpers
                     {
                         Log(ex);
                     }
-                }
             }
 
             var leftovers = Hero.AllAliveHeroes.WhereQ(h => h.StringId.Contains("Bandit_Militia")).ToListQ();
@@ -391,7 +388,7 @@ namespace BanditMilitias.Helpers
 
             PartyImageMap.Clear();
         }
-        
+
         // deprecated
         public static void FlushPrisoners()
         {
@@ -1075,6 +1072,7 @@ namespace BanditMilitias.Helpers
 
                 var troops = party.MemberRoster.ToFlattenedRoster().Troops.OrderByDescending(e => e.Level)
                     .ThenByDescending(e => e.Equipment.GetTotalWeightOfArmor(true) + e.Equipment.GetTotalWeightOfWeapons()).ToListQ();
+                troops.Insert(0, party.LeaderHero?.CharacterObject);
                 foreach (var troop in troops)
                 {
                     bool wasUpgraded = default;
@@ -1144,20 +1142,16 @@ namespace BanditMilitias.Helpers
                         for (var s = 0; s < Equipment.EquipmentSlotLength; s++) slots.Add(s);
                         // go through each inventory slot in random order
                         slots.Shuffle();
-                        for (var slot = slots[0]; slots.Count > 0; slots.RemoveAt(0))
+                        for (; slots.Count > 0; slots.RemoveAt(0))
                         {
+                            var slot = slots[0];
                             // if it's a horse slot but we already have enough, skip to next upgrade EquipmentElement
                             if (slot == 10 && party.MemberRoster.CountMounted() > party.MemberRoster.TotalManCount / 2) break;
                             if (Equipment.IsItemFitsToSlot((EquipmentIndex)slot, possibleUpgrade.EquipmentElement.Item))
                             {
                                 if (DoPossibleUpgrade(loot, troop, possibleUpgrade, usableEquipment, ref itemReturned, ref wasUpgraded, ref customCO))
                                 {
-                                    if (itemReturned)
-                                    {
-                                        index = -1;
-                                    }
-
-                                    break;
+                                    if (itemReturned) index = -1;
                                 }
                             }
                         }
