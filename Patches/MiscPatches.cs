@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using BanditMilitias.Helpers;
 using HarmonyLib;
@@ -20,7 +21,7 @@ using TaleWorlds.Engine;
 using TaleWorlds.Library;
 using TaleWorlds.LinQuick;
 using static BanditMilitias.Helpers.Helper;
-using static BanditMilitias.Globals;     
+using static BanditMilitias.Globals;
 
 // ReSharper disable UnusedMember.Global
 // ReSharper disable UnusedType.Global
@@ -32,6 +33,37 @@ namespace BanditMilitias.Patches
 {
     public static class MiscPatches
     {
+        // idea from True Battle Loot
+        [HarmonyPatch(typeof(MapEventSide), "OnTroopKilled")]
+        public static class MapEventSideOnTroopKilled
+        {
+            public static void Postfix(MapEventSide __instance, CharacterObject ____selectedSimulationTroop)
+            {
+                if (MapEvent.PlayerMapEvent is not null && ____selectedSimulationTroop is null) return;
+                // makes all loot drop in any BM-involved fight which isn't with the main party
+                var BMs = __instance.Parties.WhereQ(p =>
+                    p.Party.MobileParty?.PartyComponent is ModBanditMilitiaPartyComponent).SelectQ(p => p.Party);
+                if (BMs.Any() && !__instance.IsMainPartyAmongParties())
+                {
+                    for (var index = 0; index < Equipment.EquipmentSlotLength; index++)
+                    {
+                        var item = ____selectedSimulationTroop?.Equipment[index];
+                        if (item is null || item.Value.IsEmpty) continue;
+
+                        if (LootRecord.TryGetValue(__instance, out _))
+                        {
+                            LootRecord[__instance].Add(new EquipmentElement(item.Value));
+                        }
+                        else
+                        {
+                            LootRecord.Add(__instance, new List<EquipmentElement> { item.Value });
+                        }
+                    }
+                }
+            }
+        }
+
+
         [HarmonyPatch(typeof(BattleCampaignBehavior), "CollectLoots")]
         public static class MapEventSideDistributeLootAmongWinners
         {

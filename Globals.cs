@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using SandBox.ViewModelCollection.MobilePartyTracker;
 using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.MapEvents;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.Core;
 using TaleWorlds.ObjectSystem;
@@ -28,6 +29,7 @@ namespace BanditMilitias
         public static readonly Dictionary<MobileParty, ImageIdentifierVM> PartyImageMap = new();
         public static readonly Dictionary<ItemObject.ItemTypeEnum, List<ItemObject>> ItemTypes = new();
         public static readonly Dictionary<CultureObject, List<CharacterObject>> Recruits = new();
+        public static readonly Dictionary<MapEventSide, List<EquipmentElement>> LootRecord = new();
 
         // misc
         public static readonly Random Rng = new();
