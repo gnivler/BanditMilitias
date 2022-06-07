@@ -39,7 +39,9 @@ namespace BanditMilitias.Patches
         {
             public static void Postfix(MapEventSide __instance, CharacterObject ____selectedSimulationTroop)
             {
-                if (MapEvent.PlayerMapEvent is not null && ____selectedSimulationTroop is null) return;
+                if (!Globals.Settings.UpgradeTroops && MapEvent.PlayerMapEvent is not null && ____selectedSimulationTroop is null)
+                    return;
+                EquipmentMap.Remove(____selectedSimulationTroop.StringId);
                 // makes all loot drop in any BM-involved fight which isn't with the main party
                 var BMs = __instance.Parties.WhereQ(p =>
                     p.Party.MobileParty?.PartyComponent is ModBanditMilitiaPartyComponent).SelectQ(p => p.Party);
@@ -47,16 +49,17 @@ namespace BanditMilitias.Patches
                 {
                     for (var index = 0; index < Equipment.EquipmentSlotLength; index++)
                     {
-                        var item = ____selectedSimulationTroop?.Equipment[index];
-                        if (item is null || item.Value.IsEmpty) continue;
+                        var item = ____selectedSimulationTroop.Equipment[index];
+                        if (item.IsEmpty) continue;
 
+                        if (Rng.Next(0, 101) < 66) continue;
                         if (LootRecord.TryGetValue(__instance, out _))
                         {
-                            LootRecord[__instance].Add(new EquipmentElement(item.Value));
+                            LootRecord[__instance].Add(new EquipmentElement(item));
                         }
                         else
                         {
-                            LootRecord.Add(__instance, new List<EquipmentElement> { item.Value });
+                            LootRecord.Add(__instance, new List<EquipmentElement> { item });
                         }
                     }
                 }
@@ -69,11 +72,22 @@ namespace BanditMilitias.Patches
         {
             public static void Prefix(MapEvent mapEvent, PartyBase party, ref ItemRoster loot)
             {
-                if (!mapEvent.HasWinner || !party.IsMobile || !party.MobileParty.IsBM()) return;
+                if (!Globals.Settings.UpgradeTroops || !mapEvent.HasWinner || !party.IsMobile || !party.MobileParty.IsBM())
+                    return;
+                if (LootRecord.TryGetValue(party.MapEventSide, out var equipment))
+                {
+                    foreach (var e in equipment)
+                    {
+                        loot.AddToCounts(e, 1);
+                    }
+                }
+
                 if (loot.AnyQ(i => !i.IsEmpty))
                 {
                     UpgradeEquipment(party, loot);
                 }
+
+                Globals.LootRecord.Remove(party.MobileParty.MapEventSide);
             }
         }
 
@@ -125,9 +139,9 @@ namespace BanditMilitias.Patches
                 // used for armour
                 foreach (ItemObject.ItemTypeEnum itemType in Enum.GetValues(typeof(ItemObject.ItemTypeEnum)))
                 {
-                    ItemTypes[itemType] = Items.All.Where(i => i.Type == itemType
-                                                               && i.Value >= 1000
-                                                               && i.Value <= Globals.Settings.MaxItemValue).ToList();
+                    Globals.ItemTypes[itemType] = Items.All.Where(i => i.Type == itemType
+                                                                       && i.Value >= 1000
+                                                                       && i.Value <= Globals.Settings.MaxItemValue).ToList();
                 }
 
                 // front-load
@@ -202,6 +216,8 @@ namespace BanditMilitias.Patches
             {
                 AccessTools.Method(typeof(CampaignBehaviorBase.SaveableCampaignBehaviorTypeDefiner),
                     "ConstructContainerDefinition").Invoke(__instance, new object[] { typeof(Dictionary<Hero, float>) });
+                AccessTools.Method(typeof(CampaignBehaviorBase.SaveableCampaignBehaviorTypeDefiner),
+                    "ConstructContainerDefinition").Invoke(__instance, new object[] { typeof(Dictionary<string, Equipment>) });
             }
         }
     }

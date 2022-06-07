@@ -35,6 +35,13 @@ namespace BanditMilitias
         private static IEnumerable<Clan> SynthClans => synthClans ??= Clan.BanditFactions.Except(new[] { Looters });
         public static List<CharacterObject> CustomTroops = new();
 
+        public static readonly AccessTools.FieldRef<BasicCharacterObject, TextObject> basicName =
+            AccessTools.FieldRefAccess<BasicCharacterObject, TextObject>("_basicName");
+
+        public static readonly AccessTools.FieldRef<BasicCharacterObject, MBBodyProperty> bodyPropertyRange =
+            AccessTools.FieldRefAccess<BasicCharacterObject, MBBodyProperty>("<BodyPropertyRange>k__BackingField");
+
+
         public override void RegisterEvents()
         {
             CampaignEvents.VillageBeingRaided.AddNonSerializedListener(this, v =>
@@ -57,6 +64,7 @@ namespace BanditMilitias
                     InformationManager.AddQuickInformation(new TextObject($"{m.MapEventSettlement?.Name} raided!  {m.PartiesOnSide(BattleSideEnum.Attacker).First().Party.Name} is fat with loot near {SettlementHelper.FindNearestTown().Name}!"));
                 }
             });
+
             CampaignEvents.TickPartialHourlyAiEvent.AddNonSerializedListener(this, TickPartialHourlyAiEvent);
             CampaignEvents.DailyTickPartyEvent.AddNonSerializedListener(this, DailyTickPartyEvent);
             CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, OnDailyTickEvent);
@@ -240,7 +248,7 @@ namespace BanditMilitias
         private static void OnDailyTickEvent()
         {
             RemoveHeroesWithoutParty();
-            FlushPrisoners();
+            //FlushPrisoners();
         }
 
         public static void BMThink(MobileParty mobileParty)
@@ -369,7 +377,8 @@ namespace BanditMilitias
                         rosterElement.Character.Tier < Globals.Settings.MaxTrainingTier
                         && !rosterElement.Character.IsHero
                         && mobileParty.ShortTermBehavior != AiBehavior.FleeToPoint
-                        && !mobileParty.IsVisible)
+                        && !mobileParty.IsVisible
+                        && !rosterElement.Character.StringId.Contains("_Bandit_Militia_Troop_"))
                     .ToListQ();
                 if (eligibleToGrow.Any())
                 {
@@ -499,6 +508,31 @@ namespace BanditMilitias
 
         public override void SyncData(IDataStore dataStore)
         {
+            if (!Globals.Settings.UpgradeTroops) return;
+            dataStore.SyncData("EquipmentMap", ref Globals.EquipmentMap);
+            if (dataStore.IsLoading)
+            {
+                foreach (var troop in MobileParty.All.SelectMany(m => m.MemberRoster.GetTroopRoster())
+                             .Concat(MobileParty.All.SelectMany(m => m.PrisonRoster.GetTroopRoster()))
+                             .WhereQ(e => e.Character.StringId.Contains("_Bandit_Militia_Troop_")))
+                {
+                    RehydrateCharacterObject(troop);
+                }
+            }
+        }
+
+        public static void RehydrateCharacterObject(TroopRosterElement troop)
+        {
+            troop.Character.Culture = troop.Character.OriginalCharacter.Culture;
+            basicName(troop.Character) = new TextObject("Custom " + troop.Character.OriginalCharacter.Name);
+            var bodyProps = new MBBodyProperty();
+            bodyProps.Init(troop.Character.OriginalCharacter.GetBodyPropertiesMin(), troop.Character.OriginalCharacter.GetBodyPropertiesMax());
+            bodyPropertyRange(troop.Character) = bodyProps;
+            var mbEquipmentRoster = new MBEquipmentRoster();
+            Equipments(mbEquipmentRoster) = new List<Equipment> { EquipmentMap[troop.Character.StringId] };
+            EquipmentRoster(troop.Character) = mbEquipmentRoster;
+            Traverse.Create(troop.Character).Property<CharacterObject[]>("UpgradeTargets").Value = troop.Character.OriginalCharacter.UpgradeTargets;
+            MBObjectManager.Instance.RegisterObject(troop.Character);
         }
     }
 }

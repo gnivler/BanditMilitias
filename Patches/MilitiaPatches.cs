@@ -105,8 +105,7 @@ namespace BanditMilitias.Patches
                 if (mobileParty.PartyComponent is ModBanditMilitiaPartyComponent)
                 {
                     Log($"Preventing {mobileParty} from entering {settlement.Name}");
-                    SetPartyAiAction.GetActionForPatrollingAroundSettlement(mobileParty, SettlementHelper.GetRandomTown());
-                    mobileParty.Ai.SetAIState(AIState.PatrollingAroundLocation);
+                    MilitiaBehavior.BMThink(mobileParty);
                     return false;
                 }
 
@@ -181,11 +180,11 @@ namespace BanditMilitias.Patches
                         return;
                     }
 
-                    if (targetParty.LeaderHero is not null 
+                    if (targetParty.LeaderHero is not null
                         && __instance.GetBM().Avoidance.TryGetValue(targetParty.LeaderHero, out var heroAvoidance)
                         && Rng.NextDouble() * 100 < heroAvoidance)
                     {
-                        Log($"||| {__instance.Name} avoided attacking {targetParty.Name}");
+                        //Log($"||| {__instance.Name} avoided attacking {targetParty.Name}");
                         __result = false;
                         return;
                     }
@@ -255,6 +254,7 @@ namespace BanditMilitias.Patches
         {
             public static void Postfix(MobilePartyTrackItemVM __instance, ref ImageIdentifierVM ____factionVisualBind)
             {
+                if (__instance.TrackedParty is null) return;
                 if (PartyImageMap.TryGetValue(__instance.TrackedParty, out var image))
                 {
                     ____factionVisualBind = image;

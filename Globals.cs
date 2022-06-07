@@ -43,6 +43,7 @@ namespace BanditMilitias
         public static double LastCalculated;
         public static double PartyCacheInterval;
         public static int RaidCap;
+        public static Dictionary<string, Equipment> EquipmentMap = new();
         //public static Dictionary<MapEventSide, List<EquipmentElement>> LootRecord = new();
 
         // ReSharper disable once InconsistentNaming

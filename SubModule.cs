@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -117,7 +118,14 @@ namespace BanditMilitias
                 //    Trash(crud[i]);
                 //}
 
-
+                var target = MobileParty.All.WhereQ(m=> m.PartyComponent is ModBanditMilitiaPartyComponent).OrderByDescending(m => m.MemberRoster.GetTroopRoster().WhereQ(e => e.Character.StringId.Contains("Bandit_Militia_Troop")).SumQ(r => r.Number)).FirstOrDefault();
+               
+                if (SubModule.MEOWMEOW)
+                {
+                    MobileParty.MainParty.Position2D = target.Position2D;
+                    Campaign.Current.TimeControlMode = CampaignTimeControlMode.Stop;
+                    MapScreen.Instance.TeleportCameraToMainParty();
+                }
                 //Nuke();
                 //for (var i = 0; i < MobileParty.AllBanditParties.Count; i++)
                 //{
@@ -202,8 +210,9 @@ namespace BanditMilitias
         public override void OnGameInitializationFinished(Game game)
         {
             base.OnGameInitializationFinished(game);
+            var trainModel = AccessTools.Method(typeof(DefaultPartyTrainingModel), "GetEffectiveDailyExperience");
+            harmony.Patch(trainModel, finalizer: new HarmonyMethod(AccessTools.Method(typeof(Hacks), "ExperienceFinalizer")));
         }
-
 
         private static void RunManualPatches()
         {
