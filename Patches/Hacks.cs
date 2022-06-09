@@ -2,11 +2,13 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.ExceptionServices;
 using HarmonyLib;
 using Helpers;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.CharacterDevelopment;
 using TaleWorlds.CampaignSystem.GameComponents;
+using TaleWorlds.CampaignSystem.MapEvents;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Roster;
 using TaleWorlds.CampaignSystem.ViewModelCollection;
@@ -150,14 +152,19 @@ namespace BanditMilitias
                 return null;
             }
         }
+
         //
-        //private static Exception ExperienceFinalizer(DefaultPartyTrainingModel __instance, Exception __exception, MobileParty mobileParty, TroopRosterElement troop)
-        //{
-        //    if (__exception is not null)
-        //    {
-        //        Log(__exception);
-        //        Meow();
-        //        foreach (var m in MobileParty.All.WhereQ(m => m.MemberRoster.GetTroopRoster().AnyQ(e => e.Character.StringId.Contains("looter"))))
+        private static Exception ExperienceFinalizer(DefaultPartyTrainingModel __instance, Exception __exception, MobileParty mobileParty, TroopRosterElement troop)
+        {
+            if (__exception is not null)
+            {
+                Log(__exception);
+                Meow();
+            }
+
+            return null;
+        }
+        //    foreach (var m in MobileParty.All.WhereQ(m => m.MemberRoster.GetTroopRoster().AnyQ(e => e.Character.StringId.Contains("looter"))))
         //        {
         //            m.MemberRoster.RemoveIf(e => e.Character.Culture is null);
         //        }

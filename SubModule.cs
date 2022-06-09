@@ -218,6 +218,7 @@ namespace BanditMilitias
         {
             try
             {
+                Dev.RunDevPatches();
                 var internalType = AccessTools.TypeByName("<GetTrackDescription>d__11");
                 var org = AccessTools.Method(internalType, "MoveNext");
                 harmony.Patch(org, finalizer: new HarmonyMethod(AccessTools.Method(typeof(SubModule), "Finalizer")));

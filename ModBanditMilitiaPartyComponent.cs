@@ -25,7 +25,8 @@ namespace BanditMilitias
         [CachedData] public TextObject cachedName;
 
         public override Hero Leader => leader;
-        public override Hero PartyOwner => MobileParty.ActualClan?.Leader;// ?? new Hero("Default_Hero_Bandit_Militia");
+        // not sure why (3.8.4) has MobileParty as null during save loading... the first null check seems to smooth over the result
+        public override Hero PartyOwner => MobileParty?.ActualClan?.Leader; 
 
         public override Settlement HomeSettlement { get; }
         private static readonly MethodInfo GetLocalizedText = AccessTools.Method(typeof(MBTextManager), "GetLocalizedText");

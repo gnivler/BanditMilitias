@@ -56,7 +56,7 @@ namespace BanditMilitias.Patches
         {
             public static void Prefix(MapEvent __instance, object lootCollector)
             {
-                if (__instance.HasWinner) return;
+                if (!__instance.HasWinner) return;
                 var loserBMs = __instance.PartiesOnSide(__instance.DefeatedSide)
                     .Where(p => p.Party?.MobileParty?.PartyComponent is ModBanditMilitiaPartyComponent);
 
@@ -80,23 +80,12 @@ namespace BanditMilitias.Patches
                     RemoveUndersizedTracker(party.Party);
                 }
 
-
                 DoPowerCalculations();
             }
 
             public static void Postfix(MapEvent __instance, object lootCollector)
             {
-                //var casualties = Traverse.Create(lootCollector).Field<TroopRoster>("<CasualtiesInBattle>k__BackingField").Value;
-                //foreach (var troop in casualties.GetTroopRoster())
-                //{
-                //    if (troop.Character.StringId.Contains("_Bandit_Militia_Troop_"))
-                //    {
-                //        Log($"{new string('#', 100)} UnregisterObject CASUALTY {troop.Character.StringId}");
-                //        MBObjectManager.Instance.UnregisterObject(troop.Character);
-                //        TroopTracker.RemoveByCharacter(troop.Character);
-                //    }
-                //}
-
+                if (!__instance.HasWinner) return;
                 var winnerBMs = __instance.PartiesOnSide(__instance.WinningSide)
                     .Where(p => p.Party?.MobileParty?.PartyComponent is ModBanditMilitiaPartyComponent).ToListQ();
                 if (!winnerBMs.Any()) return;
