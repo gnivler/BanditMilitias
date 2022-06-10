@@ -1,4 +1,3 @@
-using SandBox.GameComponents;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
 using TaleWorlds.MountAndBlade;

@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using SandBox.ViewModelCollection.MobilePartyTracker;
+using SandBox.ViewModelCollection.Map;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.MapEvents;
 using TaleWorlds.CampaignSystem.Party;
@@ -47,7 +47,7 @@ namespace BanditMilitias
         //public static Dictionary<MapEventSide, List<EquipmentElement>> LootRecord = new();
 
         // ReSharper disable once InconsistentNaming
-        public static MobilePartyTrackerVM MobilePartyTrackerVM;
+        public static MapMobilePartyTrackerVM MapMobilePartyTrackerVM;
 
         public static float Variance => MBRandom.RandomFloatRanged(0.925f, 1.075f);
 

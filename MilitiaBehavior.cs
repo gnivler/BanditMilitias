@@ -52,7 +52,7 @@ namespace BanditMilitias
                     && v.Settlement.Party.MapEvent.PartiesOnSide(BattleSideEnum.Attacker)
                         .AnyQ(m => m.Party.IsMobile && m.Party.MobileParty.IsBM()))
                 {
-                    InformationManager.AddQuickInformation(new TextObject($"{v.Name} is being raided by {v.Settlement.Party.MapEvent.PartiesOnSide(BattleSideEnum.Attacker).First().Party.Name}!"));
+                    InformationManager.DisplayMessage(new InformationMessage($"{v.Name} is being raided by {v.Settlement.Party.MapEvent.PartiesOnSide(BattleSideEnum.Attacker).First().Party.Name}!"));
                 }
             });
             CampaignEvents.RaidCompletedEvent.AddNonSerializedListener(this, (b, m) =>
@@ -61,7 +61,7 @@ namespace BanditMilitias
                     && m.PartiesOnSide(BattleSideEnum.Attacker)
                         .AnyQ(mep => mep.Party.IsMobile && mep.Party.MobileParty.IsBM()))
                 {
-                    InformationManager.AddQuickInformation(new TextObject($"{m.MapEventSettlement?.Name} raided!  {m.PartiesOnSide(BattleSideEnum.Attacker).First().Party.Name} is fat with loot near {SettlementHelper.FindNearestTown().Name}!"));
+                    InformationManager.DisplayMessage(new InformationMessage($"{m.MapEventSettlement?.Name} raided!  {m.PartiesOnSide(BattleSideEnum.Attacker).First().Party.Name} is fat with loot near {SettlementHelper.FindNearestTown().Name}!"));
                 }
             });
 
@@ -308,7 +308,7 @@ namespace BanditMilitias
 
                         if (target.OwnerClan == Hero.MainHero.Clan)
                         {
-                            InformationManager.AddQuickInformation(new TextObject($"{mobileParty.Name} is raiding your village {target.Name} near {target.Town?.Name}!"));
+                            InformationManager.DisplayMessage(new InformationMessage($"{mobileParty.Name} is raiding your village {target.Name} near {target.Town?.Name}!"));
                         }
 
                         //Log($"{new string('=', 100)} {target.Village.VillageState}");
@@ -427,12 +427,8 @@ namespace BanditMilitias
 
                 var settlement = Settlement.All.Where(s => !s.IsVisible).GetRandomElementInefficiently();
                 var nearbyBandits = MobileParty.FindPartiesAroundPosition(settlement.Position2D, 100).WhereQ(m => m.IsBandit).ToListQ();
-                Clan clan;
-                if (!nearbyBandits.Any())
-                {
-                    clan = Looters;
-                }
-                else
+                var clan = Looters;
+                if (nearbyBandits.Any())
                 {
                     var cultureMap = new Dictionary<Clan, int>();
                     {
@@ -453,9 +449,12 @@ namespace BanditMilitias
                             }
                         }
                     }
-                    clan = cultureMap.Count == 0 || cultureMap.OrderByDescending(x => x.Value).First().Key == Looters
-                        ? Looters
-                        : SynthClans.First(c => c == cultureMap.OrderByDescending(x => x.Value).First().Key);
+                    if (cultureMap.Count > 0)
+                    {
+                        clan = cultureMap.OrderByDescending(x => x.Value).First().Key == Looters
+                            ? Looters
+                            : SynthClans.First(c => c == cultureMap.OrderByDescending(x => x.Value).First().Key);
+                    }
                 }
 
                 var min = Convert.ToInt32(Globals.Settings.MinPartySize);
@@ -479,6 +478,7 @@ namespace BanditMilitias
 
             DoPowerCalculations();
         }
+
 
         // TODO verify if needed post-1.7.2
         public static void FlushMilitiaCharacterObjects()

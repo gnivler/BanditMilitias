@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -7,7 +6,7 @@ using System.Reflection;
 using BanditMilitias.Helpers;
 using HarmonyLib;
 using SandBox.View.Map;
-using SandBox.ViewModelCollection.MobilePartyTracker;
+using SandBox.ViewModelCollection.Map;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.GameComponents;
 using TaleWorlds.CampaignSystem.Party;
@@ -15,7 +14,6 @@ using TaleWorlds.Core;
 using TaleWorlds.InputSystem;
 using TaleWorlds.Library;
 using TaleWorlds.LinQuick;
-using TaleWorlds.Localization;
 using TaleWorlds.MountAndBlade;
 using TaleWorlds.ObjectSystem;
 using static BanditMilitias.Helpers.Helper;
@@ -55,7 +53,7 @@ namespace BanditMilitias
         {
             for (var i = 0; i < 5000; i++)
             {
-                Banners.Add(Banner.CreateRandomBanner(Rng.Next()));
+                Banners.Add(Banner.CreateRandomBanner());
             }
         }
 
@@ -105,7 +103,7 @@ namespace BanditMilitias
                 // debug to show all parties on map
                 foreach (var m in MobileParty.All)
                 {
-                    Globals.MobilePartyTrackerVM.Trackers.Add(new MobilePartyTrackItemVM(m, MapScreen.Instance.MapCamera, null));
+                    Globals.MapMobilePartyTrackerVM.Trackers.Add(new MobilePartyTrackItemVM(m, MapScreen.Instance.MapCamera, null));
                 }
             }
 
@@ -140,7 +138,7 @@ namespace BanditMilitias
             if (superKey && Input.IsKeyPressed(InputKey.F11))
             {
                 Globals.Settings.TestingMode = !Globals.Settings.TestingMode;
-                InformationManager.AddQuickInformation(new TextObject("Testing mode: " + Globals.Settings.TestingMode));
+                InformationManager.DisplayMessage(new InformationMessage("Testing mode: " + Globals.Settings.TestingMode));
             }
 
             if (superKey && Input.IsKeyPressed(InputKey.F10))
@@ -187,7 +185,7 @@ namespace BanditMilitias
                     }
 
                     DoPowerCalculations(true);
-                    InformationManager.AddQuickInformation(new TextObject("BANDIT MILITIAS CLEARED"));
+                    InformationManager.DisplayMessage(new InformationMessage("BANDIT MILITIAS CLEARED"));
                     var bmCount = MobileParty.All.CountQ(m => m.PartyComponent is ModBanditMilitiaPartyComponent);
                     Log($"Militias: {bmCount}.  Custom troops: {MobileParty.All.SelectMany(m => m.MemberRoster.ToFlattenedRoster()).CountQ(e => e.Troop.StringId.Contains("_Bandit_Militia_Troop_"))}.  Troop prisoners: {MobileParty.All.SelectMany(m => m.PrisonRoster.ToFlattenedRoster()).CountQ(e => e.Troop.StringId.Contains("_Bandit_Militia_Troop_"))}.");
                 }

@@ -4,14 +4,13 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Text;
 using HarmonyLib;
 using Helpers;
 using SandBox.View.Map;
-using SandBox.ViewModelCollection.MobilePartyTracker;
+using SandBox.ViewModelCollection.Map;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
+using TaleWorlds.CampaignSystem.CampaignBehaviors;
 using TaleWorlds.CampaignSystem.CharacterDevelopment;
 using TaleWorlds.CampaignSystem.Extensions;
 using TaleWorlds.CampaignSystem.LogEntries;
@@ -45,7 +44,7 @@ namespace BanditMilitias.Helpers
         public static readonly AccessTools.FieldRef<MobileParty, bool> IsBandit =
             AccessTools.FieldRefAccess<MobileParty, bool>("<IsBandit>k__BackingField");
 
-        private static readonly AccessTools.FieldRef<NameGenerator, TextObject[]> GangLeaderNames =
+        internal static readonly AccessTools.FieldRef<NameGenerator, TextObject[]> GangLeaderNames =
             AccessTools.FieldRefAccess<NameGenerator, TextObject[]>("_gangLeaderNames");
 
         public static readonly AccessTools.FieldRef<Hero, Settlement> _homeSettlement = AccessTools.FieldRefAccess<Hero, Settlement>("_homeSettlement");
@@ -65,6 +64,8 @@ namespace BanditMilitias.Helpers
         // ReSharper disable once StringLiteralTypo
         public static readonly AccessTools.FieldRef<CharacterObject, bool> HiddenInEncyclopedia =
             AccessTools.FieldRefAccess<CharacterObject, bool>("<HiddenInEncylopedia>k__BackingField");
+
+        public static readonly PartyUpgraderCampaignBehavior UpgraderCampaignBehavior;
 
         // ReSharper disable once UnusedMethodReturnValue.Global
         public static bool Log(object input)
@@ -761,11 +762,12 @@ namespace BanditMilitias.Helpers
         {
             if (party.MemberRoster.TotalManCount < Globals.Settings.TrackedSizeMinimum)
             {
-                var tracker = Globals.MobilePartyTrackerVM?.Trackers?.FirstOrDefault(t => t.TrackedParty == party.MobileParty);
-                if (tracker is not null)
-                {
-                    Globals.MobilePartyTrackerVM.Trackers.Remove(tracker);
-                }
+                // BUG refactored
+                //var tracker = Globals.MapMobilePartyTrackerVM?.Trackers?.FirstOrDefault(t => t.TrackedParty == party.MobileParty);
+                //if (tracker is not null)
+                //{
+                //    Globals.MapMobilePartyTrackerVM.Trackers.Remove(tracker);
+                //}
             }
         }
 
@@ -859,13 +861,13 @@ namespace BanditMilitias.Helpers
 
             mobileParty.SetCustomName(mobileParty.GetBM().Name);
             mobileParty.LeaderHero.StringId += "Bandit_Militia";
-            var tracker = Globals.MobilePartyTrackerVM.Trackers.FirstOrDefault(t => t.TrackedParty == mobileParty);
+            var tracker = Globals.MapMobilePartyTrackerVM.Trackers.FirstOrDefault(t => t.TrackedParty == mobileParty);
             if (Globals.Settings.Trackers
                 && tracker is null
                 && mobileParty.MemberRoster.TotalManCount >= Globals.Settings.TrackedSizeMinimum)
             {
                 tracker = new MobilePartyTrackItemVM(mobileParty, MapScreen.Instance.MapCamera, null);
-                Globals.MobilePartyTrackerVM.Trackers.Add(tracker);
+                Globals.MapMobilePartyTrackerVM.Trackers.Add(tracker);
             }
         }
 
@@ -944,7 +946,8 @@ namespace BanditMilitias.Helpers
                     Log($"^^^ {mobileParty.LeaderHero.Name} is upgrading up to {numberToUpgrade} of {number} \"{troopToTrain.Character.Name}\".");
                     var xpGain = numberToUpgrade * DifficultyXpMap[Globals.Settings.XpGift.SelectedValue];
                     mobileParty.MemberRoster.AddXpToTroop(xpGain, troopToTrain.Character);
-                    Campaign.Current._partyUpgrader.UpgradeReadyTroops(mobileParty.Party);
+                    var upgrader = UpgraderCampaignBehavior ?? Campaign.Current.GetCampaignBehavior<PartyUpgraderCampaignBehavior>();
+                    upgrader.UpgradeReadyTroops(mobileParty.Party);
                     if (Globals.Settings.TestingMode)
                     {
                         var party = Hero.MainHero.PartyBelongedTo ?? Hero.MainHero.PartyBelongedToAsPrisoner.MobileParty;
@@ -966,17 +969,17 @@ namespace BanditMilitias.Helpers
                 _homeSettlement(hero) = hero.BornSettlement;
             }
 
-            var random = Rng.Next(0, GangLeaderNames(NameGenerator.Current).Length);
-            var originalStringId = hero.CharacterObject.StringId;
-            hero.CharacterObject.StringId = hero.CharacterObject.StringId.Replace("Bandit_Militia", "");
-            NameGenerator.Current.AddName(
-                (uint)Traverse.Create(NameGenerator.Current)
-                    .Method("CreateNameCode", hero.CharacterObject, GangLeaderNames(NameGenerator.Current), random)
-                    .GetValue());
-            hero.CharacterObject.StringId = originalStringId;
-            var textObject = GangLeaderNames(NameGenerator.Current)[random].CopyTextObject();
-            StringHelpers.SetCharacterProperties("HERO", hero.CharacterObject);
-            hero.SetName(new TextObject($"{textObject}"), hero.FirstName);
+            //var random = Rng.Next(0, GangLeaderNames(NameGenerator.Current).Length);
+            //var originalStringId = hero.CharacterObject.StringId;
+            //hero.CharacterObject.StringId = hero.CharacterObject.StringId.Replace("Bandit_Militia", "");
+            //NameGenerator.Current.AddName(
+            //    (uint)Traverse.Create(NameGenerator.Current)
+            //        .Method("CreateNameCode", hero.CharacterObject, GangLeaderNames(NameGenerator.Current), random)
+            //        .GetValue());
+            //hero.CharacterObject.StringId = originalStringId;
+            //var textObject = GangLeaderNames(NameGenerator.Current)[random].CopyTextObject();
+            //StringHelpers.SetCharacterProperties("HERO", hero.CharacterObject);
+            //hero.SetName(new TextObject($"{textObject}"), hero.FirstName);
         }
 
         public static IEnumerable<ModBanditMilitiaPartyComponent> GetCachedBMs(bool forceRefresh = false)
@@ -993,10 +996,10 @@ namespace BanditMilitias.Helpers
 
         public static void InitMilitia(MobileParty militia, TroopRoster[] rosters, Vec2 position)
         {
-            var index = Globals.MobilePartyTrackerVM.Trackers.FindIndexQ(t => t.TrackedParty == militia);
+            var index = Globals.MapMobilePartyTrackerVM.Trackers.FindIndexQ(t => t.TrackedParty == militia);
             if (index >= 0)
             {
-                Globals.MobilePartyTrackerVM.Trackers.RemoveAt(index);
+                Globals.MapMobilePartyTrackerVM.Trackers.RemoveAt(index);
             }
 
             militia.InitializeMobilePartyAtPosition(rosters[0], rosters[1], position);
@@ -1285,7 +1288,7 @@ namespace BanditMilitias.Helpers
                 if ((tempCharacter is null && !troop.StringId.Contains("Bandit_Militia"))
                     || tempCharacter is not null && !tempCharacter.StringId.Contains("Bandit_Militia"))
                 {
-                    tempCharacter = CharacterObject.CreateFrom(troop, false);
+                    tempCharacter = CharacterObject.CreateFrom(troop);
                     Traverse.Create(tempCharacter).Method("SetName", new TextObject($"Custom {tempCharacter.Name}")).GetValue();
                     tempCharacter.StringId += $"_Bandit_Militia_Troop_{Guid.NewGuid()}";
                     HiddenInEncyclopedia(tempCharacter) = true;

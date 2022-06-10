@@ -1,12 +1,11 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using BanditMilitias.Helpers;
 using HarmonyLib;
 using Helpers;
 using SandBox.View.Map;
-using SandBox.ViewModelCollection.MobilePartyTracker;
+using SandBox.ViewModelCollection.Map;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.CampaignBehaviors;
 using TaleWorlds.CampaignSystem.CharacterDevelopment;
@@ -161,12 +160,12 @@ namespace BanditMilitias.Patches
             }
         }
 
-        [HarmonyPatch(typeof(MobilePartyTrackerVM), MethodType.Constructor, typeof(Camera), typeof(Action<Vec2>))]
-        public static class MobilePartyTrackerVMCtorPatch
+        [HarmonyPatch(typeof(MapMobilePartyTrackerVM), MethodType.Constructor, typeof(Camera), typeof(Action<Vec2>))]
+        public static class MapMobilePartyTrackerVMCtorPatch
         {
-            public static void Postfix(MobilePartyTrackerVM __instance)
+            public static void Postfix(MapMobilePartyTrackerVM __instance)
             {
-                Globals.MobilePartyTrackerVM = __instance;
+                Globals.MapMobilePartyTrackerVM = __instance;
             }
         }
 
