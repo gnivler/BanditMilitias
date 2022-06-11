@@ -1,7 +1,11 @@
 using System.Linq;
 using BanditMilitias.Helpers;
 using HarmonyLib;
+using SandBox.View.Map;
+using TaleWorlds.CampaignSystem.Conversation.Tags;
 using TaleWorlds.CampaignSystem.MapEvents;
+using TaleWorlds.CampaignSystem.Roster;
+using TaleWorlds.Core;
 using TaleWorlds.LinQuick;
 using TaleWorlds.Localization;
 using static BanditMilitias.Helpers.Helper;
@@ -20,11 +24,7 @@ namespace BanditMilitias.Patches
         {
             public static void Prefix(MapEvent __instance)
             {
-                if (!__instance.HasWinner)
-                {
-                    return;
-                }
-
+                if (!__instance.HasWinner) return;
                 var loserBMs = __instance.PartiesOnSide(__instance.DefeatedSide)
                     .Where(p => p.Party?.MobileParty?.PartyComponent is ModBanditMilitiaPartyComponent);
                 foreach (var party in loserBMs)
@@ -37,9 +37,8 @@ namespace BanditMilitias.Patches
                     }
 
                     if (party.Party.MobileParty.LeaderHero is null)
-                    {
                         party.Party.MobileParty.SetCustomName(new TextObject(Globals.Settings.LeaderlessBanditMilitiaString));
-                    }
+
 
                     RemoveUndersizedTracker(party.Party);
                 }
@@ -83,7 +82,7 @@ namespace BanditMilitias.Patches
                 DoPowerCalculations();
             }
 
-            public static void Postfix(MapEvent __instance, object lootCollector)
+            public static void Postfix(MapEvent __instance)
             {
                 if (!__instance.HasWinner) return;
                 var winnerBMs = __instance.PartiesOnSide(__instance.WinningSide)
@@ -92,7 +91,8 @@ namespace BanditMilitias.Patches
 
                 var loserHeroes = __instance.PartiesOnSide(__instance.DefeatedSide)
                     .SelectQ(mep => mep.Party.Owner).Where(h => h is not null).ToListQ();
-                foreach (var BM in winnerBMs) DecreaseAvoidance(loserHeroes, BM);
+                foreach (var BM in winnerBMs)
+                    DecreaseAvoidance(loserHeroes, BM);
             }
         }
     }

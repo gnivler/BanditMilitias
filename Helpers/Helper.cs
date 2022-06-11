@@ -284,6 +284,13 @@ namespace BanditMilitias.Helpers
 
         public static void Trash(MobileParty mobileParty)
         {
+            if (mobileParty is null)
+            {
+                Meow();
+                Log(new string('*', 200) + "NULL MobileParty at Trash");
+                return;
+            }
+
             mobileParty.LeaderHero?.RemoveMilitiaHero();
 
             if (mobileParty.ActualClan is not null)
@@ -337,8 +344,16 @@ namespace BanditMilitias.Helpers
             var hasLogged = false;
             var partiesToRemove = MobileParty.All
                 .WhereQ(m => m.PartyComponent is ModBanditMilitiaPartyComponent)
-                .Concat(Traverse.Create(Campaign.Current.CampaignObjectManager).Field<List<MobileParty>>("_partiesWithoutPartyComponent").Value
-                    .WhereQ(m => m.StringId.Contains("Bandit_Militia"))).ToListQ();
+                .ToListQ();
+
+            // this field doesn't exist in 1.7.1...
+            var oneSevenTwoPartiesField = Traverse.Create(Campaign.Current.CampaignObjectManager).Field<List<MobileParty>>("_partiesWithoutPartyComponent").Value;
+            if (oneSevenTwoPartiesField is not null)
+            {
+                partiesToRemove.AddRange(oneSevenTwoPartiesField);
+            }
+
+            partiesToRemove = partiesToRemove.WhereQ(m => m.StringId.Contains("Bandit_Militia")).ToListQ();
             foreach (var mobileParty in partiesToRemove)
             {
                 if (!hasLogged)

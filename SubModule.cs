@@ -118,10 +118,11 @@ namespace BanditMilitias
                 //    Trash(crud[i]);
                 //}
 
-                var target = MobileParty.All.WhereQ(m=> m.PartyComponent is ModBanditMilitiaPartyComponent).OrderByDescending(m => m.MemberRoster.GetTroopRoster().WhereQ(e => e.Character.StringId.Contains("Bandit_Militia_Troop")).SumQ(r => r.Number)).FirstOrDefault();
-               
-                if (SubModule.MEOWMEOW)
+                var target = MobileParty.All.WhereQ(m => m.PartyComponent is ModBanditMilitiaPartyComponent).OrderByDescending(m => m.MemberRoster.GetTroopRoster().WhereQ(e => e.Character.StringId.Contains("Bandit_Militia_Troop")).SumQ(r => r.Number)).FirstOrDefault();
+
+                if (SubModule.MEOWMEOW && target is not null)
                 {
+                    var party = target.Party;
                     MobileParty.MainParty.Position2D = target.Position2D;
                     Campaign.Current.TimeControlMode = CampaignTimeControlMode.Stop;
                     MapScreen.Instance.TeleportCameraToMainParty();
