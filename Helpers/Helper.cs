@@ -287,7 +287,7 @@ namespace BanditMilitias.Helpers
             if (mobileParty is null)
             {
                 Meow();
-                Log(new string('*', 200) + "NULL MobileParty at Trash");
+                Log(new string('*', 100) + "NULL MobileParty at Trash");
                 return;
             }
 
