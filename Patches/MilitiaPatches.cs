@@ -18,6 +18,7 @@ using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Roster;
 using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
+using TaleWorlds.LinQuick;
 using TaleWorlds.Localization;
 using static BanditMilitias.Helpers.Helper;
 using static BanditMilitias.Globals;
@@ -32,12 +33,17 @@ namespace BanditMilitias.Patches
 {
     public static class MilitiaPatches
     {
-        [HarmonyPatch(typeof(MobileParty), "ComputeSpeed")]
+        [HarmonyPatch(typeof(MobileParty), "CalculateSpeed")]
         public static class MobilePartyComputeSpeed
         {
             public static void Postfix(MobileParty __instance, ref float __result)
             {
-                if (__instance is null) Log("PING");
+                if (__instance is null)
+                {
+                    Meow();
+                    throw new NullReferenceException("MobileParty is null at CalculateSpeed");
+                }
+
                 if (__instance.IsBandit
                     && __instance.TargetParty is not null
                     && __instance.TargetParty.IsBandit)
@@ -284,7 +290,7 @@ namespace BanditMilitias.Patches
         }
 
         // copied out of assembly and modified to not check against occupation
-        [HarmonyPatch(typeof(NameGenerator), "GenerateFullHeroName")]
+        [HarmonyPatch(typeof(NameGenerator), "GenerateHeroFullName")]
         public static class NameGeneratorGenerateHeroName
         {
             public static void Postfix(Hero hero, TextObject heroFirstName, ref TextObject __result)
@@ -293,8 +299,8 @@ namespace BanditMilitias.Patches
                     && !hero.PartyBelongedTo.IsBM()) return;
 
                 var textObject = heroFirstName;
-                var index = (int)Traverse.Create(NameGenerator.Current)
-                    .Method("SelectNameIndex", hero, GangLeaderNames(NameGenerator.Current), 0, false).GetValue();
+                var index = (int) AccessTools.Method(typeof(NameGenerator), "SelectNameIndex")
+                    .Invoke(NameGenerator.Current, new object[] { hero, GangLeaderNames(NameGenerator.Current), 0u, false });
                 NameGenerator.Current.AddName(GangLeaderNames(NameGenerator.Current)[index]);
                 textObject = GangLeaderNames(NameGenerator.Current)[index].CopyTextObject();
                 textObject.SetTextVariable("FEMALE", hero.IsFemale ? 1 : 0);

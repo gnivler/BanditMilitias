@@ -120,8 +120,8 @@ namespace BanditMilitias
                
                 if (SubModule.MEOWMEOW)
                 {
-                    MobileParty.MainParty.Position2D = target.Position2D;
-                    Campaign.Current.TimeControlMode = CampaignTimeControlMode.Stop;
+                    MobileParty.MainParty.Position2D = target!.Position2D;
+                    Campaign.Current!.TimeControlMode = CampaignTimeControlMode.Stop;
                     MapScreen.Instance.TeleportCameraToMainParty();
                 }
                 //Nuke();

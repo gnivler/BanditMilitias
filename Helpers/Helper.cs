@@ -12,6 +12,7 @@ using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.CampaignBehaviors;
 using TaleWorlds.CampaignSystem.CharacterDevelopment;
+using TaleWorlds.CampaignSystem.ComponentInterfaces;
 using TaleWorlds.CampaignSystem.Extensions;
 using TaleWorlds.CampaignSystem.LogEntries;
 using TaleWorlds.CampaignSystem.MapEvents;
@@ -824,6 +825,7 @@ namespace BanditMilitias.Helpers
             }
         }
 
+        public static readonly AccessTools.FieldRef<Clan, Settlement> home = AccessTools.FieldRefAccess<Clan, Settlement>("_home");
         public static void ConfigureMilitia(MobileParty mobileParty)
         {
             mobileParty.LeaderHero.Gold = Convert.ToInt32(mobileParty.Party.TotalStrength * GoldMap[Globals.Settings.GoldReward.SelectedValue]);
@@ -841,6 +843,12 @@ namespace BanditMilitias.Helpers
             if (mobileParty.ActualClan.Leader is null)
             {
                 mobileParty.ActualClan.SetLeader(mobileParty.GetBM().Leader);
+            }
+
+            if (mobileParty.LeaderHero.Clan.HomeSettlement is null)
+            {
+                home(mobileParty.LeaderHero.Clan) = Hideouts.GetRandomElement();
+                Log(new string('#', 200));
             }
 
             if (Rng.Next(0, 2) == 0)
