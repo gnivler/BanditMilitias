@@ -700,12 +700,7 @@ namespace BanditMilitias.Helpers
                 var medianSize = (float)parties.OrderBy(p => p.MemberRoster.TotalManCount)
                     .ElementAt(parties.CountQ() / 2).MemberRoster.TotalManCount;
                 var max = 0;
-                // Serve as Soldier where you are not in your own party
-                max = Hero.MainHero.PartyBelongedTo != MobileParty.MainParty
-                    ? Hero.MainHero.PartyBelongedTo.MemberRoster.TotalManCount
-                    : MobileParty.MainParty.MemberRoster.TotalManCount;
-
-                Globals.CalculatedMaxPartySize = Math.Max(medianSize, Math.Max(1, max) * Variance);
+                Globals.CalculatedMaxPartySize = Math.Max(medianSize, Math.Max(1, MobileParty.MainParty.MemberRoster.TotalManCount) * Variance);
                 //Globals.CalculatedMaxPartySize = Math.Max(Globals.CalculatedMaxPartySize, Globals.Settings.MinPartySize);
                 Globals.LastCalculated = CampaignTime.Now.ToHours;
                 Globals.CalculatedGlobalPowerLimit = parties.Sum(p => p.Party.TotalStrength) * Variance;
