@@ -3,10 +3,12 @@ using System.Collections.Generic;
 using BanditMilitias.Helpers;
 using HarmonyLib;
 using Helpers;
+using SandBox.GameComponents;
 using SandBox.View.Map;
 using SandBox.ViewModelCollection;
 using SandBox.ViewModelCollection.Map;
 using SandBox.ViewModelCollection.Nameplate;
+using StoryMode.GameComponents;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.AgentOrigins;
@@ -20,6 +22,7 @@ using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
 using TaleWorlds.LinQuick;
 using TaleWorlds.Localization;
+using TaleWorlds.MountAndBlade;
 using static BanditMilitias.Helpers.Helper;
 using static BanditMilitias.Globals;
 
@@ -299,7 +302,7 @@ namespace BanditMilitias.Patches
                     && !hero.PartyBelongedTo.IsBM()) return;
 
                 var textObject = heroFirstName;
-                var index = (int) AccessTools.Method(typeof(NameGenerator), "SelectNameIndex")
+                var index = (int)AccessTools.Method(typeof(NameGenerator), "SelectNameIndex")
                     .Invoke(NameGenerator.Current, new object[] { hero, GangLeaderNames(NameGenerator.Current), 0u, false });
                 NameGenerator.Current.AddName(GangLeaderNames(NameGenerator.Current)[index]);
                 textObject = GangLeaderNames(NameGenerator.Current)[index].CopyTextObject();
@@ -309,6 +312,42 @@ namespace BanditMilitias.Patches
                 textObject.SetTextVariable("NORTHERN", (hero.Culture.StringId == "battania" || hero.Culture.StringId == "sturgia") ? 1 : 0);
                 StringHelpers.SetCharacterProperties("HERO", hero.CharacterObject, textObject).SetTextVariable("FIRSTNAME", heroFirstName);
                 __result = textObject;
+            }
+        }
+
+        [HarmonyPatch(typeof(DefaultAgentDecideKilledOrUnconsciousModel), "GetAgentStateProbability")]
+        public class DefaultAgentDecideKilledOrUnconsciousModelGetAgentStateProbability
+        {
+            public static void Postfix(Agent effectedAgent, ref float __result)
+            {
+                if (effectedAgent.Character.StringId.Contains("Bandit_Militia"))
+                {
+                    __result = 1;
+                }
+            }
+        }
+
+        [HarmonyPatch(typeof(StoryModeAgentDecideKilledOrUnconsciousModel), "GetAgentStateProbability")]
+        public class StoryModeAgentDecideKilledOrUnconsciousModelGetAgentStateProbability
+        {
+            public static void Postfix(Agent effectedAgent, ref float __result)
+            {
+                if (effectedAgent.Character.StringId.Contains("Bandit_Militia"))
+                {
+                    __result = 1;
+                }
+            }
+        }
+
+        [HarmonyPatch(typeof(SandboxAgentDecideKilledOrUnconsciousModel), "GetAgentStateProbability")]
+        public class SandboxAgentDecideKilledOrUnconsciousModelGetAgentStateProbability
+        {
+            public static void Postfix(Agent effectedAgent, ref float __result)
+            {
+                if (effectedAgent.Character.StringId.Contains("Bandit_Militia"))
+                {
+                    __result = 1;
+                }
             }
         }
     }

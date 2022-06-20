@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Text;
 using HarmonyLib;
 using Helpers;
 using SandBox.View.Map;
@@ -12,7 +14,6 @@ using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.CampaignBehaviors;
 using TaleWorlds.CampaignSystem.CharacterDevelopment;
-using TaleWorlds.CampaignSystem.ComponentInterfaces;
 using TaleWorlds.CampaignSystem.Extensions;
 using TaleWorlds.CampaignSystem.LogEntries;
 using TaleWorlds.CampaignSystem.MapEvents;
@@ -67,6 +68,8 @@ namespace BanditMilitias.Helpers
             AccessTools.FieldRefAccess<CharacterObject, bool>("<HiddenInEncylopedia>k__BackingField");
 
         public static readonly PartyUpgraderCampaignBehavior UpgraderCampaignBehavior;
+
+        public static readonly AccessTools.FieldRef<Clan, Settlement> home = AccessTools.FieldRefAccess<Clan, Settlement>("_home");
 
         // ReSharper disable once UnusedMethodReturnValue.Global
         public static bool Log(object input)
@@ -286,6 +289,13 @@ namespace BanditMilitias.Helpers
 
         public static void Trash(MobileParty mobileParty)
         {
+            if (mobileParty is null)
+            {
+                Meow();
+                Log(new string('*', 100) + "NULL MobileParty at Trash");
+                return;
+            }
+
             mobileParty.LeaderHero?.RemoveMilitiaHero();
 
             if (mobileParty.ActualClan is not null)
@@ -339,8 +349,16 @@ namespace BanditMilitias.Helpers
             var hasLogged = false;
             var partiesToRemove = MobileParty.All
                 .WhereQ(m => m.PartyComponent is ModBanditMilitiaPartyComponent)
-                .Concat(Traverse.Create(Campaign.Current.CampaignObjectManager).Field<List<MobileParty>>("_partiesWithoutPartyComponent").Value
-                    .WhereQ(m => m.StringId.Contains("Bandit_Militia"))).ToListQ();
+                .ToListQ();
+
+            // this field doesn't exist in 1.7.1...
+            var oneSevenTwoPartiesField = Traverse.Create(Campaign.Current.CampaignObjectManager).Field<List<MobileParty>>("_partiesWithoutPartyComponent").Value;
+            if (oneSevenTwoPartiesField is not null)
+            {
+                partiesToRemove.AddRange(oneSevenTwoPartiesField);
+            }
+
+            partiesToRemove = partiesToRemove.WhereQ(m => m.StringId.Contains("Bandit_Militia")).ToListQ();
             foreach (var mobileParty in partiesToRemove)
             {
                 if (!hasLogged)
@@ -681,7 +699,13 @@ namespace BanditMilitias.Helpers
                 var parties = MobileParty.All.Where(p => p.LeaderHero is not null && !p.IsBM()).ToListQ();
                 var medianSize = (float)parties.OrderBy(p => p.MemberRoster.TotalManCount)
                     .ElementAt(parties.CountQ() / 2).MemberRoster.TotalManCount;
-                Globals.CalculatedMaxPartySize = Math.Max(medianSize, Math.Max(1, MobileParty.MainParty.MemberRoster.TotalManCount) * Variance);
+                var max = 0;
+                // Serve as Soldier where you are not in your own party
+                max = Hero.MainHero.PartyBelongedTo != MobileParty.MainParty
+                    ? Hero.MainHero.PartyBelongedTo.MemberRoster.TotalManCount
+                    : MobileParty.MainParty.MemberRoster.TotalManCount;
+
+                Globals.CalculatedMaxPartySize = Math.Max(medianSize, Math.Max(1, max) * Variance);
                 //Globals.CalculatedMaxPartySize = Math.Max(Globals.CalculatedMaxPartySize, Globals.Settings.MinPartySize);
                 Globals.LastCalculated = CampaignTime.Now.ToHours;
                 Globals.CalculatedGlobalPowerLimit = parties.Sum(p => p.Party.TotalStrength) * Variance;
@@ -825,7 +849,6 @@ namespace BanditMilitias.Helpers
             }
         }
 
-        public static readonly AccessTools.FieldRef<Clan, Settlement> home = AccessTools.FieldRefAccess<Clan, Settlement>("_home");
         public static void ConfigureMilitia(MobileParty mobileParty)
         {
             mobileParty.LeaderHero.Gold = Convert.ToInt32(mobileParty.Party.TotalStrength * GoldMap[Globals.Settings.GoldReward.SelectedValue]);
@@ -1368,7 +1391,6 @@ namespace BanditMilitias.Helpers
 
             return targetSlot;
         }
-
 
         public static void FlushMilitiaCharacterObjects()
         {

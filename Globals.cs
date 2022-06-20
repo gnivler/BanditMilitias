@@ -45,7 +45,7 @@ namespace BanditMilitias
         public static int RaidCap;
         public static Dictionary<string, Equipment> EquipmentMap = new();
         //public static Dictionary<MapEventSide, List<EquipmentElement>> LootRecord = new();
-
+        
         // ReSharper disable once InconsistentNaming
         public static MapMobilePartyTrackerVM MapMobilePartyTrackerVM;
 

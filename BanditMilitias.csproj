@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Version>3.8.7</Version>
+    <Version>3.8.8</Version>
     <TargetFramework>net472</TargetFramework>
     <Platforms>x64</Platforms>
     <LangVersion>default</LangVersion>
@@ -48,6 +48,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Remove="obj\**" />
+    <Compile Remove="ModBanditMilitiaKillModel.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Newtonsoft.Json">

@@ -1,13 +1,24 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using System.Runtime.ExceptionServices;
 using BanditMilitias.Helpers;
 using HarmonyLib;
 using Helpers;
 using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.CharacterDevelopment;
 using TaleWorlds.CampaignSystem.GameComponents;
+using TaleWorlds.CampaignSystem.MapEvents;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Roster;
 using TaleWorlds.CampaignSystem.Settlements;
+using TaleWorlds.CampaignSystem.ViewModelCollection;
+using TaleWorlds.Core;
+using TaleWorlds.Core.ViewModelCollection;
 using TaleWorlds.Library;
+using TaleWorlds.LinQuick;
+using TaleWorlds.Localization;
 using static BanditMilitias.Helpers.Helper;
 
 namespace BanditMilitias
