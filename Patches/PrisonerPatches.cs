@@ -20,11 +20,7 @@ namespace BanditMilitias.Patches
         {
             public static void Prefix(MapEvent __instance)
             {
-                if (!__instance.HasWinner)
-                {
-                    return;
-                }
-
+                if (!__instance.HasWinner) return;
                 var loserBMs = __instance.PartiesOnSide(__instance.DefeatedSide)
                     .Where(p => p.Party?.MobileParty?.PartyComponent is ModBanditMilitiaPartyComponent);
                 foreach (var party in loserBMs)

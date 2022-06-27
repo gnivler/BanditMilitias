@@ -33,7 +33,6 @@ namespace BanditMilitias
         public static Clan Looters => looters ??= Clan.BanditFactions.First(c => c.StringId == "looters");
         private static IEnumerable<Clan> synthClans;
         private static IEnumerable<Clan> SynthClans => synthClans ??= Clan.BanditFactions.Except(new[] { Looters });
-        public static List<CharacterObject> CustomTroops = new();
 
         public static readonly AccessTools.FieldRef<BasicCharacterObject, TextObject> basicName =
             AccessTools.FieldRefAccess<BasicCharacterObject, TextObject>("_basicName");
@@ -115,6 +114,8 @@ namespace BanditMilitias
         {
             if (mobileParty.PartyComponent is not (BanditPartyComponent or ModBanditMilitiaPartyComponent)) return;
 
+            // BUG WIP
+            if (mobileParty.MapEvent is not null && mobileParty.MemberRoster.TotalManCount <= 1) Meow();
             // near any Hideouts?
             if (mobileParty.PartyComponent is ModBanditMilitiaPartyComponent
                 && Settlement.FindSettlementsAroundPosition(mobileParty.Position2D, MinDistanceFromHideout, s => s.IsHideout).Any())
@@ -425,14 +426,14 @@ namespace BanditMilitias
                     continue;
                 }
 
-                var settlement = Settlement.All.Where(s => !s.IsVisible).GetRandomElementInefficiently();
-                var nearbyBandits = MobileParty.FindPartiesAroundPosition(settlement.Position2D, 100).WhereQ(m => m.IsBandit).ToListQ();
+                var settlement = Settlement.All.Where(s => !s.IsVisible && s.GetTrackDistanceToMainAgent() > 100).GetRandomElementInefficiently();
+                var nearbyBandits = MobileParty.FindPartiesAroundPosition(settlement.Position2D, 150).WhereQ(m => m.IsBandit).ToListQ();
                 var clan = Looters;
                 if (nearbyBandits.Any())
                 {
                     var cultureMap = new Dictionary<Clan, int>();
                     {
-                        foreach (var party in nearbyBandits)
+                        foreach (var party in nearbyBandits.WhereQ(m => m.ActualClan is not null))
                         {
                             if (party.LeaderHero is null)
                             {

@@ -17,6 +17,7 @@ using TaleWorlds.CampaignSystem.Roster;
 using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
 using TaleWorlds.Engine;
+using TaleWorlds.InputSystem;
 using TaleWorlds.Library;
 using TaleWorlds.LinQuick;
 using static BanditMilitias.Helpers.Helper;
@@ -64,8 +65,7 @@ namespace BanditMilitias.Patches
                 }
             }
         }
-
-
+        
         [HarmonyPatch(typeof(BattleCampaignBehavior), "CollectLoots")]
         public static class MapEventSideDistributeLootAmongWinners
         {
@@ -96,6 +96,10 @@ namespace BanditMilitias.Patches
             public static void Postfix()
             {
                 Log("MapScreen.OnInitialize");
+                if (Input.IsKeyDown(InputKey.LeftShift) || Input.IsKeyDown(InputKey.RightShift))
+                {
+                    Nuke();
+                }
                 EquipmentItems.Clear();
                 PopulateItems();
                 RaidCap = Convert.ToInt32(Settlement.FindAll(s => s.IsVillage).CountQ() / 10f);
@@ -115,8 +119,10 @@ namespace BanditMilitias.Patches
                 {
                     "regular_fighter",
                     "veteran_borrowed_troop",
+                    "_basic_root",
+                    "_elite_root"
                 };
-
+                
                 var allRecruits = CharacterObject.All.Where(c =>
                     c.Level == 11
                     && c.Occupation == Occupation.Soldier
