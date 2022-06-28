@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -15,7 +14,6 @@ using TaleWorlds.Core;
 using TaleWorlds.InputSystem;
 using TaleWorlds.Library;
 using TaleWorlds.LinQuick;
-using TaleWorlds.Localization;
 using TaleWorlds.MountAndBlade;
 using TaleWorlds.ObjectSystem;
 using static BanditMilitias.Helpers.Helper;
@@ -44,7 +42,6 @@ namespace BanditMilitias
                 AccessTools.Field(typeof(Module), "_splashScreenPlayed").SetValue(Module.CurrentModule, true);
             }
 
-            CacheBanners();
             RunManualPatches();
             harmony.PatchAll(Assembly.GetExecutingAssembly());
         }
@@ -55,7 +52,7 @@ namespace BanditMilitias
         {
             for (var i = 0; i < 5000; i++)
             {
-                Banners.Add(Banner.CreateRandomBanner(Rng.Next()));
+                Banners.Add(Banner.CreateRandomBanner());
             }
         }
 
@@ -118,13 +115,12 @@ namespace BanditMilitias
                 //    Trash(crud[i]);
                 //}
 
-                var target = MobileParty.All.WhereQ(m => m.PartyComponent is ModBanditMilitiaPartyComponent).OrderByDescending(m => m.MemberRoster.GetTroopRoster().WhereQ(e => e.Character.StringId.Contains("Bandit_Militia_Troop")).SumQ(r => r.Number)).FirstOrDefault();
-
-                if (SubModule.MEOWMEOW && target is not null)
+                var target = MobileParty.All.WhereQ(m=> m.PartyComponent is ModBanditMilitiaPartyComponent).OrderByDescending(m => m.MemberRoster.GetTroopRoster().WhereQ(e => e.Character.StringId.Contains("Bandit_Militia_Troop")).SumQ(r => r.Number)).FirstOrDefault();
+               
+                if (SubModule.MEOWMEOW)
                 {
-                    var party = target.Party;
-                    MobileParty.MainParty.Position2D = target.Position2D;
-                    Campaign.Current.TimeControlMode = CampaignTimeControlMode.Stop;
+                    MobileParty.MainParty.Position2D = target!.Position2D;
+                    Campaign.Current!.TimeControlMode = CampaignTimeControlMode.Stop;
                     MapScreen.Instance.TeleportCameraToMainParty();
                 }
                 //Nuke();
@@ -141,7 +137,7 @@ namespace BanditMilitias
             if (superKey && Input.IsKeyPressed(InputKey.F11))
             {
                 Globals.Settings.TestingMode = !Globals.Settings.TestingMode;
-                InformationManager.AddQuickInformation(new TextObject("Testing mode: " + Globals.Settings.TestingMode));
+                InformationManager.DisplayMessage(new InformationMessage("Testing mode: " + Globals.Settings.TestingMode));
             }
 
             if (superKey && Input.IsKeyPressed(InputKey.F10))
@@ -188,7 +184,7 @@ namespace BanditMilitias
                     }
 
                     DoPowerCalculations(true);
-                    InformationManager.AddQuickInformation(new TextObject("BANDIT MILITIAS CLEARED"));
+                    InformationManager.DisplayMessage(new InformationMessage("BANDIT MILITIAS CLEARED"));
                     var bmCount = MobileParty.All.CountQ(m => m.PartyComponent is ModBanditMilitiaPartyComponent);
                     Log($"Militias: {bmCount}.  Custom troops: {MobileParty.All.SelectMany(m => m.MemberRoster.ToFlattenedRoster()).CountQ(e => e.Troop.StringId.Contains("_Bandit_Militia_Troop_"))}.  Troop prisoners: {MobileParty.All.SelectMany(m => m.PrisonRoster.ToFlattenedRoster()).CountQ(e => e.Troop.StringId.Contains("_Bandit_Militia_Troop_"))}.");
                 }
@@ -204,13 +200,13 @@ namespace BanditMilitias
             if (gameStarterObject is CampaignGameStarter gameStarter)
             {
                 gameStarter.AddBehavior(new MilitiaBehavior());
-                gameStarter.AddModel(new ModBanditMilitiaKillModel());
             }
         }
 
         public override void OnGameInitializationFinished(Game game)
         {
             base.OnGameInitializationFinished(game);
+            CacheBanners();
             var trainModel = AccessTools.Method(typeof(DefaultPartyTrainingModel), "GetEffectiveDailyExperience");
             harmony.Patch(trainModel, finalizer: new HarmonyMethod(AccessTools.Method(typeof(Hacks), "ExperienceFinalizer")));
         }

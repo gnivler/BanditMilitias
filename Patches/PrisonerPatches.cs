@@ -1,11 +1,7 @@
 using System.Linq;
 using BanditMilitias.Helpers;
 using HarmonyLib;
-using SandBox.View.Map;
-using TaleWorlds.CampaignSystem.Conversation.Tags;
 using TaleWorlds.CampaignSystem.MapEvents;
-using TaleWorlds.CampaignSystem.Roster;
-using TaleWorlds.Core;
 using TaleWorlds.LinQuick;
 using TaleWorlds.Localization;
 using static BanditMilitias.Helpers.Helper;

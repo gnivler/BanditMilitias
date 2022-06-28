@@ -3,10 +3,12 @@ using System.Collections.Generic;
 using BanditMilitias.Helpers;
 using HarmonyLib;
 using Helpers;
+using SandBox.GameComponents;
 using SandBox.View.Map;
 using SandBox.ViewModelCollection;
 using SandBox.ViewModelCollection.MobilePartyTracker;
 using SandBox.ViewModelCollection.Nameplate;
+using StoryMode.GameComponents;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.AgentOrigins;
@@ -18,6 +20,8 @@ using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Roster;
 using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
+using TaleWorlds.Localization;
+using TaleWorlds.MountAndBlade;
 using static BanditMilitias.Helpers.Helper;
 using static BanditMilitias.Globals;
 
@@ -36,7 +40,12 @@ namespace BanditMilitias.Patches
         {
             public static void Postfix(MobileParty __instance, ref float __result)
             {
-                if (__instance is null) Log("PING");
+                if (__instance is null)
+                {
+                    Meow();
+                    throw new NullReferenceException("MobileParty is null at CalculateSpeed");
+                }
+
                 if (__instance.IsBandit
                     && __instance.TargetParty is not null
                     && __instance.TargetParty.IsBandit)
@@ -281,5 +290,28 @@ namespace BanditMilitias.Patches
                 }
             }
         }
+
+        // copied out of assembly and modified to not check against occupation
+        //[HarmonyPatch(typeof(NameGenerator), "GenerateHeroFullName")]
+        //public static class NameGeneratorGenerateHeroName
+        //{
+        //    public static void Postfix(Hero hero, TextObject heroFirstName, ref TextObject __result)
+        //    {
+        //        if (hero.PartyBelongedTo is not null
+        //            && !hero.PartyBelongedTo.IsBM()) return;
+        //
+        //        var textObject = heroFirstName;
+        //        var index = (int) AccessTools.Method(typeof(NameGenerator), "SelectNameIndex")
+        //            .Invoke(NameGenerator.Current, new object[] { hero, GangLeaderNames(NameGenerator.Current), 0u, false });
+        //        NameGenerator.Current.AddName(GangLeaderNames(NameGenerator.Current)[index]);
+        //        textObject = GangLeaderNames(NameGenerator.Current)[index].CopyTextObject();
+        //        textObject.SetTextVariable("FEMALE", hero.IsFemale ? 1 : 0);
+        //        textObject.SetTextVariable("IMPERIAL", (hero.Culture.StringId == "empire") ? 1 : 0);
+        //        textObject.SetTextVariable("COASTAL", (hero.Culture.StringId == "empire" || hero.Culture.StringId == "vlandia") ? 1 : 0);
+        //        textObject.SetTextVariable("NORTHERN", (hero.Culture.StringId == "battania" || hero.Culture.StringId == "sturgia") ? 1 : 0);
+        //        StringHelpers.SetCharacterProperties("HERO", hero.CharacterObject, textObject).SetTextVariable("FIRSTNAME", heroFirstName);
+        //        __result = textObject;
+        //    }
+        //}
     }
 }

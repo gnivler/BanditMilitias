@@ -4,14 +4,13 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Text;
 using HarmonyLib;
 using Helpers;
 using SandBox.View.Map;
 using SandBox.ViewModelCollection.MobilePartyTracker;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
+using TaleWorlds.CampaignSystem.CampaignBehaviors;
 using TaleWorlds.CampaignSystem.CharacterDevelopment;
 using TaleWorlds.CampaignSystem.Extensions;
 using TaleWorlds.CampaignSystem.LogEntries;
@@ -45,7 +44,7 @@ namespace BanditMilitias.Helpers
         public static readonly AccessTools.FieldRef<MobileParty, bool> IsBandit =
             AccessTools.FieldRefAccess<MobileParty, bool>("<IsBandit>k__BackingField");
 
-        private static readonly AccessTools.FieldRef<NameGenerator, TextObject[]> GangLeaderNames =
+        public static readonly AccessTools.FieldRef<NameGenerator, TextObject[]> GangLeaderNames =
             AccessTools.FieldRefAccess<NameGenerator, TextObject[]>("_gangLeaderNames");
 
         public static readonly AccessTools.FieldRef<Hero, Settlement> _homeSettlement = AccessTools.FieldRefAccess<Hero, Settlement>("_homeSettlement");
@@ -65,6 +64,8 @@ namespace BanditMilitias.Helpers
         // ReSharper disable once StringLiteralTypo
         public static readonly AccessTools.FieldRef<CharacterObject, bool> HiddenInEncyclopedia =
             AccessTools.FieldRefAccess<CharacterObject, bool>("<HiddenInEncylopedia>k__BackingField");
+
+        public static readonly AccessTools.FieldRef<Clan, Settlement> home = AccessTools.FieldRefAccess<Clan, Settlement>("_home");
 
         // ReSharper disable once UnusedMethodReturnValue.Global
         public static bool Log(object input)
@@ -812,28 +813,16 @@ namespace BanditMilitias.Helpers
             return hero;
         }
 
-        // this is wrong because it clobbers the whole CO, not each individual troop
         public static void MurderMounts(TroopRoster troopRoster)
         {
-            var numMounted = NumMountedTroops(troopRoster);
-            var mountedTroops = troopRoster.ToFlattenedRoster().Troops
-                .WhereQ(c => !c.Equipment[10].IsEmpty && !c.IsHero).ToListQ();
-            mountedTroops.Shuffle();
-            // remove horses past 50% of the BM
-            if (numMounted > troopRoster.TotalManCount / 2)
+            var mountedTroops = troopRoster.GetTroopRoster().WhereQ(c =>
+                !c.Character.Equipment[10].IsEmpty && !c.Character.IsHero).ToListQ();
+            while (NumMountedTroops(troopRoster) > troopRoster.TotalManCount / 2)
             {
-                foreach (var troop in mountedTroops)
-                {
-                    if (NumMountedTroops(troopRoster) > troopRoster.TotalManCount / 2)
-                    {
-                        troop.Equipment[10] = new EquipmentElement();
-                        troop.Equipment[11] = new EquipmentElement();
-                    }
-                    else
-                    {
-                        break;
-                    }
-                }
+                var delta = NumMountedTroops(troopRoster) - troopRoster.TotalManCount / 2;
+                var element = mountedTroops.GetRandomElement();
+                var count = Rng.Next(1, delta + 1);
+                troopRoster.AddToCounts(element.Character, -count);
             }
         }
 
@@ -854,6 +843,12 @@ namespace BanditMilitias.Helpers
             if (mobileParty.ActualClan.Leader is null)
             {
                 mobileParty.ActualClan.SetLeader(mobileParty.GetBM().Leader);
+            }
+
+            if (mobileParty.LeaderHero.Clan.HomeSettlement is null)
+            {
+                home(mobileParty.LeaderHero.Clan) = Hideouts.GetRandomElement();
+                Log(new string('#', 200));
             }
 
             if (Rng.Next(0, 2) == 0)
@@ -980,18 +975,6 @@ namespace BanditMilitias.Helpers
             {
                 _homeSettlement(hero) = hero.BornSettlement;
             }
-
-            var random = Rng.Next(0, GangLeaderNames(NameGenerator.Current).Length);
-            var originalStringId = hero.CharacterObject.StringId;
-            hero.CharacterObject.StringId = hero.CharacterObject.StringId.Replace("Bandit_Militia", "");
-            NameGenerator.Current.AddName(
-                (uint)Traverse.Create(NameGenerator.Current)
-                    .Method("CreateNameCode", hero.CharacterObject, GangLeaderNames(NameGenerator.Current), random)
-                    .GetValue());
-            hero.CharacterObject.StringId = originalStringId;
-            var textObject = GangLeaderNames(NameGenerator.Current)[random].CopyTextObject();
-            StringHelpers.SetCharacterProperties("HERO", hero.CharacterObject);
-            hero.SetName(new TextObject($"{textObject}"), hero.FirstName);
         }
 
         public static IEnumerable<ModBanditMilitiaPartyComponent> GetCachedBMs(bool forceRefresh = false)
@@ -1372,7 +1355,6 @@ namespace BanditMilitias.Helpers
 
             return targetSlot;
         }
-
 
         public static void FlushMilitiaCharacterObjects()
         {
