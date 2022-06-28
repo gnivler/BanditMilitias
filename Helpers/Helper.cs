@@ -699,7 +699,6 @@ namespace BanditMilitias.Helpers
                 var parties = MobileParty.All.Where(p => p.LeaderHero is not null && !p.IsBM()).ToListQ();
                 var medianSize = (float)parties.OrderBy(p => p.MemberRoster.TotalManCount)
                     .ElementAt(parties.CountQ() / 2).MemberRoster.TotalManCount;
-                var max = 0;
                 Globals.CalculatedMaxPartySize = Math.Max(medianSize, Math.Max(1, MobileParty.MainParty.MemberRoster.TotalManCount) * Variance);
                 //Globals.CalculatedMaxPartySize = Math.Max(Globals.CalculatedMaxPartySize, Globals.Settings.MinPartySize);
                 Globals.LastCalculated = CampaignTime.Now.ToHours;
@@ -819,28 +818,16 @@ namespace BanditMilitias.Helpers
             return hero;
         }
 
-        // this is wrong because it clobbers the whole CO, not each individual troop
         public static void MurderMounts(TroopRoster troopRoster)
         {
-            var numMounted = NumMountedTroops(troopRoster);
-            var mountedTroops = troopRoster.ToFlattenedRoster().Troops
-                .WhereQ(c => !c.Equipment[10].IsEmpty && !c.IsHero).ToListQ();
-            mountedTroops.Shuffle();
-            // remove horses past 50% of the BM
-            if (numMounted > troopRoster.TotalManCount / 2)
+            var mountedTroops = troopRoster.GetTroopRoster().WhereQ(c =>
+                !c.Character.Equipment[10].IsEmpty && !c.Character.IsHero).ToListQ();
+            while (NumMountedTroops(troopRoster) > troopRoster.TotalManCount / 2)
             {
-                foreach (var troop in mountedTroops)
-                {
-                    if (NumMountedTroops(troopRoster) > troopRoster.TotalManCount / 2)
-                    {
-                        troop.Equipment[10] = new EquipmentElement();
-                        troop.Equipment[11] = new EquipmentElement();
-                    }
-                    else
-                    {
-                        break;
-                    }
-                }
+                var delta = NumMountedTroops(troopRoster) - troopRoster.TotalManCount / 2;
+                var element = mountedTroops.GetRandomElement();
+                var count = Rng.Next(1, delta + 1);
+                troopRoster.AddToCounts(element.Character, -count);
             }
         }
 

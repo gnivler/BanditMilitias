@@ -65,7 +65,7 @@ namespace BanditMilitias.Patches
                 }
             }
         }
-        
+
         [HarmonyPatch(typeof(BattleCampaignBehavior), "CollectLoots")]
         public static class MapEventSideDistributeLootAmongWinners
         {
@@ -93,13 +93,17 @@ namespace BanditMilitias.Patches
         [HarmonyPatch(typeof(MapScreen), "OnInitialize")]
         public static class MapScreenOnInitializePatch
         {
-            public static void Postfix()
+            public static void Prefix()
             {
-                Log("MapScreen.OnInitialize");
                 if (Input.IsKeyDown(InputKey.LeftShift) || Input.IsKeyDown(InputKey.RightShift))
                 {
                     Nuke();
                 }
+            }
+
+            public static void Postfix()
+            {
+                Log("MapScreen.OnInitialize");
                 EquipmentItems.Clear();
                 PopulateItems();
                 RaidCap = Convert.ToInt32(Settlement.FindAll(s => s.IsVillage).CountQ() / 10f);
@@ -122,7 +126,7 @@ namespace BanditMilitias.Patches
                     "_basic_root",
                     "_elite_root"
                 };
-                
+
                 var allRecruits = CharacterObject.All.Where(c =>
                     c.Level == 11
                     && c.Occupation == Occupation.Soldier
