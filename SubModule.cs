@@ -4,12 +4,15 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using BanditMilitias.Helpers;
+using BanditMilitias.Patches;
 using HarmonyLib;
 using SandBox.View.Map;
 using SandBox.ViewModelCollection.Map;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.GameComponents;
+using TaleWorlds.CampaignSystem.MapEvents;
 using TaleWorlds.CampaignSystem.Party;
+using TaleWorlds.CampaignSystem.Roster;
 using TaleWorlds.Core;
 using TaleWorlds.InputSystem;
 using TaleWorlds.Library;
@@ -42,7 +45,6 @@ namespace BanditMilitias
                 AccessTools.Field(typeof(Module), "_splashScreenPlayed").SetValue(Module.CurrentModule, true);
             }
 
-            CacheBanners();
             RunManualPatches();
             harmony.PatchAll(Assembly.GetExecutingAssembly());
         }
@@ -116,8 +118,8 @@ namespace BanditMilitias
                 //    Trash(crud[i]);
                 //}
 
-                var target = MobileParty.All.WhereQ(m=> m.PartyComponent is ModBanditMilitiaPartyComponent).OrderByDescending(m => m.MemberRoster.GetTroopRoster().WhereQ(e => e.Character.StringId.Contains("Bandit_Militia_Troop")).SumQ(r => r.Number)).FirstOrDefault();
-               
+                var target = MobileParty.All.WhereQ(m => m.PartyComponent is ModBanditMilitiaPartyComponent).OrderByDescending(m => m.MemberRoster.GetTroopRoster().WhereQ(e => e.Character.StringId.Contains("Bandit_Militia_Troop")).SumQ(r => r.Number)).FirstOrDefault();
+
                 if (SubModule.MEOWMEOW)
                 {
                     MobileParty.MainParty.Position2D = target!.Position2D;
@@ -208,8 +210,32 @@ namespace BanditMilitias
         public override void OnGameInitializationFinished(Game game)
         {
             base.OnGameInitializationFinished(game);
+            CacheBanners();
+            var internalType = AccessTools.TypeByName("<GetTrackDescription>d__11");
+            var org = AccessTools.Method(internalType, "MoveNext");
+            harmony.Patch(org, finalizer: new HarmonyMethod(AccessTools.Method(typeof(Hacks), nameof(Hacks.GetTrackDescriptionMoveNext))));
+            var foodModel = AccessTools.Method(typeof(DefaultMobilePartyFoodConsumptionModel), "CalculateDailyFoodConsumptionf");
+            harmony.Patch(foodModel, finalizer: new HarmonyMethod(AccessTools.Method(typeof(SubModule), "FoodFinalizer")));
             var trainModel = AccessTools.Method(typeof(DefaultPartyTrainingModel), "GetEffectiveDailyExperience");
-            harmony.Patch(trainModel, finalizer: new HarmonyMethod(AccessTools.Method(typeof(Hacks), "ExperienceFinalizer")));
+            harmony.Patch(trainModel, finalizer: new HarmonyMethod(AccessTools.Method(typeof(SubModule), "ExperienceFinalizer")));
+            var wageModel = AccessTools.Method(typeof(DefaultPartyWageModel), "GetTotalWage");
+            harmony.Patch(wageModel, finalizer: new HarmonyMethod(AccessTools.Method(typeof(SubModule), "GetTotalWageFinalizer")));
+        }
+
+        // the arguments are included for debugging
+        private static Exception ExperienceFinalizer(Exception __exception, MobileParty mobileParty, TroopRosterElement troop)
+        {
+            return null;
+        }
+
+        private static Exception GetTotalWageFinalizer(Exception __exception, MobileParty mobileParty)
+        {
+            return null;
+        }
+
+        private static Exception FoodFinalizer(Exception __exception, MobileParty party)
+        {
+            return null;
         }
 
         private static void RunManualPatches()
@@ -217,20 +243,11 @@ namespace BanditMilitias
             try
             {
                 Dev.RunDevPatches();
-                var internalType = AccessTools.TypeByName("<GetTrackDescription>d__11");
-                var org = AccessTools.Method(internalType, "MoveNext");
-                harmony.Patch(org, finalizer: new HarmonyMethod(AccessTools.Method(typeof(SubModule), "Finalizer")));
             }
             catch (Exception ex)
             {
                 Log(ex.ToString());
             }
-        }
-
-        private static Exception Finalizer(Exception __exception)
-        {
-            if (__exception is not null) Meow();
-            return null;
         }
     }
 }

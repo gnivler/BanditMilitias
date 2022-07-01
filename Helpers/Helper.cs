@@ -821,12 +821,13 @@ namespace BanditMilitias.Helpers
         public static void MurderMounts(TroopRoster troopRoster)
         {
             var mountedTroops = troopRoster.GetTroopRoster().WhereQ(c =>
-                !c.Character.Equipment[10].IsEmpty && !c.Character.IsHero).ToListQ();
+                !c.Character.Equipment[10].IsEmpty
+                && !c.Character.IsHero).ToListQ();
             while (NumMountedTroops(troopRoster) > troopRoster.TotalManCount / 2)
             {
                 var delta = NumMountedTroops(troopRoster) - troopRoster.TotalManCount / 2;
                 var element = mountedTroops.GetRandomElement();
-                var count = Rng.Next(1, delta + 1);
+                var count = Rng.Next(1, delta);
                 troopRoster.AddToCounts(element.Character, -count);
             }
         }

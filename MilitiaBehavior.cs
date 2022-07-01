@@ -181,7 +181,7 @@ namespace BanditMilitias
             if (Campaign.Current.Models.MapDistanceModel.GetDistance(mergeTarget, mobileParty) > MergeDistance
                 && mobileParty.TargetParty != mergeTarget)
             {
-                //Log($"{new string('>', 100)} MOVING {mobileParty.StringId,20} {mergeTarget.StringId,20}");
+                //Log($"{new string('>', 100mobileParty.SetMoveEscortParty(mergeTarget);)} MOVING {mobileParty.StringId,20} {mergeTarget.StringId,20}");
                 mobileParty.SetMoveEscortParty(mergeTarget);
                 mergeTarget.SetMoveEscortParty(mobileParty);
                 return;

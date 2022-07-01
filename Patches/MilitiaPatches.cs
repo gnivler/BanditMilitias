@@ -37,7 +37,7 @@ namespace BanditMilitias.Patches
     public static class MilitiaPatches
     {
         [HarmonyPatch(typeof(MobileParty), "CalculateSpeed")]
-        public static class MobilePartyComputeSpeed
+        public static class MobilePartyCalculateSpeed
         {
             public static void Postfix(MobileParty __instance, ref float __result)
             {

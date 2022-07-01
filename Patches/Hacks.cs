@@ -1,31 +1,63 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Runtime.ExceptionServices;
 using BanditMilitias.Helpers;
 using HarmonyLib;
 using Helpers;
 using TaleWorlds.CampaignSystem;
-using TaleWorlds.CampaignSystem.CharacterDevelopment;
 using TaleWorlds.CampaignSystem.GameComponents;
 using TaleWorlds.CampaignSystem.MapEvents;
 using TaleWorlds.CampaignSystem.Party;
+using TaleWorlds.CampaignSystem.Party.PartyComponents;
 using TaleWorlds.CampaignSystem.Roster;
 using TaleWorlds.CampaignSystem.Settlements;
-using TaleWorlds.CampaignSystem.ViewModelCollection;
 using TaleWorlds.Core;
-using TaleWorlds.Core.ViewModelCollection;
 using TaleWorlds.Library;
-using TaleWorlds.LinQuick;
-using TaleWorlds.Localization;
 using static BanditMilitias.Helpers.Helper;
 
-namespace BanditMilitias
+namespace BanditMilitias.Patches
 {
     public class Hacks
+
     {
         public static readonly AccessTools.FieldRef<MobileParty, int> numberOfRecentFleeingFromAParty = AccessTools.FieldRefAccess<MobileParty, int>("_numberOfRecentFleeingFromAParty");
+
+        [HarmonyPatch(typeof(BasicCharacterObject), "GetSkillValue")]
+        public class BasicCharacterObjectGetSkillValue
+        {
+            public static Exception Finalizer(Exception __exception, SkillObject skill)
+            {
+                return null;
+            }
+        }
+
+        [HarmonyPatch(typeof(MapEventSide), "ApplySimulatedHitRewardToSelectedTroop")]
+        public class MapEventSideApplySimulatedHitRewardToSelectedTroop
+        {
+            public static Exception Finalizer(Exception __exception, CharacterObject strikerTroop, CharacterObject attackedTroop)
+            {
+                if (__exception is not null) Log(__exception);
+                return null;
+            }
+        }
+
+        [HarmonyPatch(typeof(TroopRoster), "ClampXp")]
+        public static class TroopRosterClampXp
+        {
+            public static Exception Finalizer(Exception __exception, TroopRoster __instance)
+            {
+                if (__exception is not null) Log(__exception);
+                return null;
+            }
+        }
+
+        [HarmonyPatch(typeof(BanditPartyComponent), "get_PartyOwner")]
+        public class BanditPartyComponentPartyOwner
+        {
+            public static Exception Finalizer(Exception __exception, BanditPartyComponent __instance)
+            {
+                if (__exception is not null) Meow();
+                return null;
+            }
+        }
 
         [HarmonyPatch(typeof(MobileParty), "CalculateContinueChasingScore")]
         public class MobilePartyCalculateContinueChasingScore
@@ -205,7 +237,7 @@ namespace BanditMilitias
         }
 
         //
-        private static Exception ExperienceFinalizer(DefaultPartyTrainingModel __instance, Exception __exception, MobileParty mobileParty, TroopRosterElement troop)
+        public static Exception ExperienceFinalizer(DefaultPartyTrainingModel __instance, Exception __exception, MobileParty mobileParty, TroopRosterElement troop)
         {
             if (__exception is not null)
             {
@@ -213,6 +245,13 @@ namespace BanditMilitias
                 Meow();
             }
 
+            return null;
+        }
+
+
+        public static Exception GetTrackDescriptionMoveNext(Exception __exception)
+        {
+            if (__exception is not null) Meow();
             return null;
         }
         //    foreach (var m in MobileParty.All.WhereQ(m => m.MemberRoster.GetTroopRoster().AnyQ(e => e.Character.StringId.Contains("looter"))))
