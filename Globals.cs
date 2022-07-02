@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using SandBox.ViewModelCollection.MobilePartyTracker;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.MapEvents;
@@ -44,8 +45,11 @@ namespace BanditMilitias
         public static double PartyCacheInterval;
         public static int RaidCap;
         public static Dictionary<string, Equipment> EquipmentMap = new();
-        //public static Dictionary<MapEventSide, List<EquipmentElement>> LootRecord = new();
-        
+        private static Clan looters;
+        public static Clan Looters => looters ??= Clan.BanditFactions.First(c => c.StringId == "looters");
+        private static IEnumerable<Clan> synthClans;
+        public static IEnumerable<Clan> SynthClans => synthClans ??= Clan.BanditFactions.Except(new[] { Looters });
+
         // ReSharper disable once InconsistentNaming
         public static MobilePartyTrackerVM MobilePartyTrackerVM;
 
