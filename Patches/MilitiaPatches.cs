@@ -298,7 +298,8 @@ namespace BanditMilitias.Patches
         {
             public static void Postfix(Hero hero, TextObject heroFirstName, ref TextObject __result)
             {
-                if (hero.PartyBelongedTo is not null
+                if (hero.CharacterObject.Occupation is not Occupation.Bandit
+                    && hero.PartyBelongedTo is not null
                     && !hero.PartyBelongedTo.IsBM()) return;
 
                 var textObject = heroFirstName;
