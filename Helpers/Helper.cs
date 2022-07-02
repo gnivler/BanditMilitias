@@ -740,7 +740,7 @@ namespace BanditMilitias.Helpers
 
         public static void ConvertLootersToRecruits(TroopRoster troopRoster, CultureObject culture, int numberToUpgrade)
         {
-            troopRoster.RemoveTroop(MilitiaBehavior.Looters.BasicTroop, numberToUpgrade);
+            troopRoster.RemoveTroop(Looters.BasicTroop, numberToUpgrade);
             var recruit = Recruits[culture][Rng.Next(0, Recruits[culture].Count)];
             troopRoster.AddToCounts(recruit, numberToUpgrade);
         }
@@ -922,7 +922,7 @@ namespace BanditMilitias.Helpers
                 if (Globals.Settings.LooterUpgradePercent > 0)
                 {
                     // upgrade any looters first, then go back over and iterate further upgrades
-                    var allLooters = mobileParty.MemberRoster.GetTroopRoster().Where(e => e.Character == MilitiaBehavior.Looters.BasicTroop).ToList();
+                    var allLooters = mobileParty.MemberRoster.GetTroopRoster().Where(e => e.Character == Looters.BasicTroop).ToList();
                     if (allLooters.Any())
                     {
                         var culture = GetMostPrevalentFromNearbySettlements(mobileParty.Position2D);

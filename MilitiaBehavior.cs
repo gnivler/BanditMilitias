@@ -29,10 +29,6 @@ namespace BanditMilitias
         public const float Increment = 5;
         private const float EffectRadius = 100;
         private const int AdjustRadius = 50;
-        private static Clan looters;
-        public static Clan Looters => looters ??= Clan.BanditFactions.First(c => c.StringId == "looters");
-        private static IEnumerable<Clan> synthClans;
-        private static IEnumerable<Clan> SynthClans => synthClans ??= Clan.BanditFactions.Except(new[] { Looters });
 
         public static readonly AccessTools.FieldRef<BasicCharacterObject, TextObject> basicName =
             AccessTools.FieldRefAccess<BasicCharacterObject, TextObject>("_basicName");
@@ -67,7 +63,7 @@ namespace BanditMilitias
             CampaignEvents.TickPartialHourlyAiEvent.AddNonSerializedListener(this, TickPartialHourlyAiEvent);
             CampaignEvents.DailyTickPartyEvent.AddNonSerializedListener(this, DailyTickPartyEvent);
             CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, OnDailyTickEvent);
-            CampaignEvents.HourlyTickEvent.AddNonSerializedListener(this, SynthesizeBM);
+            CampaignEvents.HourlyTickEvent.AddNonSerializedListener(this, SpawnBM);
             CampaignEvents.MobilePartyDestroyed.AddNonSerializedListener(this, MobilePartyDestroyed);
             //CampaignEvents.MapEventEnded.AddNonSerializedListener(this, MapEventEnded);
         }
@@ -409,72 +405,86 @@ namespace BanditMilitias
             }
         }
 
-        public static void SynthesizeBM()
+        public static void SpawnBM()
         {
             if (!Globals.Settings.MilitiaSpawn)
             {
                 return;
             }
 
-            for (var i = 0;
-                 MilitiaPowerPercent + 1 <= Globals.Settings.GlobalPowerPercent
-                 && i < (Globals.Settings.GlobalPowerPercent - MilitiaPowerPercent) / 24f;
-                 i++)
+            var settlement = Settlement.All.Where(s => !s.IsVisible && s.GetTrackDistanceToMainAgent() > 100).GetRandomElementInefficiently();
+            Clan clan = default;
+            try
             {
-                if (Rng.Next(0, 101) > Globals.Settings.SpawnChance)
+                for (var i = 0;
+                     MilitiaPowerPercent + 1 <= Globals.Settings.GlobalPowerPercent
+                     && i < (Globals.Settings.GlobalPowerPercent - MilitiaPowerPercent) / 24f;
+                     i++)
                 {
-                    continue;
-                }
-
-                var settlement = Settlement.All.Where(s => !s.IsVisible && s.GetTrackDistanceToMainAgent() > 100).GetRandomElementInefficiently();
-                var nearbyBandits = MobileParty.FindPartiesAroundPosition(settlement.Position2D, 150).WhereQ(m => m.IsBandit).ToListQ();
-                var clan = Looters;
-                if (nearbyBandits.Any())
-                {
-                    var cultureMap = new Dictionary<Clan, int>();
+                    if (Rng.Next(0, 101) > Globals.Settings.SpawnChance)
                     {
-                        foreach (var party in nearbyBandits.WhereQ(m => m.ActualClan is not null))
-                        {
-                            if (party.LeaderHero is null)
-                            {
-                                continue;
-                            }
+                        continue;
+                    }
 
-                            if (cultureMap.ContainsKey(party.ActualClan))
+
+                    var nearbyBandits = MobileParty.FindPartiesAroundPosition(settlement.Position2D, 150).WhereQ(m => m.IsBandit).ToListQ();
+                    if (nearbyBandits.Any())
+                    {
+                        var cultureMap = new Dictionary<Clan, int>();
+                        {
+                            foreach (var party in nearbyBandits.WhereQ(m => m.ActualClan is not null))
                             {
-                                cultureMap[party.ActualClan]++;
-                            }
-                            else
-                            {
-                                cultureMap.Add(party.ActualClan, 1);
+                                if (party.LeaderHero is null)
+                                {
+                                    continue;
+                                }
+
+                                if (cultureMap.ContainsKey(party.ActualClan))
+                                {
+                                    cultureMap[party.ActualClan]++;
+                                }
+                                else
+                                {
+                                    cultureMap.Add(party.ActualClan, 1);
+                                }
                             }
                         }
-                    }
-                    if (cultureMap.Count > 0)
-                    {
-                        clan = cultureMap.OrderByDescending(x => x.Value).First().Key == Looters
-                            ? Looters
-                            : SynthClans.First(c => c == cultureMap.OrderByDescending(x => x.Value).First().Key);
+                        if (cultureMap.Count > 0)
+                        {
+                            clan = cultureMap.OrderByDescending(x => x.Value).First().Key == Looters
+                                ? Looters
+                                : SynthClans.First(c => c == cultureMap.OrderByDescending(x => x.Value).First().Key);
+                        }
                     }
                 }
-
-                var min = Convert.ToInt32(Globals.Settings.MinPartySize);
-                var max = Convert.ToInt32(CalculatedMaxPartySize);
-                var roster = TroopRoster.CreateDummyTroopRoster();
-                var size = Convert.ToInt32(Rng.Next(min, max + 1) / 2f);
-                roster.AddToCounts(clan.BasicTroop, size);
-                roster.AddToCounts(Looters.BasicTroop, size);
-                MurderMounts(roster);
-                var bm = MobileParty.CreateParty("Bandit_Militia", new ModBanditMilitiaPartyComponent(clan), m => m.ActualClan = clan);
-                InitMilitia(bm, new[] { roster, TroopRoster.CreateDummyTroopRoster() }, settlement.GatePosition);
-
-                // teleport new militias near the player
-                if (Globals.Settings.TestingMode)
+            }
+            catch (Exception ex)
+            {
+                Log(ex);
+                Log($"SynthClans:");
+                foreach (var c in SynthClans)
                 {
-                    // in case a prisoner
-                    var party = Hero.MainHero.PartyBelongedTo ?? Hero.MainHero.PartyBelongedToAsPrisoner.MobileParty;
-                    bm.Position2D = party.Position2D;
+                    Log($"{c.Name}");
                 }
+                clan = Looters;
+            }
+
+            var min = Convert.ToInt32(Globals.Settings.MinPartySize);
+            var max = Convert.ToInt32(CalculatedMaxPartySize);
+            var roster = TroopRoster.CreateDummyTroopRoster();
+            var size = Convert.ToInt32(Rng.Next(min, max + 1) / 2f);
+            roster.AddToCounts(clan.BasicTroop, size);
+            roster.AddToCounts(Looters.BasicTroop, size);
+            MurderMounts(roster);
+            var bm = MobileParty.CreateParty("Bandit_Militia", new ModBanditMilitiaPartyComponent(clan), m => m.ActualClan = clan);
+            InitMilitia(bm, new[] { roster, TroopRoster.CreateDummyTroopRoster() }, settlement.GatePosition);
+
+            // teleport new militias near the player
+            if (Globals.Settings.TestingMode)
+            {
+                // in case a prisoner
+                var party = Hero.MainHero.PartyBelongedTo ?? Hero.MainHero.PartyBelongedToAsPrisoner.MobileParty;
+                bm.Position2D = party.Position2D;
             }
 
             DoPowerCalculations();

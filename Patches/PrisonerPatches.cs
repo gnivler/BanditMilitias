@@ -33,10 +33,8 @@ namespace BanditMilitias.Patches
                     }
 
                     if (party.Party.MobileParty.LeaderHero is null)
-                    {
                         party.Party.MobileParty.SetCustomName(new TextObject(Globals.Settings.LeaderlessBanditMilitiaString));
-                    }
-
+                    
                     RemoveUndersizedTracker(party.Party);
                 }
 
@@ -79,7 +77,7 @@ namespace BanditMilitias.Patches
                 DoPowerCalculations();
             }
 
-            public static void Postfix(MapEvent __instance, object lootCollector)
+            public static void Postfix(MapEvent __instance)
             {
                 if (!__instance.HasWinner) return;
                 var winnerBMs = __instance.PartiesOnSide(__instance.WinningSide)
@@ -88,7 +86,8 @@ namespace BanditMilitias.Patches
 
                 var loserHeroes = __instance.PartiesOnSide(__instance.DefeatedSide)
                     .SelectQ(mep => mep.Party.Owner).Where(h => h is not null).ToListQ();
-                foreach (var BM in winnerBMs) DecreaseAvoidance(loserHeroes, BM);
+                foreach (var BM in winnerBMs)
+                    DecreaseAvoidance(loserHeroes, BM);
             }
         }
     }
