@@ -466,6 +466,7 @@ namespace BanditMilitias
                 {
                     Log($"{c.Name}");
                 }
+
                 clan = Looters;
             }
 

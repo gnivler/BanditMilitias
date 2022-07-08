@@ -254,6 +254,8 @@ namespace BanditMilitias.Patches
                     return null;
                 }
 
+                Log(__exception);
+                return null;
                 return __exception;
             }
         }

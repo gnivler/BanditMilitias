@@ -207,14 +207,16 @@ namespace BanditMilitias.Patches
         {
             public static Exception Finalizer(Exception __exception, PartyBase owner)
             {
-                if (__exception is not null
-                    && owner.MobileParty is not null
-                    && owner.MobileParty.IsBM())
-                {
-                    return null;
-                }
-
-                return __exception;
+                //if (__exception is not null
+                //    && owner.MobileParty is not null
+                //    && owner.MobileParty.IsBM())
+                //{
+                //    return null;
+                //}
+                //
+                //return __exception;
+                Log(__exception);
+                return null;
             }
         }
 
