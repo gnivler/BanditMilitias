@@ -130,7 +130,7 @@ namespace BanditMilitias.Patches
                 var allRecruits = CharacterObject.All.Where(c =>
                     c.Level == 11
                     && c.Occupation == Occupation.Soldier
-                    && !filter.Contains(c.StringId)
+                    && filter.All(s => !c.StringId.Contains(s))
                     && !c.StringId.EndsWith("_tier_1"));
 
                 foreach (var recruit in allRecruits)

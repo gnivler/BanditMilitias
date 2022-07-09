@@ -822,7 +822,7 @@ namespace BanditMilitias.Helpers
             {
                 var delta = NumMountedTroops(troopRoster) - troopRoster.TotalManCount / 2;
                 var element = mountedTroops.GetRandomElement();
-                var count = Rng.Next(1, delta);
+                var count = Rng.Next(1, delta + 1);
                 troopRoster.AddToCounts(element.Character, -count);
             }
         }
