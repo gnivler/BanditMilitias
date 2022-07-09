@@ -414,83 +414,63 @@ namespace BanditMilitias
 
             var settlement = Settlement.All.Where(s => !s.IsVisible && s.GetTrackDistanceToMainAgent() > 100).GetRandomElementInefficiently();
             Clan clan = default;
-            try
+
+            for (var i = 0;
+                 MilitiaPowerPercent + 1 <= Globals.Settings.GlobalPowerPercent
+                 && i < (Globals.Settings.GlobalPowerPercent - MilitiaPowerPercent) / 24f;
+                 i++)
             {
-                for (var i = 0;
-                     MilitiaPowerPercent + 1 <= Globals.Settings.GlobalPowerPercent
-                     && i < (Globals.Settings.GlobalPowerPercent - MilitiaPowerPercent) / 24f;
-                     i++)
+                if (Rng.Next(0, 101) > Globals.Settings.SpawnChance)
                 {
-                    if (Rng.Next(0, 101) > Globals.Settings.SpawnChance)
-                    {
-                        continue;
-                    }
+                    continue;
+                }
 
-
-                    var nearbyBandits = MobileParty.FindPartiesAroundPosition(settlement.Position2D, 150).WhereQ(m => m.IsBandit).ToListQ();
-                    if (nearbyBandits.Any())
+                var nearbyBandits = MobileParty.FindPartiesAroundPosition(settlement.Position2D, 150).WhereQ(m => m.IsBandit).ToListQ();
+                if (nearbyBandits.Any())
+                {
+                    var cultureMap = new Dictionary<Clan, int>();
                     {
-                        var cultureMap = new Dictionary<Clan, int>();
+                        foreach (var party in nearbyBandits.WhereQ(m => m.ActualClan is not null))
                         {
-                            foreach (var party in nearbyBandits.WhereQ(m => m.ActualClan is not null))
+                            if (cultureMap.ContainsKey(party.ActualClan))
                             {
-                                if (party.LeaderHero is null)
-                                {
-                                    continue;
-                                }
-
-                                if (cultureMap.ContainsKey(party.ActualClan))
-                                {
-                                    cultureMap[party.ActualClan]++;
-                                }
-                                else
-                                {
-                                    cultureMap.Add(party.ActualClan, 1);
-                                }
+                                cultureMap[party.ActualClan]++;
+                            }
+                            else
+                            {
+                                cultureMap.Add(party.ActualClan, 1);
                             }
                         }
-                        if (cultureMap.Count > 0)
-                        {
-                            clan = cultureMap.OrderByDescending(x => x.Value).First().Key == Looters
-                                ? Looters
-                                : SynthClans.First(c => c == cultureMap.OrderByDescending(x => x.Value).First().Key);
-                        }
                     }
+                    if (cultureMap.Count > 0)
+                    {
+                        clan = cultureMap.OrderByDescending(x => x.Value).First().Key == Looters
+                            ? Looters
+                            : SynthClans.First(c => c == cultureMap.OrderByDescending(x => x.Value).First().Key);
+                    }
+
+                    var min = Convert.ToInt32(Globals.Settings.MinPartySize);
+                    var max = Convert.ToInt32(CalculatedMaxPartySize);
+                    var roster = TroopRoster.CreateDummyTroopRoster();
+                    var size = Convert.ToInt32(Rng.Next(min, max + 1) / 2f);
+                    roster.AddToCounts(clan.BasicTroop, size);
+                    roster.AddToCounts(Looters.BasicTroop, size);
+                    MurderMounts(roster);
+                    var bm = MobileParty.CreateParty("Bandit_Militia", new ModBanditMilitiaPartyComponent(clan), m => m.ActualClan = clan);
+                    InitMilitia(bm, new[] { roster, TroopRoster.CreateDummyTroopRoster() }, settlement.GatePosition);
+
+                    // teleport new militias near the player
+                    if (Globals.Settings.TestingMode)
+                    {
+                        // in case a prisoner
+                        var party = Hero.MainHero.PartyBelongedTo ?? Hero.MainHero.PartyBelongedToAsPrisoner.MobileParty;
+                        bm.Position2D = party.Position2D;
+                    }
+
+                    DoPowerCalculations();
                 }
             }
-            catch (Exception ex)
-            {
-                Log(ex);
-                Log($"SynthClans:");
-                foreach (var c in SynthClans)
-                {
-                    Log($"{c.Name}");
-                }
-
-                clan = Looters;
-            }
-
-            var min = Convert.ToInt32(Globals.Settings.MinPartySize);
-            var max = Convert.ToInt32(CalculatedMaxPartySize);
-            var roster = TroopRoster.CreateDummyTroopRoster();
-            var size = Convert.ToInt32(Rng.Next(min, max + 1) / 2f);
-            roster.AddToCounts(clan.BasicTroop, size);
-            roster.AddToCounts(Looters.BasicTroop, size);
-            MurderMounts(roster);
-            var bm = MobileParty.CreateParty("Bandit_Militia", new ModBanditMilitiaPartyComponent(clan), m => m.ActualClan = clan);
-            InitMilitia(bm, new[] { roster, TroopRoster.CreateDummyTroopRoster() }, settlement.GatePosition);
-
-            // teleport new militias near the player
-            if (Globals.Settings.TestingMode)
-            {
-                // in case a prisoner
-                var party = Hero.MainHero.PartyBelongedTo ?? Hero.MainHero.PartyBelongedToAsPrisoner.MobileParty;
-                bm.Position2D = party.Position2D;
-            }
-
-            DoPowerCalculations();
         }
-
 
         // TODO verify if needed post-1.7.2
         public static void FlushMilitiaCharacterObjects()
