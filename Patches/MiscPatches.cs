@@ -39,12 +39,12 @@ namespace BanditMilitias.Patches
         {
             public static void Postfix(MapEventSide __instance, CharacterObject ____selectedSimulationTroop)
             {
-                if (!Globals.Settings.UpgradeTroops && MapEvent.PlayerMapEvent is not null && ____selectedSimulationTroop is null)
+                if (!Globals.Settings.UpgradeTroops || MapEvent.PlayerMapEvent is not null && ____selectedSimulationTroop is null)
                     return;
                 EquipmentMap.Remove(____selectedSimulationTroop.StringId);
                 // makes all loot drop in any BM-involved fight which isn't with the main party
                 var BMs = __instance.Parties.WhereQ(p =>
-                    p.Party.MobileParty?.PartyComponent is ModBanditMilitiaPartyComponent).SelectQ(p => p.Party);
+                    p.Party.MobileParty?.PartyComponent is ModBanditMilitiaPartyComponent);
                 if (BMs.Any() && !__instance.IsMainPartyAmongParties())
                 {
                     for (var index = 0; index < Equipment.EquipmentSlotLength; index++)
