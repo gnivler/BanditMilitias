@@ -20,7 +20,10 @@ namespace BanditMilitias.Patches
         {
             public static void Prefix(MapEvent __instance)
             {
-                if (!__instance.HasWinner) return;
+                if (!__instance.HasWinner)
+                    return;
+
+                Traverse.Create(__instance).Property<MapEventState>("State").Value = MapEventState.WaitingRemoval;
                 var loserBMs = __instance.PartiesOnSide(__instance.DefeatedSide)
                     .Where(p => p.Party?.MobileParty?.PartyComponent is ModBanditMilitiaPartyComponent);
                 foreach (var party in loserBMs)
@@ -34,7 +37,7 @@ namespace BanditMilitias.Patches
 
                     if (party.Party.MobileParty.LeaderHero is null)
                         party.Party.MobileParty.SetCustomName(new TextObject(Globals.Settings.LeaderlessBanditMilitiaString));
-                    
+
                     RemoveUndersizedTracker(party.Party);
                 }
 

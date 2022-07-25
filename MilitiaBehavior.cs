@@ -5,7 +5,9 @@ using System.Linq;
 using BanditMilitias.Helpers;
 using HarmonyLib;
 using Helpers;
+using SandBox.View.Map;
 using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.MapEvents;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Party.PartyComponents;
 using TaleWorlds.CampaignSystem.Roster;
@@ -111,7 +113,18 @@ namespace BanditMilitias
             if (mobileParty.PartyComponent is not (BanditPartyComponent or ModBanditMilitiaPartyComponent)) return;
 
             // BUG WIP
-            if (mobileParty.MapEvent is not null && mobileParty.MemberRoster.TotalManCount <= 1) Meow();
+            if (mobileParty.MapEvent is not null
+                && mobileParty.MemberRoster.TotalManCount == 0
+                && !mobileParty.MapEvent.IsFinalized)
+            {
+                Log("Set WaitingRemoval");
+                Traverse.Create(mobileParty.MapEvent).Property<MapEventState>("State").Value = MapEventState.WaitingRemoval;
+                Log("State: " + mobileParty.MapEvent.State);
+                MobileParty.MainParty.Position2D = mobileParty.Position2D;
+                Campaign.Current!.TimeControlMode = CampaignTimeControlMode.Stop;
+                MapScreen.Instance.TeleportCameraToMainParty();
+            }
+
             // near any Hideouts?
             if (mobileParty.PartyComponent is ModBanditMilitiaPartyComponent
                 && Settlement.FindSettlementsAroundPosition(mobileParty.Position2D, MinDistanceFromHideout, s => s.IsHideout).Any())
@@ -453,7 +466,7 @@ namespace BanditMilitias
                     var max = Convert.ToInt32(CalculatedMaxPartySize);
                     var roster = TroopRoster.CreateDummyTroopRoster();
                     var size = Convert.ToInt32(Rng.Next(min, max + 1) / 2f);
-                    roster.AddToCounts(clan.BasicTroop, size);
+                    roster.AddToCounts(clan!.BasicTroop, size);
                     roster.AddToCounts(Looters.BasicTroop, size);
                     MurderMounts(roster);
                     var bm = MobileParty.CreateParty("Bandit_Militia", new ModBanditMilitiaPartyComponent(clan), m => m.ActualClan = clan);

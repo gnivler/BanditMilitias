@@ -215,7 +215,6 @@ namespace BanditMilitias.Patches
                 //}
                 //
                 //return __exception;
-                Log(__exception);
                 return null;
             }
         }

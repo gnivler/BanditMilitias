@@ -254,7 +254,11 @@ namespace BanditMilitias.Patches
                     return null;
                 }
 
-                Log(__exception);
+                if (__exception is not null)
+                {
+                    Meow();
+                }
+
                 return null;
                 return __exception;
             }

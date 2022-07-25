@@ -12,7 +12,7 @@ namespace BanditMilitias
 
         protected override void DefineClassTypes()
         {
-            AddClassDefinition(typeof(ModBanditMilitiaPartyComponent), 42069);
+            AddClassDefinition(typeof(ModBanditMilitiaPartyComponent), 42069, null);
         }
     }
 }

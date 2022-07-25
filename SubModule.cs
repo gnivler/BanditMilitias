@@ -55,7 +55,8 @@ namespace BanditMilitias
         {
             for (var i = 0; i < 5000; i++)
             {
-                Banners.Add(Banner.CreateRandomBanner());
+                Banners.Add((Banner)AccessTools.Method(typeof(Banner), "CreateRandomBannerInternal")
+                    .Invoke(typeof(Banner), new object[] { Rng.Next(0, int.MaxValue), -1 }));
             }
         }
 
@@ -118,14 +119,14 @@ namespace BanditMilitias
                 //    Trash(crud[i]);
                 //}
 
-                var target = MobileParty.All.WhereQ(m => m.PartyComponent is ModBanditMilitiaPartyComponent).OrderByDescending(m => m.MemberRoster.GetTroopRoster().WhereQ(e => e.Character.StringId.Contains("Bandit_Militia_Troop")).SumQ(r => r.Number)).FirstOrDefault();
-
-                if (SubModule.MEOWMEOW)
-                {
-                    MobileParty.MainParty.Position2D = target!.Position2D;
-                    Campaign.Current!.TimeControlMode = CampaignTimeControlMode.Stop;
-                    MapScreen.Instance.TeleportCameraToMainParty();
-                }
+                //var target = MobileParty.All.WhereQ(m => m.PartyComponent is ModBanditMilitiaPartyComponent).OrderByDescending(m => m.MemberRoster.GetTroopRoster().WhereQ(e => e.Character.StringId.Contains("Bandit_Militia_Troop")).SumQ(r => r.Number)).FirstOrDefault();
+                //
+                //if (SubModule.MEOWMEOW)
+                //{
+                //    MobileParty.MainParty.Position2D = target!.Position2D;
+                //    Campaign.Current!.TimeControlMode = CampaignTimeControlMode.Stop;
+                //    MapScreen.Instance.TeleportCameraToMainParty();
+                //}
                 //Nuke();
                 //for (var i = 0; i < MobileParty.AllBanditParties.Count; i++)
                 //{
@@ -246,7 +247,7 @@ namespace BanditMilitias
             }
             catch (Exception ex)
             {
-                Log(ex.ToString());
+                Log(ex);
             }
         }
     }

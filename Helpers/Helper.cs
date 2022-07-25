@@ -24,6 +24,7 @@ using TaleWorlds.Core;
 using TaleWorlds.Library;
 using TaleWorlds.LinQuick;
 using TaleWorlds.Localization;
+using TaleWorlds.MountAndBlade;
 using TaleWorlds.ObjectSystem;
 using static BanditMilitias.Globals;
 
@@ -367,7 +368,14 @@ namespace BanditMilitias.Helpers
                     hasLogged = true;
                 }
 
-                Trash(mobileParty);
+                try
+                {
+                    Trash(mobileParty);
+                }
+                catch (Exception ex)
+                {
+                    Meow();
+                }
             }
 
             Traverse.Create(Campaign.Current.CampaignObjectManager).Field<List<MobileParty>>("_partiesWithoutPartyComponent").Value.RemoveAll(m => m.StringId.Contains("Bandit_Militia"));
@@ -1046,9 +1054,9 @@ namespace BanditMilitias.Helpers
         {
             foreach (var loserHero in loserHeroes)
             {
-                if (mep.Party.MobileParty.GetBM().Avoidance.TryGetValue(loserHero, out _))
+               if (mep.Party.MobileParty.GetBM().Avoidance.TryGetValue(loserHero, out _))
                     mep.Party.MobileParty.GetBM().Avoidance[loserHero] -= MilitiaBehavior.Increment;
-                else
+               else
                     mep.Party.MobileParty.GetBM().Avoidance.Add(loserHero, Globals.Rng.Next(15, 35));
             }
         }
