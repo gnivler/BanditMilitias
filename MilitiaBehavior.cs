@@ -111,7 +111,7 @@ namespace BanditMilitias
             if (mobileParty.PartyComponent is not (BanditPartyComponent or ModBanditMilitiaPartyComponent)) return;
 
             // BUG WIP
-            if (mobileParty.MapEvent is not null && mobileParty.MemberRoster.TotalManCount <= 1) Meow();
+            if (mobileParty.MapEvent is not null && mobileParty.MemberRoster.TotalManCount ==0) Meow();
             // near any Hideouts?
             if (mobileParty.PartyComponent is ModBanditMilitiaPartyComponent
                 && Settlement.FindSettlementsAroundPosition(mobileParty.Position2D, MinDistanceFromHideout, s => s.IsHideout).Any())
@@ -395,7 +395,7 @@ namespace BanditMilitias
                         }
                     }
 
-                    MurderMounts(mobileParty.MemberRoster);
+                    AdjustCavalryCount(mobileParty.MemberRoster);
                     //var troopString = $"{mobileParty.Party.NumberOfAllMembers} troop" + (mobileParty.Party.NumberOfAllMembers > 1 ? "s" : "");
                     //var strengthString = $"{Math.Round(mobileParty.Party.TotalStrength)} strength";
                     //Log($"{$"Grown to",-70} | {troopString,10} | {strengthString,12} |");
@@ -455,7 +455,7 @@ namespace BanditMilitias
                     var size = Convert.ToInt32(Rng.Next(min, max + 1) / 2f);
                     roster.AddToCounts(clan.BasicTroop, size);
                     roster.AddToCounts(Looters.BasicTroop, size);
-                    MurderMounts(roster);
+                    AdjustCavalryCount(roster);
                     var bm = MobileParty.CreateParty("Bandit_Militia", new ModBanditMilitiaPartyComponent(clan), m => m.ActualClan = clan);
                     InitMilitia(bm, new[] { roster, TroopRoster.CreateDummyTroopRoster() }, settlement.GatePosition);
 

@@ -813,7 +813,7 @@ namespace BanditMilitias.Helpers
             return hero;
         }
 
-        public static void MurderMounts(TroopRoster troopRoster)
+        public static void AdjustCavalryCount(TroopRoster troopRoster)
         {
             var mountedTroops = troopRoster.GetTroopRoster().WhereQ(c =>
                 !c.Character.Equipment[10].IsEmpty
@@ -821,7 +821,7 @@ namespace BanditMilitias.Helpers
             while (NumMountedTroops(troopRoster) > troopRoster.TotalManCount / 2)
             {
                 var delta = NumMountedTroops(troopRoster) - Convert.ToInt32(troopRoster.TotalManCount / 2f);
-                var element = mountedTroops.GetRandomElement();
+                var element = mountedTroops.Where(e => e.Number > 0).ToListQ().GetRandomElement();
                 var count = Rng.Next(1, delta + 1);
                 count = Math.Min(element.Number, count);
                 troopRoster.AddToCounts(element.Character, -count);
