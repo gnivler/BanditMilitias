@@ -831,9 +831,8 @@ namespace BanditMilitias.Helpers
             var mountedTroops = troopRoster.GetTroopRoster().WhereQ(c =>
                 !c.Character.Equipment[10].IsEmpty
                 && !c.Character.IsHero).ToListQ();
-            while (NumMountedTroops(troopRoster) > troopRoster.TotalManCount / 2)
+            while (NumMountedTroops(troopRoster) - Convert.ToInt32(troopRoster.TotalManCount / 2) is var delta && delta > 0)
             {
-                var delta = NumMountedTroops(troopRoster) - Convert.ToInt32(troopRoster.TotalManCount / 2f);
                 var element = mountedTroops.GetRandomElement();
                 var count = Rng.Next(1, delta + 1);
                 count = Math.Min(element.Number, count);
@@ -1054,9 +1053,9 @@ namespace BanditMilitias.Helpers
         {
             foreach (var loserHero in loserHeroes)
             {
-               if (mep.Party.MobileParty.GetBM().Avoidance.TryGetValue(loserHero, out _))
+                if (mep.Party.MobileParty.GetBM().Avoidance.TryGetValue(loserHero, out _))
                     mep.Party.MobileParty.GetBM().Avoidance[loserHero] -= MilitiaBehavior.Increment;
-               else
+                else
                     mep.Party.MobileParty.GetBM().Avoidance.Add(loserHero, Globals.Rng.Next(15, 35));
             }
         }

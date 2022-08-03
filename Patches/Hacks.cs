@@ -25,6 +25,7 @@ namespace BanditMilitias.Patches
         {
             public static Exception Finalizer(Exception __exception, SkillObject skill)
             {
+                if (__exception is not null) Log(__exception);
                 return null;
             }
         }

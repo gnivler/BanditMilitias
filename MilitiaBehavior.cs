@@ -113,17 +113,17 @@ namespace BanditMilitias
             if (mobileParty.PartyComponent is not (BanditPartyComponent or ModBanditMilitiaPartyComponent)) return;
 
             // BUG WIP
-            if (mobileParty.MapEvent is not null
-                && mobileParty.MemberRoster.TotalManCount == 0
-                && !mobileParty.MapEvent.IsFinalized)
-            {
-                Log("Set WaitingRemoval");
-                Traverse.Create(mobileParty.MapEvent).Property<MapEventState>("State").Value = MapEventState.WaitingRemoval;
-                Log("State: " + mobileParty.MapEvent.State);
-                MobileParty.MainParty.Position2D = mobileParty.Position2D;
-                Campaign.Current!.TimeControlMode = CampaignTimeControlMode.Stop;
-                MapScreen.Instance.TeleportCameraToMainParty();
-            }
+            //if (mobileParty.MapEvent is not null
+            //    && mobileParty.MemberRoster.TotalManCount == 0
+            //    && !mobileParty.MapEvent.IsFinalized)
+            //{
+            //    Log("Set WaitingRemoval");
+            //    Traverse.Create(mobileParty.MapEvent).Property<MapEventState>("State").Value = MapEventState.WaitingRemoval;
+            //    Log("State: " + mobileParty.MapEvent.State);
+            //    MobileParty.MainParty.Position2D = mobileParty.Position2D;
+            //    Campaign.Current!.TimeControlMode = CampaignTimeControlMode.Stop;
+            //    MapScreen.Instance.TeleportCameraToMainParty();
+            //}
 
             // near any Hideouts?
             if (mobileParty.PartyComponent is ModBanditMilitiaPartyComponent
