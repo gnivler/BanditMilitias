@@ -818,10 +818,9 @@ namespace BanditMilitias.Helpers
             var mountedTroops = troopRoster.GetTroopRoster().WhereQ(c =>
                 !c.Character.Equipment[10].IsEmpty
                 && !c.Character.IsHero).ToListQ();
-            while (NumMountedTroops(troopRoster) > troopRoster.TotalManCount / 2)
+            while (NumMountedTroops(troopRoster) - Convert.ToInt32(troopRoster.TotalManCount / 2) is var delta && delta > 0)
             {
-                var delta = NumMountedTroops(troopRoster) - Convert.ToInt32(troopRoster.TotalManCount / 2f);
-                var element = mountedTroops.Where(e => e.Number > 0).ToListQ().GetRandomElement();
+                var element = mountedTroops.GetRandomElement();
                 var count = Rng.Next(1, delta + 1);
                 count = Math.Min(element.Number, count);
                 troopRoster.AddToCounts(element.Character, -count);
