@@ -815,11 +815,11 @@ namespace BanditMilitias.Helpers
 
         public static void AdjustCavalryCount(TroopRoster troopRoster)
         {
-            var mountedTroops = troopRoster.GetTroopRoster().WhereQ(c =>
-                !c.Character.Equipment[10].IsEmpty
-                && !c.Character.IsHero).ToListQ();
             while (NumMountedTroops(troopRoster) - Convert.ToInt32(troopRoster.TotalManCount / 2) is var delta && delta > 0)
             {
+                var mountedTroops = troopRoster.GetTroopRoster().WhereQ(c =>
+                    !c.Character.Equipment[10].IsEmpty
+                    && !c.Character.IsHero).ToListQ();
                 var element = mountedTroops.GetRandomElement();
                 var count = Rng.Next(1, delta + 1);
                 count = Math.Min(element.Number, count);
