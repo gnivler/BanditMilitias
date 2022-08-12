@@ -23,7 +23,7 @@ namespace BanditMilitias.Patches
                 if (!__instance.HasWinner)
                     return;
 
-                Traverse.Create(__instance).Property<MapEventState>("State").Value = MapEventState.WaitingRemoval;
+                //Traverse.Create(__instance).Property<MapEventState>("State").Value = MapEventState.WaitingRemoval;
                 var loserBMs = __instance.PartiesOnSide(__instance.DefeatedSide)
                     .Where(p => p.Party?.MobileParty?.PartyComponent is ModBanditMilitiaPartyComponent);
                 foreach (var party in loserBMs)

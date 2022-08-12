@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using BanditMilitias.Helpers;
 using HarmonyLib;
 using Helpers;
@@ -11,6 +13,7 @@ using TaleWorlds.CampaignSystem.Roster;
 using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
+using TaleWorlds.LinQuick;
 using static BanditMilitias.Helpers.Helper;
 
 namespace BanditMilitias.Patches
@@ -19,6 +22,18 @@ namespace BanditMilitias.Patches
 
     {
         public static readonly AccessTools.FieldRef<MobileParty, int> numberOfRecentFleeingFromAParty = AccessTools.FieldRefAccess<MobileParty, int>("_numberOfRecentFleeingFromAParty");
+
+        [HarmonyPatch(typeof(MobileParty), "UpdatePartyComponentFlags")]
+        public class MobilePartyUpdatePartyComponentFlags
+        {
+            public static void Postfix(MobileParty __instance)
+            {
+                if (__instance.IsBM())
+                {
+                    Traverse.Create(__instance).Property<bool>("IsBandit").Value = true;
+                }
+            }
+        }
 
         [HarmonyPatch(typeof(BasicCharacterObject), "GetSkillValue")]
         public class BasicCharacterObjectGetSkillValue

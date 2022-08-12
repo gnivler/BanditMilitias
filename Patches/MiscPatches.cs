@@ -123,7 +123,7 @@ namespace BanditMilitias.Patches
                 {
                     "regular_fighter",
                     "veteran_borrowed_troop",
-                    "_basic_root",
+                    "_basic_root", // MyLittleWarband StringIds
                     "_elite_root"
                 };
 
@@ -163,7 +163,7 @@ namespace BanditMilitias.Patches
                 Hideouts = Settlement.FindAll(s => s.IsHideout).ToListQ();
                 PartyImageMap.Clear();
                 DoPowerCalculations(true);
-                var bmCount = MobileParty.All.CountQ(m => m.PartyComponent is ModBanditMilitiaPartyComponent);
+                var bmCount = MobileParty.All.CountQ(m => m.IsBM());
                 Log($"Militias: {bmCount}."); //  Custom troops: {MobileParty.All.SelectMany(m => m.MemberRoster.ToFlattenedRoster()).CountQ(e => e.Troop.StringId.Contains("Bandit_Militia"))}.  Troop prisoners: {MobileParty.All.SelectMany(m => m.PrisonRoster.ToFlattenedRoster()).CountQ(e => e.Troop.StringId.Contains("Bandit_Militia"))}.");
                 //Log($"Militias: {militias.Count} (registered {PartyMilitiaMap.Count})");
                 RunLateManualPatches();
@@ -180,7 +180,6 @@ namespace BanditMilitias.Patches
         }
 
         // TODO find root causes, remove finalizers
-        // not sure where to start
         // hasn't thrown since 3.7.x
         [HarmonyPatch(typeof(PartyBaseHelper), "HasFeat")]
         public static class PartyBaseHelperHasFeat

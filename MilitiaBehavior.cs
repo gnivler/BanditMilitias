@@ -7,6 +7,7 @@ using HarmonyLib;
 using Helpers;
 using SandBox.View.Map;
 using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.MapEvents;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Party.PartyComponents;
@@ -198,10 +199,18 @@ namespace BanditMilitias
 
             //Log($"{new string('=', 100)} MERGING {mobileParty.StringId,20} {mergeTarget.StringId,20}");
             // create a new party merged from the two
-            var rosters = MergeRosters(mobileParty, mergeTarget.Party);
+            MergePartiesAction.Apply(mobileParty.Party, mergeTarget.Party);
+            foreach (var element in mobileParty.MemberRoster.GetTroopRoster())
+            {
+                if (element.Character?.HeroObject is { } hero && hero.StringId.EndsWith("Bandit_Militia"))
+                {
+                    hero.RemoveMilitiaHero();
+                }
+            }
+
             var clan = mobileParty.ActualClan ?? mergeTarget.ActualClan ?? Clan.BanditFactions.GetRandomElementInefficiently();
             var bm = MobileParty.CreateParty("Bandit_Militia", new ModBanditMilitiaPartyComponent(clan), m => m.ActualClan = clan);
-            InitMilitia(bm, rosters, mobileParty.Position2D);
+            InitMilitia(bm, new[] { mobileParty.MemberRoster, mobileParty.PrisonRoster }, mobileParty.Position2D);
             // each BM gets the average of Avoidance values
             var calculatedAvoidance = new Dictionary<Hero, float>();
 
@@ -264,7 +273,6 @@ namespace BanditMilitias
         public static void BMThink(MobileParty mobileParty)
         {
             var target = mobileParty.TargetSettlement;
-            if (mobileParty.ShortTermBehavior == AiBehavior.FleeToPoint && mobileParty.ShortTermTargetParty is { IsBandit: true }) Meow();
             switch (mobileParty.Ai.AiState)
             {
                 case AIState.Undefined:
@@ -333,6 +341,7 @@ namespace BanditMilitias
         {
             if (mobileParty.IsBM())
             {
+                //if (mobileParty.MapEvent?.State == MapEventState.WaitingRemoval && mobileParty.MemberRoster.Count == 0) Meow();
                 if ((int)CampaignTime.Now.ToWeeks % CampaignTime.DaysInWeek == 0
                     && Globals.Settings.AllowPillaging)
                 {
@@ -352,9 +361,9 @@ namespace BanditMilitias
 
         public static void AdjustAvoidance(MobileParty mobileParty)
         {
-            //Log($"{mobileParty.Name} starting Avoidance {mobileParty.BM().Avoidance}");
             foreach (var BM in GetCachedBMs(true)
-                         .WhereQ(bm => bm.Leader is not null && bm.MobileParty.Position2D.Distance(mobileParty.Position2D) < AdjustRadius))
+                         .WhereQ(bm => bm.Leader is not null
+                                       && bm.MobileParty.Position2D.Distance(mobileParty.Position2D) < AdjustRadius))
             {
                 foreach (var kvp in BM.Avoidance)
                 {
@@ -408,7 +417,7 @@ namespace BanditMilitias
                         }
                     }
 
-                    MurderMounts(mobileParty.MemberRoster);
+                    AdjustCavalryCount(mobileParty.MemberRoster);
                     //var troopString = $"{mobileParty.Party.NumberOfAllMembers} troop" + (mobileParty.Party.NumberOfAllMembers > 1 ? "s" : "");
                     //var strengthString = $"{Math.Round(mobileParty.Party.TotalStrength)} strength";
                     //Log($"{$"Grown to",-70} | {troopString,10} | {strengthString,12} |");
@@ -420,6 +429,7 @@ namespace BanditMilitias
 
         public static void SpawnBM()
         {
+            return;
             if (!Globals.Settings.MilitiaSpawn)
             {
                 return;
@@ -468,8 +478,9 @@ namespace BanditMilitias
                     var size = Convert.ToInt32(Rng.Next(min, max + 1) / 2f);
                     roster.AddToCounts(clan!.BasicTroop, size);
                     roster.AddToCounts(Looters.BasicTroop, size);
-                    MurderMounts(roster);
-                    var bm = MobileParty.CreateParty("Bandit_Militia", new ModBanditMilitiaPartyComponent(clan), m => m.ActualClan = clan);
+                    AdjustCavalryCount(roster);
+                    var clan1 = clan; // prevent compiler warning
+                    var bm = MobileParty.CreateParty("Bandit_Militia", new ModBanditMilitiaPartyComponent(clan), m => m.ActualClan = clan1);
                     InitMilitia(bm, new[] { roster, TroopRoster.CreateDummyTroopRoster() }, settlement.GatePosition);
 
                     // teleport new militias near the player
@@ -481,6 +492,10 @@ namespace BanditMilitias
                     }
 
                     DoPowerCalculations();
+                }
+                else
+                {
+                    Meow();
                 }
             }
         }

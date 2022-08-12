@@ -225,8 +225,8 @@ namespace BanditMilitias.Patches
         {
             public static void Prefix(BasicCharacterObject character, ref int numberDead, ref int numberWounded)
             {
-                var c = (CharacterObject)character;
-                if (numberWounded > 0
+                if (character is CharacterObject c
+                    && numberWounded > 0
                     && c.HeroObject?.PartyBelongedTo is not null
                     && c.HeroObject.PartyBelongedTo.IsBM())
                 {
@@ -327,7 +327,7 @@ namespace BanditMilitias.Patches
         {
             public static void Postfix(Agent effectedAgent, ref float __result)
             {
-                if (effectedAgent.Character.StringId.Contains("Bandit_Militia"))
+                if (effectedAgent.Character.StringId.EndsWith("Bandit_Militia"))
                 {
                     __result = 1;
                 }
@@ -339,7 +339,7 @@ namespace BanditMilitias.Patches
         {
             public static void Postfix(Agent effectedAgent, ref float __result)
             {
-                if (effectedAgent.Character.StringId.Contains("Bandit_Militia"))
+                if (effectedAgent.Character.StringId.EndsWith("Bandit_Militia"))
                 {
                     __result = 1;
                 }
@@ -351,7 +351,7 @@ namespace BanditMilitias.Patches
         {
             public static void Postfix(Agent effectedAgent, ref float __result)
             {
-                if (effectedAgent.Character.StringId.Contains("Bandit_Militia"))
+                if (effectedAgent.Character.StringId.EndsWith("Bandit_Militia"))
                 {
                     __result = 1;
                 }

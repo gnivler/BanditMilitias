@@ -189,7 +189,7 @@ namespace BanditMilitias
 
                     DoPowerCalculations(true);
                     InformationManager.DisplayMessage(new InformationMessage("BANDIT MILITIAS CLEARED"));
-                    var bmCount = MobileParty.All.CountQ(m => m.PartyComponent is ModBanditMilitiaPartyComponent);
+                    var bmCount = MobileParty.All.CountQ(m => m.IsBM());
                     Log($"Militias: {bmCount}.  Custom troops: {MobileParty.All.SelectMany(m => m.MemberRoster.ToFlattenedRoster()).CountQ(e => e.Troop.StringId.Contains("_Bandit_Militia_Troop_"))}.  Troop prisoners: {MobileParty.All.SelectMany(m => m.PrisonRoster.ToFlattenedRoster()).CountQ(e => e.Troop.StringId.Contains("_Bandit_Militia_Troop_"))}.");
                 }
                 catch (Exception ex)
