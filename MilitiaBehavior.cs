@@ -8,6 +8,7 @@ using Helpers;
 using SandBox.View.Map;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
+using TaleWorlds.CampaignSystem.LogEntries;
 using TaleWorlds.CampaignSystem.MapEvents;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Party.PartyComponents;
@@ -198,15 +199,7 @@ namespace BanditMilitias
             }
 
             //Log($"{new string('=', 100)} MERGING {mobileParty.StringId,20} {mergeTarget.StringId,20}");
-            // create a new party merged from the two
             MergePartiesAction.Apply(mobileParty.Party, mergeTarget.Party);
-            foreach (var element in mobileParty.MemberRoster.GetTroopRoster())
-            {
-                if (element.Character?.HeroObject is { } hero && hero.StringId.EndsWith("Bandit_Militia"))
-                {
-                    hero.RemoveMilitiaHero();
-                }
-            }
 
             var clan = mobileParty.ActualClan ?? mergeTarget.ActualClan ?? Clan.BanditFactions.GetRandomElementInefficiently();
             var bm = MobileParty.CreateParty("Bandit_Militia", new ModBanditMilitiaPartyComponent(clan), m => m.ActualClan = clan);

@@ -742,11 +742,12 @@ namespace BanditMilitias.Helpers
             if (party.MemberRoster.TotalManCount < Globals.Settings.TrackedSizeMinimum)
             {
                 // BUG refactored
-                //var tracker = Globals.MapMobilePartyTrackerVM?.Trackers?.FirstOrDefault(t => t.TrackedParty == party.MobileParty);
-                //if (tracker is not null)
-                //{
-                //    Globals.MapMobilePartyTrackerVM.Trackers.Remove(tracker);
-                //}
+                var tracker = Globals.MapMobilePartyTrackerVM?.Trackers?.FirstOrDefault(t => t.TrackedParty == party.MobileParty);
+                if (tracker is not null
+                    && party.MemberRoster.TotalManCount != 0)
+                {
+                    Globals.MapMobilePartyTrackerVM.Trackers.Remove(tracker);
+                }
             }
         }
 
