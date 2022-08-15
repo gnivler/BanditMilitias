@@ -1,6 +1,7 @@
 using System.Linq;
 using BanditMilitias.Helpers;
 using HarmonyLib;
+using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.MapEvents;
 using TaleWorlds.LinQuick;
 using TaleWorlds.Localization;

@@ -35,10 +35,11 @@ namespace BanditMilitias.Helpers
 
         public static void RemoveMilitiaHero(this Hero hero)
         {
-            Traverse.Create(typeof(KillCharacterAction)).Method("MakeDead", hero).GetValue();
+            Traverse.Create(typeof(KillCharacterAction)).Method("MakeDead", hero, false).GetValue();
             AliveHeroes(Campaign.Current.CampaignObjectManager).Remove(hero);
             DeadOrDisabledHeroes(Campaign.Current.CampaignObjectManager).Remove(hero);
-            MBObjectManager.Instance.UnregisterObject(hero);
+            hero.PartyBelongedTo?.MemberRoster.RemoveTroop(hero.CharacterObject);
+            hero.PartyBelongedToAsPrisoner?.PrisonRoster.RemoveTroop(hero.CharacterObject);
             MBObjectManager.Instance.UnregisterObject(hero.CharacterObject);
         }
 
