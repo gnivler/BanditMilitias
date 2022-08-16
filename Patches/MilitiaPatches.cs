@@ -102,7 +102,7 @@ namespace BanditMilitias.Patches
                     party.IsMobile &&
                     party.MobileParty.IsBM())
                 {
-                    __result = party.MobileParty?.GetBM().Banner;
+                    __result = party.MobileParty.GetBM().Banner;
                 }
             }
         }
@@ -112,7 +112,7 @@ namespace BanditMilitias.Patches
         {
             private static bool Prefix(MobileParty mobileParty, Settlement settlement)
             {
-                if (mobileParty.PartyComponent is ModBanditMilitiaPartyComponent)
+                if (mobileParty.IsBM())
                 {
                     Log($"Preventing {mobileParty} from entering {settlement.Name}");
                     MilitiaBehavior.BMThink(mobileParty);
@@ -256,10 +256,10 @@ namespace BanditMilitias.Patches
 
                 if (__exception is not null)
                 {
+                    Log(__exception);
                     Meow();
                 }
 
-                return null;
                 return __exception;
             }
         }

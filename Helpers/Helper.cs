@@ -246,6 +246,48 @@ namespace BanditMilitias.Helpers
                    && !verbotenParties.Contains(__instance.StringId);
         }
 
+        public static TroopRoster[] MergeRosters(MobileParty sourceParty, PartyBase targetParty)
+        {
+            var troopRoster = TroopRoster.CreateDummyTroopRoster();
+            var prisonerRoster = TroopRoster.CreateDummyTroopRoster();
+            var rosters = new List<TroopRoster>
+            {
+                sourceParty.MemberRoster,
+                targetParty.MemberRoster
+            };
+
+            var prisoners = new List<TroopRoster>
+            {
+                sourceParty.PrisonRoster,
+                targetParty.PrisonRoster
+            };
+
+            // dumps all bandit heroes (shouldn't be more than 2 though...)
+            foreach (var roster in rosters)
+            {
+                foreach (var element in roster.GetTroopRoster().Where(e => e.Character?.HeroObject is null))
+                {
+                    troopRoster.AddToCounts(element.Character, element.Number,
+                        woundedCount: element.WoundedNumber, xpChange: element.Xp);
+                }
+            }
+
+            foreach (var roster in prisoners)
+            {
+                foreach (var element in roster.GetTroopRoster().Where(e => e.Character?.HeroObject is null))
+                {
+                    prisonerRoster.AddToCounts(element.Character, element.Number,
+                        woundedCount: element.WoundedNumber, xpChange: element.Xp);
+                }
+            }
+
+            return new[]
+            {
+                troopRoster,
+                prisonerRoster
+            };
+        }
+
         public static void Trash(MobileParty mobileParty)
         {
             if (mobileParty is null)

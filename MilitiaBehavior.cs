@@ -199,11 +199,11 @@ namespace BanditMilitias
             }
 
             //Log($"{new string('=', 100)} MERGING {mobileParty.StringId,20} {mergeTarget.StringId,20}");
-            MergePartiesAction.Apply(mobileParty.Party, mergeTarget.Party);
-
+            // create a new party merged from the two
+            var rosters = MergeRosters(mobileParty, mergeTarget.Party);
             var clan = mobileParty.ActualClan ?? mergeTarget.ActualClan ?? Clan.BanditFactions.GetRandomElementInefficiently();
             var bm = MobileParty.CreateParty("Bandit_Militia", new ModBanditMilitiaPartyComponent(clan), m => m.ActualClan = clan);
-            InitMilitia(bm, new[] { mobileParty.MemberRoster, mobileParty.PrisonRoster }, mobileParty.Position2D);
+            InitMilitia(bm, rosters, mobileParty.Position2D);
             // each BM gets the average of Avoidance values
             var calculatedAvoidance = new Dictionary<Hero, float>();
 
