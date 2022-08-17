@@ -869,7 +869,6 @@ namespace BanditMilitias.Helpers
             }
 
             mobileParty.SetCustomName(mobileParty.GetBM().Name);
-            mobileParty.LeaderHero.StringId += "Bandit_Militia";
             var tracker = Globals.MobilePartyTrackerVM.Trackers.FirstOrDefault(t => t.TrackedParty == mobileParty);
             if (Globals.Settings.Trackers
                 && tracker is null

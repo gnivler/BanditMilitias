@@ -205,11 +205,9 @@ namespace BanditMilitias.Patches
         [HarmonyPatch(typeof(DefaultPartyTroopUpgradeModel), "CanTroopGainXp")]
         public static class DefaultPartyTroopUpgradeModelCanTroopGainXp
         {
-            public static Exception Finalizer(Exception __exception, PartyBase owner)
+            public static Exception Finalizer(Exception __exception, PartyBase owner, CharacterObject character)
             {
-                if (__exception is not null
-                    && owner?.MobileParty is not null
-                    && owner.MobileParty.IsBM())
+                if (__exception is not null)
                 {
                     Log(__exception);
                     return null;

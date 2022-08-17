@@ -115,8 +115,8 @@ namespace BanditMilitias
                 //    Trash(crud[i]);
                 //}
 
-                var target = MobileParty.All.WhereQ(m=> m.PartyComponent is ModBanditMilitiaPartyComponent).OrderByDescending(m => m.MemberRoster.GetTroopRoster().WhereQ(e => e.Character.StringId.Contains("Bandit_Militia_Troop")).SumQ(r => r.Number)).FirstOrDefault();
-               
+                var target = MobileParty.All.WhereQ(m => m.PartyComponent is ModBanditMilitiaPartyComponent).OrderByDescending(m => m.MemberRoster.GetTroopRoster().WhereQ(e => e.Character.StringId.Contains("Bandit_Militia_Troop")).SumQ(r => r.Number)).FirstOrDefault();
+
                 if (SubModule.MEOWMEOW)
                 {
                     MobileParty.MainParty.Position2D = target!.Position2D;
@@ -207,8 +207,13 @@ namespace BanditMilitias
         {
             base.OnGameInitializationFinished(game);
             CacheBanners();
+            // ReSharper disable once StringLiteralTypo
+            var foodModel = AccessTools.Method(typeof(DefaultMobilePartyFoodConsumptionModel), "CalculateDailyFoodConsumptionf");
+            harmony.Patch(foodModel, finalizer: new HarmonyMethod(AccessTools.Method(typeof(Hacks), "FoodFinalizer")));
             var trainModel = AccessTools.Method(typeof(DefaultPartyTrainingModel), "GetEffectiveDailyExperience");
             harmony.Patch(trainModel, finalizer: new HarmonyMethod(AccessTools.Method(typeof(Hacks), "ExperienceFinalizer")));
+            var wageModel = AccessTools.Method(typeof(DefaultPartyWageModel), "GetTotalWage");
+            harmony.Patch(wageModel, finalizer: new HarmonyMethod(AccessTools.Method(typeof(Hacks), "GetTotalWageFinalizer")));
         }
 
         private static void RunManualPatches()
