@@ -35,7 +35,7 @@ namespace BanditMilitias.Helpers
 
         public static void RemoveMilitiaHero(this Hero hero)
         {
-            Traverse.Create(typeof(KillCharacterAction)).Method("MakeDead", hero).GetValue();
+            Traverse.Create(typeof(KillCharacterAction)).Method("MakeDead", hero, false).GetValue();
             AliveHeroes(Campaign.Current.CampaignObjectManager).Remove(hero);
             DeadOrDisabledHeroes(Campaign.Current.CampaignObjectManager).Remove(hero);
             MBObjectManager.Instance.UnregisterObject(hero.CharacterObject);
@@ -44,7 +44,7 @@ namespace BanditMilitias.Helpers
         // ReSharper disable once InconsistentNaming
         public static bool IsBM(this MobileParty mobileParty)
         {
-            return mobileParty.PartyComponent is ModBanditMilitiaPartyComponent;
+            return mobileParty?.PartyComponent is ModBanditMilitiaPartyComponent;
         }
 
         // ReSharper disable once InconsistentNaming

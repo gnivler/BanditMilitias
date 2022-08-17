@@ -14,6 +14,7 @@ using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
 using TaleWorlds.LinQuick;
+using TaleWorlds.ObjectSystem;
 using static BanditMilitias.Helpers.Helper;
 
 namespace BanditMilitias.Patches
@@ -22,6 +23,36 @@ namespace BanditMilitias.Patches
 
     {
         public static readonly AccessTools.FieldRef<MobileParty, int> numberOfRecentFleeingFromAParty = AccessTools.FieldRefAccess<MobileParty, int>("_numberOfRecentFleeingFromAParty");
+
+        // null Culture (and other) looters because that makes a shitload of sense
+        [HarmonyDebug]
+        [HarmonyPatch(typeof(CampaignObjectManager), "InitializeOnLoad")]
+        public class CampaignObjectManagerInitializeOnLoad
+        {
+            public static void Postfix()
+            {
+                foreach (var mobileParty in MobileParty.All)
+                {
+                    var rosters = new [] { mobileParty.MemberRoster, mobileParty.PrisonRoster };
+                    foreach (var roster in rosters)
+                    {
+                        while (roster.GetTroopRoster().AnyQ(t => t.Character.Name == null))
+                        {
+                            foreach (var troop in roster.GetTroopRoster())
+                            {
+                                if (troop.Character.Name == null)
+                                {
+                                    Log($"removing bad troop {troop.Character.StringId} from {mobileParty.StringId}.  Prison roster? {roster.IsPrisonRoster}");
+                                    roster.AddToCounts(troop.Character, -1);
+                                    MBObjectManager.Instance.UnregisterObject(troop.Character);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
 
         [HarmonyPatch(typeof(MobileParty), "UpdatePartyComponentFlags")]
         public class MobilePartyUpdatePartyComponentFlags

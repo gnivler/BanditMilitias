@@ -102,7 +102,7 @@ namespace BanditMilitias.Patches
                     party.IsMobile &&
                     party.MobileParty.IsBM())
                 {
-                    __result = party.MobileParty.GetBM().Banner;
+                    __result = party.MobileParty?.GetBM().Banner;
                 }
             }
         }
