@@ -69,24 +69,24 @@ namespace BanditMilitias.Patches
         [HarmonyPatch(typeof(BattleCampaignBehavior), "CollectLoots")]
         public static class MapEventSideDistributeLootAmongWinners
         {
-            public static void Prefix(MapEvent mapEvent, PartyBase party, ref ItemRoster loot)
+            public static void Prefix(MapEvent mapEvent, PartyBase winnerParty, ref Dictionary<PartyBase, ItemRoster> lootedItems)
             {
-                if (!Globals.Settings.UpgradeTroops || !mapEvent.HasWinner || !party.IsMobile || !party.MobileParty.IsBM())
-                    return;
-                if (LootRecord.TryGetValue(party.MapEventSide, out var equipment))
-                {
-                    foreach (var e in equipment)
-                    {
-                        loot.AddToCounts(e, 1);
-                    }
-                }
-
-                if (loot.AnyQ(i => !i.IsEmpty))
-                {
-                    UpgradeEquipment(party, loot);
-                }
-
-                Globals.LootRecord.Remove(party.MobileParty.MapEventSide);
+                //if (!Globals.Settings.UpgradeTroops || !mapEvent.HasWinner || !party.IsMobile || !party.MobileParty.IsBM())
+                //    return;
+                //if (LootRecord.TryGetValue(party.MapEventSide, out var equipment))
+                //{
+                //    foreach (var e in equipment)
+                //    {
+                //        loot.AddToCounts(e, 1);
+                //    }
+                //}
+                //
+                //if (loot.AnyQ(i => !i.IsEmpty))
+                //{
+                //    UpgradeEquipment(party, loot);
+                //}
+                //
+                //Globals.LootRecord.Remove(party.MobileParty.MapEventSide);
             }
         }
 

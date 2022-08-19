@@ -337,7 +337,8 @@ namespace BanditMilitias.Helpers
         public static void RemoveHeroesWithoutParty()
         {
             var heroes = Hero.AllAliveHeroes.WhereQ(h =>
-                h.PartyBelongedTo is null && h.CharacterObject.StringId.Contains("Bandit_Militia")).ToListQ();
+                (h.PartyBelongedTo ?? h.PartyBelongedToAsPrisoner?.MobileParty) is null
+                                   && h.CharacterObject.StringId.Contains("Bandit_Militia")).ToListQ();
             for (var index = 0; index < heroes.Count; index++)
             {
                 // firing 3.7.0...

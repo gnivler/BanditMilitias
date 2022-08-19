@@ -112,6 +112,26 @@ namespace BanditMilitias
 
             if (MEOWMEOW && Input.IsKeyPressed(InputKey.Tilde))
             {
+                foreach (var mobileParty in MobileParty.All)
+                {
+                    var rosters = new[] { mobileParty.MemberRoster, mobileParty.PrisonRoster };
+                    foreach (var roster in rosters)
+                    {
+                        while (roster.GetTroopRoster().AnyQ(t => t.Character.Name == null))
+                        {
+                            foreach (var troop in roster.GetTroopRoster())
+                            {
+                                if (troop.Character.Name == null)
+                                {
+                                    Log($"removing bad troop {troop.Character.StringId} from {mobileParty.StringId}.  Prison roster? {roster.IsPrisonRoster}");
+                                    roster.AddToCounts(troop.Character, -1);
+                                    MBObjectManager.Instance.UnregisterObject(troop.Character);
+                                }
+                            }
+                        }
+                    }
+                }
+
                 Debugger.Break();
                 //var crud = MobileParty.All.Where(m => m.Name.ToString().EndsWith("Bandit Militia")).ToList();
                 //for (var i = 0; i < crud.Count; i++)
