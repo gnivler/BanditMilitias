@@ -39,7 +39,7 @@ namespace BanditMilitias.Patches
         {
             public static void Postfix(MapEventSide __instance, CharacterObject ____selectedSimulationTroop)
             {
-                if (!Globals.Settings.UpgradeTroops && MapEvent.PlayerMapEvent is not null && ____selectedSimulationTroop is null)
+                if (!Globals.Settings.UpgradeTroops || MapEvent.PlayerMapEvent is not null && ____selectedSimulationTroop is null)
                     return;
                 EquipmentMap.Remove(____selectedSimulationTroop.StringId);
                 // makes all loot drop in any BM-involved fight which isn't with the main party
@@ -176,43 +176,6 @@ namespace BanditMilitias.Patches
             public static void Postfix(MapMobilePartyTrackerVM __instance)
             {
                 Globals.MapMobilePartyTrackerVM = __instance;
-            }
-        }
-
-        // TODO find root causes, remove finalizers
-        // hasn't thrown since 3.7.x
-        [HarmonyPatch(typeof(PartyBaseHelper), "HasFeat")]
-        public static class PartyBaseHelperHasFeat
-        {
-            public static Exception Finalizer(Exception __exception, PartyBase party, FeatObject feat)
-            {
-                if (__exception is not null
-                    && party.LeaderHero.Culture.Name is null)
-                {
-                    party.LeaderHero.Culture = Clan.BanditFactions.GetRandomElementInefficiently().Culture;
-                    Log($"{party.LeaderHero} has a fucked up Culture - fixed");
-                    Meow();
-                    return null;
-                }
-
-                return __exception;
-            }
-        }
-
-        // TODO find root causes, remove finalizers
-        // BM heroes seem to have null UpgradeTargets[] at load time, randomly
-        [HarmonyPatch(typeof(DefaultPartyTroopUpgradeModel), "CanTroopGainXp")]
-        public static class DefaultPartyTroopUpgradeModelCanTroopGainXp
-        {
-            public static Exception Finalizer(Exception __exception, PartyBase owner, CharacterObject character)
-            {
-                if (__exception is not null)
-                {
-                    Log(__exception);
-                    return null;
-                }
-
-                return __exception;
             }
         }
 

@@ -38,6 +38,8 @@ namespace BanditMilitias.Helpers
             Traverse.Create(typeof(KillCharacterAction)).Method("MakeDead", hero, false).GetValue();
             AliveHeroes(Campaign.Current.CampaignObjectManager).Remove(hero);
             DeadOrDisabledHeroes(Campaign.Current.CampaignObjectManager).Remove(hero);
+            hero.PartyBelongedTo?.MemberRoster.RemoveTroop(hero.CharacterObject);
+            hero.PartyBelongedToAsPrisoner?.PrisonRoster.RemoveTroop(hero.CharacterObject);
             MBObjectManager.Instance.UnregisterObject(hero.CharacterObject);
         }
 

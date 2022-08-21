@@ -4,8 +4,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Text;
 using HarmonyLib;
 using Helpers;
 using SandBox.View.Map;
@@ -24,7 +22,6 @@ using TaleWorlds.Core;
 using TaleWorlds.Library;
 using TaleWorlds.LinQuick;
 using TaleWorlds.Localization;
-using TaleWorlds.MountAndBlade;
 using TaleWorlds.ObjectSystem;
 using static BanditMilitias.Globals;
 
@@ -68,7 +65,7 @@ namespace BanditMilitias.Helpers
         public static readonly AccessTools.FieldRef<CharacterObject, bool> HiddenInEncyclopedia =
             AccessTools.FieldRefAccess<CharacterObject, bool>("<HiddenInEncylopedia>k__BackingField");
 
-        public static readonly PartyUpgraderCampaignBehavior UpgraderCampaignBehavior;
+        public static PartyUpgraderCampaignBehavior UpgraderCampaignBehavior;
 
         public static readonly AccessTools.FieldRef<Clan, Settlement> home = AccessTools.FieldRefAccess<Clan, Settlement>("_home");
 
@@ -303,6 +300,7 @@ namespace BanditMilitias.Helpers
                 DestroyPartyAction.Apply(null, mobileParty);
             }
 
+            // currently two backing fields with different contents so being cautious...
             var parties = Traverse.Create(Campaign.Current.CampaignObjectManager).Property<MBReadOnlyList<MobileParty>>("PartiesWithoutPartyComponent").Value.ToListQ();
             if (parties.Remove(mobileParty))
             {
@@ -338,7 +336,7 @@ namespace BanditMilitias.Helpers
         {
             var heroes = Hero.AllAliveHeroes.WhereQ(h =>
                 (h.PartyBelongedTo ?? h.PartyBelongedToAsPrisoner?.MobileParty) is null
-                                   && h.CharacterObject.StringId.Contains("Bandit_Militia")).ToListQ();
+                                   && h.CharacterObject.StringId.EndsWith("Bandit_Militia")).ToListQ();
             for (var index = 0; index < heroes.Count; index++)
             {
                 // firing 3.7.0...
@@ -466,9 +464,7 @@ namespace BanditMilitias.Helpers
             {
                 var mapEvent = mapEvents[index];
                 if (mapEvent.InvolvedParties.Any(p =>
-                        p.MobileParty?.PartyComponent is ModBanditMilitiaPartyComponent
-                        || p.LeaderHero?.CharacterObject is not null
-                        && p.LeaderHero.CharacterObject.StringId.Contains("Bandit_Militia")))
+                        p.MobileParty.Name.ToString().EndsWith(Globals.Settings.BanditMilitiaString)))
                 {
                     Log(">>> FLUSH MapEvent.");
                     mapEvent.FinalizeEvent();
@@ -962,8 +958,8 @@ namespace BanditMilitias.Helpers
                     Log($"^^^ {mobileParty.LeaderHero.Name} is upgrading up to {numberToUpgrade} of {number} \"{troopToTrain.Character.Name}\".");
                     var xpGain = numberToUpgrade * DifficultyXpMap[Globals.Settings.XpGift.SelectedValue];
                     mobileParty.MemberRoster.AddXpToTroop(xpGain, troopToTrain.Character);
-                    var upgrader = UpgraderCampaignBehavior ?? Campaign.Current.GetCampaignBehavior<PartyUpgraderCampaignBehavior>();
-                    upgrader.UpgradeReadyTroops(mobileParty.Party);
+                    UpgraderCampaignBehavior ??= Campaign.Current.GetCampaignBehavior<PartyUpgraderCampaignBehavior>();
+                    UpgraderCampaignBehavior.UpgradeReadyTroops(mobileParty.Party);
                     if (Globals.Settings.TestingMode)
                     {
                         var party = Hero.MainHero.PartyBelongedTo ?? Hero.MainHero.PartyBelongedToAsPrisoner.MobileParty;

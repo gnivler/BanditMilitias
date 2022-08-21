@@ -5,11 +5,7 @@ using System.Linq;
 using BanditMilitias.Helpers;
 using HarmonyLib;
 using Helpers;
-using SandBox.View.Map;
 using TaleWorlds.CampaignSystem;
-using TaleWorlds.CampaignSystem.Actions;
-using TaleWorlds.CampaignSystem.LogEntries;
-using TaleWorlds.CampaignSystem.MapEvents;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Party.PartyComponents;
 using TaleWorlds.CampaignSystem.Roster;
@@ -422,7 +418,6 @@ namespace BanditMilitias
 
         public static void SpawnBM()
         {
-            return;
             if (!Globals.Settings.MilitiaSpawn)
             {
                 return;

@@ -20,7 +20,6 @@ using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Roster;
 using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
-using TaleWorlds.LinQuick;
 using TaleWorlds.Localization;
 using TaleWorlds.MountAndBlade;
 using static BanditMilitias.Helpers.Helper;
@@ -306,7 +305,8 @@ namespace BanditMilitias.Patches
             {
                 if (hero.CharacterObject.Occupation is not Occupation.Bandit
                     && hero.PartyBelongedTo is not null
-                    && !hero.PartyBelongedTo.IsBM()) return;
+                    && !hero.PartyBelongedTo.IsBM()) 
+                    return;
 
                 var textObject = heroFirstName;
                 var index = (int)AccessTools.Method(typeof(NameGenerator), "SelectNameIndex")
