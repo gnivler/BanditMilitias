@@ -110,8 +110,9 @@ namespace BanditMilitias
         {
             if (mobileParty.PartyComponent is not (BanditPartyComponent or ModBanditMilitiaPartyComponent)) return;
 
-            // BUG WIP
-            if (mobileParty.MapEvent is not null && mobileParty.MemberRoster.TotalManCount ==0) Meow();
+            if (mobileParty.MapEvent != null)
+                return;
+            
             // near any Hideouts?
             if (mobileParty.PartyComponent is ModBanditMilitiaPartyComponent
                 && Settlement.FindSettlementsAroundPosition(mobileParty.Position2D, MinDistanceFromHideout, s => s.IsHideout).Any())
