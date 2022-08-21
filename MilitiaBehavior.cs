@@ -475,7 +475,7 @@ namespace BanditMilitias
                 }
                 else
                 {
-                    Meow();
+                    Log($"--- No bandits in 150 range of {settlement.Name}");
                 }
             }
         }

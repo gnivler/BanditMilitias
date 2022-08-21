@@ -742,7 +742,7 @@ namespace BanditMilitias.Helpers
         public static void ConvertLootersToRecruits(TroopRoster troopRoster, CultureObject culture, int numberToUpgrade)
         {
             troopRoster.RemoveTroop(Looters.BasicTroop, numberToUpgrade);
-            var recruit = Recruits[culture][Rng.Next(0, Recruits[culture].Count)];
+            var recruit = Globals.Recruits[culture][Rng.Next(0, Recruits[culture].Count)];
             troopRoster.AddToCounts(recruit, numberToUpgrade);
         }
 
