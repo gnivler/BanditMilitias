@@ -313,13 +313,14 @@ namespace BanditMilitias.Helpers
             FlushPrisonerLogs();
             // TODO remove this temporary fix
             RemoveHeroesWithoutParty();
+            Hacks.HackPurgeAllBadTroopsFromAllParties();
         }
 
         private static void FlushPrisonerLogs()
         {
             List<LogEntry> remove = new();
-            remove.AddRange(Campaign.Current.LogEntryHistory.GameActionLogs.WhereQ(l => l is TakePrisonerLogEntry entry && entry.Prisoner.StringId.Contains("Bandit_Militia")));
-            remove.AddRange(Campaign.Current.LogEntryHistory.GameActionLogs.WhereQ(l => l is EndCaptivityLogEntry entry && entry.Prisoner.StringId.Contains("Bandit_Militia")));
+            remove.AddRange(Campaign.Current.LogEntryHistory.GameActionLogs.WhereQ(l => l is TakePrisonerLogEntry entry && entry.Prisoner.StringId.EndsWith("Bandit_Militia")));
+            remove.AddRange(Campaign.Current.LogEntryHistory.GameActionLogs.WhereQ(l => l is EndCaptivityLogEntry entry && entry.Prisoner.StringId.EndsWith("Bandit_Militia")));
             Traverse.Create(Campaign.Current.LogEntryHistory).Field<List<LogEntry>>("_logs").Value = Campaign.Current.LogEntryHistory.GameActionLogs.Except(remove).ToListQ();
             var characterObjectsRecord = ((IList)Traverse.Create(MBObjectManager.Instance).Field("ObjectTypeRecords").GetValue())[12];
             Traverse.Create(characterObjectsRecord).Method("ReInitialize").GetValue();

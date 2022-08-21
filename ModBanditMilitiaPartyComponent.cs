@@ -45,12 +45,12 @@ namespace BanditMilitias
 
         public override void ChangePartyLeader(Hero newLeader)
         {
-            if (newLeader != null && Leader != newLeader)
+            Traverse.Create(this).Field<Hero>("<Leader>k__BackingField").Value = newLeader;
+            if (newLeader != null && Leader != newLeader && !Leader.IsDead)
             {
                 Leader?.RemoveMilitiaHero();
             }
 
-            Traverse.Create(this).Field<Hero>("<Leader>k__BackingField").Value = newLeader;
         }
 
         protected override void OnInitialize()

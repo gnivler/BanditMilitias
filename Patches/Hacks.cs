@@ -14,28 +14,25 @@ namespace BanditMilitias
 {
     public class Hacks
     {
-        // null Culture (and other) looters because that makes a shitload of sense
-        [HarmonyDebug]
-        [HarmonyPatch(typeof(CampaignObjectManager), "InitializeOnLoad")]
-        public class CampaignObjectManagerInitializeOnLoad
+        // troops with missing data causing lots of NREs elsewhere
+        // just a temporary patch
+        public static void HackPurgeAllBadTroopsFromAllParties()
         {
-            public static void Postfix()
+            Log("Starting iteration off all troops in all parties... this might take a few minutes...");
+            foreach (var mobileParty in MobileParty.All)
             {
-                foreach (var mobileParty in MobileParty.All)
+                var rosters = new [] { mobileParty.MemberRoster, mobileParty.PrisonRoster };
+                foreach (var roster in rosters)
                 {
-                    var rosters = new [] { mobileParty.MemberRoster, mobileParty.PrisonRoster };
-                    foreach (var roster in rosters)
+                    while (roster.GetTroopRoster().AnyQ(t => t.Character.Name == null))
                     {
-                        while (roster.GetTroopRoster().AnyQ(t => t.Character.Name == null))
+                        foreach (var troop in roster.GetTroopRoster())
                         {
-                            foreach (var troop in roster.GetTroopRoster())
+                            if (troop.Character.Name == null)
                             {
-                                if (troop.Character.Name == null)
-                                {
-                                    Log($"removing bad troop {troop.Character.StringId} from {mobileParty.StringId}.  Prison roster? {roster.IsPrisonRoster}");
-                                    roster.AddToCounts(troop.Character, -1);
-                                    MBObjectManager.Instance.UnregisterObject(troop.Character);
-                                }
+                                Log($"removing bad troop {troop.Character.StringId} from {mobileParty.StringId}.  Prison roster? {roster.IsPrisonRoster}");
+                                roster.AddToCounts(troop.Character, -1);
+                                MBObjectManager.Instance.UnregisterObject(troop.Character);
                             }
                         }
                     }
@@ -73,15 +70,15 @@ namespace BanditMilitias
         }
 
 
-        [HarmonyPatch(typeof(DefaultPartyTroopUpgradeModel), "IsTroopUpgradeable")]
-        public static class DefaultPartyTroopUpgradeModelIsTroopUpgradeable
-        {
-            public static Exception Finalizer(Exception __exception, PartyBase party, CharacterObject character)
-            {
-                if (__exception is not null) Log(__exception);
-                return null;
-            }
-        }
+        //[HarmonyPatch(typeof(DefaultPartyTroopUpgradeModel), "IsTroopUpgradeable")]
+        //public static class DefaultPartyTroopUpgradeModelIsTroopUpgradeable
+        //{
+        //    public static Exception Finalizer(Exception __exception, PartyBase party, CharacterObject character)
+        //    {
+        //        if (__exception is not null) Log(__exception);
+        //        return null;
+        //    }
+        //}
 
         //[HarmonyPatch(typeof(TooltipVMExtensions), "AddPartyTroopProperties")]
         //public static class TooltipVMExtensionsAddPartyTroopProperties

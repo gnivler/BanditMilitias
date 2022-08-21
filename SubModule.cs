@@ -108,26 +108,8 @@ namespace BanditMilitias
 
             if (MEOWMEOW && Input.IsKeyPressed(InputKey.Tilde))
             {
-                foreach (var mobileParty in MobileParty.All)
-                {
-                    var rosters = new [] { mobileParty.MemberRoster, mobileParty.PrisonRoster };
-                    foreach (var roster in rosters)
-                    {
-                        while (roster.GetTroopRoster().AnyQ(t => t.Character.Name == null))
-                        {
-                            foreach (var troop in roster.GetTroopRoster())
-                            {
-                                if (troop.Character.Name == null)
-                                {
-                                    Log($"removing bad troop {troop.Character.StringId} from {mobileParty.StringId}.  Prison roster? {roster.IsPrisonRoster}");
-                                    roster.AddToCounts(troop.Character, -1);
-                                    MBObjectManager.Instance.UnregisterObject(troop.Character);
-                                }
-                            }
-                        }
-                    }
-                }
-                //Debugger.Break();
+                //Hacks.HackPurgeAllBadTroopsFromAllParties();
+                Debugger.Break();
                 //var crud = MobileParty.All.Where(m => m.Name.ToString().EndsWith("Bandit Militia")).ToList();
                 //for (var i = 0; i < crud.Count; i++)
                 //{
@@ -226,12 +208,12 @@ namespace BanditMilitias
             base.OnGameInitializationFinished(game);
             CacheBanners();
             // ReSharper disable once StringLiteralTypo
-            var foodModel = AccessTools.Method(typeof(DefaultMobilePartyFoodConsumptionModel), "CalculateDailyFoodConsumptionf");
-            harmony.Patch(foodModel, finalizer: new HarmonyMethod(AccessTools.Method(typeof(Hacks), "FoodFinalizer")));
-            var trainModel = AccessTools.Method(typeof(DefaultPartyTrainingModel), "GetEffectiveDailyExperience");
-            harmony.Patch(trainModel, finalizer: new HarmonyMethod(AccessTools.Method(typeof(Hacks), "ExperienceFinalizer")));
-            var wageModel = AccessTools.Method(typeof(DefaultPartyWageModel), "GetTotalWage");
-            harmony.Patch(wageModel, finalizer: new HarmonyMethod(AccessTools.Method(typeof(Hacks), "GetTotalWageFinalizer")));
+            //var foodModel = AccessTools.Method(typeof(DefaultMobilePartyFoodConsumptionModel), "CalculateDailyFoodConsumptionf");
+            //harmony.Patch(foodModel, finalizer: new HarmonyMethod(AccessTools.Method(typeof(Hacks), "FoodFinalizer")));
+            //var trainModel = AccessTools.Method(typeof(DefaultPartyTrainingModel), "GetEffectiveDailyExperience");
+            //harmony.Patch(trainModel, finalizer: new HarmonyMethod(AccessTools.Method(typeof(Hacks), "ExperienceFinalizer")));
+            //var wageModel = AccessTools.Method(typeof(DefaultPartyWageModel), "GetTotalWage");
+            //harmony.Patch(wageModel, finalizer: new HarmonyMethod(AccessTools.Method(typeof(Hacks), "GetTotalWageFinalizer")));
         }
 
         private static void RunManualPatches()
@@ -239,9 +221,9 @@ namespace BanditMilitias
             try
             {
                 Dev.RunDevPatches();
-                var internalType = AccessTools.TypeByName("<GetTrackDescription>d__11");
-                var org = AccessTools.Method(internalType, "MoveNext");
-                harmony.Patch(org, finalizer: new HarmonyMethod(AccessTools.Method(typeof(SubModule), "Finalizer")));
+                //var internalType = AccessTools.TypeByName("<GetTrackDescription>d__11");
+                //var org = AccessTools.Method(internalType, "MoveNext");
+                //harmony.Patch(org, finalizer: new HarmonyMethod(AccessTools.Method(typeof(SubModule), "Finalizer")));
             }
             catch (Exception ex)
             {
