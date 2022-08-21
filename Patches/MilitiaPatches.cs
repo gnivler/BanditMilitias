@@ -17,9 +17,11 @@ using TaleWorlds.CampaignSystem.Encounters;
 using TaleWorlds.CampaignSystem.GameComponents;
 using TaleWorlds.CampaignSystem.GameMenus;
 using TaleWorlds.CampaignSystem.Party;
+using TaleWorlds.CampaignSystem.Party.PartyComponents;
 using TaleWorlds.CampaignSystem.Roster;
 using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
+using TaleWorlds.Library;
 using TaleWorlds.Localization;
 using TaleWorlds.MountAndBlade;
 using static BanditMilitias.Helpers.Helper;
@@ -305,7 +307,7 @@ namespace BanditMilitias.Patches
             {
                 if (hero.CharacterObject.Occupation is not Occupation.Bandit
                     && hero.PartyBelongedTo is not null
-                    && !hero.PartyBelongedTo.IsBM()) 
+                    && !hero.PartyBelongedTo.IsBM())
                     return;
 
                 var textObject = heroFirstName;
@@ -355,6 +357,64 @@ namespace BanditMilitias.Patches
                 {
                     __result = 1;
                 }
+            }
+        }
+
+        [HarmonyPatch(typeof(MobileParty), "CalculateContinueChasingScore")]
+        public class MobilePartyBanditPartyComponent
+        {
+            public static bool Prefix(MobileParty __instance, MobileParty enemyParty, ref float __result)
+            {
+                var num = __instance.Army != null && __instance.Army.LeaderParty == __instance ? __instance.Army.TotalStrength : __instance.Party.TotalStrength;
+                var num2 = (enemyParty.Army != null && enemyParty.Army.LeaderParty == __instance ? enemyParty.Army.TotalStrength : enemyParty.Party.TotalStrength) / (num + 0.01f);
+                var num3 = 1f + 0.01f * Traverse.Create(enemyParty).Field<int>("_numberOfRecentFleeingFromAParty").Value;
+                var num4 = Math.Min(1f, (__instance.Position2D - enemyParty.Position2D).Length / 3f);
+                Settlement settlement = null;
+                if (__instance.IsBM())
+                {
+                    settlement = __instance.GetBM().HomeSettlement;
+                }
+                else
+                {
+                    settlement = __instance.IsBandit ? __instance.BanditPartyComponent.Hideout?.Settlement : !__instance.IsLordParty || __instance.LeaderHero == null || !__instance.LeaderHero.IsMinorFactionHero ? SettlementHelper.FindNearestFortification((Settlement x) => x.MapFaction == __instance.MapFaction) : __instance.MapFaction.FactionMidSettlement;
+                }
+
+                var num5 = Campaign.AverageDistanceBetweenTwoFortifications * 3f;
+                if (settlement != null)
+                {
+                    num5 = Campaign.Current.Models.MapDistanceModel.GetDistance(__instance, settlement);
+                }
+
+                var num6 = num5 / (Campaign.AverageDistanceBetweenTwoFortifications * 3f);
+                var input = 1f + (float)Math.Pow(enemyParty.Speed / (__instance.Speed - 0.25f), 3.0);
+                input = MBMath.Map(input, 0f, 5.2f, 0f, 2f);
+                var num7 = 60000f;
+                var num8 = 10000f;
+                var num9 = (enemyParty.LeaderHero != null ? enemyParty.PartyTradeGold + enemyParty.LeaderHero.Gold : enemyParty.PartyTradeGold) / (enemyParty.IsCaravan ? num8 : num7);
+                var num10 = enemyParty.LeaderHero == null ? 0.75f : enemyParty.LeaderHero.IsFactionLeader ? 1.5f : 1f;
+                var num11 = num2 * num6 * input * num3 * num4;
+                __result = MBMath.ClampFloat(num9 * num10 / (num11 + 0.001f), 0.005f, 3f);
+                return false;
+            }
+        }
+
+        private static Type bmPeriodicTicker;
+
+        [HarmonyPatch(typeof(CampaignPeriodicEventManager), "OnLoad")]
+        public static class CampaignPeriodicEventManagerOnLoad
+        {
+            public static void Postfix()
+            {
+                var periodicTicker = AccessTools.TypeByName("PeriodicTicker`1");
+                bmPeriodicTicker = periodicTicker.MakeGenericType(typeof(MobileParty));
+            }
+        }
+
+        [HarmonyPatch(typeof(CampaignPeriodicEventManager), "TickPartialHourlyAi")]
+        public static class CampaignPeriodicEventManagerTickPartialHourlyAi
+        {
+            public static void Postfix()
+            {
             }
         }
     }

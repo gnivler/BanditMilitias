@@ -336,7 +336,7 @@ namespace BanditMilitias.Helpers
         {
             var heroes = Hero.AllAliveHeroes.WhereQ(h =>
                 (h.PartyBelongedTo ?? h.PartyBelongedToAsPrisoner?.MobileParty) is null
-                                   && h.CharacterObject.StringId.EndsWith("Bandit_Militia")).ToListQ();
+                && h.CharacterObject.StringId.EndsWith("Bandit_Militia")).ToListQ();
             for (var index = 0; index < heroes.Count; index++)
             {
                 // firing 3.7.0...
@@ -459,12 +459,14 @@ namespace BanditMilitias.Helpers
 
         private static void FlushMapEvents()
         {
-            var mapEvents = Traverse.Create(Campaign.Current.MapEventManager).Field("_mapEvents").GetValue<List<MapEvent>>();
+            var mapEvents = Traverse.Create(Campaign.Current.MapEventManager).Field<List<MapEvent>>("_mapEvents").Value;
             for (var index = 0; index < mapEvents.Count; index++)
             {
                 var mapEvent = mapEvents[index];
                 if (mapEvent.InvolvedParties.Any(p =>
-                        p.MobileParty.Name.ToString().EndsWith(Globals.Settings.BanditMilitiaString)))
+                        p.IsMobile
+                        && p.MobileParty.Name.ToString().EndsWith(Globals.Settings.BanditMilitiaString)
+                        || p.MemberRoster.TotalManCount == 0))
                 {
                     Log(">>> FLUSH MapEvent.");
                     mapEvent.FinalizeEvent();

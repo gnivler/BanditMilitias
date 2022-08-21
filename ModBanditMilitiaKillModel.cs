@@ -13,7 +13,7 @@ namespace BanditMilitias
         public override float GetAgentStateProbability(Agent affectorAgent, Agent effectedAgent, DamageTypes damageType, out float useSurgeryProbability)
         {
             useSurgeryProbability = 1f;
-            if (((CharacterObject)effectedAgent.Character).StringId.Contains("Bandit_Militia"))
+            if (((CharacterObject)effectedAgent.Character).StringId.EndsWith("Bandit_Militia"))
             {
                 return 1f;
             }
