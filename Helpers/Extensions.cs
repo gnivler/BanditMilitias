@@ -35,7 +35,8 @@ namespace BanditMilitias.Helpers
 
         public static void RemoveMilitiaHero(this Hero hero)
         {
-            Traverse.Create(typeof(KillCharacterAction)).Method("MakeDead", hero, false).GetValue();
+            KillCharacterAction.ApplyByRemove(hero);
+            //Traverse.Create(typeof(KillCharacterAction)).Method("MakeDead", hero, false).GetValue();
             AliveHeroes(Campaign.Current.CampaignObjectManager).Remove(hero);
             DeadOrDisabledHeroes(Campaign.Current.CampaignObjectManager).Remove(hero);
             hero.PartyBelongedTo?.MemberRoster.RemoveTroop(hero.CharacterObject);
@@ -62,7 +63,16 @@ namespace BanditMilitias.Helpers
 
         public static MobileParty FindParty(this CharacterObject characterObject)
         {
-            return MobileParty.All.FirstOrDefaultQ(m => m.MemberRoster.Contains(characterObject));
+            foreach (var party in MobileParty.All)
+            {
+                if (party.MemberRoster.ToFlattenedRoster().Troops.AnyQ(troop => troop == characterObject)
+                    || party.PrisonRoster.ToFlattenedRoster().Troops.AnyQ(troop => troop == characterObject))
+                {
+                    return party;
+                }
+            }
+
+            return null;
         }
 
         public static int CountMounted(this TroopRoster troopRoster)

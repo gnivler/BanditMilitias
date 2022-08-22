@@ -1,9 +1,13 @@
+using System.Diagnostics;
 using System.Linq;
 using BanditMilitias.Helpers;
 using HarmonyLib;
+using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.MapEvents;
+using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.LinQuick;
 using TaleWorlds.Localization;
+using TaleWorlds.ObjectSystem;
 using static BanditMilitias.Helpers.Helper;
 
 // ReSharper disable UnusedType.Global
@@ -14,6 +18,35 @@ namespace BanditMilitias.Patches
 {
     public static class PrisonerPatches
     {
+        [HarmonyPatch(typeof(MapEventSide), "OnPartyDefeated")]
+        public static class sadfijasdfoiajs
+        {
+            public static void Prefix(PartyBase defeatedParty)
+            {
+                foreach (var troop in defeatedParty.MemberRoster.ToFlattenedRoster().Troops.WhereQ(t => t.StringId.Contains("Bandit_Militia_Troop")))
+                {
+                    MBObjectManager.Instance.UnregisterObject(troop);
+                }
+            }
+        }
+
+        //[HarmonyPatch(typeof(MobileParty), "RemoveParty")]
+        //public static class DestroyPartyActionPatch
+        //{
+        //    public static void Prefix(MobileParty __instance)
+        //    {
+        //        if (__instance.IsBM())
+        //        {
+        //            foreach (var troop in __instance.MemberRoster.ToFlattenedRoster().Troops.WhereQ(t => t.StringId.Contains("Bandit_Militia_Troop")))
+        //            {
+        //                Log($"---- Unregistering {troop.StringId} from {__instance.StringId} at RemoveParty");
+        //                Log(new StackTrace());
+        //                MBObjectManager.Instance.UnregisterObject(troop);
+        //            }
+        //        }
+        //    }
+        //}
+
         // prevents BM hero prisoners being taken after battle
         [HarmonyPatch(typeof(MapEvent), "FinishBattle")]
         public static class MapEventFinishBattlePatch
@@ -48,7 +81,7 @@ namespace BanditMilitias.Patches
         [HarmonyPatch(typeof(MapEvent), "LootDefeatedParties")]
         public static class MapEventLootDefeatedPartiesPatch
         {
-            public static void Prefix(MapEvent __instance, object lootCollector)
+            public static void Prefix(MapEvent __instance)
             {
                 if (!__instance.HasWinner) return;
                 var loserBMs = __instance.PartiesOnSide(__instance.DefeatedSide)
@@ -70,6 +103,12 @@ namespace BanditMilitias.Patches
                         Log($"<<< Killing {heroes[i].Character.Name} at LootDefeatedParties.");
                         heroes[i].Character.HeroObject.RemoveMilitiaHero();
                     }
+
+                    //foreach (var troop in party.Party.MemberRoster.ToFlattenedRoster().Troops)
+                    //{
+                    //    if (troop.StringId.Contains("Bandit_Militia_Troop"))
+                    //        MBObjectManager.Instance.UnregisterObject(troop);
+                    //}
 
                     RemoveUndersizedTracker(party.Party);
                 }

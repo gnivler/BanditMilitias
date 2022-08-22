@@ -1107,6 +1107,7 @@ namespace BanditMilitias.Helpers
                     if (usableEquipment.Count == 0) break;
                     bool wasUpgraded = default;
                     CharacterObject upgradedTroop = default;
+                    CharacterObject tempCharacter = default;
                     Log($"{troop.StringId} is up for upgrades.  Current equipment:");
                     for (var index = 0; index < Equipment.EquipmentSlotLength; index++)
                     {
@@ -1115,7 +1116,7 @@ namespace BanditMilitias.Helpers
 
                     for (var index = 0; index < usableEquipment.Count; index++)
                     {
-                        CharacterObject tempCharacter = default;
+                        tempCharacter = default;
                         tempCharacter ??= upgradedTroop;
                         var itemReturned = false;
                         var possibleUpgrade = usableEquipment[index];
@@ -1239,7 +1240,8 @@ namespace BanditMilitias.Helpers
                                 if (DoPossibleUpgrade(troop, possibleUpgrade, usableEquipment, ref itemReturned, ref wasUpgraded, ref tempCharacter))
                                 {
                                     upgradedTroop = tempCharacter;
-                                    if (itemReturned) index = -1;
+                                    if (itemReturned)
+                                        index = -1;
                                 }
 
                                 break;
@@ -1249,13 +1251,25 @@ namespace BanditMilitias.Helpers
 
                     // replace the CO if we upgraded
                     // important lines here
-                    if (wasUpgraded
-                        && !troop.IsHero
-                        && !party.MemberRoster.GetTroopRoster().AnyQ(e => e.Character.StringId == upgradedTroop?.StringId))
+                    if (wasUpgraded && !troop.IsHero)
                     {
                         party.MemberRoster.Add(new TroopRosterElement(upgradedTroop) { Number = 1 });
                         party.MemberRoster.RemoveTroop(troop);
-                        Globals.EquipmentMap.Add(upgradedTroop.StringId, upgradedTroop.Equipment);
+                        if (!Globals.EquipmentMap.TryGetValue(upgradedTroop.StringId, out _))
+                        {
+                            Globals.EquipmentMap.Add(upgradedTroop.StringId, upgradedTroop.Equipment);
+                        }
+                        else
+                        {
+                            Globals.EquipmentMap[upgradedTroop.StringId] = upgradedTroop.Equipment;
+                        }
+                    }
+                    else if (!wasUpgraded
+                             && !troop.IsHero
+                             && tempCharacter is not null
+                             && !party.MemberRoster.GetTroopRoster().AnyQ(c => c.Character.StringId == tempCharacter.StringId))
+                    {
+                        MBObjectManager.Instance.UnregisterObject(tempCharacter);
                     }
                 }
 

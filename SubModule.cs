@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -111,8 +112,12 @@ namespace BanditMilitias
 
             if (MEOWMEOW && Input.IsKeyPressed(InputKey.Tilde))
             {
-                //Hacks.HackPurgeAllBadTroopsFromAllParties();
-                Debugger.Break();
+                Dev.CheckParties();
+                Hacks.HackPurgeAllBadTroopsFromAllParties();
+                //Debugger.Break();
+
+                //troopsWithoutParties.Do(x => Log($"{x.StringId}"));
+
                 //var crud = MobileParty.All.Where(m => m.Name.ToString().EndsWith("Bandit Militia")).ToList();
                 //for (var i = 0; i < crud.Count; i++)
                 //{

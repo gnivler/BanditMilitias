@@ -19,7 +19,7 @@ namespace BanditMilitias.Patches
             Log("Starting iteration off all troops in all parties... this might take a few minutes...");
             foreach (var mobileParty in MobileParty.All)
             {
-                var rosters = new [] { mobileParty.MemberRoster, mobileParty.PrisonRoster };
+                var rosters = new[] { mobileParty.MemberRoster, mobileParty.PrisonRoster };
                 foreach (var roster in rosters)
                 {
                     while (roster.GetTroopRoster().AnyQ(t => t.Character.Name == null))
@@ -39,31 +39,36 @@ namespace BanditMilitias.Patches
         }
 
         // throws during nuke
+        // parameters are included for debugging
         [HarmonyPatch(typeof(TroopRoster), "ClampXp")]
         public static class TroopRosterClampXpPatch
         {
             public static Exception Finalizer(Exception __exception, TroopRoster __instance)
             {
-                //if (__exception is not null) Log(__exception);
+                if (__exception is not null)
+                    Log(__exception);
                 return null;
             }
         }
 
         private static Exception ExperienceFinalizer(DefaultPartyTrainingModel __instance, Exception __exception, MobileParty mobileParty, TroopRosterElement troop)
         {
-            if (__exception is not null) Log(__exception);
+            if (__exception is not null)
+                Log(__exception);
             return null;
         }
 
         private static Exception GetTotalWageFinalizer(Exception __exception, MobileParty mobileParty)
         {
-            if (__exception is not null) Log(__exception);
+            if (__exception is not null)
+                Log(__exception);
             return null;
         }
 
         private static Exception FoodFinalizer(Exception __exception, MobileParty party)
         {
-            if (__exception is not null) Meow();
+            if (__exception is not null)
+                Log(__exception);
             return null;
         }
     }

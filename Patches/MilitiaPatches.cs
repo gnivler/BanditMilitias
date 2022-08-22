@@ -16,14 +16,15 @@ using TaleWorlds.CampaignSystem.CampaignBehaviors.AiBehaviors;
 using TaleWorlds.CampaignSystem.Encounters;
 using TaleWorlds.CampaignSystem.GameComponents;
 using TaleWorlds.CampaignSystem.GameMenus;
+using TaleWorlds.CampaignSystem.MapEvents;
 using TaleWorlds.CampaignSystem.Party;
-using TaleWorlds.CampaignSystem.Party.PartyComponents;
 using TaleWorlds.CampaignSystem.Roster;
 using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
 using TaleWorlds.Localization;
 using TaleWorlds.MountAndBlade;
+using TaleWorlds.ObjectSystem;
 using static BanditMilitias.Helpers.Helper;
 using static BanditMilitias.Globals;
 
@@ -218,7 +219,6 @@ namespace BanditMilitias.Patches
             }
         }
 
-
         // force Heroes to die in simulated combat
         [HarmonyPriority(Priority.High)]
         [HarmonyPatch(typeof(SPScoreboardVM), "TroopNumberChanged")]
@@ -237,31 +237,70 @@ namespace BanditMilitias.Patches
             }
         }
 
-        [HarmonyPatch(typeof(TroopRoster), "AddToCountsAtIndex")]
-        public static class TroopRosterAddToCountsAtIndexPatch
+        [HarmonyPatch(typeof(MapEventParty), "OnTroopKilled")]
+        public static class TroopRosterRemoveTroop
         {
+            public static void Prefix(UniqueTroopDescriptor troopSeed, FlattenedTroopRoster ____roster)
+            {
+                var troop = ____roster[troopSeed].Troop;
+                if (troop.StringId.Contains("Bandit_Militia_Troop"))
+                    MBObjectManager.Instance.UnregisterObject(troop);
+            }
+        }
+
+        //[HarmonyPatch(typeof(PartyUpgraderCampaignBehavior), "UpgradeTroop")]
+        //public static class PartyUpgraderCampaignBehaviorUpgradeTroop
+        //{
+        //    public static bool Prefix(PartyUpgraderCampaignBehavior __instance, PartyBase party, int rosterIndex, object upgradeArgs)
+        //    {
+        //        var troop = party.MemberRoster.GetCharacterAtIndex(rosterIndex);
+        //        var memberRoster = party.MemberRoster;
+        //        var upgradeTarget = Traverse.Create(upgradeArgs).Field<CharacterObject>("UpgradeTarget").Value;
+        //        var possibleUpgradeCount = Traverse.Create(upgradeArgs).Field<int>("PossibleUpgradeCount").Value;
+        //        var num = Traverse.Create(upgradeArgs).Field<int>("UpgradeXpCost").Value * possibleUpgradeCount;
+        //        memberRoster.SetElementXp(rosterIndex, memberRoster.GetElementXp(rosterIndex) - num);
+        //        memberRoster.AddToCounts(Traverse.Create(upgradeArgs).Field<CharacterObject>("Target").Value, -possibleUpgradeCount);
+        //        memberRoster.AddToCounts(upgradeTarget, possibleUpgradeCount);
+        //        if (possibleUpgradeCount > 0)
+        //            Traverse.Create(__instance).Method("ApplyEffects", party, upgradeArgs);
+        //
+        //        if (troop.StringId.Contains("Bandit_Militia_Troop"))
+        //            MBObjectManager.Instance.UnregisterObject(Traverse.Create(upgradeArgs).Field<CharacterObject>("Target").Value);
+        //
+        //        return false;
+        //    }
+        //}
+
+        [HarmonyPatch(typeof(TroopRoster), "AddToCountsAtIndex")]
+        public static class TroopRosterAddToCountsAtIndex
+        {
+            public static void Prefix(TroopRoster __instance, int index, int countChange)
+            {
+                var troop = __instance.GetCharacterAtIndex(index);
+                if (countChange < 0 && troop.StringId.Contains("Bandit_Militia_Troop"))
+                {
+                    MBObjectManager.Instance.UnregisterObject(troop);
+                }
+            }
+
             public static Exception Finalizer(TroopRoster __instance, Exception __exception)
             {
-                // throws with Heroes Must Die (old)
-                if (__exception is IndexOutOfRangeException)
+                switch (__exception)
                 {
-                    Log("HACK Squelching IndexOutOfRangeException at TroopRoster.AddToCountsAtIndex");
-                    return null;
+                    case null:
+                        return null;
+                    // throws with Heroes Must Die (old)
+                    case IndexOutOfRangeException:
+                        Log("HACK Squelching IndexOutOfRangeException at TroopRoster.AddToCountsAtIndex");
+                        return null;
+                    // throws during nuke of poor state (old)
+                    case NullReferenceException:
+                        Log(__exception);
+                        return null;
+                    default:
+                        Log(__exception);
+                        return __exception;
                 }
-
-                // throws during nuke of poor state
-                if (__exception is NullReferenceException)
-                {
-                    return null;
-                }
-
-                if (__exception is not null)
-                {
-                    Log(__exception);
-                    Meow();
-                }
-
-                return __exception;
             }
         }
 
@@ -273,9 +312,7 @@ namespace BanditMilitias.Patches
             {
                 if (__instance.TrackedParty is null) return;
                 if (PartyImageMap.TryGetValue(__instance.TrackedParty, out var image))
-                {
                     ____factionVisualBind = image;
-                }
             }
         }
 
@@ -293,9 +330,7 @@ namespace BanditMilitias.Patches
             public static void Postfix(MobileParty mobileParty, ref bool __result)
             {
                 if (mobileParty.IsBM())
-                {
                     __result = false;
-                }
             }
         }
 
@@ -360,6 +395,7 @@ namespace BanditMilitias.Patches
             }
         }
 
+        // copied from assembly since there is no BanditPartyComponent in BMs
         [HarmonyPatch(typeof(MobileParty), "CalculateContinueChasingScore")]
         public class MobilePartyBanditPartyComponent
         {
@@ -395,26 +431,6 @@ namespace BanditMilitias.Patches
                 var num11 = num2 * num6 * input * num3 * num4;
                 __result = MBMath.ClampFloat(num9 * num10 / (num11 + 0.001f), 0.005f, 3f);
                 return false;
-            }
-        }
-
-        private static Type bmPeriodicTicker;
-
-        [HarmonyPatch(typeof(CampaignPeriodicEventManager), "OnLoad")]
-        public static class CampaignPeriodicEventManagerOnLoad
-        {
-            public static void Postfix()
-            {
-                var periodicTicker = AccessTools.TypeByName("PeriodicTicker`1");
-                bmPeriodicTicker = periodicTicker.MakeGenericType(typeof(MobileParty));
-            }
-        }
-
-        [HarmonyPatch(typeof(CampaignPeriodicEventManager), "TickPartialHourlyAi")]
-        public static class CampaignPeriodicEventManagerTickPartialHourlyAi
-        {
-            public static void Postfix()
-            {
             }
         }
     }

@@ -20,6 +20,7 @@ using TaleWorlds.Engine;
 using TaleWorlds.InputSystem;
 using TaleWorlds.Library;
 using TaleWorlds.LinQuick;
+using TaleWorlds.ObjectSystem;
 using static BanditMilitias.Helpers.Helper;
 using static BanditMilitias.Globals;
 
@@ -33,15 +34,37 @@ namespace BanditMilitias.Patches
 {
     public static class MiscPatches
     {
+        // untested.  not proper to remove COs unless they actually lost and went away...right?
+        //[HarmonyPatch(typeof(MapEventSide), "OnTroopRouted")]
+        //public static class MapEventSideOnTroopRouted
+        //{
+        //    public static void Postfix(MapEventSide __instance, CharacterObject ____selectedSimulationTroop)
+        //    {
+        //        // TODO test this idea
+        //        if (____selectedSimulationTroop is not null
+        //            && ____selectedSimulationTroop.StringId.Contains("Bandit_Militia_Troop"))
+        //        {
+        //            MBObjectManager.Instance.UnregisterObject(____selectedSimulationTroop);
+        //        }
+        //    }
+        //}
+
         // idea from True Battle Loot
         [HarmonyPatch(typeof(MapEventSide), "OnTroopKilled")]
         public static class MapEventSideOnTroopKilled
         {
             public static void Postfix(MapEventSide __instance, CharacterObject ____selectedSimulationTroop)
             {
+                // TODO test this idea
+                //if (____selectedSimulationTroop is not null
+                //    && ____selectedSimulationTroop.StringId.Contains("Bandit_Militia_Troop"))
+                //{
+                //    MBObjectManager.Instance.UnregisterObject(____selectedSimulationTroop);
+                //}
+
                 if (!Globals.Settings.UpgradeTroops || MapEvent.PlayerMapEvent is not null && ____selectedSimulationTroop is null)
                     return;
-                EquipmentMap.Remove(____selectedSimulationTroop.StringId);
+                EquipmentMap.Remove(____selectedSimulationTroop!.StringId);
                 // makes all loot drop in any BM-involved fight which isn't with the main party
                 var BMs = __instance.Parties.WhereQ(p =>
                     p.Party.MobileParty?.PartyComponent is ModBanditMilitiaPartyComponent).SelectQ(p => p.Party);
@@ -71,22 +94,20 @@ namespace BanditMilitias.Patches
         {
             public static void Prefix(MapEvent mapEvent, PartyBase winnerParty, ref Dictionary<PartyBase, ItemRoster> lootedItems)
             {
-                //if (!Globals.Settings.UpgradeTroops || !mapEvent.HasWinner || !party.IsMobile || !party.MobileParty.IsBM())
-                //    return;
-                //if (LootRecord.TryGetValue(party.MapEventSide, out var equipment))
-                //{
-                //    foreach (var e in equipment)
-                //    {
-                //        loot.AddToCounts(e, 1);
-                //    }
-                //}
-                //
-                //if (loot.AnyQ(i => !i.IsEmpty))
-                //{
-                //    UpgradeEquipment(party, loot);
-                //}
-                //
-                //Globals.LootRecord.Remove(party.MobileParty.MapEventSide);
+                if (!Globals.Settings.UpgradeTroops || !mapEvent.HasWinner || !winnerParty.IsMobile || !winnerParty.MobileParty.IsBM())
+                    return;
+                if (LootRecord.TryGetValue(winnerParty.MapEventSide, out var equipment))
+                {
+                    var itemRoster = new ItemRoster();
+                    foreach (var e in equipment)
+                        itemRoster.AddToCounts(e, 1);
+
+                    lootedItems.Add(winnerParty, itemRoster);
+                    if (lootedItems[winnerParty].AnyQ(i => !i.IsEmpty))
+                        UpgradeEquipment(winnerParty, lootedItems[winnerParty]);
+                }
+
+                Globals.LootRecord.Remove(winnerParty.MobileParty.MapEventSide);
             }
         }
 
@@ -96,9 +117,7 @@ namespace BanditMilitias.Patches
             public static void Prefix()
             {
                 if (Input.IsKeyDown(InputKey.LeftShift) || Input.IsKeyDown(InputKey.RightShift))
-                {
                     Nuke();
-                }
             }
 
             public static void Postfix()
@@ -115,9 +134,7 @@ namespace BanditMilitias.Patches
                                                    && c.StringId.EndsWith("boss")).ToList().GetReadOnlyList();
 
                 foreach (var clan in Clan.BanditFactions)
-                {
                     Traverse.Create(clan.Culture).Property<IReadOnlyList<CharacterObject>>("NotableAndWandererTemplates").Value = banditBosses;
-                }
 
                 var filter = new List<string>
                 {
@@ -165,7 +182,6 @@ namespace BanditMilitias.Patches
                 DoPowerCalculations(true);
                 var bmCount = MobileParty.All.CountQ(m => m.IsBM());
                 Log($"Militias: {bmCount}."); //  Custom troops: {MobileParty.All.SelectMany(m => m.MemberRoster.ToFlattenedRoster()).CountQ(e => e.Troop.StringId.Contains("Bandit_Militia"))}.  Troop prisoners: {MobileParty.All.SelectMany(m => m.PrisonRoster.ToFlattenedRoster()).CountQ(e => e.Troop.StringId.Contains("Bandit_Militia"))}.");
-                //Log($"Militias: {militias.Count} (registered {PartyMilitiaMap.Count})");
                 RunLateManualPatches();
             }
         }

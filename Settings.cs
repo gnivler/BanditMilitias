@@ -48,8 +48,8 @@ namespace BanditMilitias
         [SettingPropertyGroup("Primary Settings", GroupOrder = 0)]
         public bool CanTrain { get; private set; } = true;
 
-        //[SettingPropertyBool("Upgrade Militias (!!EXPERIMENTAL - novel mod!!)", HintText = "\nAll troops will upgrade their gear from loot won.  BM is the first mod to do this.", Order = 0, RequireRestart = false)]
-        //[SettingPropertyGroup("Primary Settings", GroupOrder =1)]
+        [SettingPropertyBool("Upgrade Militias (!!EXPERIMENTAL - novel mod!!)", HintText = "\nAll BM troops will upgrade their gear from loot won.  BM is the first mod to try this.", Order = 0, RequireRestart = false)]
+        [SettingPropertyGroup("Primary Settings", GroupOrder =1)]
         public bool UpgradeTroops { get; private set; } = false;
 
         [SettingPropertyInteger("Daily Training Chance", 0, 100, HintText = "\nEach day they might train further.", Order = 1, RequireRestart = false)]

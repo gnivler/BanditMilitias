@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Version>3.8.17</Version>
+    <Version>3.8.18</Version>
     <TargetFramework>net472</TargetFramework>
     <Platforms>x64</Platforms>
     <LangVersion>default</LangVersion>
@@ -51,6 +51,7 @@
     <Compile Remove="ModBanditMilitiaKillModel.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Reference Include="Microsoft.CSharp" />
     <Reference Include="Newtonsoft.Json">
       <HintPath>..\..\BannerlordRefs\e1.8.0\Newtonsoft.Json.dll</HintPath>
     </Reference>
