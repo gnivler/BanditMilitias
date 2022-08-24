@@ -67,7 +67,6 @@ namespace BanditMilitias
             ConfigureLeader(hero);
             HomeSettlement = hero.BornSettlement;
             leader = hero;
-            //LogMilitiaFormed(MobileParty);
         }
     }
 }

@@ -283,7 +283,12 @@ namespace BanditMilitias.Patches
                 }
             }
 
-            public static Exception Finalizer(TroopRoster __instance, Exception __exception)
+            public static void Postfix(TroopRoster __instance, int index)
+            {
+                //Log(__instance);
+            }
+
+            public static Exception Finalizer(TroopRoster __instance, int index, Exception __exception)
             {
                 switch (__exception)
                 {

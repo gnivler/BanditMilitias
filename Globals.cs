@@ -54,7 +54,8 @@ namespace BanditMilitias
         public static MapMobilePartyTrackerVM MapMobilePartyTrackerVM;
 
         public static float Variance => MBRandom.RandomFloatRanged(0.925f, 1.075f);
-
+        public static List<CharacterObject> HeroCharacters = new();
+        
         // ArmsDealer compatibility
         public static CultureObject BlackFlag => MBObjectManager.Instance.GetObject<CultureObject>("ad_bandit_blackflag");
 

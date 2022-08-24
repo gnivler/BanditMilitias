@@ -3,14 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using BanditMilitias.Helpers;
 using HarmonyLib;
-using Helpers;
 using SandBox.View.Map;
 using SandBox.ViewModelCollection.Map;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.CampaignBehaviors;
-using TaleWorlds.CampaignSystem.CharacterDevelopment;
 using TaleWorlds.CampaignSystem.Extensions;
-using TaleWorlds.CampaignSystem.GameComponents;
 using TaleWorlds.CampaignSystem.MapEvents;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Roster;
@@ -20,7 +17,6 @@ using TaleWorlds.Engine;
 using TaleWorlds.InputSystem;
 using TaleWorlds.Library;
 using TaleWorlds.LinQuick;
-using TaleWorlds.ObjectSystem;
 using static BanditMilitias.Helpers.Helper;
 using static BanditMilitias.Globals;
 
@@ -55,13 +51,6 @@ namespace BanditMilitias.Patches
         {
             public static void Postfix(MapEventSide __instance, CharacterObject ____selectedSimulationTroop)
             {
-                // TODO test this idea
-                //if (____selectedSimulationTroop is not null
-                //    && ____selectedSimulationTroop.StringId.Contains("Bandit_Militia_Troop"))
-                //{
-                //    MBObjectManager.Instance.UnregisterObject(____selectedSimulationTroop);
-                //}
-
                 if (!Globals.Settings.UpgradeTroops || MapEvent.PlayerMapEvent is not null && ____selectedSimulationTroop is null)
                     return;
                 EquipmentMap.Remove(____selectedSimulationTroop!.StringId);
@@ -126,15 +115,8 @@ namespace BanditMilitias.Patches
                 EquipmentItems.Clear();
                 PopulateItems();
                 RaidCap = Convert.ToInt32(Settlement.FindAll(s => s.IsVillage).CountQ() / 10f);
-
-                // 1.7 changed CreateHeroAtOccupation to only fish from this: NotableAndWandererTemplates
-                // this has no effect on earlier versions since the property doesn't exist
-                var banditBosses =
-                    CharacterObject.All.Where(c => c.Occupation is Occupation.Bandit
-                                                   && c.StringId.EndsWith("boss")).ToList().GetReadOnlyList();
-
-                foreach (var clan in Clan.BanditFactions)
-                    Traverse.Create(clan.Culture).Property<IReadOnlyList<CharacterObject>>("NotableAndWandererTemplates").Value = banditBosses;
+                HeroCharacters = CharacterObject.All.Where(c =>
+                    c.Occupation is Occupation.Bandit && c.StringId.StartsWith("lord_")).ToListQ();
 
                 var filter = new List<string>
                 {
@@ -165,24 +147,24 @@ namespace BanditMilitias.Patches
                 // used for armour
                 foreach (ItemObject.ItemTypeEnum itemType in Enum.GetValues(typeof(ItemObject.ItemTypeEnum)))
                 {
-                    Globals.ItemTypes[itemType] = Items.All.Where(i => i.Type == itemType
-                                                                       && i.Value >= 1000
-                                                                       && i.Value <= Globals.Settings.MaxItemValue).ToList();
+                    Globals.ItemTypes[itemType] = Items.All.Where(i =>
+                        i.Type == itemType
+                        && i.Value >= 1000
+                        && i.Value <= Globals.Settings.MaxItemValue).ToList();
                 }
 
                 // front-load
                 BanditEquipment.Clear();
-                for (var i = 0; i < 1000; i++)
+                for (var i = 0; i < 3000; i++)
                 {
                     BanditEquipment.Add(BuildViableEquipmentSet());
                 }
 
-                Hideouts = Settlement.FindAll(s => s.IsHideout).ToListQ();
+                Hideouts = Settlement.All.WhereQ(s => s.IsHideout).ToListQ();
                 PartyImageMap.Clear();
                 DoPowerCalculations(true);
                 var bmCount = MobileParty.All.CountQ(m => m.IsBM());
-                Log($"Militias: {bmCount}."); //  Custom troops: {MobileParty.All.SelectMany(m => m.MemberRoster.ToFlattenedRoster()).CountQ(e => e.Troop.StringId.Contains("Bandit_Militia"))}.  Troop prisoners: {MobileParty.All.SelectMany(m => m.PrisonRoster.ToFlattenedRoster()).CountQ(e => e.Troop.StringId.Contains("Bandit_Militia"))}.");
-                RunLateManualPatches();
+                Log($"Militias: {bmCount}."); //  Upgraded BM troops: {MobileParty.All.SelectMany(m => m.MemberRoster.ToFlattenedRoster()).CountQ(e => e.Troop.StringId.Contains("Bandit_Militia"))}.  Troop prisoners: {MobileParty.All.SelectMany(m => m.PrisonRoster.ToFlattenedRoster()).CountQ(e => e.Troop.StringId.Contains("Bandit_Militia"))}.");
             }
         }
 

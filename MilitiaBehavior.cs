@@ -15,7 +15,6 @@ using TaleWorlds.Library;
 using TaleWorlds.LinQuick;
 using TaleWorlds.Localization;
 using TaleWorlds.ObjectSystem;
-using TaleWorlds.SaveSystem;
 using TaleWorlds.TwoDimension;
 using static BanditMilitias.Helpers.Helper;
 using static BanditMilitias.Globals;
@@ -251,6 +250,8 @@ namespace BanditMilitias
             //FlushPrisoners();
         }
 
+        private const int settlementFindRange = 200;
+
         public static void BMThink(MobileParty mobileParty)
         {
             var target = mobileParty.TargetSettlement;
@@ -260,61 +261,66 @@ namespace BanditMilitias
                 case AIState.PatrollingAroundLocation when mobileParty.DefaultBehavior is AiBehavior.Hold or AiBehavior.None:
                     if (mobileParty.TargetSettlement is null)
                     {
-                        target = SettlementHelper.GetRandomTown();
+                        while (target is null)
+                        {
+                            target = Settlement.All.GetRandomElementInefficiently();
+                            if (target.Position2D.Distance(mobileParty.Position2D) < settlementFindRange)
+                                break;
+                        }
                     }
 
                     mobileParty.SetMovePatrolAroundSettlement(target);
                     break;
-                //case AIState.PatrollingAroundLocation:
-                //    // PILLAGE!
-                //    if (Globals.Settings.AllowPillaging
-                //        && mobileParty.LeaderHero is not null
-                //        && mobileParty.Party.TotalStrength > MilitiaPartyAveragePower
-                //        && Rng.NextDouble() < SmallChance
-                //        && GetCachedBMs().CountQ(m => m.MobileParty.ShortTermBehavior is AiBehavior.RaidSettlement) < RaidCap)
-                //    {
-                //        target = SettlementHelper.FindNearestVillage(s =>
-                //        {
-                //            // JetBrains Rider suggested this insanity
-                //            if (s.Village is { VillageState: Village.VillageStates.BeingRaided or Village.VillageStates.Looted }
-                //                || s.Owner is null
-                //                || s.GetValue() <= 0)
-                //            {
-                //                return false;
-                //            }
-                //
-                //            return true;
-                //        }, mobileParty);
-                //
-                //        if (target is null)
-                //        {
-                //            Meow();
-                //            return;
-                //        }
-                //
-                //        var BM = mobileParty.GetBM();
-                //        if (BM is null)
-                //        {
-                //            return;
-                //        }
-                //
-                //        if (BM.Avoidance.ContainsKey(target.Owner)
-                //            && Rng.NextDouble() * 100 <= BM.Avoidance[target.Owner])
-                //        {
-                //            Log($"||| {mobileParty.Name} avoided pillaging {target}");
-                //            break;
-                //        }
-                //
-                //        if (target.OwnerClan == Hero.MainHero.Clan)
-                //        {
-                //            InformationManager.DisplayMessage(new InformationMessage($"{mobileParty.Name} is raiding your village {target.Name} near {target.Town?.Name}!"));
-                //        }
-                //
-                //        //Log($"{new string('=', 100)} {target.Village.VillageState}");
-                //        mobileParty.SetMoveRaidSettlement(target);
-                //    }
-                //
-                //    break;
+                case AIState.PatrollingAroundLocation:
+                    // PILLAGE!
+                    if (Globals.Settings.AllowPillaging
+                        && mobileParty.LeaderHero is not null
+                        && mobileParty.Party.TotalStrength > MilitiaPartyAveragePower
+                        && Rng.NextDouble() < SmallChance
+                        && GetCachedBMs().CountQ(m => m.MobileParty.ShortTermBehavior is AiBehavior.RaidSettlement) < RaidCap)
+                    {
+                        target = SettlementHelper.FindNearestVillage(s =>
+                        {
+                            // JetBrains Rider suggested this insanity
+                            if (s.Village is { VillageState: Village.VillageStates.BeingRaided or Village.VillageStates.Looted }
+                                || s.Owner is null
+                                || s.GetValue() <= 0)
+                            {
+                                return false;
+                            }
+
+                            return true;
+                        }, mobileParty);
+
+                        if (target is null)
+                        {
+                            Meow();
+                            return;
+                        }
+
+                        var BM = mobileParty.GetBM();
+                        if (BM is null)
+                        {
+                            return;
+                        }
+
+                        if (BM.Avoidance.ContainsKey(target.Owner)
+                            && Rng.NextDouble() * 100 <= BM.Avoidance[target.Owner])
+                        {
+                            Log($"||| {mobileParty.Name} avoided pillaging {target}");
+                            break;
+                        }
+
+                        if (target.OwnerClan == Hero.MainHero.Clan)
+                        {
+                            InformationManager.DisplayMessage(new InformationMessage($"{mobileParty.Name} is raiding your village {target.Name} near {target.Town?.Name}!"));
+                        }
+
+                        //Log($"{new string('=', 100)} {target.Village.VillageState}");
+                        mobileParty.SetMoveRaidSettlement(target);
+                    }
+
+                    break;
             }
         }
 
@@ -508,7 +514,8 @@ namespace BanditMilitias
 
         public override void SyncData(IDataStore dataStore)
         {
-            if (!Globals.Settings.UpgradeTroops) return;
+            if (!Globals.Settings.UpgradeTroops)
+                return;
             dataStore.SyncData("EquipmentMap", ref Globals.EquipmentMap);
             if (dataStore.IsLoading)
             {
@@ -524,7 +531,9 @@ namespace BanditMilitias
         public static void RehydrateCharacterObject(TroopRosterElement troop)
         {
             troop.Character.Culture = troop.Character.OriginalCharacter.Culture;
-            basicName(troop.Character) = new TextObject("Custom " + troop.Character.OriginalCharacter.Name);
+            basicName(troop.Character) = new TextObject("Upgraded " + troop.Character.OriginalCharacter.Name);
+            Traverse.Create(troop.Character).Field<MBCharacterSkills>("CharacterSkills").Value =
+                Traverse.Create(troop.Character.OriginalCharacter).Field<MBCharacterSkills>("CharacterSkills").Value;
             var bodyProps = new MBBodyProperty();
             bodyProps.Init(troop.Character.OriginalCharacter.GetBodyPropertiesMin(), troop.Character.OriginalCharacter.GetBodyPropertiesMax());
             bodyPropertyRange(troop.Character) = bodyProps;
