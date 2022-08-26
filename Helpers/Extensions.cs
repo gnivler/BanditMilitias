@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using HarmonyLib;
@@ -13,9 +14,6 @@ namespace BanditMilitias.Helpers
 {
     public static class Extensions
     {
-        private static readonly AccessTools.FieldRef<CampaignObjectManager, List<Hero>> AliveHeroes =
-            AccessTools.FieldRefAccess<CampaignObjectManager, List<Hero>>("_aliveHeroes");
-
         private static readonly AccessTools.FieldRef<CampaignObjectManager, List<Hero>> DeadOrDisabledHeroes =
             AccessTools.FieldRefAccess<CampaignObjectManager, List<Hero>>("_deadOrDisabledHeroes");
 
@@ -35,11 +33,10 @@ namespace BanditMilitias.Helpers
 
         public static void RemoveMilitiaHero(this Hero hero)
         {
-            Traverse.Create(typeof(KillCharacterAction)).Method("MakeDead", hero, false).GetValue();
-            AliveHeroes(Campaign.Current.CampaignObjectManager).Remove(hero);
+            KillCharacterAction.ApplyByRemove(hero);
             DeadOrDisabledHeroes(Campaign.Current.CampaignObjectManager).Remove(hero);
-            hero.PartyBelongedTo?.MemberRoster.RemoveTroop(hero.CharacterObject);
-            hero.PartyBelongedToAsPrisoner?.PrisonRoster.RemoveTroop(hero.CharacterObject);
+            Globals.BanditMilitiaHeroes.Remove(hero);
+            Globals.BanditMilitiaCharacters.Remove(hero.CharacterObject);
             MBObjectManager.Instance.UnregisterObject(hero.CharacterObject);
         }
 
@@ -61,7 +58,16 @@ namespace BanditMilitias.Helpers
 
         public static MobileParty FindParty(this CharacterObject characterObject)
         {
-            return MobileParty.All.FirstOrDefaultQ(m => m.MemberRoster.Contains(characterObject));
+            foreach (var party in MobileParty.All)
+            {
+                if (party.MemberRoster.ToFlattenedRoster().Troops.AnyQ(troop => troop == characterObject)
+                    || party.PrisonRoster.ToFlattenedRoster().Troops.AnyQ(troop => troop == characterObject))
+                {
+                    return party;
+                }
+            }
+
+            return null;
         }
 
         public static int CountMounted(this TroopRoster troopRoster)

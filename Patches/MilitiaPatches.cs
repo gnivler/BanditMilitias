@@ -16,12 +16,15 @@ using TaleWorlds.CampaignSystem.CampaignBehaviors.AiBehaviors;
 using TaleWorlds.CampaignSystem.Encounters;
 using TaleWorlds.CampaignSystem.GameComponents;
 using TaleWorlds.CampaignSystem.GameMenus;
+using TaleWorlds.CampaignSystem.MapEvents;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Roster;
 using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
+using TaleWorlds.Library;
 using TaleWorlds.Localization;
 using TaleWorlds.MountAndBlade;
+using TaleWorlds.ObjectSystem;
 using static BanditMilitias.Helpers.Helper;
 using static BanditMilitias.Globals;
 
@@ -40,12 +43,6 @@ namespace BanditMilitias.Patches
         {
             public static void Postfix(MobileParty __instance, ref float __result)
             {
-                if (__instance is null)
-                {
-                    Meow();
-                    throw new NullReferenceException("MobileParty is null at CalculateSpeed");
-                }
-
                 if (__instance.IsBandit
                     && __instance.TargetParty is not null
                     && __instance.TargetParty.IsBandit)
@@ -111,7 +108,7 @@ namespace BanditMilitias.Patches
         {
             private static bool Prefix(MobileParty mobileParty, Settlement settlement)
             {
-                if (mobileParty.PartyComponent is ModBanditMilitiaPartyComponent)
+                if (mobileParty.IsBM())
                 {
                     Log($"Preventing {mobileParty} from entering {settlement.Name}");
                     MilitiaBehavior.BMThink(mobileParty);
@@ -235,25 +232,48 @@ namespace BanditMilitias.Patches
             }
         }
 
-        [HarmonyPatch(typeof(TroopRoster), "AddToCountsAtIndex")]
-        public static class TroopRosterAddToCountsAtIndexPatch
+        [HarmonyPatch(typeof(MapEventParty), "OnTroopKilled")]
+        public static class TroopRosterRemoveTroop
         {
-            public static Exception Finalizer(TroopRoster __instance, Exception __exception)
+            public static void Prefix(UniqueTroopDescriptor troopSeed, FlattenedTroopRoster ____roster)
             {
-                // throws with Heroes Must Die (old)
-                if (__exception is IndexOutOfRangeException)
-                {
-                    Log("HACK Squelching IndexOutOfRangeException at TroopRoster.AddToCountsAtIndex");
-                    return null;
-                }
+                var troop = ____roster[troopSeed].Troop;
+                if (BanditMilitiaTroops.Contains(troop))
+                    MBObjectManager.Instance.UnregisterObject(troop);
+            }
+        }
 
-                // throws during nuke of poor state
-                if (__exception is NullReferenceException)
+        [HarmonyPatch(typeof(TroopRoster), "AddToCountsAtIndex")]
+        public static class TroopRosterAddToCountsAtIndex
+        {
+            public static void Prefix(TroopRoster __instance, int index, int countChange)
+            {
+                var troop = __instance.GetCharacterAtIndex(index);
+                if (countChange < 0 && BanditMilitiaTroops.Contains(troop))
                 {
-                    return null;
+                    BanditMilitiaTroops.Remove(troop);
+                    MBObjectManager.Instance.UnregisterObject(troop);
                 }
+            }
 
-                return __exception;
+            public static Exception Finalizer(TroopRoster __instance, int index, Exception __exception)
+            {
+                switch (__exception)
+                {
+                    case null:
+                        return null;
+                    // throws with Heroes Must Die (old)
+                    case IndexOutOfRangeException:
+                        Log("HACK Squelching IndexOutOfRangeException at TroopRoster.AddToCountsAtIndex");
+                        return null;
+                    // throws during nuke of poor state (old)
+                    case NullReferenceException:
+                        Log(__exception);
+                        return null;
+                    default:
+                        Log(__exception);
+                        return __exception;
+                }
             }
         }
 
@@ -265,9 +285,7 @@ namespace BanditMilitias.Patches
             {
                 if (__instance.TrackedParty is null) return;
                 if (PartyImageMap.TryGetValue(__instance.TrackedParty, out var image))
-                {
                     ____factionVisualBind = image;
-                }
             }
         }
 
@@ -285,33 +303,44 @@ namespace BanditMilitias.Patches
             public static void Postfix(MobileParty mobileParty, ref bool __result)
             {
                 if (mobileParty.IsBM())
-                {
                     __result = false;
-                }
             }
         }
 
         // copied out of assembly and modified to not check against occupation
-        //[HarmonyPatch(typeof(NameGenerator), "GenerateHeroFullName")]
-        //public static class NameGeneratorGenerateHeroName
-        //{
-        //    public static void Postfix(Hero hero, TextObject heroFirstName, ref TextObject __result)
-        //    {
-        //        if (hero.PartyBelongedTo is not null
-        //            && !hero.PartyBelongedTo.IsBM()) return;
-        //
-        //        var textObject = heroFirstName;
-        //        var index = (int) AccessTools.Method(typeof(NameGenerator), "SelectNameIndex")
-        //            .Invoke(NameGenerator.Current, new object[] { hero, GangLeaderNames(NameGenerator.Current), 0u, false });
-        //        NameGenerator.Current.AddName(GangLeaderNames(NameGenerator.Current)[index]);
-        //        textObject = GangLeaderNames(NameGenerator.Current)[index].CopyTextObject();
-        //        textObject.SetTextVariable("FEMALE", hero.IsFemale ? 1 : 0);
-        //        textObject.SetTextVariable("IMPERIAL", (hero.Culture.StringId == "empire") ? 1 : 0);
-        //        textObject.SetTextVariable("COASTAL", (hero.Culture.StringId == "empire" || hero.Culture.StringId == "vlandia") ? 1 : 0);
-        //        textObject.SetTextVariable("NORTHERN", (hero.Culture.StringId == "battania" || hero.Culture.StringId == "sturgia") ? 1 : 0);
-        //        StringHelpers.SetCharacterProperties("HERO", hero.CharacterObject, textObject).SetTextVariable("FIRSTNAME", heroFirstName);
-        //        __result = textObject;
-        //    }
-        //}
+        [HarmonyPatch(typeof(NameGenerator), "GenerateHeroFullName")]
+        public static class NameGeneratorGenerateHeroName
+        {
+            public static void Postfix(Hero hero, TextObject heroFirstName, ref TextObject __result)
+            {
+                if (hero.CharacterObject.Occupation is not Occupation.Bandit
+                    && hero.PartyBelongedTo is not null
+                    && !hero.PartyBelongedTo.IsBM())
+                    return;
+
+                var textObject = heroFirstName;
+                var index = (int)AccessTools.Method(typeof(NameGenerator), "SelectNameIndex")
+                    .Invoke(NameGenerator.Current, new object[] { hero, GangLeaderNames(NameGenerator.Current), 0u, false });
+                NameGenerator.Current.AddName(GangLeaderNames(NameGenerator.Current)[index]);
+                textObject = GangLeaderNames(NameGenerator.Current)[index].CopyTextObject();
+                textObject.SetTextVariable("FEMALE", hero.IsFemale ? 1 : 0);
+                textObject.SetTextVariable("IMPERIAL", (hero.Culture.StringId == "empire") ? 1 : 0);
+                textObject.SetTextVariable("COASTAL", (hero.Culture.StringId == "empire" || hero.Culture.StringId == "vlandia") ? 1 : 0);
+                textObject.SetTextVariable("NORTHERN", (hero.Culture.StringId == "battania" || hero.Culture.StringId == "sturgia") ? 1 : 0);
+                StringHelpers.SetCharacterProperties("HERO", hero.CharacterObject, textObject).SetTextVariable("FIRSTNAME", heroFirstName);
+                __result = textObject;
+            }
+        }
+
+        // avoid stuffing the BM into PartiesWithoutPartyComponent at CampaignObjectManager.InitializeOnLoad
+        [HarmonyPatch(typeof(MobileParty), "UpdatePartyComponentFlags")]
+        public static class MobilePartyInitializeOnLoad
+        {
+            public static void Postfix(MobileParty __instance)
+            {
+                if (!__instance.IsBandit && __instance.IsBM())
+                    IsBandit(__instance) = true;
+            }
+        }
     }
 }

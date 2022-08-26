@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -14,6 +15,7 @@ using TaleWorlds.Core;
 using TaleWorlds.InputSystem;
 using TaleWorlds.Library;
 using TaleWorlds.LinQuick;
+using TaleWorlds.Localization;
 using TaleWorlds.MountAndBlade;
 using TaleWorlds.ObjectSystem;
 using static BanditMilitias.Helpers.Helper;
@@ -42,6 +44,7 @@ namespace BanditMilitias
                 AccessTools.Field(typeof(Module), "_splashScreenPlayed").SetValue(Module.CurrentModule, true);
             }
 
+            CacheBanners();
             RunManualPatches();
             harmony.PatchAll(Assembly.GetExecutingAssembly());
         }
@@ -106,10 +109,36 @@ namespace BanditMilitias
                 }
             }
 
+            if (MEOWMEOW && Input.IsKeyPressed(InputKey.F1))
+            {
+                var party = GetCachedBMs(true)?.GetRandomElementInefficiently()?.MobileParty;
+                if (party is not null)
+                    party.Position2D = MobileParty.MainParty.Position2D;
+            }
+            if (MEOWMEOW && Input.IsKeyPressed(InputKey.F2))
+            {
+                Hacks.HackPurgeAllBadTroopsFromAllParties();
+            }
+
             if (MEOWMEOW && Input.IsKeyPressed(InputKey.Tilde))
             {
-                //Hacks.HackPurgeAllBadTroopsFromAllParties();
+               
+                //Campaign.Current.QuestManager.Quests[0].CompleteQuestWithSuccess(); 
                 Debugger.Break();
+                //try
+                //{
+                //    var deserters = Campaign.Current!.IssueManager.Issues.FirstOrDefaultQ(i => i.Value.GetType() == typeof(ExtortionByDesertersIssueBehavior.ExtortionByDesertersIssue));
+                //    MobileParty.MainParty.Position2D = deserters.Key.CurrentSettlement.GetPosition2D;
+                //}
+                //catch (Exception e)
+                //{
+                //   //ignore
+                //}
+                //var issue= new PotentialIssueData(null, typeof(ExtortionByDesertersIssueBehavior), IssueBase.IssueFrequency.Common);
+                //var hero = Settlement.All.First(s => s.Name.ToString() == "Varnovapol").Notables.First();
+                //Campaign.Current!.IssueManager.CreateNewIssue(in issue, hero);
+                //troopsWithoutParties.Do(x => Log($"{x.StringId}"));
+
                 //var crud = MobileParty.All.Where(m => m.Name.ToString().EndsWith("Bandit Militia")).ToList();
                 //for (var i = 0; i < crud.Count; i++)
                 //{
@@ -117,6 +146,7 @@ namespace BanditMilitias
                 //}
 
                 //var target = MobileParty.All.WhereQ(m => m.PartyComponent is ModBanditMilitiaPartyComponent).OrderByDescending(m => m.MemberRoster.GetTroopRoster().WhereQ(e => e.Character.StringId.Contains("Bandit_Militia_Troop")).SumQ(r => r.Number)).FirstOrDefault();
+                //
                 //if (SubModule.MEOWMEOW)
                 //{
                 //    MobileParty.MainParty.Position2D = target!.Position2D;
@@ -137,7 +167,7 @@ namespace BanditMilitias
             if (superKey && Input.IsKeyPressed(InputKey.F11))
             {
                 Globals.Settings.TestingMode = !Globals.Settings.TestingMode;
-                InformationManager.DisplayMessage(new InformationMessage("Testing mode: " + Globals.Settings.TestingMode));
+                InformationManager.AddQuickInformation(new TextObject("Testing mode: " + Globals.Settings.TestingMode));
             }
 
             if (superKey && Input.IsKeyPressed(InputKey.F10))
@@ -184,9 +214,9 @@ namespace BanditMilitias
                     }
 
                     DoPowerCalculations(true);
-                    InformationManager.DisplayMessage(new InformationMessage("BANDIT MILITIAS CLEARED"));
-                    var bmCount = MobileParty.All.CountQ(m => m.PartyComponent is ModBanditMilitiaPartyComponent);
-                    Log($"Militias: {bmCount}.  Custom troops: {MobileParty.All.SelectMany(m => m.MemberRoster.ToFlattenedRoster()).CountQ(e => e.Troop.StringId.Contains("_Bandit_Militia_Troop_"))}.  Troop prisoners: {MobileParty.All.SelectMany(m => m.PrisonRoster.ToFlattenedRoster()).CountQ(e => e.Troop.StringId.Contains("_Bandit_Militia_Troop_"))}.");
+                    InformationManager.AddQuickInformation(new TextObject("BANDIT MILITIAS CLEARED"));
+                    var bmCount = MobileParty.All.CountQ(m => m.IsBM());
+                    Log($"Militias: {bmCount}.  Upgraded BM troops: {MobileParty.All.SelectMany(m => m.MemberRoster.ToFlattenedRoster()).CountQ(e => e.Troop.StringId.Contains("_Bandit_Militia_Troop_"))}.  Troop prisoners: {MobileParty.All.SelectMany(m => m.PrisonRoster.ToFlattenedRoster()).CountQ(e => e.Troop.StringId.Contains("_Bandit_Militia_Troop_"))}.");
                 }
                 catch (Exception ex)
                 {
@@ -207,13 +237,6 @@ namespace BanditMilitias
         {
             base.OnGameInitializationFinished(game);
             CacheBanners();
-            // ReSharper disable once StringLiteralTypo
-            //var foodModel = AccessTools.Method(typeof(DefaultMobilePartyFoodConsumptionModel), "CalculateDailyFoodConsumptionf");
-            //harmony.Patch(foodModel, finalizer: new HarmonyMethod(AccessTools.Method(typeof(Hacks), "FoodFinalizer")));
-            //var trainModel = AccessTools.Method(typeof(DefaultPartyTrainingModel), "GetEffectiveDailyExperience");
-            //harmony.Patch(trainModel, finalizer: new HarmonyMethod(AccessTools.Method(typeof(Hacks), "ExperienceFinalizer")));
-            //var wageModel = AccessTools.Method(typeof(DefaultPartyWageModel), "GetTotalWage");
-            //harmony.Patch(wageModel, finalizer: new HarmonyMethod(AccessTools.Method(typeof(Hacks), "GetTotalWageFinalizer")));
         }
 
         private static void RunManualPatches()
@@ -221,20 +244,11 @@ namespace BanditMilitias
             try
             {
                 Dev.RunDevPatches();
-                //var internalType = AccessTools.TypeByName("<GetTrackDescription>d__11");
-                //var org = AccessTools.Method(internalType, "MoveNext");
-                //harmony.Patch(org, finalizer: new HarmonyMethod(AccessTools.Method(typeof(SubModule), "Finalizer")));
             }
             catch (Exception ex)
             {
-                Log(ex.ToString());
+                Log(ex);
             }
-        }
-
-        private static Exception Finalizer(Exception __exception)
-        {
-            if (__exception is not null) Meow();
-            return null;
         }
     }
 }

@@ -1,7 +1,6 @@
 using System.Linq;
 using BanditMilitias.Helpers;
 using HarmonyLib;
-using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.MapEvents;
 using TaleWorlds.LinQuick;
 using TaleWorlds.Localization;
@@ -36,7 +35,6 @@ namespace BanditMilitias.Patches
                     if (party.Party.MobileParty.LeaderHero is null)
                         party.Party.MobileParty.SetCustomName(new TextObject(Globals.Settings.LeaderlessBanditMilitiaString));
 
-
                     RemoveUndersizedTracker(party.Party);
                 }
 
@@ -52,20 +50,13 @@ namespace BanditMilitias.Patches
         {
             public static void Prefix(MapEvent __instance, object lootCollector)
             {
-                if (!__instance.HasWinner) return;
+                if (!__instance.HasWinner)
+                    return;
                 var loserBMs = __instance.PartiesOnSide(__instance.DefeatedSide)
                     .Where(p => p.Party?.MobileParty?.PartyComponent is ModBanditMilitiaPartyComponent);
-
                 foreach (var party in loserBMs)
                 {
                     // Globals.LootRecord.Remove(party.Party.MapEventSide);
-                    // disperse small militias
-                    if (party.Party.MobileParty.MemberRoster.TotalManCount < Globals.Settings.DisperseSize)
-                    {
-                        Trash(party.Party.MobileParty);
-                        continue;
-                    }
-
                     var heroes = party.Party.MemberRoster.RemoveIf(t => t.Character.IsHero).ToListQ();
                     for (var i = 0; i < heroes.Count; i++)
                     {
@@ -82,6 +73,18 @@ namespace BanditMilitias.Patches
             public static void Postfix(MapEvent __instance)
             {
                 if (!__instance.HasWinner) return;
+                var loserBMs = __instance.PartiesOnSide(__instance.DefeatedSide)
+                    .Where(p => p.Party?.MobileParty?.PartyComponent is ModBanditMilitiaPartyComponent);
+
+                foreach (var party in loserBMs)
+                {
+                    // bug TotalHealthyCount??
+                    if (party.Party.MobileParty.MemberRoster.TotalManCount < Globals.Settings.DisperseSize)
+                    {
+                        Trash(party.Party.MobileParty);
+                    }
+                }
+
                 var winnerBMs = __instance.PartiesOnSide(__instance.WinningSide)
                     .Where(p => p.Party?.MobileParty?.PartyComponent is ModBanditMilitiaPartyComponent).ToListQ();
                 if (!winnerBMs.Any()) return;

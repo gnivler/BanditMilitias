@@ -1,27 +1,66 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using System.Runtime.ExceptionServices;
+using BanditMilitias.Helpers;
 using HarmonyLib;
+using Helpers;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.CharacterDevelopment;
 using TaleWorlds.CampaignSystem.GameComponents;
+using TaleWorlds.CampaignSystem.MapEvents;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Roster;
+using TaleWorlds.CampaignSystem.Settlements;
+using TaleWorlds.CampaignSystem.ViewModelCollection;
+using TaleWorlds.Core;
+using TaleWorlds.Core.ViewModelCollection;
+using TaleWorlds.Library;
 using TaleWorlds.LinQuick;
+using TaleWorlds.Localization;
 using TaleWorlds.ObjectSystem;
 using static BanditMilitias.Helpers.Helper;
 
-namespace BanditMilitias
+namespace BanditMilitias.Patches
 {
-    public class Hacks
+    public static class Hacks
     {
+                // rewrite of broken original in 1.8.0
+        [HarmonyPatch(typeof(Hideout), "MapFaction", MethodType.Getter)]
+        public static class HideoutMapFactionGetter
+        {
+            public static bool Prefix(Hideout __instance, ref IFaction __result)
+            {
+                __result = Clan.BanditFactions.First(c => c.Culture == __instance.Settlement.Culture);
+                return false;
+            }
+        }
+
+        [HarmonyPatch(typeof(MobileParty), "GetFollowBehavior")]
+        public static class MobilePartyGetFollowBehavior
+        {
+            public static bool Prefix(MobileParty __instance, MobileParty followedParty)
+            {
+                if (followedParty is null)
+                {
+                    __instance.SetMoveGoToPoint(__instance.Position2D);
+                    __instance.Ai.RethinkAtNextHourlyTick = true;
+                    return false;
+                }
+
+                return true;
+            }
+        }
+
         // troops with missing data causing lots of NREs elsewhere
         // just a temporary patch
         public static void HackPurgeAllBadTroopsFromAllParties()
         {
-            Log("Starting iteration off all troops in all parties... this might take a few minutes...");
+            Log("Starting iteration of all troops in all parties, this might take a minute...");
             foreach (var mobileParty in MobileParty.All)
             {
-                var rosters = new [] { mobileParty.MemberRoster, mobileParty.PrisonRoster };
+                var rosters = new[] { mobileParty.MemberRoster, mobileParty.PrisonRoster };
                 foreach (var roster in rosters)
                 {
                     while (roster.GetTroopRoster().AnyQ(t => t.Character.Name == null))
@@ -30,8 +69,9 @@ namespace BanditMilitias
                         {
                             if (troop.Character.Name == null)
                             {
-                                Log($"removing bad troop {troop.Character.StringId} from {mobileParty.StringId}.  Prison roster? {roster.IsPrisonRoster}");
-                                roster.AddToCounts(troop.Character, -1);
+                                Log($"!!!!! Purge bad troop {troop.Character.StringId} from {mobileParty.Name}.  Prisoner? {roster.IsPrisonRoster}");
+                                roster.AddToCounts(troop.Character, -troop.Number);
+                                Globals.BanditMilitiaCharacters.Remove(troop.Character);
                                 MBObjectManager.Instance.UnregisterObject(troop.Character);
                             }
                         }
@@ -39,46 +79,6 @@ namespace BanditMilitias
                 }
             }
         }
-
-        // throws during nuke
-        [HarmonyPatch(typeof(TroopRoster), "ClampXp")]
-        public static class TroopRosterClampXpPatch
-        {
-            public static Exception Finalizer(Exception __exception, TroopRoster __instance)
-            {
-                //if (__exception is not null) Log(__exception);
-                return null;
-            }
-        }
-
-        private static Exception ExperienceFinalizer(DefaultPartyTrainingModel __instance, Exception __exception, MobileParty mobileParty, TroopRosterElement troop)
-        {
-            if (__exception is not null) Log(__exception);
-            return null;
-        }
-
-        private static Exception GetTotalWageFinalizer(Exception __exception, MobileParty mobileParty)
-        {
-            if (__exception is not null) Log(__exception);
-            return null;
-        }
-
-        private static Exception FoodFinalizer(Exception __exception, MobileParty party)
-        {
-            if (__exception is not null) Log(__exception);
-            return null;
-        }
-
-
-        //[HarmonyPatch(typeof(DefaultPartyTroopUpgradeModel), "IsTroopUpgradeable")]
-        //public static class DefaultPartyTroopUpgradeModelIsTroopUpgradeable
-        //{
-        //    public static Exception Finalizer(Exception __exception, PartyBase party, CharacterObject character)
-        //    {
-        //        if (__exception is not null) Log(__exception);
-        //        return null;
-        //    }
-        //}
 
         //[HarmonyPatch(typeof(TooltipVMExtensions), "AddPartyTroopProperties")]
         //public static class TooltipVMExtensionsAddPartyTroopProperties
@@ -199,8 +199,28 @@ namespace BanditMilitias
         //    }
         //}
         //
+        // throws during nuke
+        [HarmonyPatch(typeof(TroopRoster), "ClampXp")]
+        public static class TroopRosterClampXpPatch
+        {
+            public static Exception Finalizer(Exception __exception, TroopRoster __instance)
+            {
+                if (__exception is not null) Log(__exception);
+                return null;
+            }
+        }
 
+        //
+        private static Exception ExperienceFinalizer(DefaultPartyTrainingModel __instance, Exception __exception, MobileParty mobileParty, TroopRosterElement troop)
+        {
+            if (__exception is not null)
+            {
+                Log(__exception);
+                Meow();
+            }
 
+            return null;
+        }
         //    foreach (var m in MobileParty.All.WhereQ(m => m.MemberRoster.GetTroopRoster().AnyQ(e => e.Character.StringId.Contains("looter"))))
         //        {
         //            m.MemberRoster.RemoveIf(e => e.Character.Culture is null);
