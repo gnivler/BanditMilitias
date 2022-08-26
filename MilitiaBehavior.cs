@@ -395,6 +395,11 @@ namespace BanditMilitias
                         var troop = eligibleToGrow.GetRandomElement().Character;
                         if (GlobalMilitiaPower + troop.GetPower() < CalculatedGlobalPowerLimit)
                         {
+                            if (!IsRegistered(troop))
+                            {
+                                Meow();
+                            }
+
                             mobileParty.MemberRoster.AddToCounts(troop, 1);
                         }
                     }
@@ -433,6 +438,8 @@ namespace BanditMilitias
                 var max = Convert.ToInt32(CalculatedMaxPartySize);
                 var roster = TroopRoster.CreateDummyTroopRoster();
                 var size = Convert.ToInt32(Rng.Next(min, max + 1) / 2f);
+                if (!IsRegistered(clan.BasicTroop) || !IsRegistered(Looters.BasicTroop))
+                    Meow();
                 roster.AddToCounts(clan.BasicTroop, size);
                 roster.AddToCounts(Looters.BasicTroop, size);
                 AdjustCavalryCount(roster);

@@ -64,7 +64,11 @@ namespace BanditMilitias.Helpers
 
         public static PartyUpgraderCampaignBehavior UpgraderCampaignBehavior;
 
-        public static readonly AccessTools.FieldRef<Clan, Settlement> home = AccessTools.FieldRefAccess<Clan, Settlement>("_home");
+        private static readonly AccessTools.FieldRef<MobileParty, Clan> actualClan =
+            AccessTools.FieldRefAccess<MobileParty, Clan>("_actualClan");
+
+        internal static readonly AccessTools.FieldRef<CharacterObject, bool> IsRegistered =
+            AccessTools.FieldRefAccess<CharacterObject, bool>("<IsRegistered>k__BackingField");
 
         // ReSharper disable once UnusedMethodReturnValue.Global
         public static bool Log(object input)
@@ -146,6 +150,8 @@ namespace BanditMilitias.Helpers
             // toss a coin (to your Witcher)
             if (rosterElement.Number == 1)
             {
+                if (!IsRegistered(rosterElement.Character))
+                    Meow();
                 if (Rng.Next(0, 2) == 0)
                 {
                     roster1.AddToCounts(rosterElement.Character, 1);
@@ -169,15 +175,22 @@ namespace BanditMilitias.Helpers
         {
             try
             {
+                // TODO profile
                 while (party1.TotalManCount < Globals.Settings.MinPartySize)
                 {
                     // using 1, not 0 because 0 is the BM hero
-                    party1.AddToCounts(party1.GetCharacterAtIndex(Rng.Next(1, party1.Count)), 1);
+                    var troop = party1.GetCharacterAtIndex(Rng.Next(1, party1.Count));
+                    if (!IsRegistered(troop))
+                        Meow();
+                    party1.AddToCounts(troop, 1);
                 }
 
                 while (party2.TotalManCount < Globals.Settings.MinPartySize)
                 {
-                    party2.AddToCounts(party2.GetCharacterAtIndex(Rng.Next(1, party2.Count)), 1);
+                    var troop = party2.GetCharacterAtIndex(Rng.Next(1, party1.Count));
+                    if (!IsRegistered(troop))
+                        Meow();
+                    party2.AddToCounts(troop, 1);
                 }
 
                 if (original.ActualClan is null) Meow();
@@ -260,6 +273,8 @@ namespace BanditMilitias.Helpers
             {
                 foreach (var element in roster.GetTroopRoster().Where(e => e.Character?.HeroObject is null))
                 {
+                    if (!IsRegistered(element.Character))
+                        Meow();
                     troopRoster.AddToCounts(element.Character, element.Number,
                         woundedCount: element.WoundedNumber, xpChange: element.Xp);
                 }
@@ -269,6 +284,8 @@ namespace BanditMilitias.Helpers
             {
                 foreach (var element in roster.GetTroopRoster().Where(e => e.Character?.HeroObject is null))
                 {
+                    if (!IsRegistered(element.Character))
+                        Meow();
                     prisonerRoster.AddToCounts(element.Character, element.Number,
                         woundedCount: element.WoundedNumber, xpChange: element.Xp);
                 }
@@ -742,9 +759,6 @@ namespace BanditMilitias.Helpers
 
         public static void ConvertLootersToRecruits(TroopRoster troopRoster, CultureObject culture, int numberToUpgrade)
         {
-            troopRoster.RemoveTroop(Looters.BasicTroop, numberToUpgrade);
-            var recruit = Globals.Recruits[culture][Rng.Next(0, Recruits[culture].Count)];
-            troopRoster.AddToCounts(recruit, numberToUpgrade);
         }
 
         public static void PrintInstructionsAroundInsertion(List<CodeInstruction> codes, int insertPoint, int insertSize, int adjacentNum = 5)
@@ -828,6 +842,8 @@ namespace BanditMilitias.Helpers
                 var element = mountedTroops.GetRandomElement();
                 var count = Rng.Next(1, delta + 1);
                 count = Math.Min(element.Number, count);
+                if (!IsRegistered(element.Character))
+                    Meow();
                 troopRoster.AddToCounts(element.Character, -count);
             }
         }
@@ -836,7 +852,7 @@ namespace BanditMilitias.Helpers
         {
             mobileParty.LeaderHero.Gold = Convert.ToInt32(mobileParty.Party.TotalStrength * GoldMap[Globals.Settings.GoldReward.SelectedValue]);
             mobileParty.MemberRoster.AddToCounts(mobileParty.GetBM().Leader.CharacterObject, 1, false, 0, 0, true, 0);
-            Traverse.Create(mobileParty).Field<Clan>("_actualClan").Value = Clan.BanditFactions.First(c => c.Culture == mobileParty.HomeSettlement.Culture);
+            actualClan(mobileParty) = Clan.BanditFactions.First(c => c.Culture == mobileParty.HomeSettlement.Culture);
             if (PartyImageMap.TryGetValue(mobileParty, out _))
             {
                 PartyImageMap[mobileParty] = new ImageIdentifierVM(mobileParty.GetBM().Banner);
@@ -934,7 +950,13 @@ namespace BanditMilitias.Helpers
                                 continue;
                             }
 
-                            ConvertLootersToRecruits(mobileParty.MemberRoster, culture, numberToUpgrade);
+                            if (!IsRegistered(Looters.BasicTroop))
+                                Meow();
+                            mobileParty.MemberRoster.AddToCounts(Looters.BasicTroop, -numberToUpgrade);
+                            var recruit = Globals.Recruits[culture][Rng.Next(0, Recruits[culture].Count)];
+                            if (!IsRegistered(recruit))
+                                Meow();
+                            mobileParty.MemberRoster.AddToCounts(recruit, numberToUpgrade);
                         }
                     }
                 }

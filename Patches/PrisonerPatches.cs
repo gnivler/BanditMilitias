@@ -61,6 +61,8 @@ namespace BanditMilitias.Patches
                     var heroes = party.Party.MemberRoster.RemoveIf(t => t.Character.IsHero).ToListQ();
                     for (var i = 0; i < heroes.Count; i++)
                     {
+                        if (!IsRegistered(heroes[i].Character))
+                            Meow();
                         Log($"<<< Killing {heroes[i].Character.Name} at LootDefeatedParties.");
                         heroes[i].Character.HeroObject.RemoveMilitiaHero();
                     }

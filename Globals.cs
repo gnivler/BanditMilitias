@@ -73,10 +73,7 @@ namespace BanditMilitias
         public static double PartyCacheInterval;
         public static int RaidCap;
         public static Dictionary<string, Equipment> EquipmentMap = new();
-        private static Clan looters;
-        public static Clan Looters => looters ??= Clan.BanditFactions.First(c => c.StringId == "looters");
-        private static IEnumerable<Clan> synthClans;
-        public static IEnumerable<Clan> SynthClans => synthClans ??= Clan.BanditFactions.Except(new[] { Looters });
+        public static Clan Looters;
         public static List<ItemObject> Mounts;
         public static List<ItemObject> Saddles;
         public static List<Settlement> Hideouts;

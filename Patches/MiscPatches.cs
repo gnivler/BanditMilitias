@@ -97,6 +97,7 @@ namespace BanditMilitias.Patches
                 Log("MapScreen.OnInitialize");
                 ClearGlobals();
                 PopulateItems();
+                Looters = Clan.BanditFactions.First(c => c.StringId == "looters");
                 Globals.CampaignPeriodicEventManager = Traverse.Create(Campaign.Current).Field<CampaignPeriodicEventManager>("_campaignPeriodicEventManager").Value;
                 Ticker = AccessTools.Field(typeof(CampaignPeriodicEventManager), "_partiesWithoutPartyComponentsPartialHourlyAiEventTicker").GetValue(Globals.CampaignPeriodicEventManager);
                 Hideouts = Settlement.All.WhereQ(s => s.IsHideout).ToListQ();

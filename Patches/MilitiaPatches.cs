@@ -38,6 +38,9 @@ namespace BanditMilitias.Patches
 {
     public static class MilitiaPatches
     {
+        private static readonly AccessTools.FieldRef<MobileParty, int> numberOfRecentFleeingFromAParty =
+            AccessTools.FieldRefAccess<MobileParty, int>("_numberOfRecentFleeingFromAParty");
+
         [HarmonyPatch(typeof(MobileParty), "CalculateSpeed")]
         public static class MobilePartyCalculateSpeed
         {
@@ -247,12 +250,19 @@ namespace BanditMilitias.Patches
             }
         }
 
+        
+        
         [HarmonyPatch(typeof(TroopRoster), "AddToCountsAtIndex")]
         public static class TroopRosterAddToCountsAtIndex
         {
             public static void Prefix(TroopRoster __instance, int index, int countChange)
             {
+                // TODO consider the hero using OriginalCharacter.StringId
                 var troop = __instance.GetCharacterAtIndex(index);
+                //if (!IsRegistered(troop) && !BanditMilitiaCharacters.Contains(troop))
+                //{
+                //    Meow();
+                //}
                 if (countChange < 0 && BanditMilitiaTroops.Contains(troop))
                 {
                     BanditMilitiaTroops.Remove(troop);
@@ -374,7 +384,7 @@ namespace BanditMilitias.Patches
             {
                 var num = __instance.Army != null && __instance.Army.LeaderParty == __instance ? __instance.Army.TotalStrength : __instance.Party.TotalStrength;
                 var num2 = (enemyParty.Army != null && enemyParty.Army.LeaderParty == __instance ? enemyParty.Army.TotalStrength : enemyParty.Party.TotalStrength) / (num + 0.01f);
-                var num3 = 1f + 0.01f * Traverse.Create(enemyParty).Field<int>("_numberOfRecentFleeingFromAParty").Value;
+                var num3 = 1f + 0.01f * numberOfRecentFleeingFromAParty(enemyParty);
                 var num4 = Math.Min(1f, (__instance.Position2D - enemyParty.Position2D).Length / 3f);
                 Settlement settlement = null;
                 if (__instance.IsBM())

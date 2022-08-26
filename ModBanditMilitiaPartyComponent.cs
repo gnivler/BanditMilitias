@@ -26,7 +26,7 @@ namespace BanditMilitias
         [CachedData] public TextObject cachedName;
 
         public override Hero Leader => leader;
-        public override Hero PartyOwner => MobileParty?.ActualClan.Leader;
+        public override Hero PartyOwner => MobileParty?.ActualClan?.Leader; // clan is null during nuke
 
         public override Settlement HomeSettlement { get; }
         private static readonly MethodInfo GetLocalizedText = AccessTools.Method(typeof(MBTextManager), "GetLocalizedText");
