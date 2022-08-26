@@ -12,6 +12,7 @@ using TaleWorlds.Localization;
 using TaleWorlds.SaveSystem;
 using static BanditMilitias.Globals;
 using static BanditMilitias.Helpers.Helper;
+// ReSharper disable InconsistentNaming
 
 namespace BanditMilitias
 {
@@ -25,9 +26,7 @@ namespace BanditMilitias
         [CachedData] public TextObject cachedName;
 
         public override Hero Leader => leader;
-
-        // not sure why (3.8.4) has MobileParty as null during save loading... the first null check seems to smooth over the result
-        public override Hero PartyOwner => MobileParty?.ActualClan?.Leader;
+        public override Hero PartyOwner => MobileParty?.ActualClan.Leader;
 
         public override Settlement HomeSettlement { get; }
         private static readonly MethodInfo GetLocalizedText = AccessTools.Method(typeof(MBTextManager), "GetLocalizedText");
@@ -55,8 +54,8 @@ namespace BanditMilitias
         protected override void OnInitialize()
         {
             base.OnInitialize();
-            if (MobileParty is null) Debugger.Break();
-            IsBandit(MobileParty) = true;
+            if (!IsBandit(MobileParty))
+                IsBandit(MobileParty) = true;
         }
 
         public ModBanditMilitiaPartyComponent(Clan heroClan)
@@ -64,7 +63,12 @@ namespace BanditMilitias
             Banner = Banners.GetRandomElement();
             BannerKey = Banner.Serialize();
             var hero = CreateHero(heroClan);
-            ConfigureLeader(hero);
+            if (hero.HomeSettlement is null)
+            {
+                _homeSettlement(hero) = hero.BornSettlement;
+            }
+
+            HiddenInEncyclopedia(hero.CharacterObject) = true;
             HomeSettlement = hero.BornSettlement;
             leader = hero;
         }

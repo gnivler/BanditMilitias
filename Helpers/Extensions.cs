@@ -13,9 +13,6 @@ namespace BanditMilitias.Helpers
 {
     public static class Extensions
     {
-        private static readonly AccessTools.FieldRef<CampaignObjectManager, List<Hero>> AliveHeroes =
-            AccessTools.FieldRefAccess<CampaignObjectManager, List<Hero>>("_aliveHeroes");
-
         private static readonly AccessTools.FieldRef<CampaignObjectManager, List<Hero>> DeadOrDisabledHeroes =
             AccessTools.FieldRefAccess<CampaignObjectManager, List<Hero>>("_deadOrDisabledHeroes");
 
@@ -36,11 +33,9 @@ namespace BanditMilitias.Helpers
         public static void RemoveMilitiaHero(this Hero hero)
         {
             KillCharacterAction.ApplyByRemove(hero);
-            //Traverse.Create(typeof(KillCharacterAction)).Method("MakeDead", hero, false).GetValue();
-            AliveHeroes(Campaign.Current.CampaignObjectManager).Remove(hero);
             DeadOrDisabledHeroes(Campaign.Current.CampaignObjectManager).Remove(hero);
-            hero.PartyBelongedTo?.MemberRoster.RemoveTroop(hero.CharacterObject);
-            hero.PartyBelongedToAsPrisoner?.PrisonRoster.RemoveTroop(hero.CharacterObject);
+            Globals.BanditMilitiaHeroes.Remove(hero);
+            Globals.BanditMilitiaCharacters.Remove(hero.CharacterObject);
             MBObjectManager.Instance.UnregisterObject(hero.CharacterObject);
         }
 

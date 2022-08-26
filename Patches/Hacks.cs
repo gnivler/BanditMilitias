@@ -1,26 +1,17 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using HarmonyLib;
-using Helpers;
 using TaleWorlds.CampaignSystem;
-using TaleWorlds.CampaignSystem.GameComponents;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Roster;
 using TaleWorlds.CampaignSystem.Settlements;
-using TaleWorlds.CampaignSystem.ViewModelCollection;
-using TaleWorlds.Core;
-using TaleWorlds.Core.ViewModelCollection;
-using TaleWorlds.Core.ViewModelCollection.Information;
 using TaleWorlds.LinQuick;
-using TaleWorlds.Localization;
 using TaleWorlds.ObjectSystem;
 using static BanditMilitias.Helpers.Helper;
 
 namespace BanditMilitias.Patches
 {
-    public class Hacks
+    public static class Hacks
     {
         // rewrite of broken original in 1.8.0
         [HarmonyPatch(typeof(Hideout), "MapFaction", MethodType.Getter)]
@@ -33,11 +24,27 @@ namespace BanditMilitias.Patches
             }
         }
 
+        [HarmonyPatch(typeof(MobileParty), "GetFollowBehavior")]
+        public static class MobilePartyGetFollowBehavior
+        {
+            public static bool Prefix(MobileParty __instance, MobileParty followedParty)
+            {
+                if (followedParty is null)
+                {
+                    __instance.SetMoveGoToPoint(__instance.Position2D);
+                    __instance.Ai.RethinkAtNextHourlyTick = true;
+                    return false;
+                }
+
+                return true;
+            }
+        }
+
         // troops with missing data causing lots of NREs elsewhere
         // just a temporary patch
         public static void HackPurgeAllBadTroopsFromAllParties()
         {
-            Log("Starting iteration off all troops in all parties... this might take a few minutes...");
+            Log("Starting iteration of all troops in all parties, this might take a minute...");
             foreach (var mobileParty in MobileParty.All)
             {
                 var rosters = new[] { mobileParty.MemberRoster, mobileParty.PrisonRoster };
@@ -49,8 +56,9 @@ namespace BanditMilitias.Patches
                         {
                             if (troop.Character.Name == null)
                             {
-                                Log($"removing bad troop {troop.Character.StringId} from {mobileParty.StringId}.  Prison roster? {roster.IsPrisonRoster}");
-                                roster.AddToCounts(troop.Character, -1);
+                                Log($"!!!!! Purge bad troop {troop.Character.StringId} from {mobileParty.Name}.  Prisoner? {roster.IsPrisonRoster}");
+                                roster.AddToCounts(troop.Character, -troop.Number);
+                                Globals.BanditMilitiaCharacters.Remove(troop.Character);
                                 MBObjectManager.Instance.UnregisterObject(troop.Character);
                             }
                         }
@@ -59,7 +67,7 @@ namespace BanditMilitias.Patches
             }
         }
 
-        // throws during nuke
+        // throws during nuke (apparently not in 3.9)
         // parameters are included for debugging
         [HarmonyPatch(typeof(TroopRoster), "ClampXp")]
         public static class TroopRosterClampXpPatch

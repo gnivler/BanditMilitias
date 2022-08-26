@@ -30,21 +30,6 @@ namespace BanditMilitias.Patches
 {
     public static class MiscPatches
     {
-        // untested.  not proper to remove COs unless they actually lost and went away...right?
-        //[HarmonyPatch(typeof(MapEventSide), "OnTroopRouted")]
-        //public static class MapEventSideOnTroopRouted
-        //{
-        //    public static void Postfix(MapEventSide __instance, CharacterObject ____selectedSimulationTroop)
-        //    {
-        //        // TODO test this idea
-        //        if (____selectedSimulationTroop is not null
-        //            && ____selectedSimulationTroop.StringId.Contains("Bandit_Militia_Troop"))
-        //        {
-        //            MBObjectManager.Instance.UnregisterObject(____selectedSimulationTroop);
-        //        }
-        //    }
-        //}
-
         // idea from True Battle Loot
         [HarmonyPatch(typeof(MapEventSide), "OnTroopKilled")]
         public static class MapEventSideOnTroopKilled
@@ -62,17 +47,15 @@ namespace BanditMilitias.Patches
                     for (var index = 0; index < Equipment.EquipmentSlotLength; index++)
                     {
                         var item = ____selectedSimulationTroop.Equipment[index];
-                        if (item.IsEmpty) continue;
+                        if (item.IsEmpty)
+                            continue;
 
-                        if (Rng.Next(0, 101) < 66) continue;
+                        if (Rng.Next(0, 101) < 66)
+                            continue;
                         if (LootRecord.TryGetValue(__instance, out _))
-                        {
                             LootRecord[__instance].Add(new EquipmentElement(item));
-                        }
                         else
-                        {
                             LootRecord.Add(__instance, new List<EquipmentElement> { item });
-                        }
                     }
                 }
             }
@@ -112,8 +95,11 @@ namespace BanditMilitias.Patches
             public static void Postfix()
             {
                 Log("MapScreen.OnInitialize");
-                EquipmentItems.Clear();
+                ClearGlobals();
                 PopulateItems();
+                Globals.CampaignPeriodicEventManager = Traverse.Create(Campaign.Current).Field<CampaignPeriodicEventManager>("_campaignPeriodicEventManager").Value;
+                Ticker = AccessTools.Field(typeof(CampaignPeriodicEventManager), "_partiesWithoutPartyComponentsPartialHourlyAiEventTicker").GetValue(Globals.CampaignPeriodicEventManager);
+                Hideouts = Settlement.All.WhereQ(s => s.IsHideout).ToListQ();
                 RaidCap = Convert.ToInt32(Settlement.FindAll(s => s.IsVillage).CountQ() / 10f);
                 HeroCharacters = CharacterObject.All.Where(c =>
                     c.Occupation is Occupation.Bandit && c.StringId.StartsWith("lord_")).ToListQ();
@@ -154,14 +140,11 @@ namespace BanditMilitias.Patches
                 }
 
                 // front-load
-                BanditEquipment.Clear();
                 for (var i = 0; i < 3000; i++)
                 {
                     BanditEquipment.Add(BuildViableEquipmentSet());
                 }
 
-                Hideouts = Settlement.All.WhereQ(s => s.IsHideout).ToListQ();
-                PartyImageMap.Clear();
                 DoPowerCalculations(true);
                 var bmCount = MobileParty.All.CountQ(m => m.IsBM());
                 Log($"Militias: {bmCount}."); //  Upgraded BM troops: {MobileParty.All.SelectMany(m => m.MemberRoster.ToFlattenedRoster()).CountQ(e => e.Troop.StringId.Contains("Bandit_Militia"))}.  Troop prisoners: {MobileParty.All.SelectMany(m => m.PrisonRoster.ToFlattenedRoster()).CountQ(e => e.Troop.StringId.Contains("Bandit_Militia"))}.");
@@ -185,7 +168,12 @@ namespace BanditMilitias.Patches
                 AccessTools.Method(typeof(CampaignBehaviorBase.SaveableCampaignBehaviorTypeDefiner),
                     "ConstructContainerDefinition").Invoke(__instance, new object[] { typeof(Dictionary<Hero, float>) });
                 AccessTools.Method(typeof(CampaignBehaviorBase.SaveableCampaignBehaviorTypeDefiner),
-                    "ConstructContainerDefinition").Invoke(__instance, new object[] { typeof(Dictionary<string, Equipment>) });
+                    "ConstructContainerDefinition").Invoke(__instance, new object[] { typeof(Dictionary<string, Equipment>) });   
+                //AccessTools.Method(typeof(CampaignBehaviorBase.SaveableCampaignBehaviorTypeDefiner),
+                //    "ConstructContainerDefinition").Invoke(__instance, new object[] { typeof(HashSet<Hero>) }); 
+                //AccessTools.Method(typeof(CampaignBehaviorBase.SaveableCampaignBehaviorTypeDefiner),
+                //    "ConstructContainerDefinition").Invoke(__instance, new object[] { typeof(HashSet<CharacterObject>) });
+                
             }
         }
     }

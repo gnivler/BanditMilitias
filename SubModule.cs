@@ -8,11 +8,8 @@ using BanditMilitias.Patches;
 using HarmonyLib;
 using SandBox.View.Map;
 using SandBox.ViewModelCollection.Map;
-using StoryMode.Quests.PlayerClanQuests;
 using TaleWorlds.CampaignSystem;
-using TaleWorlds.CampaignSystem.Issues;
 using TaleWorlds.CampaignSystem.Party;
-using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
 using TaleWorlds.InputSystem;
 using TaleWorlds.Library;
@@ -116,22 +113,25 @@ namespace BanditMilitias
                 if (party is not null)
                     party.Position2D = MobileParty.MainParty.Position2D;
             }
+            if (MEOWMEOW && Input.IsKeyPressed(InputKey.F2))
+            {
+                Hacks.HackPurgeAllBadTroopsFromAllParties();
+            }
 
             if (MEOWMEOW && Input.IsKeyPressed(InputKey.Tilde))
             {
-                Dev.CheckParties();
-                Hacks.HackPurgeAllBadTroopsFromAllParties();
-                Log($"GetObjectTypeList<MobileParty> {MBObjectManager.Instance.GetObjectTypeList<MobileParty>()?.CountQ(m => m.StringId.Contains("Bandit_Militia"))}");
+               
+                //Campaign.Current.QuestManager.Quests[0].CompleteQuestWithSuccess(); 
                 Debugger.Break();
-                try
-                {
-                    var deserters = Campaign.Current!.IssueManager.Issues.FirstOrDefaultQ(i => i.Value.GetType() == typeof(ExtortionByDesertersIssueBehavior.ExtortionByDesertersIssue));
-                    MobileParty.MainParty.Position2D = deserters.Key.CurrentSettlement.GetPosition2D;
-                }
-                catch (Exception e)
-                {
-                   //ignore
-                }
+                //try
+                //{
+                //    var deserters = Campaign.Current!.IssueManager.Issues.FirstOrDefaultQ(i => i.Value.GetType() == typeof(ExtortionByDesertersIssueBehavior.ExtortionByDesertersIssue));
+                //    MobileParty.MainParty.Position2D = deserters.Key.CurrentSettlement.GetPosition2D;
+                //}
+                //catch (Exception e)
+                //{
+                //   //ignore
+                //}
                 //var issue= new PotentialIssueData(null, typeof(ExtortionByDesertersIssueBehavior), IssueBase.IssueFrequency.Common);
                 //var hero = Settlement.All.First(s => s.Name.ToString() == "Varnovapol").Notables.First();
                 //Campaign.Current!.IssueManager.CreateNewIssue(in issue, hero);

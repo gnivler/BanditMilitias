@@ -196,7 +196,6 @@ namespace BanditMilitias.Patches
                         && __instance.GetBM().Avoidance.TryGetValue(targetParty.LeaderHero, out var heroAvoidance)
                         && Rng.NextDouble() * 100 < heroAvoidance)
                     {
-                        //Log($"||| {__instance.Name} avoided attacking {targetParty.Name}");
                         __result = false;
                         return;
                     }
@@ -243,33 +242,10 @@ namespace BanditMilitias.Patches
             public static void Prefix(UniqueTroopDescriptor troopSeed, FlattenedTroopRoster ____roster)
             {
                 var troop = ____roster[troopSeed].Troop;
-                if (troop.StringId.Contains("Bandit_Militia_Troop"))
+                if (BanditMilitiaTroops.Contains(troop))
                     MBObjectManager.Instance.UnregisterObject(troop);
             }
         }
-
-        //[HarmonyPatch(typeof(PartyUpgraderCampaignBehavior), "UpgradeTroop")]
-        //public static class PartyUpgraderCampaignBehaviorUpgradeTroop
-        //{
-        //    public static bool Prefix(PartyUpgraderCampaignBehavior __instance, PartyBase party, int rosterIndex, object upgradeArgs)
-        //    {
-        //        var troop = party.MemberRoster.GetCharacterAtIndex(rosterIndex);
-        //        var memberRoster = party.MemberRoster;
-        //        var upgradeTarget = Traverse.Create(upgradeArgs).Field<CharacterObject>("UpgradeTarget").Value;
-        //        var possibleUpgradeCount = Traverse.Create(upgradeArgs).Field<int>("PossibleUpgradeCount").Value;
-        //        var num = Traverse.Create(upgradeArgs).Field<int>("UpgradeXpCost").Value * possibleUpgradeCount;
-        //        memberRoster.SetElementXp(rosterIndex, memberRoster.GetElementXp(rosterIndex) - num);
-        //        memberRoster.AddToCounts(Traverse.Create(upgradeArgs).Field<CharacterObject>("Target").Value, -possibleUpgradeCount);
-        //        memberRoster.AddToCounts(upgradeTarget, possibleUpgradeCount);
-        //        if (possibleUpgradeCount > 0)
-        //            Traverse.Create(__instance).Method("ApplyEffects", party, upgradeArgs);
-        //
-        //        if (troop.StringId.Contains("Bandit_Militia_Troop"))
-        //            MBObjectManager.Instance.UnregisterObject(Traverse.Create(upgradeArgs).Field<CharacterObject>("Target").Value);
-        //
-        //        return false;
-        //    }
-        //}
 
         [HarmonyPatch(typeof(TroopRoster), "AddToCountsAtIndex")]
         public static class TroopRosterAddToCountsAtIndex
@@ -277,15 +253,11 @@ namespace BanditMilitias.Patches
             public static void Prefix(TroopRoster __instance, int index, int countChange)
             {
                 var troop = __instance.GetCharacterAtIndex(index);
-                if (countChange < 0 && troop.StringId.Contains("Bandit_Militia_Troop"))
+                if (countChange < 0 && BanditMilitiaTroops.Contains(troop))
                 {
+                    BanditMilitiaTroops.Remove(troop);
                     MBObjectManager.Instance.UnregisterObject(troop);
                 }
-            }
-
-            public static void Postfix(TroopRoster __instance, int index)
-            {
-                //Log(__instance);
             }
 
             public static Exception Finalizer(TroopRoster __instance, int index, Exception __exception)
@@ -370,9 +342,7 @@ namespace BanditMilitias.Patches
             public static void Postfix(Agent effectedAgent, ref float __result)
             {
                 if (effectedAgent.Character.StringId.EndsWith("Bandit_Militia"))
-                {
                     __result = 1;
-                }
             }
         }
 
@@ -382,9 +352,7 @@ namespace BanditMilitias.Patches
             public static void Postfix(Agent effectedAgent, ref float __result)
             {
                 if (effectedAgent.Character.StringId.EndsWith("Bandit_Militia"))
-                {
                     __result = 1;
-                }
             }
         }
 
@@ -394,9 +362,7 @@ namespace BanditMilitias.Patches
             public static void Postfix(Agent effectedAgent, ref float __result)
             {
                 if (effectedAgent.Character.StringId.EndsWith("Bandit_Militia"))
-                {
                     __result = 1;
-                }
             }
         }
 
@@ -436,6 +402,17 @@ namespace BanditMilitias.Patches
                 var num11 = num2 * num6 * input * num3 * num4;
                 __result = MBMath.ClampFloat(num9 * num10 / (num11 + 0.001f), 0.005f, 3f);
                 return false;
+            }
+        }
+
+        // avoid stuffing the BM into PartiesWithoutPartyComponent at CampaignObjectManager.InitializeOnLoad
+        [HarmonyPatch(typeof(MobileParty), "UpdatePartyComponentFlags")]
+        public static class MobilePartyInitializeOnLoad
+        {
+            public static void Postfix(MobileParty __instance)
+            {
+                if (!__instance.IsBandit && __instance.IsBM())
+                    IsBandit(__instance) = true;
             }
         }
     }
