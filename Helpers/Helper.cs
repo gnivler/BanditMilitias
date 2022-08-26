@@ -1,11 +1,9 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Text;
+using BanditMilitias.Patches;
 using HarmonyLib;
 using Helpers;
 using SandBox.View.Map;
@@ -14,7 +12,6 @@ using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.CharacterDevelopment;
 using TaleWorlds.CampaignSystem.Extensions;
-using TaleWorlds.CampaignSystem.LogEntries;
 using TaleWorlds.CampaignSystem.MapEvents;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Roster;
@@ -33,10 +30,6 @@ namespace BanditMilitias.Helpers
 {
     public static class Helper
     {
-        public static List<ItemObject> Mounts;
-        public static List<ItemObject> Saddles;
-        public static List<Settlement> Hideouts;
-
         private const float ReductionFactor = 0.8f;
         private const float SplitDivisor = 2;
         private const float RemovedHero = 1;
@@ -68,8 +61,6 @@ namespace BanditMilitias.Helpers
 
         public static readonly AccessTools.FieldRef<CampaignObjectManager, MBReadOnlyList<MobileParty>> PartiesWithoutPartyComponent =
             AccessTools.FieldRefAccess<CampaignObjectManager, MBReadOnlyList<MobileParty>>("<PartiesWithoutPartyComponent>k__BackingField");
-
-        public static PartyUpgraderCampaignBehavior UpgraderCampaignBehavior;
 
         public static readonly AccessTools.FieldRef<Clan, Settlement> home = AccessTools.FieldRefAccess<Clan, Settlement>("_home");
 
@@ -1309,7 +1300,7 @@ namespace BanditMilitias.Helpers
                 if ((tempCharacter is null && !BanditMilitiaTroops.Contains(troop))
                     || tempCharacter is not null && !BanditMilitiaTroops.Contains(tempCharacter))
                 {
-                    tempCharacter = CharacterObject.CreateFrom(troop);
+                    tempCharacter = CharacterObject.CreateFrom(troop, false);
                     Traverse.Create(tempCharacter).Method("SetName", new TextObject($"Upgraded {tempCharacter.Name}")).GetValue();
                     BanditMilitiaTroops.Add(tempCharacter);
                     //tempCharacter.StringId += $"_Bandit_Militia_Troop_{Guid.NewGuid()}";
@@ -1393,7 +1384,7 @@ namespace BanditMilitias.Helpers
             }
 
             var template = (CharacterObject)null;
-            var num1 = settlement.RandomIntWithSeed((uint)Rng.Next(), 1, max);
+            var num1 = Rng.Next(1, max);
             foreach (var characterObject in HeroCharacters)
             {
                 var num2 = characterObject.GetTraitLevel(DefaultTraits.Frequency) * 10;
