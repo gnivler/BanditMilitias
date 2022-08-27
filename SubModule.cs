@@ -43,7 +43,7 @@ namespace BanditMilitias
                 AccessTools.Field(typeof(Module), "_splashScreenPlayed").SetValue(Module.CurrentModule, true);
             }
 
-            CacheBanners();
+
             RunManualPatches();
             harmony.PatchAll(Assembly.GetExecutingAssembly());
         }

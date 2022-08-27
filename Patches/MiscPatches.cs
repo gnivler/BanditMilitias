@@ -4,6 +4,7 @@ using System.Linq;
 using BanditMilitias.Helpers;
 using HarmonyLib;
 using SandBox.View.Map;
+using SandBox.ViewModelCollection.MobilePartyTracker;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.CampaignBehaviors;
 using TaleWorlds.CampaignSystem.Extensions;
@@ -12,7 +13,9 @@ using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Roster;
 using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
+using TaleWorlds.Engine;
 using TaleWorlds.InputSystem;
+using TaleWorlds.Library;
 using TaleWorlds.LinQuick;
 using static BanditMilitias.Helpers.Helper;
 using static BanditMilitias.Globals;
@@ -61,22 +64,18 @@ namespace BanditMilitias.Patches
         [HarmonyPatch(typeof(BattleCampaignBehavior), "CollectLoots")]
         public static class MapEventSideDistributeLootAmongWinners
         {
-            public static void Prefix(MapEvent mapEvent, PartyBase winnerParty, ref Dictionary<PartyBase, ItemRoster> lootedItems)
+            public static void Prefix(MapEvent mapEvent, PartyBase party, ref ItemRoster loot)
             {
-                if (!Globals.Settings.UpgradeTroops || !mapEvent.HasWinner || !winnerParty.IsMobile || !winnerParty.MobileParty.IsBM())
+                if (!Globals.Settings.UpgradeTroops || !mapEvent.HasWinner || !party.IsMobile || !party.MobileParty.IsBM())
                     return;
-                if (LootRecord.TryGetValue(winnerParty.MapEventSide, out var equipment))
-                {
-                    var itemRoster = new ItemRoster();
+                if (LootRecord.TryGetValue(party.MapEventSide, out var equipment))
                     foreach (var e in equipment)
-                        itemRoster.AddToCounts(e, 1);
+                        loot.AddToCounts(e, 1);
 
-                    lootedItems.Add(winnerParty, itemRoster);
-                    if (lootedItems[winnerParty].AnyQ(i => !i.IsEmpty))
-                        UpgradeEquipment(winnerParty, lootedItems[winnerParty]);
-                }
+                if (loot.AnyQ(i => !i.IsEmpty))
+                    UpgradeEquipment(party, loot);
 
-                Globals.LootRecord.Remove(winnerParty.MobileParty.MapEventSide);
+                Globals.LootRecord.Remove(party.MobileParty.MapEventSide);
             }
         }
 
@@ -157,6 +156,15 @@ namespace BanditMilitias.Patches
                     "ConstructContainerDefinition").Invoke(__instance, new object[] { typeof(Dictionary<Hero, float>) });
                 AccessTools.Method(typeof(CampaignBehaviorBase.SaveableCampaignBehaviorTypeDefiner),
                     "ConstructContainerDefinition").Invoke(__instance, new object[] { typeof(Dictionary<string, Equipment>) });
+            }
+        }
+        
+        [HarmonyPatch(typeof(MobilePartyTrackerVM), MethodType.Constructor, typeof(Camera), typeof(Action<Vec2>))]
+        public static class MapMobilePartyTrackerVMCtorPatch
+        {
+            public static void Postfix(MobilePartyTrackerVM __instance)
+            {
+                Globals.MobilePartyTrackerVM = __instance;
             }
         }
     }
