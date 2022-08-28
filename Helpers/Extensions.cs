@@ -48,10 +48,8 @@ namespace BanditMilitias.Helpers
         // ReSharper disable once InconsistentNaming
         public static ModBanditMilitiaPartyComponent GetBM(this MobileParty mobileParty)
         {
-            if (mobileParty.PartyComponent is ModBanditMilitiaPartyComponent BM)
-            {
-                return BM;
-            }
+            if (mobileParty.PartyComponent is ModBanditMilitiaPartyComponent bm)
+                return bm;
 
             return null;
         }
@@ -60,8 +58,8 @@ namespace BanditMilitias.Helpers
         {
             foreach (var party in MobileParty.All)
             {
-                if (party.MemberRoster.ToFlattenedRoster().Troops.AnyQ(troop => troop == characterObject)
-                    || party.PrisonRoster.ToFlattenedRoster().Troops.AnyQ(troop => troop == characterObject))
+                if (party.MemberRoster.GetTroopRoster().AnyQ(troop => troop.Character == characterObject)
+                    || party.PrisonRoster.GetTroopRoster().AnyQ(troop => troop.Character == characterObject))
                 {
                     return party;
                 }

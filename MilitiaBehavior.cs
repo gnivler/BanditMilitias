@@ -51,7 +51,7 @@ namespace BanditMilitias
                         new InformationMessage($"{v.Name} is being raided by {v.Settlement.Party.MapEvent.PartiesOnSide(BattleSideEnum.Attacker).First().Party.Name}!"));
                 }
             });
-            CampaignEvents.RaidCompletedEvent.AddNonSerializedListener(this, (b, m) =>
+            CampaignEvents.RaidCompletedEvent.AddNonSerializedListener(this, (_, m) =>
             {
                 if (Globals.Settings.ShowRaids
                     && m.PartiesOnSide(BattleSideEnum.Attacker)
@@ -113,7 +113,7 @@ namespace BanditMilitias
             if (mobileParty.PartyComponent is not (BanditPartyComponent or ModBanditMilitiaPartyComponent))
                 return;
 
-            if (mobileParty.MapEvent != null || mobileParty.IsCurrentlyUsedByAQuest)
+            if (mobileParty.MapEvent != null)
                 return;
 
             // near any Hideouts?
@@ -190,6 +190,9 @@ namespace BanditMilitias
 
             //Log($"{new string('=', 100)} MERGING {mobileParty.StringId,20} {mergeTarget.StringId,20}");
             // create a new party merged from the two
+            if (mobileParty.MemberRoster.GetTroopRoster().AnyQ(t => !IsRegistered(t.Character))
+                || mergeTarget.MemberRoster.GetTroopRoster().AnyQ(t => !IsRegistered(t.Character)))
+                Meow();
             var rosters = MergeRosters(mobileParty, mergeTarget.Party);
             var clan = mobileParty.ActualClan ?? mergeTarget.ActualClan ?? Clan.BanditFactions.GetRandomElementInefficiently();
             var bm = MobileParty.CreateParty("Bandit_Militia", new ModBanditMilitiaPartyComponent(clan), m => m.ActualClan = clan);
@@ -323,7 +326,6 @@ namespace BanditMilitias
         {
             if (mobileParty.IsBM())
             {
-                //if (mobileParty.MapEvent?.State == MapEventState.WaitingRemoval && mobileParty.MemberRoster.Count == 0) Meow();
                 if ((int)CampaignTime.Now.ToWeeks % CampaignTime.DaysInWeek == 0
                     && Globals.Settings.AllowPillaging)
                 {
@@ -336,7 +338,6 @@ namespace BanditMilitias
                     TrainMilitia(mobileParty);
                 }
 
-                //SetMilitiaPatrol(mobileParty);
                 TrySplitParty(mobileParty);
             }
         }
@@ -395,12 +396,7 @@ namespace BanditMilitias
                         var troop = eligibleToGrow.GetRandomElement().Character;
                         if (GlobalMilitiaPower + troop.GetPower() < CalculatedGlobalPowerLimit)
                         {
-                            if (!IsRegistered(troop))
-                            {
-                                Meow();
-                            }
-
-                            mobileParty.MemberRoster.AddToCounts(troop, 1);
+                            mobileParty.MemberRoster.AddToCounts(troop.OriginalCharacter ?? troop, 1);
                         }
                     }
 
@@ -421,39 +417,47 @@ namespace BanditMilitias
                 return;
             }
 
-            var settlement = Settlement.All.Where(s => !s.IsVisible && s.GetTrackDistanceToMainAgent() > 100).GetRandomElementInefficiently()
-                             ?? Settlement.All.Where(s => s.GetTrackDistanceToMainAgent() > 200).GetRandomElementInefficiently(); // for cheats that make all IsVisible
-            for (var i = 0;
-                 MilitiaPowerPercent + 1 <= Globals.Settings.GlobalPowerPercent
-                 && i < (Globals.Settings.GlobalPowerPercent - MilitiaPowerPercent) / 24f;
-                 i++)
+            try
             {
-                if (Rng.Next(0, 101) > Globals.Settings.SpawnChance)
+                var settlement = Settlement.All.Where(s => !s.IsVisible && s.GetTrackDistanceToMainAgent() > 100).GetRandomElementInefficiently()
+                                 ?? Settlement.All.Where(s => s.GetTrackDistanceToMainAgent() > 200).GetRandomElementInefficiently(); // for cheats that make all IsVisible
+                for (var i = 0;
+                     MilitiaPowerPercent + 1 <= Globals.Settings.GlobalPowerPercent
+                     && i < (Globals.Settings.GlobalPowerPercent - MilitiaPowerPercent) / 24f;
+                     i++)
                 {
-                    continue;
-                }
+                    if (Rng.Next(0, 101) > Globals.Settings.SpawnChance)
+                    {
+                        continue;
+                    }
 
-                var clan = settlement.OwnerClan;
-                var min = Convert.ToInt32(Globals.Settings.MinPartySize);
-                var max = Convert.ToInt32(CalculatedMaxPartySize);
-                var roster = TroopRoster.CreateDummyTroopRoster();
-                var size = Convert.ToInt32(Rng.Next(min, max + 1) / 2f);
-                if (!IsRegistered(clan.BasicTroop) || !IsRegistered(Looters.BasicTroop))
-                    Meow();
-                roster.AddToCounts(clan.BasicTroop, size);
-                roster.AddToCounts(Looters.BasicTroop, size);
-                AdjustCavalryCount(roster);
-                var bm = MobileParty.CreateParty("Bandit_Militia", new ModBanditMilitiaPartyComponent(clan), m => m.ActualClan = clan);
-                InitMilitia(bm, new[] { roster, TroopRoster.CreateDummyTroopRoster() }, settlement.GatePosition);
-                DoPowerCalculations();
+                    var clan = settlement.OwnerClan;
+                    var min = Convert.ToInt32(Globals.Settings.MinPartySize);
+                    var max = Convert.ToInt32(CalculatedMaxPartySize);
+                    var roster = TroopRoster.CreateDummyTroopRoster();
+                    var size = Convert.ToInt32(Rng.Next(min, max + 1) / 2f);
+                    if (!IsRegistered(clan.BasicTroop) || !IsRegistered(Looters.BasicTroop))
+                        Meow();
+                    roster.AddToCounts(clan.BasicTroop, size);
+                    roster.AddToCounts(Looters.BasicTroop, size);
+                    AdjustCavalryCount(roster);
+                    var bm = MobileParty.CreateParty("Bandit_Militia", new ModBanditMilitiaPartyComponent(clan), m => m.ActualClan = clan);
+                    InitMilitia(bm, new[] { roster, TroopRoster.CreateDummyTroopRoster() }, settlement.GatePosition);
+                    DoPowerCalculations();
 
-                // teleport new militias near the player
-                if (Globals.Settings.TestingMode)
-                {
-                    // in case a prisoner
-                    var party = Hero.MainHero.PartyBelongedTo ?? Hero.MainHero.PartyBelongedToAsPrisoner.MobileParty;
-                    bm.Position2D = party.Position2D;
+                    // teleport new militias near the player
+                    if (Globals.Settings.TestingMode)
+                    {
+                        // in case a prisoner
+                        var party = Hero.MainHero.PartyBelongedTo ?? Hero.MainHero.PartyBelongedToAsPrisoner.MobileParty;
+                        bm.Position2D = party.Position2D;
+                    }
                 }
+            }
+            catch (Exception ex)
+            {
+                InformationManager.DisplayMessage(new InformationMessage("Problem spawning BM, please open a bug report."));
+                Log(ex);
             }
         }
 
@@ -465,33 +469,35 @@ namespace BanditMilitias
             if (!Globals.Settings.UpgradeTroops)
                 return;
             dataStore.SyncData("EquipmentMap", ref Globals.EquipmentMap);
+            Log($"Count: {Helper.creationCount}");
+            creationCount = 0;
             if (dataStore.IsLoading)
-            {
                 foreach (var troop in BanditMilitiaTroops)
-                {
-                    MBObjectManager.Instance.RegisterPresumedObject(troop);
-                    BanditMilitiaTroops.Remove(troop);
-                    // TODO not sure if rehydrate is needed in 3.9 with change to SyncData
-                    //RehydrateCharacterObject(new TroopRosterElement(troop));
-                }
-            }
+                    RehydrateCharacterObject(troop);
         }
 
-        //private static void RehydrateCharacterObject(TroopRosterElement troop)
-        //{
-        //    troop.Character.Culture = troop.Character.OriginalCharacter.Culture;
-        //    basicName(troop.Character) = new TextObject("Upgraded " + troop.Character.OriginalCharacter.Name);
-        //    Traverse.Create(troop.Character).Field<MBCharacterSkills>("CharacterSkills").Value =
-        //        Traverse.Create(troop.Character.OriginalCharacter).Field<MBCharacterSkills>("CharacterSkills").Value;
-        //    var bodyProps = new MBBodyProperty();
-        //    bodyProps.Init(troop.Character.OriginalCharacter.GetBodyPropertiesMin(), troop.Character.OriginalCharacter.GetBodyPropertiesMax());
-        //    bodyPropertyRange(troop.Character) = bodyProps;
-        //    var mbEquipmentRoster = new MBEquipmentRoster();
-        //    Equipments(mbEquipmentRoster) = new List<Equipment> { EquipmentMap[troop.Character.StringId] };
-        //    EquipmentRoster(troop.Character) = mbEquipmentRoster;
-        //    Traverse.Create(troop.Character).Property<CharacterObject[]>("UpgradeTargets").Value = troop.Character.OriginalCharacter.UpgradeTargets;
-        //    MBObjectManager.Instance.RegisterObject(troop.Character);
-        //    BanditMilitiaTroops.Add(troop.Character);
-        //}
+        private static void RehydrateCharacterObject(CharacterObject troop)
+        {
+            try
+            {
+                troop.Culture = troop.OriginalCharacter.Culture;
+                basicName(troop) = new TextObject("Upgraded " + troop.OriginalCharacter.Name);
+                Traverse.Create(troop).Field<MBCharacterSkills>("CharacterSkills").Value =
+                    Traverse.Create(troop.OriginalCharacter).Field<MBCharacterSkills>("CharacterSkills").Value;
+                var bodyProps = new MBBodyProperty();
+                bodyProps.Init(troop.OriginalCharacter.GetBodyPropertiesMin(), troop.OriginalCharacter.GetBodyPropertiesMax());
+                bodyPropertyRange(troop) = bodyProps;
+                var mbEquipmentRoster = new MBEquipmentRoster();
+                Equipments(mbEquipmentRoster) = new List<Equipment> { Globals.EquipmentMap[troop.StringId] };
+                EquipmentRoster(troop) = mbEquipmentRoster;
+                Traverse.Create(troop).Property<CharacterObject[]>("UpgradeTargets").Value = troop.OriginalCharacter.UpgradeTargets;
+                MBObjectManager.Instance.RegisterObject(troop);
+                //BanditMilitiaTroops.Add(troop);
+            }
+            catch (Exception ex)
+            {
+                Log(ex);
+            }
+        }
     }
 }

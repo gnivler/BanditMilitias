@@ -38,7 +38,7 @@ namespace BanditMilitias.Patches
             {
                 if (!Globals.Settings.UpgradeTroops || MapEvent.PlayerMapEvent is not null && ____selectedSimulationTroop is null)
                     return;
-                EquipmentMap.Remove(____selectedSimulationTroop!.StringId);
+                EquipmentMap.Remove(____selectedSimulationTroop.StringId);
                 // makes all loot drop in any BM-involved fight which isn't with the main party
                 var BMs = __instance.Parties.WhereQ(p =>
                     p.Party.MobileParty?.PartyComponent is ModBanditMilitiaPartyComponent).SelectQ(p => p.Party);
@@ -102,7 +102,7 @@ namespace BanditMilitias.Patches
                 Ticker = AccessTools.Field(typeof(CampaignPeriodicEventManager), "_partiesWithoutPartyComponentsPartialHourlyAiEventTicker").GetValue(Globals.CampaignPeriodicEventManager);
                 Hideouts = Settlement.All.WhereQ(s => s.IsHideout).ToListQ();
                 RaidCap = Convert.ToInt32(Settlement.FindAll(s => s.IsVillage).CountQ() / 10f);
-                HeroCharacters = CharacterObject.All.Where(c =>
+                BMHeroes = CharacterObject.All.Where(c =>
                     c.Occupation is Occupation.Bandit && c.StringId.StartsWith("lord_")).ToListQ();
 
                 var filter = new List<string>
@@ -169,12 +169,7 @@ namespace BanditMilitias.Patches
                 AccessTools.Method(typeof(CampaignBehaviorBase.SaveableCampaignBehaviorTypeDefiner),
                     "ConstructContainerDefinition").Invoke(__instance, new object[] { typeof(Dictionary<Hero, float>) });
                 AccessTools.Method(typeof(CampaignBehaviorBase.SaveableCampaignBehaviorTypeDefiner),
-                    "ConstructContainerDefinition").Invoke(__instance, new object[] { typeof(Dictionary<string, Equipment>) });   
-                //AccessTools.Method(typeof(CampaignBehaviorBase.SaveableCampaignBehaviorTypeDefiner),
-                //    "ConstructContainerDefinition").Invoke(__instance, new object[] { typeof(HashSet<Hero>) }); 
-                //AccessTools.Method(typeof(CampaignBehaviorBase.SaveableCampaignBehaviorTypeDefiner),
-                //    "ConstructContainerDefinition").Invoke(__instance, new object[] { typeof(HashSet<CharacterObject>) });
-                
+                    "ConstructContainerDefinition").Invoke(__instance, new object[] { typeof(Dictionary<string, Equipment>) });
             }
         }
     }

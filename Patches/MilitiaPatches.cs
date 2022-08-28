@@ -184,6 +184,12 @@ namespace BanditMilitias.Patches
         {
             public static void Postfix(MobileParty __instance, MobileParty targetParty, ref bool __result)
             {
+                if (SubModule.MEOWMEOW && targetParty == MobileParty.MainParty)
+                {
+                    __result = false;
+                    return;
+                }
+
                 if (__result
                     && !targetParty.IsGarrison
                     && __instance.IsBM())
@@ -250,8 +256,7 @@ namespace BanditMilitias.Patches
             }
         }
 
-        
-        
+
         [HarmonyPatch(typeof(TroopRoster), "AddToCountsAtIndex")]
         public static class TroopRosterAddToCountsAtIndex
         {
@@ -308,7 +313,10 @@ namespace BanditMilitias.Patches
         [HarmonyPatch(typeof(AiBanditPatrollingBehavior), "AiHourlyTick")]
         public static class AiBanditPatrollingBehaviorAiHourlyTickPatch
         {
-            public static bool Prefix(MobileParty mobileParty) => false;
+            public static bool Prefix(MobileParty mobileParty)
+            {
+                return mobileParty.IsCurrentlyUsedByAQuest || mobileParty.CurrentSettlement?.Hideout != null;
+            }
         }
 
         [HarmonyPatch(typeof(DefaultMobilePartyFoodConsumptionModel), "DoesPartyConsumeFood")]
@@ -393,7 +401,7 @@ namespace BanditMilitias.Patches
                 }
                 else
                 {
-                    settlement = __instance.IsBandit ? __instance.BanditPartyComponent.Hideout?.Settlement : !__instance.IsLordParty || __instance.LeaderHero == null || !__instance.LeaderHero.IsMinorFactionHero ? SettlementHelper.FindNearestFortification((Settlement x) => x.MapFaction == __instance.MapFaction) : __instance.MapFaction.FactionMidSettlement;
+                    settlement = __instance.IsBandit ? __instance.BanditPartyComponent.Hideout?.Settlement : !__instance.IsLordParty || __instance.LeaderHero == null || !__instance.LeaderHero.IsMinorFactionHero ? SettlementHelper.FindNearestFortification(x => x.MapFaction == __instance.MapFaction) : __instance.MapFaction.FactionMidSettlement;
                 }
 
                 var num5 = Campaign.AverageDistanceBetweenTwoFortifications * 3f;

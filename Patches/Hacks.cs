@@ -8,6 +8,7 @@ using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.LinQuick;
 using TaleWorlds.ObjectSystem;
 using static BanditMilitias.Helpers.Helper;
+// ReSharper disable InconsistentNaming
 
 namespace BanditMilitias.Patches
 {
@@ -76,6 +77,7 @@ namespace BanditMilitias.Patches
                                 Log($"!!!!! Purge bad troop {troop.Character.StringId} from {mobileParty.Name}.  Prisoner? {roster.IsPrisonRoster}");
                                 roster.AddToCounts(troop.Character, -troop.Number);
                                 Globals.BanditMilitiaCharacters.Remove(troop.Character);
+                                Globals.BanditMilitiaTroops.Remove(troop.Character);
                                 MBObjectManager.Instance.UnregisterObject(troop.Character);
                             }
                         }

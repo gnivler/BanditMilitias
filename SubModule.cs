@@ -168,7 +168,7 @@ namespace BanditMilitias
                 InformationManager.DisplayMessage(new InformationMessage("Testing mode: " + Globals.Settings.TestingMode));
             }
 
-            if (superKey && Input.IsKeyPressed(InputKey.F10))
+            if (MEOWMEOW && superKey && Input.IsKeyPressed(InputKey.F10))
             {
                 MobileParty.MainParty.ItemRoster.AddToCounts(MBObjectManager.Instance.GetObject<ItemObject>("grain"), 10000);
             }
@@ -206,7 +206,7 @@ namespace BanditMilitias
                 {
                     Log("Clearing mod data.");
                     // no idea why it takes several iterations to clean up certain situations but it does
-                    for (var index = 0; index < 2; index++)
+                    for (var index = 0; index < 1; index++)
                     {
                         Nuke();
                     }
@@ -214,7 +214,7 @@ namespace BanditMilitias
                     DoPowerCalculations(true);
                     InformationManager.DisplayMessage(new InformationMessage("BANDIT MILITIAS CLEARED"));
                     var bmCount = MobileParty.All.CountQ(m => m.IsBM());
-                    Log($"Militias: {bmCount}.  Upgraded BM troops: {MobileParty.All.SelectMany(m => m.MemberRoster.ToFlattenedRoster()).CountQ(e => e.Troop.StringId.Contains("_Bandit_Militia_Troop_"))}.  Troop prisoners: {MobileParty.All.SelectMany(m => m.PrisonRoster.ToFlattenedRoster()).CountQ(e => e.Troop.StringId.Contains("_Bandit_Militia_Troop_"))}.");
+                    Log($"Militias: {bmCount}.  Upgraded BM troops: {MobileParty.All.SelectMany(m => m.MemberRoster.ToFlattenedRoster()).CountQ(e => e.Troop.StringId.StartsWith("Upgraded"))}.  Troop prisoners: {MobileParty.All.SelectMany(m => m.PrisonRoster.ToFlattenedRoster()).CountQ(e =>  e.Troop.StringId.StartsWith("Upgraded"))}.");
                 }
                 catch (Exception ex)
                 {
