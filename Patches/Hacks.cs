@@ -7,7 +7,7 @@ using TaleWorlds.CampaignSystem.Roster;
 using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.LinQuick;
 using TaleWorlds.ObjectSystem;
-using static BanditMilitias.Helpers.Helper;
+
 // ReSharper disable InconsistentNaming
 
 namespace BanditMilitias.Patches
@@ -18,6 +18,7 @@ namespace BanditMilitias.Patches
         [HarmonyPatch(typeof(Hideout), "MapFaction", MethodType.Getter)]
         public static class HideoutMapFactionGetter
         {
+            // ReSharper disable once RedundantAssignment
             public static bool Prefix(Hideout __instance, ref IFaction __result)
             {
                 __result = Clan.BanditFactions.First(c => c.Culture == __instance.Settlement.Culture);
@@ -31,7 +32,8 @@ namespace BanditMilitias.Patches
         {
             public static bool Prefix(MobileParty __instance, MobileParty followedParty)
             {
-                if (followedParty is null)
+                if (__instance.Army == null &&
+                    followedParty is null)
                 {
                     __instance.Ai.DisableForHours(1);
                     __instance.Ai.RethinkAtNextHourlyTick = true;
@@ -60,49 +62,38 @@ namespace BanditMilitias.Patches
 
         // troops with missing data causing lots of NREs elsewhere
         // just a temporary patch
-        public static void HackPurgeAllBadTroopsFromAllParties()
+        public static void PurgeBadTroops()
         {
-            Log("Starting iteration of all troops in all parties, this might take a minute...");
+            DeferringLogger.Instance.Debug?.Log("Starting iteration of all troops in all parties, this might take a minute...");
             foreach (var mobileParty in MobileParty.All)
             {
                 var rosters = new[] { mobileParty.MemberRoster, mobileParty.PrisonRoster };
                 foreach (var roster in rosters)
-                {
                     while (roster.GetTroopRoster().AnyQ(t => t.Character.Name == null))
-                    {
                         foreach (var troop in roster.GetTroopRoster())
-                        {
                             if (troop.Character.Name == null)
                             {
-                                Log($"!!!!! Purge bad troop {troop.Character.StringId} from {mobileParty.Name}.  Prisoner? {roster.IsPrisonRoster}");
+                                DeferringLogger.Instance.Debug?.Log($"!!!!! Purge bad troop {troop.Character.StringId} from {mobileParty.Name}.  Prisoner? {roster.IsPrisonRoster}");
                                 roster.AddToCounts(troop.Character, -troop.Number);
-                                Globals.BanditMilitiaCharacters.Remove(troop.Character);
-                                Globals.BanditMilitiaTroops.Remove(troop.Character);
+                                //Globals.BanditMilitiaCharacters.Remove(troop.Character);
+                                Globals.Troops.Remove(troop.Character);
                                 MBObjectManager.Instance.UnregisterObject(troop.Character);
                             }
-                        }
-                    }
-                }
-            }  
+            }
+
             foreach (var settlement in Settlement.All)
             {
                 var rosters = new[] { settlement.Party.MemberRoster, settlement.Party.PrisonRoster };
                 foreach (var roster in rosters)
-                {
                     while (roster.GetTroopRoster().AnyQ(t => t.Character.Name == null))
-                    {
                         foreach (var troop in roster.GetTroopRoster())
-                        {
                             if (troop.Character.Name == null)
                             {
-                                Log($"!!!!! Purge bad troop {troop.Character.StringId} from {settlement.Name}.  Prisoner? {roster.IsPrisonRoster}");
+                                DeferringLogger.Instance.Debug?.Log($"!!!!! Purge bad troop {troop.Character.StringId} from {settlement.Name}.  Prisoner? {roster.IsPrisonRoster}");
                                 roster.AddToCounts(troop.Character, -troop.Number);
-                                Globals.BanditMilitiaCharacters.Remove(troop.Character);
+                                //Globals.BanditMilitiaCharacters.Remove(troop.Character);
                                 MBObjectManager.Instance.UnregisterObject(troop.Character);
                             }
-                        }
-                    }
-                }
             }
         }
 
@@ -114,7 +105,7 @@ namespace BanditMilitias.Patches
             public static Exception Finalizer(Exception __exception, TroopRoster __instance)
             {
                 if (__exception is not null)
-                    Log(__exception);
+                    DeferringLogger.Instance.Debug?.Log(__exception);
                 return null;
             }
         }

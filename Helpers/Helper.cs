@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using BanditMilitias.Patches;
 using HarmonyLib;
@@ -24,7 +23,6 @@ using TaleWorlds.Localization;
 using TaleWorlds.ObjectSystem;
 using static BanditMilitias.Globals;
 
-// ReSharper disable MemberCanBePrivate.Global 
 // ReSharper disable InconsistentNaming  
 
 namespace BanditMilitias.Helpers
@@ -41,28 +39,26 @@ namespace BanditMilitias.Helpers
         internal static readonly AccessTools.FieldRef<NameGenerator, TextObject[]> GangLeaderNames =
             AccessTools.FieldRefAccess<NameGenerator, TextObject[]>("_gangLeaderNames");
 
-        public static readonly AccessTools.FieldRef<Hero, Settlement> _homeSettlement = AccessTools.FieldRefAccess<Hero, Settlement>("_homeSettlement");
+        internal static readonly AccessTools.FieldRef<Hero, Settlement> _homeSettlement = AccessTools.FieldRefAccess<Hero, Settlement>("_homeSettlement");
 
         private static readonly AccessTools.StructFieldRef<EquipmentElement, ItemModifier> ItemModifier =
             AccessTools.StructFieldRefAccess<EquipmentElement, ItemModifier>("<ItemModifier>k__BackingField");
 
-        public static readonly AccessTools.FieldRef<PartyBase, ItemRoster> ItemRoster =
+        internal static readonly AccessTools.FieldRef<PartyBase, ItemRoster> ItemRoster =
             AccessTools.FieldRefAccess<PartyBase, ItemRoster>("<ItemRoster>k__BackingField");
 
-        public static readonly AccessTools.FieldRef<BasicCharacterObject, MBEquipmentRoster> EquipmentRoster =
+        internal static readonly AccessTools.FieldRef<BasicCharacterObject, MBEquipmentRoster> EquipmentRoster =
             AccessTools.FieldRefAccess<BasicCharacterObject, MBEquipmentRoster>("_equipmentRoster");
 
-        public static readonly AccessTools.FieldRef<MBEquipmentRoster, List<Equipment>> Equipments =
+        internal static readonly AccessTools.FieldRef<MBEquipmentRoster, List<Equipment>> Equipments =
             AccessTools.FieldRefAccess<MBEquipmentRoster, List<Equipment>>("_equipments");
 
         // ReSharper disable once StringLiteralTypo
-        public static readonly AccessTools.FieldRef<CharacterObject, bool> HiddenInEncyclopedia =
+        internal static readonly AccessTools.FieldRef<CharacterObject, bool> HiddenInEncyclopedia =
             AccessTools.FieldRefAccess<CharacterObject, bool>("<HiddenInEncylopedia>k__BackingField");
 
-        public static readonly AccessTools.FieldRef<CampaignObjectManager, MBReadOnlyList<MobileParty>> PartiesWithoutPartyComponent =
+        internal static readonly AccessTools.FieldRef<CampaignObjectManager, MBReadOnlyList<MobileParty>> PartiesWithoutPartyComponent =
             AccessTools.FieldRefAccess<CampaignObjectManager, MBReadOnlyList<MobileParty>>("<PartiesWithoutPartyComponent>k__BackingField");
-
-        public static PartyUpgraderCampaignBehavior UpgraderCampaignBehavior;
 
         private static readonly AccessTools.FieldRef<MobileParty, Clan> actualClan =
             AccessTools.FieldRefAccess<MobileParty, Clan>("_actualClan");
@@ -70,19 +66,7 @@ namespace BanditMilitias.Helpers
         internal static readonly AccessTools.FieldRef<MBObjectBase, bool> IsRegistered =
             AccessTools.FieldRefAccess<MBObjectBase, bool>("<IsRegistered>k__BackingField");
 
-        // ReSharper disable once UnusedMethodReturnValue.Global
-        public static bool Log(object input)
-        {
-            if (Globals.Settings is null
-                || Globals.Settings?.Debug is false)
-            {
-                return false;
-            }
-
-            using var sw = new StreamWriter(SubModule.logFilename, true);
-            sw.WriteLine($"[{DateTime.Now.ToLongTimeString()}] {(string.IsNullOrEmpty(input?.ToString()) ? "IsNullOrEmpty" : input)}");
-            return true;
-        }
+        internal static PartyUpgraderCampaignBehavior UpgraderCampaignBehavior;
 
         public static bool TrySplitParty(MobileParty mobileParty)
         {
@@ -115,8 +99,8 @@ namespace BanditMilitias.Helpers
         private static void SplitRosters(MobileParty original, TroopRoster troops1, TroopRoster troops2,
             TroopRoster prisoners1, TroopRoster prisoners2, ItemRoster inventory1, ItemRoster inventory2)
         {
-            //Log($"Processing troops: {original.MemberRoster.Count} types, {original.MemberRoster.TotalManCount} in total");
-            foreach (var rosterElement in original.MemberRoster.GetTroopRoster().Where(x => x.Character.HeroObject is null))
+            //DeferringLogger.Instance.Debug?.Log($"Processing troops: {original.MemberRoster.Count} types, {original.MemberRoster.TotalManCount} in total");
+            foreach (var rosterElement in original.MemberRoster.GetTroopRoster().WhereQ(x => x.Character.HeroObject is null))
             {
                 //if (!IsRegistered(rosterElement.Character))
                 //    Meow();
@@ -125,7 +109,7 @@ namespace BanditMilitias.Helpers
 
             if (original.PrisonRoster.TotalManCount > 0)
             {
-                //Log($"Processing prisoners: {original.PrisonRoster.Count} types, {original.PrisonRoster.TotalManCount} in total");
+                //DeferringLogger.Instance.Debug?.Log($"Processing prisoners: {original.PrisonRoster.Count} types, {original.PrisonRoster.TotalManCount} in total");
                 foreach (var rosterElement in original.PrisonRoster.GetTroopRoster())
                 {
                     SplitRosters(prisoners1, prisoners2, rosterElement);
@@ -136,7 +120,7 @@ namespace BanditMilitias.Helpers
             {
                 if (string.IsNullOrEmpty(item.EquipmentElement.Item?.Name?.ToString()))
                 {
-                    Log("Bad item: " + item.EquipmentElement);
+                    DeferringLogger.Instance.Debug?.Log("Bad item: " + item.EquipmentElement);
                     continue;
                 }
 
@@ -210,7 +194,7 @@ namespace BanditMilitias.Helpers
                 InitMilitia(bm2, rosters2, original.Position2D);
                 bm1.GetBM().Avoidance = original.GetBM().Avoidance;
                 bm2.GetBM().Avoidance = original.GetBM().Avoidance;
-                Log($">>> {bm1.Name} <- Split {original.Name} Split -> {bm2.Name}");
+                DeferringLogger.Instance.Debug?.Log($">>> {bm1.Name} <- Split {original.Name} Split -> {bm2.Name}");
                 ItemRoster(bm1.Party) = inventory1;
                 ItemRoster(bm2.Party) = inventory2;
                 bm1.Party.Visuals.SetMapIconAsDirty();
@@ -220,7 +204,7 @@ namespace BanditMilitias.Helpers
             }
             catch (Exception ex)
             {
-                Log(ex);
+                DeferringLogger.Instance.Debug?.Log(ex);
             }
         }
 
@@ -251,7 +235,7 @@ namespace BanditMilitias.Helpers
                    && !verbotenParties.Contains(__instance.StringId);
         }
 
-        public static TroopRoster[] MergeRosters(MobileParty sourceParty, PartyBase targetParty)
+        public static TroopRoster[] MergeRosters(MobileParty sourceParty, MobileParty targetParty)
         {
             var troopRoster = TroopRoster.CreateDummyTroopRoster();
             var prisonerRoster = TroopRoster.CreateDummyTroopRoster();
@@ -280,7 +264,7 @@ namespace BanditMilitias.Helpers
             // dumps all bandit heroes (shouldn't be more than 2 though...)
             foreach (var roster in rosters)
             {
-                foreach (var element in roster.GetTroopRoster().Where(e => e.Character?.HeroObject is null))
+                foreach (var element in roster.GetTroopRoster().WhereQ(e => e.Character?.HeroObject is null))
                 {
                     //if (!IsRegistered(element.Character))
                     //    Meow();
@@ -291,7 +275,7 @@ namespace BanditMilitias.Helpers
 
             foreach (var roster in prisoners)
             {
-                foreach (var element in roster.GetTroopRoster().Where(e => e.Character?.HeroObject is null))
+                foreach (var element in roster.GetTroopRoster().WhereQ(e => e.Character?.HeroObject is null))
                 {
                     if (!IsRegistered(element.Character))
                         Meow();
@@ -316,7 +300,7 @@ namespace BanditMilitias.Helpers
             }
             catch (Exception ex)
             {
-                Log(ex);
+                DeferringLogger.Instance.Debug?.Log(ex);
             }
 
             mobileParty.LeaderHero?.RemoveMilitiaHero();
@@ -337,14 +321,14 @@ namespace BanditMilitias.Helpers
                     Trash(BM.MobileParty);
                 }
 
-                for (var index = 0; index < BanditMilitiaTroops.Count; index++)
+                for (var index = 0; index < Troops.Count; index++)
                 {
-                    var troop = BanditMilitiaTroops[index];
+                    var troop = Troops[index];
                     try
                     {
                         troop.IsReady = false;
                         MBObjectManager.Instance.UnregisterObject(troop);
-                        var party = troop.FindParty();
+                        var party = troop.FindParty(out _); // TODO use bool
                         if (party is null)
                             continue;
                         if (party.MemberRoster.Contains(troop))
@@ -354,7 +338,7 @@ namespace BanditMilitias.Helpers
                     }
                     catch (Exception ex)
                     {
-                        Log(ex);
+                        DeferringLogger.Instance.Debug?.Log(ex);
                     }
                 }
 
@@ -367,7 +351,7 @@ namespace BanditMilitias.Helpers
                     {
                         troop.IsReady = false;
                         MBObjectManager.Instance.UnregisterObject(troop);
-                        var party = troop.FindParty();
+                        var party = troop.FindParty(out _); // TODO use bool
                         if (party is null)
                             continue;
                         if (party.MemberRoster.Contains(troop))
@@ -377,35 +361,29 @@ namespace BanditMilitias.Helpers
                     }
                     catch (Exception ex)
                     {
-                        Log(ex);
+                        DeferringLogger.Instance.Debug?.Log(ex);
                     }
                 }
 
                 FlushMapEvents();
-                Hacks.HackPurgeAllBadTroopsFromAllParties();
+                Hacks.PurgeBadTroops();
                 // update ticker - still required in 3.9?
                 var _listField = Traverse.Create(Ticker).Field<IReadOnlyList<MobileParty>>("_list");
                 var replacement = _listField.Value.ToListQ().Except(_listField.Value.WhereQ(m => m.IsBM()));
                 _listField.Value = new MBReadOnlyList<MobileParty>(replacement.ToListQ());
                 Traverse.Create(Ticker).Field<IReadOnlyList<MobileParty>>("_list").Value = new MBReadOnlyList<MobileParty>(new List<MobileParty>());
                 PartyImageMap.Clear();
+                // move these out of try?
                 LootRecord.Clear();
                 EquipmentMap.Clear();
-                BanditMilitiaTroops.Clear();
-                BanditMilitiaCharacters.Clear();
-                BanditMilitiaHeroes.Clear();
+                Troops.Clear();
+                //BanditMilitiaCharacters.Clear();
+                Heroes.Clear();
             }
             catch (Exception ex)
             {
-                Log(ex);
+                DeferringLogger.Instance.Debug?.Log(ex);
             }
-
-            EquipmentMap.Clear();
-            LootRecord.Clear();
-            PartyImageMap.Clear();
-            BanditMilitiaHeroes.Clear();
-            BanditMilitiaCharacters.Clear();
-            BanditMilitiaTroops.Clear();
         }
 
         // deprecated with 3.9 but necessary to clean up older versions
@@ -417,7 +395,7 @@ namespace BanditMilitias.Helpers
             {
                 Traverse.Create(Campaign.Current.CampaignObjectManager).Field<List<MobileParty>>("_partiesWithoutPartyComponent").Value =
                     Traverse.Create(Campaign.Current.CampaignObjectManager).Field<List<MobileParty>>("_partiesWithoutPartyComponent").Value.Except(parties).ToListQ();
-                Log($">>> FLUSH {parties.Count} {Globals.Settings.BanditMilitiaString}");
+                DeferringLogger.Instance.Debug?.Log($">>> FLUSH {parties.Count} {Globals.Settings.BanditMilitiaString}");
                 foreach (var mobileParty in parties)
                 {
                     try
@@ -426,7 +404,7 @@ namespace BanditMilitias.Helpers
                     }
                     catch (Exception ex)
                     {
-                        Log(ex);
+                        DeferringLogger.Instance.Debug?.Log(ex);
                         Meow();
                     }
                 }
@@ -445,14 +423,14 @@ namespace BanditMilitias.Helpers
                         if (prisoner.StringId.EndsWith("Bandit_Militia"))
                         {
                             //Debugger.Break();
-                            Log($">>> FLUSH BM hero prisoner {prisoner.HeroObject?.Name} at {settlement.Name}.");
+                            DeferringLogger.Instance.Debug?.Log($">>> FLUSH BM hero prisoner {prisoner.HeroObject?.Name} at {settlement.Name}.");
                             settlement.Party.PrisonRoster.AddToCounts(prisoner, -1);
                             prisoner.HeroObject.RemoveMilitiaHero();
                         }
                     }
                     catch (Exception ex)
                     {
-                        Log(ex);
+                        DeferringLogger.Instance.Debug?.Log(ex);
                     }
             }
 
@@ -460,7 +438,7 @@ namespace BanditMilitias.Helpers
             for (var index = 0; index < leftovers.Count; index++)
             {
                 var hero = leftovers[index];
-                Log("Removing leftover hero " + hero);
+                DeferringLogger.Instance.Debug?.Log("Removing leftover hero " + hero);
                 hero.RemoveMilitiaHero();
             }
         }
@@ -472,15 +450,15 @@ namespace BanditMilitias.Helpers
             var prisoners = Hero.AllAliveHeroes.WhereQ(h =>
                 h.CharacterObject.StringId.Contains("Bandit_Militia") && h.IsPrisoner).ToListQ();
             prisoners = prisoners.Concat(Hero.DeadOrDisabledHeroes.WhereQ(h => h.CharacterObject.StringId.Contains("Bandit_Militia") && h.IsPrisoner)).ToListQ();
-            prisoners = prisoners.Concat(MobileParty.MainParty.PrisonRoster.GetTroopRoster().WhereQ(e => e.Character.StringId.Contains("Bandit_Militia")).Select(e => e.Character.HeroObject)).ToListQ();
+            prisoners = prisoners.Concat(MobileParty.MainParty.PrisonRoster.GetTroopRoster().WhereQ(e => e.Character.StringId.Contains("Bandit_Militia")).SelectQ(e => e.Character.HeroObject)).ToListQ();
             for (var index = 0; index < prisoners.Count; index++)
             {
                 Debugger.Break();
                 var prisoner = prisoners[index];
-                //Log($"{new string('=', 80)}");
-                //Log($">>> PRISONER {prisoner.Name,-20}: {prisoner.IsPrisoner} ({prisoner.PartyBelongedToAsPrisoner is not null})");
+                //DeferringLogger.Instance.Debug?.Log($"{new string('=', 80)}");
+                //DeferringLogger.Instance.Debug?.Log($">>> PRISONER {prisoner.Name,-20}: {prisoner.IsPrisoner} ({prisoner.PartyBelongedToAsPrisoner is not null})");
                 prisoner.RemoveMilitiaHero();
-                //Log($"{new string('=', 80)}");
+                //DeferringLogger.Instance.Debug?.Log($"{new string('=', 80)}");
             }
 
             foreach (var prisonRoster in MobileParty.All.SelectQ(m => m.PrisonRoster))
@@ -526,7 +504,7 @@ namespace BanditMilitias.Helpers
                         }
                     }
 
-                    Log(">>> FLUSH MapEvent.");
+                    DeferringLogger.Instance.Debug?.Log(">>> FLUSH MapEvent.");
                     Traverse.Create(mapEvent).Field<MapEventState>("_state").Value = MapEventState.Wait;
                     mapEvent.FinalizeEvent();
                 }
@@ -611,12 +589,12 @@ namespace BanditMilitias.Helpers
                 "bandit_saddle_desert"
             };
 
-            Mounts = Items.All.Where(i => i.ItemType == ItemObject.ItemTypeEnum.Horse)
+            Mounts = Items.All.WhereQ(i => i.ItemType == ItemObject.ItemTypeEnum.Horse)
                 .WhereQ(i => !i.StringId.Contains("unmountable")).WhereQ(i => i.Value <= Globals.Settings.MaxItemValue).ToList();
-            Saddles = Items.All.Where(i => i.ItemType == ItemObject.ItemTypeEnum.HorseHarness
-                                           && !i.StringId.Contains("mule")
-                                           && !verbotenSaddles.Contains(i.StringId)).WhereQ(i => i.Value <= Globals.Settings.MaxItemValue).ToList();
-            var all = Items.All.Where(i =>
+            Saddles = Items.All.WhereQ(i => i.ItemType == ItemObject.ItemTypeEnum.HorseHarness
+                                            && !i.StringId.Contains("mule")
+                                            && !verbotenSaddles.Contains(i.StringId)).WhereQ(i => i.Value <= Globals.Settings.MaxItemValue).ToList();
+            var all = Items.All.WhereQ(i =>
                     !i.IsCraftedByPlayer
                     && i.ItemType is not ItemObject.ItemTypeEnum.Goods
                     && i.ItemType is not ItemObject.ItemTypeEnum.Horse
@@ -630,18 +608,18 @@ namespace BanditMilitias.Helpers
             var runningCivilizedMod = AppDomain.CurrentDomain.GetAssemblies().AnyQ(a => a.FullName.Contains("Civilized"));
             if (!runningCivilizedMod)
             {
-                all = Items.All.Where(i => !i.IsCivilian).ToList();
+                all = Items.All.WhereQ(i => !i.IsCivilian).ToList();
             }
 
             all.RemoveAll(item => verbotenItemsStringIds.Contains(item.StringId));
-            Arrows = all.Where(i => i.ItemType == ItemObject.ItemTypeEnum.Arrows).WhereQ(i => i.Value <= Globals.Settings.MaxItemValue).ToList();
-            Bolts = all.Where(i => i.ItemType == ItemObject.ItemTypeEnum.Bolts).WhereQ(i => i.Value <= Globals.Settings.MaxItemValue).ToList();
-            var oneHanded = all.Where(i => i.ItemType == ItemObject.ItemTypeEnum.OneHandedWeapon);
-            var twoHanded = all.Where(i => i.ItemType == ItemObject.ItemTypeEnum.TwoHandedWeapon);
-            var polearm = all.Where(i => i.ItemType == ItemObject.ItemTypeEnum.Polearm);
-            var thrown = all.Where(i => i.ItemType == ItemObject.ItemTypeEnum.Thrown);
-            var shields = all.Where(i => i.ItemType == ItemObject.ItemTypeEnum.Shield);
-            var bows = all.Where(i => i.ItemType is ItemObject.ItemTypeEnum.Bow or ItemObject.ItemTypeEnum.Crossbow);
+            Arrows = all.WhereQ(i => i.ItemType == ItemObject.ItemTypeEnum.Arrows).WhereQ(i => i.Value <= Globals.Settings.MaxItemValue).ToList();
+            Bolts = all.WhereQ(i => i.ItemType == ItemObject.ItemTypeEnum.Bolts).WhereQ(i => i.Value <= Globals.Settings.MaxItemValue).ToList();
+            var oneHanded = all.WhereQ(i => i.ItemType == ItemObject.ItemTypeEnum.OneHandedWeapon);
+            var twoHanded = all.WhereQ(i => i.ItemType == ItemObject.ItemTypeEnum.TwoHandedWeapon);
+            var polearm = all.WhereQ(i => i.ItemType == ItemObject.ItemTypeEnum.Polearm);
+            var thrown = all.WhereQ(i => i.ItemType == ItemObject.ItemTypeEnum.Thrown);
+            var shields = all.WhereQ(i => i.ItemType == ItemObject.ItemTypeEnum.Shield);
+            var bows = all.WhereQ(i => i.ItemType is ItemObject.ItemTypeEnum.Bow or ItemObject.ItemTypeEnum.Crossbow);
             var any = new List<ItemObject>(oneHanded.Concat(twoHanded).Concat(polearm).Concat(thrown).Concat(shields).Concat(bows).WhereQ(i => i.Value <= Globals.Settings.MaxItemValue).ToList());
             any.Do(i => EquipmentItems.Add(new EquipmentElement(i)));
         }
@@ -665,7 +643,7 @@ namespace BanditMilitias.Helpers
                             randomElement = EquipmentItems.GetRandomElement();
                             break;
                         case 2 when !gear[3].IsEmpty:
-                            randomElement = EquipmentItems.Where(x =>
+                            randomElement = EquipmentItems.WhereQ(x =>
                                 x.Item.ItemType != ItemObject.ItemTypeEnum.Bow &&
                                 x.Item.ItemType != ItemObject.ItemTypeEnum.Crossbow).ToList().GetRandomElement();
                             break;
@@ -716,7 +694,7 @@ namespace BanditMilitias.Helpers
                             continue;
                         }
 
-                        randomElement = EquipmentItems.Where(x =>
+                        randomElement = EquipmentItems.WhereQ(x =>
                             x.Item.ItemType != ItemObject.ItemTypeEnum.Bow &&
                             x.Item.ItemType != ItemObject.ItemTypeEnum.Crossbow).ToList().GetRandomElement();
                     }
@@ -744,10 +722,10 @@ namespace BanditMilitias.Helpers
             }
             catch (Exception ex)
             {
-                Log(ex);
+                DeferringLogger.Instance.Debug?.Log(ex);
             }
 
-            //Log($"GEAR ==> {T.ElapsedTicks / 10000F:F3}ms");
+            //DeferringLogger.Instance.Debug?.Log($"GEAR ==> {T.ElapsedTicks / 10000F:F3}ms");
             return gear.Clone();
         }
 
@@ -756,13 +734,13 @@ namespace BanditMilitias.Helpers
         {
             if (force || LastCalculated < CampaignTime.Now.ToHours - 8)
             {
-                var parties = MobileParty.All.Where(p => p.LeaderHero is not null && !p.IsBM()).ToListQ();
+                var parties = MobileParty.All.WhereQ(p => p.LeaderHero is not null && !p.IsBM()).ToListQ();
                 var medianSize = (float)parties.OrderBy(p => p.MemberRoster.TotalManCount)
                     .ElementAt(parties.CountQ() / 2).MemberRoster.TotalManCount;
                 Globals.CalculatedMaxPartySize = Math.Max(medianSize, Math.Max(1, MobileParty.MainParty.MemberRoster.TotalManCount) * Variance);
                 //Globals.CalculatedMaxPartySize = Math.Max(Globals.CalculatedMaxPartySize, Globals.Settings.MinPartySize);
                 Globals.LastCalculated = CampaignTime.Now.ToHours;
-                Globals.CalculatedGlobalPowerLimit = parties.Sum(p => p.Party.TotalStrength) * Variance;
+                Globals.CalculatedGlobalPowerLimit = parties.SumQ(p => p.Party.TotalStrength) * Variance;
                 Globals.GlobalMilitiaPower = GetCachedBMs(true).SumQ(m => m.Party.TotalStrength);
                 Globals.MilitiaPowerPercent = Globals.GlobalMilitiaPower / Globals.CalculatedGlobalPowerLimit * 100;
                 Globals.MilitiaPartyAveragePower = Globals.GlobalMilitiaPower / GetCachedBMs().CountQ();
@@ -792,8 +770,8 @@ namespace BanditMilitias.Helpers
                 map.Remove(BlackFlag);
             }
 
-            var highest = map.Where(x =>
-                x.Value == map.Values.Max()).Select(x => x.Key);
+            var highest = map.WhereQ(x =>
+                x.Value == map.Values.Max()).SelectQ(x => x.Key);
             var result = highest.ToList().GetRandomElement();
             return result ?? MBObjectManager.Instance.GetObject<CultureObject>("empire");
         }
@@ -804,7 +782,7 @@ namespace BanditMilitias.Helpers
 
         public static void PrintInstructionsAroundInsertion(List<CodeInstruction> codes, int insertPoint, int insertSize, int adjacentNum = 5)
         {
-            Log($"Inserting {insertSize} at {insertPoint}.");
+            DeferringLogger.Instance.Debug?.Log($"Inserting {insertSize} at {insertPoint}.");
 
             // in case insertPoint is near the start of the method's IL
             var adjustedAdjacent = codes.Count - adjacentNum >= 0 ? adjacentNum : Math.Max(0, codes.Count - adjacentNum);
@@ -812,12 +790,12 @@ namespace BanditMilitias.Helpers
             {
                 // codes[266 - 5 + 0].opcode
                 // codes[266 - 5 + 4].opcode
-                Log($"{codes[insertPoint - adjustedAdjacent + i].opcode,-10}{codes[insertPoint - adjustedAdjacent + i].operand}");
+                DeferringLogger.Instance.Debug?.Log($"{codes[insertPoint - adjustedAdjacent + i].opcode,-10}{codes[insertPoint - adjustedAdjacent + i].operand}");
             }
 
             for (var i = 0; i < insertSize; i++)
             {
-                Log($"{codes[insertPoint + i].opcode,-10}{codes[insertPoint + i].operand}");
+                DeferringLogger.Instance.Debug?.Log($"{codes[insertPoint + i].opcode,-10}{codes[insertPoint + i].operand}");
             }
 
             // in case insertPoint is near the end of the method's IL
@@ -826,36 +804,31 @@ namespace BanditMilitias.Helpers
             {
                 // 266 + 2 - 5 + 0
                 // 266 + 2 - 5 + 4
-                Log($"{codes[insertPoint + insertSize + adjustedAdjacent + i].opcode,-10}{codes[insertPoint + insertSize + adjustedAdjacent + i].operand}");
+                DeferringLogger.Instance.Debug?.Log($"{codes[insertPoint + insertSize + adjustedAdjacent + i].opcode,-10}{codes[insertPoint + insertSize + adjustedAdjacent + i].operand}");
             }
         }
 
-        public static void RemoveUndersizedTracker(PartyBase party)
+        public static void RemoveUndersizedTracker(MobileParty party)
         {
+            if (!party.IsBM())
+                Debugger.Break();
             if (party.MemberRoster.TotalManCount < Globals.Settings.TrackedSizeMinimum)
             {
-                // BUG refactored
-                var tracker = Globals.MapMobilePartyTrackerVM?.Trackers?.FirstOrDefault(t => t.TrackedParty == party.MobileParty);
-                if (tracker is not null
-                    && party.MemberRoster.TotalManCount != 0)
-                {
+                var tracker = Globals.MapMobilePartyTrackerVM.Trackers.FirstOrDefaultQ(t => t.TrackedParty == party);
+                if (tracker is not null)
                     Globals.MapMobilePartyTrackerVM.Trackers.Remove(tracker);
-                }
             }
         }
 
         public static int NumMountedTroops(TroopRoster troopRoster)
         {
-            return troopRoster.GetTroopRoster().Where(e => e.Character.Equipment[10].Item is not null).Sum(e => e.Number);
+            return troopRoster.GetTroopRoster().WhereQ(e => e.Character.Equipment[10].Item is not null).SumQ(e => e.Number);
         }
 
         public static Hero CreateHero(Clan clan)
         {
             var hero = CustomizedCreateHeroAtOccupation(Hideouts.GetRandomElement(), clan);
-            BanditMilitiaHeroes.Add(hero);
-            BanditMilitiaCharacters.Add(hero.CharacterObject);
-            //hero.StringId += "Bandit_Militia";
-            //hero.CharacterObject.StringId += "Bandit_Militia";
+            Heroes.Add(hero);
             if (Rng.Next(0, 2) == 0)
             {
                 hero.UpdatePlayerGender(true);
@@ -893,11 +866,11 @@ namespace BanditMilitias.Helpers
             catch (Exception ex)
             {
                 InformationManager.DisplayMessage(new InformationMessage("Problem adjusting cavalry count, please open a bug report."));
-                Log(ex);
+                DeferringLogger.Instance.Debug?.Log(ex);
             }
         }
 
-        public static void ConfigureMilitia(MobileParty mobileParty)
+        private static void ConfigureMilitia(MobileParty mobileParty)
         {
             mobileParty.LeaderHero.Gold = Convert.ToInt32(mobileParty.Party.TotalStrength * GoldMap[Globals.Settings.GoldReward.SelectedValue]);
             mobileParty.MemberRoster.AddToCounts(mobileParty.GetBM().Leader.CharacterObject, 1, false, 0, 0, true, 0);
@@ -927,18 +900,18 @@ namespace BanditMilitias.Helpers
                 mobileParty.GetBM().Leader.BattleEquipment[10] = new EquipmentElement(mount);
                 if (mount.HorseComponent.Monster.MonsterUsage == "camel")
                 {
-                    mobileParty.GetBM().Leader.BattleEquipment[11] = new EquipmentElement(Saddles.Where(saddle =>
+                    mobileParty.GetBM().Leader.BattleEquipment[11] = new EquipmentElement(Saddles.WhereQ(saddle =>
                         saddle.StringId.Contains("camel")).ToList().GetRandomElement());
                 }
                 else
                 {
-                    mobileParty.GetBM().Leader.BattleEquipment[11] = new EquipmentElement(Saddles.Where(saddle =>
+                    mobileParty.GetBM().Leader.BattleEquipment[11] = new EquipmentElement(Saddles.WhereQ(saddle =>
                         !saddle.StringId.Contains("camel")).ToList().GetRandomElement());
                 }
             }
 
             mobileParty.SetCustomName(mobileParty.GetBM().Name);
-            var tracker = Globals.MapMobilePartyTrackerVM.Trackers.FirstOrDefault(t => t.TrackedParty == mobileParty);
+            var tracker = Globals.MapMobilePartyTrackerVM.Trackers.FirstOrDefaultQ(t => t.TrackedParty == mobileParty);
             if (Globals.Settings.Trackers
                 && tracker is null
                 && mobileParty.MemberRoster.TotalManCount >= Globals.Settings.TrackedSizeMinimum)
@@ -955,7 +928,7 @@ namespace BanditMilitias.Helpers
                 if (mobileParty.MemberRoster.TotalManCount == 0)
                 {
                     Meow();
-                    Log("Trying to configure militia with no troops, trashing");
+                    DeferringLogger.Instance.Debug?.Log("Trying to configure militia with no troops, trashing");
                     Trash(mobileParty);
                     return;
                 }
@@ -986,7 +959,7 @@ namespace BanditMilitias.Helpers
                 if (Globals.Settings.LooterUpgradePercent > 0)
                 {
                     // upgrade any looters first, then go back over and iterate further upgrades
-                    var allLooters = mobileParty.MemberRoster.GetTroopRoster().Where(e =>
+                    var allLooters = mobileParty.MemberRoster.GetTroopRoster().WhereQ(e =>
                         e.Character == Looters.BasicTroop
                         || e.Character.OriginalCharacter == Looters.BasicTroop).ToList();
                     if (allLooters.Any())
@@ -1015,7 +988,7 @@ namespace BanditMilitias.Helpers
                 var troopUpgradeModel = Campaign.Current.Models.PartyTroopUpgradeModel;
                 for (var i = 0; i < iterations && GlobalMilitiaPower <= Globals.Settings.GlobalPowerPercent; i++)
                 {
-                    var validTroops = mobileParty.MemberRoster.GetTroopRoster().Where(x =>
+                    var validTroops = mobileParty.MemberRoster.GetTroopRoster().WhereQ(x =>
                         x.Character.Tier < Globals.Settings.MaxTrainingTier
                         && !x.Character.IsHero
                         && troopUpgradeModel.IsTroopUpgradeable(mobileParty.Party, x.Character));
@@ -1029,7 +1002,7 @@ namespace BanditMilitias.Helpers
                     var minNumberToUpgrade = Convert.ToInt32(Globals.Settings.UpgradeUnitsPercent / 100 * number * Rng.NextDouble());
                     minNumberToUpgrade = Math.Max(1, minNumberToUpgrade);
                     numberToUpgrade = Convert.ToInt32(Rng.Next(minNumberToUpgrade, Convert.ToInt32((number + 1) / 2f)));
-                    Log($"^^^ {mobileParty.LeaderHero.Name} is upgrading up to {numberToUpgrade} of {number} \"{troopToTrain.Character.Name}\".");
+                    DeferringLogger.Instance.Debug?.Log($"^^^ {mobileParty.LeaderHero.Name} is upgrading up to {numberToUpgrade} of {number} \"{troopToTrain.Character.Name}\".");
                     var xpGain = numberToUpgrade * DifficultyXpMap[Globals.Settings.XpGift.SelectedValue];
                     mobileParty.MemberRoster.AddXpToTroop(xpGain, troopToTrain.Character);
                     UpgraderCampaignBehavior ??= Campaign.Current.GetCampaignBehavior<PartyUpgraderCampaignBehavior>();
@@ -1043,7 +1016,7 @@ namespace BanditMilitias.Helpers
             }
             catch (Exception ex)
             {
-                Log("Bandit Militias is failing to configure parties!  Exception: " + ex);
+                DeferringLogger.Instance.Debug?.Log("Bandit Militias is failing to configure parties!  Exception: " + ex);
                 Trash(mobileParty);
             }
         }
@@ -1053,7 +1026,7 @@ namespace BanditMilitias.Helpers
             if (forceRefresh || PartyCacheInterval < CampaignTime.Now.ToHours - 1)
             {
                 PartyCacheInterval = CampaignTime.Now.ToHours;
-                AllBMs = MobileParty.All.WhereQ(m => m.PartyComponent is ModBanditMilitiaPartyComponent)
+                AllBMs = MobileParty.All.WhereQ(m => m.IsBM())
                     .SelectQ(m => m.PartyComponent as ModBanditMilitiaPartyComponent).ToListQ();
             }
 
@@ -1064,27 +1037,26 @@ namespace BanditMilitias.Helpers
         {
             var index = Globals.MapMobilePartyTrackerVM.Trackers.FindIndexQ(t => t.TrackedParty == militia);
             if (index >= 0)
-            {
                 Globals.MapMobilePartyTrackerVM.Trackers.RemoveAt(index);
-            }
 
             militia.InitializeMobilePartyAtPosition(rosters[0], rosters[1], position);
             ConfigureMilitia(militia);
             TrainMilitia(militia);
         }
 
-        // too slow
         public static void LogMilitiaFormed(MobileParty mobileParty)
         {
             try
             {
+                if (DeferringLogger.Instance.Debug is null)
+                    return;
                 var troopString = $"{mobileParty.Party.NumberOfAllMembers} troop" + (mobileParty.Party.NumberOfAllMembers > 1 ? "s" : "");
                 var strengthString = $"{Math.Round(mobileParty.Party.TotalStrength)} strength";
-                Log($"{$"New Bandit Militia led by {mobileParty.LeaderHero?.Name}",-70} | {troopString,10} | {strengthString,12} | >>> {GlobalMilitiaPower / CalculatedGlobalPowerLimit * 100}%");
+                DeferringLogger.Instance.Debug?.Log($"{$"New Bandit Militia led by {mobileParty.LeaderHero?.Name}",-70} | {troopString,10} | {strengthString,12} | >>> {GlobalMilitiaPower / CalculatedGlobalPowerLimit * 100}%");
             }
             catch (Exception ex)
             {
-                Log(ex);
+                DeferringLogger.Instance.Debug?.Log(ex);
             }
         }
 
@@ -1108,317 +1080,10 @@ namespace BanditMilitias.Helpers
             }
         }
 
-        public static readonly string[] BadLoot = { "throwing_stone" };
-
-        public static void UpgradeEquipment(PartyBase party, ItemRoster loot)
-        {
-            try
-            {
-                var lootedItems = loot.OrderByDescending(i => i.EquipmentElement.ItemValue).ToListQ();
-                var usableEquipment = lootedItems.WhereQ(i =>
-                        i.EquipmentElement.Item.ItemType is ItemObject.ItemTypeEnum.Horse
-                            or ItemObject.ItemTypeEnum.OneHandedWeapon
-                            or ItemObject.ItemTypeEnum.TwoHandedWeapon
-                            or ItemObject.ItemTypeEnum.Polearm
-                            or ItemObject.ItemTypeEnum.Arrows
-                            or ItemObject.ItemTypeEnum.Bolts
-                            or ItemObject.ItemTypeEnum.Shield
-                            or ItemObject.ItemTypeEnum.Bow
-                            or ItemObject.ItemTypeEnum.Crossbow
-                            or ItemObject.ItemTypeEnum.Thrown
-                            or ItemObject.ItemTypeEnum.HeadArmor
-                            or ItemObject.ItemTypeEnum.BodyArmor
-                            or ItemObject.ItemTypeEnum.LegArmor
-                            or ItemObject.ItemTypeEnum.HandArmor
-                            or ItemObject.ItemTypeEnum.Pistol
-                            or ItemObject.ItemTypeEnum.Musket
-                            or ItemObject.ItemTypeEnum.Bullets
-                            or ItemObject.ItemTypeEnum.ChestArmor
-                            or ItemObject.ItemTypeEnum.Cape
-                            or ItemObject.ItemTypeEnum.HorseHarness
-                        && i.EquipmentElement.ItemValue >= 1000)
-                    .OrderByDescending(i => i.EquipmentElement.ItemValue).ToListQ();
-
-                usableEquipment.RemoveAll(e => BadLoot.Contains(e.EquipmentElement.Item.StringId));
-                if (!usableEquipment.Any())
-                {
-                    return;
-                }
-
-                // short-circuit to prevent over-stuffing cavalry
-                if (usableEquipment.AllQ(i => i.EquipmentElement.Item.HasHorseComponent)
-                    && party.MobileParty.MemberRoster.CountMounted() > party.MobileParty.MemberRoster.TotalManCount / 2)
-                {
-                    return;
-                }
-
-                var troops = party.MemberRoster.ToFlattenedRoster().Troops.OrderByDescending(e => e.Level)
-                    .ThenByDescending(e => e.Equipment.GetTotalWeightOfArmor(true) + e.Equipment.GetTotalWeightOfWeapons()).ToListQ();
-                if (usableEquipment.Count == 0)
-                    return;
-                for (var i = 0; i < troops.Count; i++)
-                {
-                    var troop = troops[i];
-                    if (usableEquipment.Count == 0)
-                        break;
-                    bool wasUpgraded = default;
-                    Log($"{troop.Name} is up for upgrades.  Current equipment:");
-                    for (var index = 0; index < Equipment.EquipmentSlotLength; index++)
-                    {
-                        Log($"{index}: {troop.Equipment[index].Item?.Name} {(troop.Equipment[index].Item?.Value is not null ? "$" : "")}{troop.Equipment[index].Item?.Value}");
-                    }
-
-                    for (var index = 0; index < usableEquipment.Count; index++)
-                    {
-                        var itemReturned = false;
-                        var possibleUpgrade = usableEquipment[index];
-                        var upgradeValue = possibleUpgrade.EquipmentElement.ItemValue;
-                        if (upgradeValue <= LeastValuableItem(troop))
-                            break;
-                        if (possibleUpgrade.EquipmentElement.Item.ItemType
-                            is ItemObject.ItemTypeEnum.Arrows
-                            or ItemObject.ItemTypeEnum.Bolts
-                            or ItemObject.ItemTypeEnum.Bullets)
-                            continue;
-                        // prevent them from getting a bunch of the same item
-                        if (troop.Equipment.Contains(possibleUpgrade.EquipmentElement))
-                            continue;
-
-                        Log($"{troop.HeroObject?.Name.ToString() ?? troop.OriginalCharacter?.Name.ToString() ?? troop.Name.ToString()} considering... {possibleUpgrade.EquipmentElement.Item?.Name} worth {possibleUpgrade.EquipmentElement.ItemValue}");
-                        // TODO shields
-                        var rangedSlot = -1;
-                        // assume that sane builds are coming in (no double bows, missing ammo)
-                        if (possibleUpgrade.EquipmentElement.Item.HasWeaponComponent)
-                        {
-                            if (possibleUpgrade.EquipmentElement.Item?.ItemType is
-                                    ItemObject.ItemTypeEnum.Bow
-                                    or ItemObject.ItemTypeEnum.Crossbow
-                                    or ItemObject.ItemTypeEnum.Pistol
-                                    or ItemObject.ItemTypeEnum.Musket
-                                && possibleUpgrade.EquipmentElement.Item.PrimaryWeapon.WeaponClass is not
-                                    (WeaponClass.Javelin or WeaponClass.Stone))
-                            {
-                                // make sure the troop is already ranged or move onto next item
-                                for (var slot = 0; slot < 4; slot++)
-                                {
-                                    if (troop.Equipment[slot].Item?.PrimaryWeapon != null && troop.Equipment[slot].Item.PrimaryWeapon.IsRangedWeapon)
-                                    {
-                                        rangedSlot = slot;
-                                        break;
-                                    }
-                                }
-
-                                if (rangedSlot < 0)
-                                    continue;
-                                // bow is an upgrade so take it and take the ammo
-                                if (DoPossibleUpgrade(possibleUpgrade, ref troop, ref usableEquipment, ref wasUpgraded, rangedSlot))
-                                {
-                                    var ammo = GetAmmo(possibleUpgrade, usableEquipment);
-                                    if (ammo.IsEmpty)
-                                        continue;
-                                    var ammoSlot = -1;
-                                    for (var slot = 0; slot < 4; slot++)
-                                    {
-                                        if (troop.Equipment[slot].Item?.PrimaryWeapon is not null
-                                            && troop.Equipment[slot].Item.PrimaryWeapon.IsAmmo)
-                                        {
-                                            ammoSlot = slot;
-                                        }
-                                    }
-
-                                    possibleUpgrade = new ItemRosterElement(ammo.EquipmentElement.Item, 1);
-                                    if (DoPossibleUpgrade(possibleUpgrade, ref troop, ref usableEquipment, ref itemReturned, ammoSlot))
-                                        usableEquipment.Remove(ammo);
-                                }
-
-                                if (itemReturned)
-                                    index = -1;
-                                continue;
-                            }
-                        }
-
-                        // simple record of slots yet to try
-                        var slots = new List<int>();
-                        for (var s = 0; s < Equipment.EquipmentSlotLength; s++)
-                            slots.Add(s);
-                        slots.Shuffle();
-                        for (; slots.Count > 0; slots.RemoveAt(0))
-                        {
-                            var slot = slots[0];
-                            // TODO check if it's a horse instead of it checking it's slot 10
-                            // if it's a horse slot but we already have enough, skip to next upgrade EquipmentElement
-                            if (slot == 10 && party.MemberRoster.CountMounted() > party.MemberRoster.TotalManCount / 2)
-                                break;
-                            if (Equipment.IsItemFitsToSlot((EquipmentIndex)slot, possibleUpgrade.EquipmentElement.Item))
-                            {
-                                if (DoPossibleUpgrade(possibleUpgrade, ref troop, ref usableEquipment, ref wasUpgraded))
-                                    break;
-                            }
-                        }
-                    }
-
-                    if (wasUpgraded && !troop.IsHero)
-                    {
-                        if (!Globals.EquipmentMap.TryGetValue(troop.StringId, out _))
-                        {
-                            BanditMilitiaTroops.Add(troop);
-                            Globals.EquipmentMap.Add(troop.StringId, troop.Equipment);
-                            // party.MemberRoster.Add(new TroopRosterElement(troop) { Number = 1 });
-                            // party.MemberRoster.RemoveTroop(troop);
-                        }
-                        else
-                            Globals.EquipmentMap[troop.StringId] = troop.Equipment;
-                    }
-
-                    if (!wasUpgraded && !troop.IsHero)
-                    {
-                        if (party.MemberRoster.GetTroopRoster().AnyQ(c => c.Character.StringId == troop.StringId))
-                            Meow();
-                        BanditMilitiaTroops.Remove(troop);
-                        MBObjectManager.Instance.UnregisterObject(troop);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Log(ex);
-                Meow();
-            }
-        }
-
-        private static int LeastValuableItem(CharacterObject tempCharacter)
-        {
-            var leastValuable = int.MaxValue;
-            for (var slot = 0; slot < Equipment.EquipmentSlotLength; slot++)
-            {
-                if (tempCharacter.Equipment[slot].ItemValue < leastValuable)
-                    leastValuable = tempCharacter.Equipment[slot].ItemValue;
-            }
-
-            return leastValuable;
-        }
-
-        private static ItemRosterElement GetAmmo(ItemRosterElement possibleUpgrade, List<ItemRosterElement> usableEquipment)
-        {
-            var ammo = possibleUpgrade.EquipmentElement.Item.ItemType switch
-            {
-                ItemObject.ItemTypeEnum.Bow => usableEquipment.FirstOrDefaultQ(e => e.EquipmentElement.Item.ItemType is ItemObject.ItemTypeEnum.Arrows),
-                ItemObject.ItemTypeEnum.Crossbow => usableEquipment.FirstOrDefaultQ(e => e.EquipmentElement.Item.ItemType is ItemObject.ItemTypeEnum.Bolts),
-                ItemObject.ItemTypeEnum.Musket or ItemObject.ItemTypeEnum.Pistol =>
-                    usableEquipment.FirstOrDefaultQ(e => e.EquipmentElement.Item.ItemType is ItemObject.ItemTypeEnum.Bullets),
-                _ => default
-            };
-            return ammo;
-        }
-
-        public static bool DoPossibleUpgrade(ItemRosterElement possibleUpgrade,
-            ref CharacterObject troop,
-            ref List<ItemRosterElement> usableEquipment,
-            ref bool wasUpgraded, int slotOverride = -1)
-        {
-            // current item where it's the right kind
-            // TODO break to save time if the most valuable loot is less than the least valuable slot that isn't ammo
-            var targetSlot = slotOverride < 0 ? GetLowestValueSlotThatFits(troop.Equipment, possibleUpgrade) : slotOverride;
-            // every slot is better
-            if (targetSlot < 0)
-                return false;
-            var replacedItem = troop.Equipment[targetSlot];
-            if (troop.Equipment.Contains(possibleUpgrade.EquipmentElement))
-                return false;
-            if (replacedItem.ItemValue >= possibleUpgrade.EquipmentElement.ItemValue)
-            {
-                //Log($"\tpassing on {possibleUpgrade.EquipmentElement.Item?.Name} ({possibleUpgrade.EquipmentElement.ItemValue}) because {lowestValueEq.Item?.Name} ({lowestValueEq.ItemValue}) isn't worth less");
-                return false;
-            }
-
-            CharacterObject tempCharacter;
-            if (BanditMilitiaTroops.Contains(troop) || BanditMilitiaCharacters.Contains(troop))
-                tempCharacter = troop;
-            else
-                tempCharacter = CreateCustomCharacter(troop);
-
-            Log($"### Upgrading {tempCharacter.HeroObject?.Name ?? tempCharacter.Name} ({tempCharacter.StringId}): {replacedItem.Item?.Name.ToString() ?? "empty slot"} with {possibleUpgrade.EquipmentElement.Item.Name}");
-            // assign the upgrade
-            tempCharacter.Equipment[targetSlot] = possibleUpgrade.EquipmentElement;
-            wasUpgraded = true;
-            // decrement and remove ItemRosterElements
-            if (--possibleUpgrade.Amount == 0)
-            {
-                usableEquipment.Remove(possibleUpgrade);
-            }
-
-            // put anything replaced back into the pile
-            if (!replacedItem.IsEmpty && replacedItem.ItemValue >= 1000)
-            {
-                Log($"### Returning {replacedItem.Item?.Name} to the bag");
-                var index = usableEquipment.SelectQ(e => e.EquipmentElement.Item).ToListQ().FindIndexQ(replacedItem.Item);
-                if (index > -1)
-                {
-                    var item = usableEquipment[index];
-                    item.Amount++;
-                    usableEquipment[index] = item;
-                }
-                else
-                {
-                    usableEquipment.Add(new ItemRosterElement(replacedItem.Item, 1));
-                    usableEquipment = usableEquipment.OrderByDescending(e => e.EquipmentElement.ItemValue).ToListQ();
-                }
-            }
-
-            troop = tempCharacter;
-            return true;
-        }
-
-        internal static int creationCount;
-
-        private static CharacterObject CreateCustomCharacter(CharacterObject troop)
-        {
-            // goal here is only generate one custom CharacterObject, if receiving an already customized one it can be further customized as-is
-            var tempCharacter = CharacterObject.CreateFrom(troop);
-            AccessTools.Property("BasicCharacterObject:IsSoldier").SetValue(tempCharacter, true);
-            Log($"Created {tempCharacter.StringId}");
-            creationCount++;
-            HiddenInEncyclopedia(tempCharacter) = true;
-            var mbEquipmentRoster = new MBEquipmentRoster();
-            Equipments(mbEquipmentRoster) = new List<Equipment> { new(troop.Equipment) };
-            EquipmentRoster(tempCharacter) = mbEquipmentRoster;
-            AccessTools.Method(typeof(CharacterObject), "SetName").Invoke(tempCharacter, new object[] { new TextObject($"Upgraded {tempCharacter.Name}") });
-            return tempCharacter;
-        }
-
-        public static int GetLowestValueSlotThatFits(Equipment equipment, ItemRosterElement possibleUpgrade)
-        {
-            var lowestValue = int.MaxValue;
-            var targetSlot = -1;
-            for (var slot = 0; slot < Equipment.EquipmentSlotLength; slot++)
-            {
-                if (!Equipment.IsItemFitsToSlot((EquipmentIndex)slot, possibleUpgrade.EquipmentElement.Item))
-                    continue;
-                if (equipment[slot].IsEmpty)
-                {
-                    targetSlot = slot;
-                    break;
-                }
-
-                if (equipment[slot].Item.ItemType is
-                    ItemObject.ItemTypeEnum.Arrows
-                    or ItemObject.ItemTypeEnum.Bolts
-                    or ItemObject.ItemTypeEnum.Bullets) continue;
-
-                if (equipment[slot].ItemValue < lowestValue)
-                {
-                    lowestValue = equipment[slot].ItemValue;
-                    targetSlot = slot;
-                }
-            }
-
-            return targetSlot;
-        }
-
         public static Hero CustomizedCreateHeroAtOccupation(Settlement settlement, Clan clan)
         {
             var max = 0;
-            foreach (var characterObject in BMHeroes)
+            foreach (var characterObject in HeroTemplates)
             {
                 var num = characterObject.GetTraitLevel(DefaultTraits.Frequency) * 10;
                 max += num > 0 ? num : 100;
@@ -1426,7 +1091,7 @@ namespace BanditMilitias.Helpers
 
             var template = (CharacterObject)null;
             var num1 = settlement.RandomIntWithSeed((uint)Rng.Next(), 1, max);
-            foreach (var characterObject in BMHeroes)
+            foreach (var characterObject in HeroTemplates)
             {
                 var num2 = characterObject.GetTraitLevel(DefaultTraits.Frequency) * 10;
                 num1 -= num2 > 0 ? num2 : 100;

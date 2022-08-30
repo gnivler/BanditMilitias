@@ -119,7 +119,7 @@ namespace BanditMilitias.Patches
             {
                 if (mobileParty.IsBM())
                 {
-                    Log($"Preventing {mobileParty} from entering {settlement.Name}");
+                    DeferringLogger.Instance.Debug?.Log($"Preventing {mobileParty} from entering {settlement.Name}");
                     MilitiaBehavior.BMThink(mobileParty);
                     return false;
                 }
@@ -136,7 +136,6 @@ namespace BanditMilitias.Patches
 
             public static void Postfix(PartyNameplateVM __instance, ref string ____fullNameBind)
             {
-                //T.Restart();
                 // Leader is null after a battle, crashes after-action
                 // this staged approach feels awkward but it's fast
                 if (__instance.Party?.LeaderHero is null)
@@ -147,7 +146,6 @@ namespace BanditMilitias.Patches
                 if (Map.TryGetValue(__instance.Party, out var name))
                 {
                     ____fullNameBind = name;
-                    //SubModule.Log(T.ElapsedTicks);
                     return;
                 }
 
@@ -158,7 +156,6 @@ namespace BanditMilitias.Patches
 
                 Map.Add(__instance.Party, __instance.Party.GetBM().Name.ToString());
                 ____fullNameBind = Map[__instance.Party];
-                //SubModule.Log(T.ElapsedTicks);
             }
         }
 
@@ -190,12 +187,10 @@ namespace BanditMilitias.Patches
                     return;
                 }
 
-                if (__result
-                    && !targetParty.IsGarrison
-                    && __instance.IsBM())
+                if (__result && targetParty.Party.IsMobile && __instance.IsBM())
                 {
                     if (Globals.Settings.IgnoreVillagersCaravans
-                        && targetParty.IsCaravan || targetParty.IsVillager)
+                        && (targetParty.IsCaravan || targetParty.IsVillager))
                     {
                         __result = false;
                         return;
@@ -213,14 +208,9 @@ namespace BanditMilitias.Patches
                     var party2Strength = targetParty.GetTotalStrengthWithFollowers();
                     float delta;
                     if (party1Strength > party2Strength)
-                    {
                         delta = party1Strength - party2Strength;
-                    }
                     else
-                    {
                         delta = party2Strength - party1Strength;
-                    }
-
                     var deltaPercent = delta / party1Strength * 100;
                     __result = deltaPercent <= Globals.Settings.MaxStrengthDeltaPercent;
                 }
@@ -248,30 +238,32 @@ namespace BanditMilitias.Patches
         [HarmonyPatch(typeof(MapEventParty), "OnTroopKilled")]
         public static class TroopRosterRemoveTroop
         {
-            public static void Prefix(UniqueTroopDescriptor troopSeed, FlattenedTroopRoster ____roster)
+            public static void Prefix(UniqueTroopDescriptor troopSeed, FlattenedTroopRoster ____roster, ref CharacterObject __state)
             {
-                var troop = ____roster[troopSeed].Troop;
-                if (BanditMilitiaTroops.Contains(troop))
-                    MBObjectManager.Instance.UnregisterObject(troop);
+                __state= ____roster[troopSeed].Troop;
+            }
+
+            public static void Postfix(UniqueTroopDescriptor troopSeed, FlattenedTroopRoster ____roster, CharacterObject __state)
+            {
+                if (Troops.Contains(__state))
+                    MBObjectManager.Instance.UnregisterObject(__state);
             }
         }
-
 
         [HarmonyPatch(typeof(TroopRoster), "AddToCountsAtIndex")]
         public static class TroopRosterAddToCountsAtIndex
         {
-            public static void Prefix(TroopRoster __instance, int index, int countChange)
+            public static void Prefix(TroopRoster __instance, int index, int countChange, ref CharacterObject __state)
             {
-                // TODO consider the hero using OriginalCharacter.StringId
-                var troop = __instance.GetCharacterAtIndex(index);
-                //if (!IsRegistered(troop) && !BanditMilitiaCharacters.Contains(troop))
-                //{
-                //    Meow();
-                //}
-                if (countChange < 0 && BanditMilitiaTroops.Contains(troop))
+                __state = __instance.GetCharacterAtIndex(index);
+            }
+
+            public static void Postfix(TroopRoster __instance, int index, int countChange, CharacterObject __state)
+            {
+                if (countChange < 0 && Troops.Contains(__state))
                 {
-                    BanditMilitiaTroops.Remove(troop);
-                    MBObjectManager.Instance.UnregisterObject(troop);
+                    Troops.Remove(__state);
+                    //MBObjectManager.Instance.UnregisterObject(troop);
                 }
             }
 
@@ -283,14 +275,14 @@ namespace BanditMilitias.Patches
                         return null;
                     // throws with Heroes Must Die (old)
                     case IndexOutOfRangeException:
-                        Log("HACK Squelching IndexOutOfRangeException at TroopRoster.AddToCountsAtIndex");
+                        DeferringLogger.Instance.Debug?.Log("HACK Squelching IndexOutOfRangeException at TroopRoster.AddToCountsAtIndex");
                         return null;
                     // throws during nuke of poor state (old)
                     case NullReferenceException:
-                        Log(__exception);
+                        DeferringLogger.Instance.Debug?.Log(__exception);
                         return null;
                     default:
-                        Log(__exception);
+                        DeferringLogger.Instance.Debug?.Log(__exception);
                         return __exception;
                 }
             }

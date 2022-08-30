@@ -7,7 +7,9 @@ using TaleWorlds.CampaignSystem.MapEvents;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
+using TaleWorlds.LinQuick;
 using TaleWorlds.ObjectSystem;
+
 // ReSharper disable InconsistentNaming
 
 namespace BanditMilitias
@@ -27,9 +29,15 @@ namespace BanditMilitias
             LastCalculated = 0;
             PartyCacheInterval = 0;
             RaidCap = 0;
-            EquipmentMap = new();
-            MapMobilePartyTrackerVM.Trackers.Clear();
-            BMHeroes = new();
+            foreach (var BM in Helpers.Helper.GetCachedBMs(true).SelectQ(bm => bm.Party))
+            {
+                var index = MapMobilePartyTrackerVM.Trackers.FindIndexQ(t =>
+                    t.TrackedParty == BM.MobileParty);
+                if (index >= 0)
+                    MapMobilePartyTrackerVM.Trackers.RemoveAt(index);
+            }
+
+            HeroTemplates = new();
             Mounts = new();
             Saddles = new();
             Hideouts = new();
@@ -55,9 +63,9 @@ namespace BanditMilitias
         internal static Dictionary<MapEventSide, List<EquipmentElement>> LootRecord = new();
 
         // object tracking
-        internal static List<Hero> BanditMilitiaHeroes = new();
-        internal static List<CharacterObject> BanditMilitiaCharacters = new();
-        internal static List<CharacterObject> BanditMilitiaTroops = new();
+        internal static List<Hero> Heroes = new();
+        internal static List<Hero> Dummies = new();
+        internal static List<CharacterObject> Troops = new();
         internal static Dictionary<string, Equipment> EquipmentMap = new();
 
         // misc
@@ -84,7 +92,7 @@ namespace BanditMilitias
         internal static MapMobilePartyTrackerVM MapMobilePartyTrackerVM;
 
         internal static float Variance => MBRandom.RandomFloatRanged(0.925f, 1.075f);
-        internal static List<CharacterObject> BMHeroes = new();
+        internal static List<CharacterObject> HeroTemplates = new();
 
         // ArmsDealer compatibility
         internal static CultureObject BlackFlag => MBObjectManager.Instance.GetObject<CultureObject>("ad_bandit_blackflag");
