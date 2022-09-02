@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
 using HarmonyLib;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
@@ -34,44 +33,45 @@ namespace BanditMilitias.Helpers
         {
             KillCharacterAction.ApplyByRemove(hero);
             DeadOrDisabledHeroes(Campaign.Current.CampaignObjectManager).Remove(hero);
-            Globals.BanditMilitiaHeroes.Remove(hero);
-            Globals.BanditMilitiaCharacters.Remove(hero.CharacterObject);
+            Globals.Heroes.Remove(hero);
             MBObjectManager.Instance.UnregisterObject(hero.CharacterObject);
         }
 
         // ReSharper disable once InconsistentNaming
-        public static bool IsBM(this MobileParty mobileParty)
-        {
-            return mobileParty?.PartyComponent is ModBanditMilitiaPartyComponent;
-        }
+        public static bool IsBM(this MobileParty mobileParty) => mobileParty?.PartyComponent is ModBanditMilitiaPartyComponent;
 
         public static ModBanditMilitiaPartyComponent GetBM(this MobileParty mobileParty)
         {
-            if (mobileParty.PartyComponent is ModBanditMilitiaPartyComponent BM)
-            {
-                return BM;
-            }
+            if (mobileParty.PartyComponent is ModBanditMilitiaPartyComponent bm)
+                return bm;
 
             return null;
         }
 
-        public static MobileParty FindParty(this CharacterObject characterObject)
+        public static MobileParty FindParty(this CharacterObject characterObject, out bool prisoner)
         {
             foreach (var party in MobileParty.All)
             {
-                if (party.MemberRoster.ToFlattenedRoster().Troops.AnyQ(troop => troop == characterObject)
-                    || party.PrisonRoster.ToFlattenedRoster().Troops.AnyQ(troop => troop == characterObject))
+                if (party.MemberRoster.GetTroopRoster().WhereQ(t => t.Character.OriginalCharacter is not null).AnyQ(t => t.Character.StringId == characterObject.StringId))
                 {
+                    prisoner = false;
+                    return party;
+                }
+
+                if (party.PrisonRoster.GetTroopRoster().WhereQ(t => t.Character.OriginalCharacter is not null).AnyQ(t => t.Character.StringId == characterObject.StringId))
+                {
+                    prisoner = true;
                     return party;
                 }
             }
 
+            prisoner = false;
             return null;
         }
 
         public static int CountMounted(this TroopRoster troopRoster)
         {
-            return troopRoster.GetTroopRoster().WhereQ(t => !t.Character.FirstBattleEquipment[10].IsEmpty).Sum(t => t.Number);
+            return troopRoster.GetTroopRoster().WhereQ(t => !t.Character.FirstBattleEquipment[10].IsEmpty).SumQ(t => t.Number);
         }
 
         public static bool Contains(this Equipment equipment, EquipmentElement element)

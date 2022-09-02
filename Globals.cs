@@ -8,12 +8,12 @@ using TaleWorlds.CampaignSystem.MapEvents;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
+using TaleWorlds.LinQuick;
 using TaleWorlds.ObjectSystem;
 
 namespace BanditMilitias
 {
-    // ReSharper disable once ClassNeverInstantiated.Global
-    public class Globals
+    public static class Globals
     {
         internal static void ClearGlobals()
         {
@@ -28,9 +28,15 @@ namespace BanditMilitias
             LastCalculated = 0;
             PartyCacheInterval = 0;
             RaidCap = 0;
-            EquipmentMap = new();
-            MobilePartyTrackerVM.Trackers.Clear();
-            HeroCharacters = new();
+            foreach (var BM in Helpers.Helper.GetCachedBMs(true).SelectQ(bm => bm.Party))
+            {
+                var index = MobilePartyTrackerVM.Trackers.FindIndexQ(t =>
+                    t.TrackedParty == BM.MobileParty);
+                if (index >= 0)
+                    MobilePartyTrackerVM.Trackers.RemoveAt(index);
+            }
+
+            HeroTemplates = new();
             Mounts = new();
             Saddles = new();
             Hideouts = new();
@@ -38,48 +44,44 @@ namespace BanditMilitias
         }
 
         // merge/split criteria
-        public const float MergeDistance = 2;
-        public const float FindRadius = 20;
-        public const float MinDistanceFromHideout = 8;
+        internal const float MergeDistance = 1.5f;
+        internal const float FindRadius = 20;
+        internal const float MinDistanceFromHideout = 8;
 
         // holders for criteria
-        public static float CalculatedMaxPartySize;
-        public static float CalculatedGlobalPowerLimit;
-        public static float GlobalMilitiaPower;
-        public static float MilitiaPowerPercent;
-        public static float MilitiaPartyAveragePower;
+        internal static float CalculatedMaxPartySize;
+        internal static float CalculatedGlobalPowerLimit;
+        internal static float GlobalMilitiaPower;
+        internal static float MilitiaPowerPercent;
+        internal static float MilitiaPartyAveragePower;
 
         // dictionary maps
-        public static Dictionary<MobileParty, ImageIdentifierVM> PartyImageMap = new();
-        public static Dictionary<ItemObject.ItemTypeEnum, List<ItemObject>> ItemTypes = new();
-        public static Dictionary<CultureObject, List<CharacterObject>> Recruits = new();
-        public static Dictionary<MapEventSide, List<EquipmentElement>> LootRecord = new();
+        internal static Dictionary<MobileParty, ImageIdentifierVM> PartyImageMap = new();
+        internal static Dictionary<ItemObject.ItemTypeEnum, List<ItemObject>> ItemTypes = new();
+        internal static Dictionary<CultureObject, List<CharacterObject>> Recruits = new();
+        internal static Dictionary<MapEventSide, List<EquipmentElement>> LootRecord = new();
 
         // object tracking
-        internal static List<Hero> BanditMilitiaHeroes = new();
-        internal static List<CharacterObject> BanditMilitiaCharacters = new();
-        internal static List<CharacterObject> BanditMilitiaTroops = new();
+        internal static List<Hero> Heroes = new();
+        internal static List<CharacterObject> Troops = new();
+        internal static Dictionary<string, Equipment> EquipmentMap = new();
 
         // misc
-        public static readonly Random Rng = new();
-        public static readonly Stopwatch T = new();
-        public static Settings Settings;
-        public static List<EquipmentElement> EquipmentItems = new();
-        public static List<ItemObject> Arrows = new();
-        public static List<ItemObject> Bolts = new();
-        public static List<Equipment> BanditEquipment = new();
-        public static readonly List<Banner> Banners = new();
-        public static double LastCalculated;
-        public static double PartyCacheInterval;
-        public static int RaidCap;
-        public static Dictionary<string, Equipment> EquipmentMap = new();
-        private static Clan looters;
-        public static Clan Looters => looters ??= Clan.BanditFactions.First(c => c.StringId == "looters");
-        private static IEnumerable<Clan> synthClans;
-        public static IEnumerable<Clan> SynthClans => synthClans ??= Clan.BanditFactions.Except(new[] { Looters });
-        public static List<ItemObject> Mounts;
-        public static List<ItemObject> Saddles;
-        public static List<Settlement> Hideouts;
+        internal static readonly Random Rng = new();
+        internal static readonly Stopwatch T = new();
+        internal static Settings Settings;
+        internal static List<EquipmentElement> EquipmentItems = new();
+        internal static List<ItemObject> Arrows = new();
+        internal static List<ItemObject> Bolts = new();
+        internal static List<Equipment> BanditEquipment = new();
+        internal static readonly List<Banner> Banners = new();
+        internal static double LastCalculated;
+        internal static double PartyCacheInterval;
+        internal static int RaidCap;
+        internal static Clan Looters;
+        internal static List<ItemObject> Mounts;
+        internal static List<ItemObject> Saddles;
+        internal static List<Settlement> Hideouts;
         internal static IEnumerable<ModBanditMilitiaPartyComponent> AllBMs;
         internal static CampaignPeriodicEventManager CampaignPeriodicEventManager;
         internal static object Ticker;
@@ -87,13 +89,13 @@ namespace BanditMilitias
         // ReSharper disable once InconsistentNaming
         public static MobilePartyTrackerVM MobilePartyTrackerVM;
 
-        public static float Variance => MBRandom.RandomFloatRanged(0.925f, 1.075f);
-        public static List<CharacterObject> HeroCharacters = new();
+        internal static float Variance => MBRandom.RandomFloatRanged(0.925f, 1.075f);
+        internal static List<CharacterObject> HeroTemplates = new();
 
         // ArmsDealer compatibility
-        public static CultureObject BlackFlag => MBObjectManager.Instance.GetObject<CultureObject>("ad_bandit_blackflag");
+        internal static CultureObject BlackFlag => MBObjectManager.Instance.GetObject<CultureObject>("ad_bandit_blackflag");
 
-        public static readonly Dictionary<string, int> DifficultyXpMap = new()
+        internal static readonly Dictionary<string, int> DifficultyXpMap = new()
         {
             { "Off", 0 },
             { "Normal", 300 },
@@ -101,7 +103,7 @@ namespace BanditMilitias
             { "Hardest", 900 },
         };
 
-        public static readonly Dictionary<string, int> GoldMap = new()
+        internal static readonly Dictionary<string, int> GoldMap = new()
         {
             { "Low", 250 },
             { "Normal", 500 },

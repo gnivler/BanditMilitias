@@ -7,14 +7,13 @@ using BanditMilitias.Helpers;
 using BanditMilitias.Patches;
 using HarmonyLib;
 using SandBox.View.Map;
-using SandBox.ViewModelCollection.MobilePartyTracker;
+using SandBox.ViewModelCollection.Map;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.Core;
 using TaleWorlds.InputSystem;
 using TaleWorlds.Library;
 using TaleWorlds.LinQuick;
-using TaleWorlds.Localization;
 using TaleWorlds.MountAndBlade;
 using TaleWorlds.ObjectSystem;
 using static BanditMilitias.Helpers.Helper;
@@ -39,11 +38,7 @@ namespace BanditMilitias
         protected override void OnSubModuleLoad()
         {
             if (MEOWMEOW)
-            {
                 AccessTools.Field(typeof(Module), "_splashScreenPlayed").SetValue(Module.CurrentModule, true);
-            }
-
-
             RunManualPatches();
             harmony.PatchAll(Assembly.GetExecutingAssembly());
         }
@@ -54,7 +49,8 @@ namespace BanditMilitias
         {
             for (var i = 0; i < 5000; i++)
             {
-                Banners.Add(Banner.CreateRandomBanner());
+                Banners.Add((Banner)AccessTools.Method(typeof(Banner), "CreateRandomBannerInternal")
+                    .Invoke(typeof(Banner), new object[] { Rng.Next(0, int.MaxValue), -1 }));
             }
         }
 
@@ -70,11 +66,10 @@ namespace BanditMilitias
                 }
                 catch (Exception ex)
                 {
-                    Log(ex);
+                    System.Diagnostics.Debug.Print(ex.ToString());
                 }
-            }
 
-            Log($"{Globals.Settings?.DisplayName} starting up...");
+            DeferringLogger.Instance.Debug?.Log($"{Globals.Settings?.DisplayName} starting up...");
         }
 
         // Calradia Expanded: Kingdoms
@@ -82,14 +77,10 @@ namespace BanditMilitias
         {
             var assemblies = AppDomain.CurrentDomain.GetAssemblies();
             var BM = assemblies.First(a => a.FullName.StartsWith("BanditMilitias"));
-            var CEK = assemblies.FirstOrDefault(x => x.FullName.StartsWith("CalradiaExpandedKingdoms"));
+            var CEK = assemblies.FirstOrDefaultQ(x => x.FullName.StartsWith("CalradiaExpandedKingdoms"));
             if (CEK is not null)
-            {
                 if (assemblies.FindIndex(a => a == BM) > assemblies.FindIndex(a => a == CEK))
-                {
                     Globals.Settings.RandomBanners = false;
-                }
-            }
         }
 
         protected override void OnApplicationTick(float dt)
@@ -99,104 +90,81 @@ namespace BanditMilitias
                            && (Input.IsKeyDown(InputKey.LeftAlt) || Input.IsKeyDown(InputKey.RightAlt))
                            && (Input.IsKeyDown(InputKey.LeftShift) || Input.IsKeyDown(InputKey.RightShift));
 
-            if (superKey && Input.IsKeyPressed(InputKey.F9))
-            {
-                // debug to show all parties on map
+            // debug to show all parties on map
+            if (MEOWMEOW && superKey && Input.IsKeyPressed(InputKey.F9))
                 foreach (var m in MobileParty.All)
-                {
-                    Globals.MobilePartyTrackerVM.Trackers.Add(new MobilePartyTrackItemVM(m, MapScreen.Instance.MapCamera, null));
-                }
-            }
+                    Globals.MapMobilePartyTrackerVM.Trackers.Add(new MobilePartyTrackItemVM(m, MapScreen.Instance.MapCamera, null));
 
             if (MEOWMEOW && Input.IsKeyPressed(InputKey.F1))
             {
-                var party = GetCachedBMs(true)?.GetRandomElementInefficiently()?.MobileParty;
+                //var party = GetCachedBMs(true)?.GetRandomElementInefficiently()?.MobileParty;
+                var party = MobileParty.All.WhereQ(m => m.Army != null).GetRandomElementInefficiently();
                 if (party is not null)
-                    party.Position2D = MobileParty.MainParty.Position2D;
+                    MobileParty.MainParty.Position2D = party.Position2D;
+                //party.Position2D = MobileParty.MainParty.Position2D;
             }
+
             if (MEOWMEOW && Input.IsKeyPressed(InputKey.F2))
             {
-                Hacks.HackPurgeAllBadTroopsFromAllParties();
+                foreach (var mobileParty in MobileParty.AllBanditParties)
+                {
+                    if (mobileParty.StringId.StartsWith("Bandit_Militia"))
+                        continue;
+                    mobileParty.Position2D = MobileParty.MainParty.Position2D;
+                }
+
+                Hacks.PurgeBadTroops();
+            }
+
+            if (MEOWMEOW && Input.IsKeyPressed(InputKey.F3))
+            {
+                //try
+                //{
+                //    MobileParty.MainParty.Position2D = Settlement.All.WhereQ(s => s.IsHideout && s.Hideout.IsInfested).GetRandomElementInefficiently().GatePosition;
+                //}
+                //catch
+                //{
+                //    //ignore
+                //}
+                MobileParty.MainParty.Position2D = Hero.AllAliveHeroes.FirstOrDefaultQ(h => h.IsWanderer && h.CurrentSettlement is not null).CurrentSettlement.GatePosition;
             }
 
             if (MEOWMEOW && Input.IsKeyPressed(InputKey.Tilde))
-            {
-               
-                //Campaign.Current.QuestManager.Quests[0].CompleteQuestWithSuccess(); 
                 Debugger.Break();
-                //try
-                //{
-                //    var deserters = Campaign.Current!.IssueManager.Issues.FirstOrDefaultQ(i => i.Value.GetType() == typeof(ExtortionByDesertersIssueBehavior.ExtortionByDesertersIssue));
-                //    MobileParty.MainParty.Position2D = deserters.Key.CurrentSettlement.GetPosition2D;
-                //}
-                //catch (Exception e)
-                //{
-                //   //ignore
-                //}
-                //var issue= new PotentialIssueData(null, typeof(ExtortionByDesertersIssueBehavior), IssueBase.IssueFrequency.Common);
-                //var hero = Settlement.All.First(s => s.Name.ToString() == "Varnovapol").Notables.First();
-                //Campaign.Current!.IssueManager.CreateNewIssue(in issue, hero);
-                //troopsWithoutParties.Do(x => Log($"{x.StringId}"));
-
-                //var crud = MobileParty.All.Where(m => m.Name.ToString().EndsWith("Bandit Militia")).ToList();
-                //for (var i = 0; i < crud.Count; i++)
-                //{
-                //    Trash(crud[i]);
-                //}
-
-                //var target = MobileParty.All.WhereQ(m => m.PartyComponent is ModBanditMilitiaPartyComponent).OrderByDescending(m => m.MemberRoster.GetTroopRoster().WhereQ(e => e.Character.StringId.Contains("Bandit_Militia_Troop")).SumQ(r => r.Number)).FirstOrDefault();
-                //
-                //if (SubModule.MEOWMEOW)
-                //{
-                //    MobileParty.MainParty.Position2D = target!.Position2D;
-                //    Campaign.Current!.TimeControlMode = CampaignTimeControlMode.Stop;
-                //    MapScreen.Instance.TeleportCameraToMainParty();
-                //}
-                //Nuke();
-                //for (var i = 0; i < MobileParty.AllBanditParties.Count; i++)
-                //{
-                //    //Traverse.Create(MobileParty.AllBanditParties[i]).Property<MobileParty>("AiBehaviorPartyBase").Value = null;
-                //    //Traverse.Create(MobileParty.AllBanditParties[i].AiBehaviorPartyBase).Property<MobileParty>("MobileParty").Value = null;
-                //
-                //    MobileParty.AllBanditParties[i].MapEvent?.FinalizeEvent();
-                //    Trash(MobileParty.AllBanditParties[i]);
-                //}
-            }
 
             if (superKey && Input.IsKeyPressed(InputKey.F11))
             {
                 Globals.Settings.TestingMode = !Globals.Settings.TestingMode;
-                InformationManager.AddQuickInformation(new TextObject("Testing mode: " + Globals.Settings.TestingMode));
+                InformationManager.DisplayMessage(new InformationMessage("Testing mode: " + Globals.Settings.TestingMode));
             }
 
-            if (superKey && Input.IsKeyPressed(InputKey.F10))
-            {
+            if (MEOWMEOW && superKey && Input.IsKeyPressed(InputKey.F10))
                 MobileParty.MainParty.ItemRoster.AddToCounts(MBObjectManager.Instance.GetObject<ItemObject>("grain"), 10000);
-            }
 
             if (superKey && Input.IsKeyPressed(InputKey.F12))
             {
                 foreach (var militia in MobileParty.All.WhereQ(m => m.IsBM()).OrderBy(x => x.MemberRoster.TotalManCount))
                 {
-                    Log($">> {militia.LeaderHero.Name,-30}: {militia.MemberRoster.TotalManCount:F1}/{militia.Party.TotalStrength:0}");
-                    for (int tier = 1; tier <= 6; tier++)
+                    DeferringLogger.Instance.Debug?.Log($">> {militia.LeaderHero.Name,-30}: {militia.MemberRoster.TotalManCount:F1}/{militia.Party.TotalStrength:0}");
+                    for (var tier = 1; tier <= 6; tier++)
                     {
-                        var count = militia.MemberRoster.GetTroopRoster().Where(x => x.Character.Tier == tier).Sum(x => x.Number);
+                        // ReSharper disable once AccessToModifiedClosure
+                        var count = militia.MemberRoster.GetTroopRoster().WhereQ(x => x.Character.Tier == tier).SumQ(x => x.Number);
                         if (count > 0)
                         {
-                            Log($"  Tier {tier}: {count}");
+                            DeferringLogger.Instance.Debug?.Log($"  Tier {tier}: {count}");
                         }
                     }
 
-                    Log($"Cavalry: {NumMountedTroops(militia.MemberRoster)} ({(float)NumMountedTroops(militia.MemberRoster) / militia.MemberRoster.TotalManCount * 100}%)");
+                    DeferringLogger.Instance.Debug?.Log($"Cavalry: {NumMountedTroops(militia.MemberRoster)} ({(float)NumMountedTroops(militia.MemberRoster) / militia.MemberRoster.TotalManCount * 100}%)");
                     if ((float)NumMountedTroops(militia.MemberRoster) / (militia.MemberRoster.TotalManCount * 100) > militia.MemberRoster.TotalManCount / 2f)
                     {
-                        Log(new string('*', 80));
-                        Log(new string('*', 80));
+                        DeferringLogger.Instance.Debug?.Log(new string('*', 80));
+                        DeferringLogger.Instance.Debug?.Log(new string('*', 80));
                     }
                 }
 
-                Log($">>> Total {MobileParty.All.CountQ(m => m.IsBM())} = {MobileParty.All.WhereQ(m => m.IsBM()).Select(x => x.MemberRoster.TotalManCount).Sum()} ({MilitiaPowerPercent}%)");
+                DeferringLogger.Instance.Debug?.Log($">>> Total {MobileParty.All.CountQ(m => m.IsBM())} = {MobileParty.All.WhereQ(m => m.IsBM()).SelectQ(x => x.MemberRoster.TotalManCount).Sum()} ({MilitiaPowerPercent}%)");
             }
 
             if ((Input.IsKeyDown(InputKey.LeftControl) || Input.IsKeyDown(InputKey.RightControl)) &&
@@ -205,21 +173,21 @@ namespace BanditMilitias
             {
                 try
                 {
-                    Log("Clearing mod data.");
+                    DeferringLogger.Instance.Debug?.Log("Clearing mod data.");
                     // no idea why it takes several iterations to clean up certain situations but it does
-                    for (var index = 0; index < 2; index++)
+                    for (var index = 0; index < 1; index++)
                     {
                         Nuke();
                     }
 
                     DoPowerCalculations(true);
-                    InformationManager.AddQuickInformation(new TextObject("BANDIT MILITIAS CLEARED"));
+                    InformationManager.DisplayMessage(new InformationMessage("BANDIT MILITIAS CLEARED"));
                     var bmCount = MobileParty.All.CountQ(m => m.IsBM());
-                    Log($"Militias: {bmCount}.  Upgraded BM troops: {MobileParty.All.SelectMany(m => m.MemberRoster.ToFlattenedRoster()).CountQ(e => e.Troop.StringId.Contains("_Bandit_Militia_Troop_"))}.  Troop prisoners: {MobileParty.All.SelectMany(m => m.PrisonRoster.ToFlattenedRoster()).CountQ(e => e.Troop.StringId.Contains("_Bandit_Militia_Troop_"))}.");
+                    DeferringLogger.Instance.Debug?.Log($"Militias: {bmCount}.  Upgraded BM troops: {MobileParty.All.SelectMany(m => m.MemberRoster.ToFlattenedRoster()).CountQ(e => e.Troop.StringId.StartsWith("Upgraded"))}.  Troop prisoners: {MobileParty.All.SelectMany(m => m.PrisonRoster.ToFlattenedRoster()).CountQ(e => e.Troop.StringId.StartsWith("Upgraded"))}.");
                 }
                 catch (Exception ex)
                 {
-                    Log(ex);
+                    DeferringLogger.Instance.Debug?.Log(ex);
                 }
             }
         }
@@ -229,6 +197,7 @@ namespace BanditMilitias
             if (gameStarterObject is CampaignGameStarter gameStarter)
             {
                 gameStarter.AddBehavior(new MilitiaBehavior());
+                //gameStarter.AddModel(new ModBanditMilitiaKillModel());
             }
         }
 
@@ -246,7 +215,7 @@ namespace BanditMilitias
             }
             catch (Exception ex)
             {
-                Log(ex);
+                DeferringLogger.Instance.Debug?.Log(ex);
             }
         }
     }

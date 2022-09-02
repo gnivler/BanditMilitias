@@ -10,6 +10,14 @@ using MCM.Abstractions.Dropdown;
 using MCM.Abstractions.Settings.Base;
 using MCM.Abstractions.Settings.Base.Global;
 
+// ReSharper disable UnusedAutoPropertyAccessor.Local
+// ReSharper disable FieldCanBeMadeReadOnly.Local
+// ReSharper disable ConvertToAutoProperty
+// ReSharper disable InconsistentNaming    
+// ReSharper disable PropertyCanBeMadeInitOnly.Global
+// ReSharper disable AutoPropertyCanBeMadeGetOnly.Local
+// ReSharper disable PropertyCanBeMadeInitOnly.Local
+
 namespace BanditMilitias
 {
     public class Settings : AttributeGlobalSettings<Settings>
@@ -48,13 +56,14 @@ namespace BanditMilitias
         [SettingPropertyGroup("Primary Settings", GroupOrder = 0)]
         public bool CanTrain { get; private set; } = true;
 
-        //[SettingPropertyBool("Upgrade Militias (!!EXPERIMENTAL - novel mod!!)", HintText = "\nAll BM troops will upgrade their gear from loot won.  BM is the first mod to try this.", Order = 0, RequireRestart = false)]
-        //[SettingPropertyGroup("Primary Settings", GroupOrder =1)]
+        //[SettingPropertyBool("Upgrade BM Troops Gear (!! DISABLED, EXPERIMENTAL!!)", HintText = "\nAll BM troops will upgrade their gear from loot won.  BM is the first mod to try this.  Not yet available.", Order = 0, RequireRestart = false)]
+        [SettingPropertyBool("(Future feature)", HintText = "Not yet available.", Order = 8, RequireRestart = false)]
+        //[SettingPropertyGroup("Primary Settings", GroupOrder = 1)]
         public bool UpgradeTroops { get; private set; } = false;
 
         [SettingPropertyInteger("Daily Training Chance", 0, 100, HintText = "\nEach day they might train further.", Order = 1, RequireRestart = false)]
         [SettingPropertyGroup("Primary Settings", GroupOrder = 2)]
-        public float TrainingChance { get; set; } = 10;
+        public float TrainingChance { get; private set; } = 10;
 
         [SettingPropertyDropdown("Militia XP Boost", HintText = "\nHardest grants enough XP to significantly upgrade troops.  Off grants no bonus XP.", Order = 2, RequireRestart = false)]
         [SettingPropertyGroup("Primary Settings")]
@@ -118,7 +127,7 @@ namespace BanditMilitias
 
         [SettingPropertyInteger("Global Power", 0, 1000, HintText = "\nMajor setting.  Setting higher means more, bigger BMs.", Order = 11, RequireRestart = false)]
         [SettingPropertyGroup("Militia Adjustments")]
-        public int GlobalPowerPercent { get; set; } = 15;
+        public int GlobalPowerPercent { get; private set; } = 15;
 
         [SettingPropertyInteger("Max Training Tier", 1, 6, HintText = "\nBM won't train any units past this tier.", Order = 13, RequireRestart = false)]
         [SettingPropertyGroup("Militia Adjustments")]
@@ -151,13 +160,12 @@ namespace BanditMilitias
         public bool ShowRaids { get; set; } = true;
 
         [SettingPropertyBool("Debug Logging", HintText = "\nCreates logfile output in the mod folder.", Order = 6, RequireRestart = false)]
-        public bool Debug { get; set; }
+        public bool Debug { get; private set; }
 
         [SettingPropertyBool("Testing Mode", HintText = "Teleports BMs to you.", Order = 7, RequireRestart = false)]
-        public bool TestingMode { get; set; }
+        public bool TestingMode { get; internal set; }
 
-
-        private string id = "BanditMilitias";
+        private const string id = "BanditMilitias";
         private string displayName = $"BanditMilitias {typeof(Settings).Assembly.GetName().Version.ToString(3)}";
 
         public override string Id => id;

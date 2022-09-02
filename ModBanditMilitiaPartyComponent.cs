@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Reflection;
 using BanditMilitias.Helpers;
 using HarmonyLib;
@@ -11,6 +12,7 @@ using TaleWorlds.Localization;
 using TaleWorlds.SaveSystem;
 using static BanditMilitias.Globals;
 using static BanditMilitias.Helpers.Helper;
+// ReSharper disable InconsistentNaming
 
 namespace BanditMilitias
 {
@@ -24,7 +26,7 @@ namespace BanditMilitias
         [CachedData] public TextObject cachedName;
 
         public override Hero Leader => leader;
-        public override Hero PartyOwner => MobileParty?.ActualClan?.Leader;
+        public override Hero PartyOwner => MobileParty?.ActualClan?.Leader; // clan is null during nuke
 
         public override Settlement HomeSettlement { get; }
         private static readonly MethodInfo GetLocalizedText = AccessTools.Method(typeof(MBTextManager), "GetLocalizedText");
