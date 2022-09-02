@@ -2,13 +2,11 @@
 using System.Linq;
 using HarmonyLib;
 using TaleWorlds.CampaignSystem;
-using TaleWorlds.CampaignSystem.GameComponents;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Roster;
 using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.LinQuick;
 using TaleWorlds.ObjectSystem;
-using static BanditMilitias.Helpers.Helper;
 
 namespace BanditMilitias.Patches
 {
@@ -97,6 +95,8 @@ namespace BanditMilitias.Patches
                                 //Globals.BanditMilitiaCharacters.Remove(troop.Character);
                                 MBObjectManager.Instance.UnregisterObject(troop.Character);
                             }
+                        }
+                    }
             }
         }
 

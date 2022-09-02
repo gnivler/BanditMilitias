@@ -7,7 +7,7 @@ using BanditMilitias.Helpers;
 using BanditMilitias.Patches;
 using HarmonyLib;
 using SandBox.View.Map;
-using SandBox.ViewModelCollection.Map;
+using SandBox.ViewModelCollection.MobilePartyTracker;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.Core;
@@ -68,6 +68,7 @@ namespace BanditMilitias
                 {
                     System.Diagnostics.Debug.Print(ex.ToString());
                 }
+            }
 
             DeferringLogger.Instance.Debug?.Log($"{Globals.Settings?.DisplayName} starting up...");
         }
@@ -93,7 +94,7 @@ namespace BanditMilitias
             // debug to show all parties on map
             if (MEOWMEOW && superKey && Input.IsKeyPressed(InputKey.F9))
                 foreach (var m in MobileParty.All)
-                    Globals.MapMobilePartyTrackerVM.Trackers.Add(new MobilePartyTrackItemVM(m, MapScreen.Instance.MapCamera, null));
+                    Globals.MobilePartyTrackerVM.Trackers.Add(new MobilePartyTrackItemVM(m, MapScreen.Instance.MapCamera, null));
 
             if (MEOWMEOW && Input.IsKeyPressed(InputKey.F1))
             {
@@ -195,10 +196,7 @@ namespace BanditMilitias
         protected override void OnGameStart(Game game, IGameStarter gameStarterObject)
         {
             if (gameStarterObject is CampaignGameStarter gameStarter)
-            {
                 gameStarter.AddBehavior(new MilitiaBehavior());
-                //gameStarter.AddModel(new ModBanditMilitiaKillModel());
-            }
         }
 
         public override void OnGameInitializationFinished(Game game)

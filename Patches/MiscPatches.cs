@@ -1,13 +1,16 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
+using System.Reflection.Emit;
 using BanditMilitias.Helpers;
 using HarmonyLib;
 using SandBox.View.Map;
-using SandBox.ViewModelCollection.Map;
+using SandBox.ViewModelCollection.MobilePartyTracker;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.CampaignBehaviors;
 using TaleWorlds.CampaignSystem.Extensions;
+using TaleWorlds.CampaignSystem.Issues;
 using TaleWorlds.CampaignSystem.MapEvents;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Roster;
@@ -17,6 +20,7 @@ using TaleWorlds.Engine;
 using TaleWorlds.InputSystem;
 using TaleWorlds.Library;
 using TaleWorlds.LinQuick;
+using TaleWorlds.ObjectSystem;
 using static BanditMilitias.Helpers.Helper;
 using static BanditMilitias.Globals;
 
@@ -67,24 +71,21 @@ namespace BanditMilitias.Patches
         [HarmonyPatch(typeof(BattleCampaignBehavior), "CollectLoots")]
         public static class MapEventSideDistributeLootAmongWinners
         {
-            public static void Prefix(MapEvent mapEvent, PartyBase winnerParty, ref Dictionary<PartyBase, ItemRoster> lootedItems)
+            public static void Prefix(MapEvent mapEvent, PartyBase party, ref ItemRoster loot)
             {
-                if (!SubModule.MEOWMEOW || !Globals.Settings.UpgradeTroops || !mapEvent.HasWinner || !winnerParty.IsMobile || !winnerParty.MobileParty.IsBM())
+                if (!Globals.Settings.UpgradeTroops || !mapEvent.HasWinner || !party.IsMobile || !party.MobileParty.IsBM())
                     return;
-                if (LootRecord.TryGetValue(winnerParty.MapEventSide, out var equipment))
-                {
-                    var itemRoster = new ItemRoster();
+                if (LootRecord.TryGetValue(party.MapEventSide, out var equipment))
                     foreach (var e in equipment)
-                        itemRoster.AddToCounts(e, 1);
+                        loot.AddToCounts(e, 1);
 
-                    lootedItems.Add(winnerParty, itemRoster);
-                    if (lootedItems[winnerParty].AnyQ(i => !i.IsEmpty))
-                        EquipmentUpgrading.UpgradeEquipment(winnerParty, lootedItems[winnerParty]);
-                }
+                if (loot.AnyQ(i => !i.IsEmpty))
+                    EquipmentUpgrading.UpgradeEquipment(party, loot);
 
-                Globals.LootRecord.Remove(winnerParty.MobileParty.MapEventSide);
+                Globals.LootRecord.Remove(party.MobileParty.MapEventSide);
             }
         }
+
 
         [HarmonyPatch(typeof(MapScreen), "OnInitialize")]
         public static class MapScreenOnInitializePatch
@@ -149,10 +150,10 @@ namespace BanditMilitias.Patches
             }
         }
 
-        [HarmonyPatch(typeof(MapMobilePartyTrackerVM), MethodType.Constructor, typeof(Camera), typeof(Action<Vec2>))]
+        [HarmonyPatch(typeof(MobilePartyTrackerVM), MethodType.Constructor, typeof(Camera), typeof(Action<Vec2>))]
         public static class MapMobilePartyTrackerVMCtorPatch
         {
-            public static void Postfix(MapMobilePartyTrackerVM __instance) => Globals.MapMobilePartyTrackerVM = __instance;
+            public static void Postfix(MobilePartyTrackerVM __instance) => Globals.MobilePartyTrackerVM = __instance;
         }
 
         [HarmonyPatch(typeof(SaveableCampaignTypeDefiner), "DefineContainerDefinitions")]

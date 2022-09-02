@@ -1,16 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using BanditMilitias.Patches;
 using HarmonyLib;
 using Helpers;
 using SandBox.View.Map;
-using SandBox.ViewModelCollection.Map;
+using SandBox.ViewModelCollection.MobilePartyTracker;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
-using TaleWorlds.CampaignSystem.CampaignBehaviors;
 using TaleWorlds.CampaignSystem.CharacterDevelopment;
 using TaleWorlds.CampaignSystem.Extensions;
 using TaleWorlds.CampaignSystem.MapEvents;
@@ -68,8 +66,6 @@ namespace BanditMilitias.Helpers
 
         internal static readonly AccessTools.FieldRef<MBObjectBase, bool> IsRegistered =
             AccessTools.FieldRefAccess<MBObjectBase, bool>("<IsRegistered>k__BackingField");
-
-        internal static PartyUpgraderCampaignBehavior UpgraderCampaignBehavior;
 
         public static bool TrySplitParty(MobileParty mobileParty)
         {
@@ -800,9 +796,9 @@ namespace BanditMilitias.Helpers
                 Debugger.Break();
             if (party.MemberRoster.TotalManCount < Globals.Settings.TrackedSizeMinimum)
             {
-                var tracker = Globals.MapMobilePartyTrackerVM.Trackers.FirstOrDefaultQ(t => t.TrackedParty == party);
+                var tracker = Globals.MobilePartyTrackerVM.Trackers.FirstOrDefaultQ(t => t.TrackedParty == party);
                 if (tracker is not null)
-                    Globals.MapMobilePartyTrackerVM.Trackers.Remove(tracker);
+                    Globals.MobilePartyTrackerVM.Trackers.Remove(tracker);
             }
         }
 
@@ -884,14 +880,8 @@ namespace BanditMilitias.Helpers
 
             mobileParty.SetCustomName(mobileParty.GetBM().Name);
             if (Globals.Settings.Trackers && mobileParty.MemberRoster.TotalManCount >= Globals.Settings.TrackedSizeMinimum)
-            var tracker = Globals.MobilePartyTrackerVM.Trackers.FirstOrDefault(t => t.TrackedParty == mobileParty);
-            if (Globals.Settings.Trackers
-                && tracker is null
-                && mobileParty.MemberRoster.TotalManCount >= Globals.Settings.TrackedSizeMinimum)
             {
                 var tracker = new MobilePartyTrackItemVM(mobileParty, MapScreen.Instance.MapCamera, null);
-                Globals.MapMobilePartyTrackerVM.Trackers.Add(tracker);
-                tracker = new MobilePartyTrackItemVM(mobileParty, MapScreen.Instance.MapCamera, null);
                 Globals.MobilePartyTrackerVM.Trackers.Add(tracker);
             }
         }
@@ -1055,7 +1045,7 @@ namespace BanditMilitias.Helpers
         public static Hero CustomizedCreateHeroAtOccupation(Settlement settlement, Clan clan)
         {
             var max = 0;
-            foreach (var characterObject in HeroCharacters)
+            foreach (var characterObject in HeroTemplates)
             {
                 var num = characterObject.GetTraitLevel(DefaultTraits.Frequency) * 10;
                 max += num > 0 ? num : 100;

@@ -2,11 +2,10 @@ using System;
 using System.Collections.Generic;
 using BanditMilitias.Helpers;
 using HarmonyLib;
-using Helpers;
 using SandBox.GameComponents;
 using SandBox.View.Map;
 using SandBox.ViewModelCollection;
-using SandBox.ViewModelCollection.Map;
+using SandBox.ViewModelCollection.MobilePartyTracker;
 using SandBox.ViewModelCollection.Nameplate;
 using StoryMode.GameComponents;
 using TaleWorlds.CampaignSystem;
@@ -18,11 +17,10 @@ using TaleWorlds.CampaignSystem.GameComponents;
 using TaleWorlds.CampaignSystem.GameMenus;
 using TaleWorlds.CampaignSystem.MapEvents;
 using TaleWorlds.CampaignSystem.Party;
+using TaleWorlds.CampaignSystem.Party.PartyComponents;
 using TaleWorlds.CampaignSystem.Roster;
 using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
-using TaleWorlds.Library;
-using TaleWorlds.Localization;
 using TaleWorlds.MountAndBlade;
 using TaleWorlds.ObjectSystem;
 using static BanditMilitias.Helpers.Helper;
@@ -263,7 +261,6 @@ namespace BanditMilitias.Patches
                 }
             }
 
-
             public static void Postfix(TroopRoster __instance, int index, int countChange, CharacterObject __state)
             {
                 // this correctly assumes there will never be Number > 1
@@ -323,31 +320,6 @@ namespace BanditMilitias.Patches
             }
         }
 
-        // copied out of assembly and modified to not check against occupation
-        [HarmonyPatch(typeof(NameGenerator), "GenerateHeroFullName")]
-        public static class NameGeneratorGenerateHeroName
-        {
-            public static void Postfix(Hero hero, TextObject heroFirstName, ref TextObject __result)
-            {
-                if (hero.CharacterObject.Occupation is not Occupation.Bandit
-                    || (hero.PartyBelongedTo is not null
-                        && !hero.PartyBelongedTo.IsBM()))
-                    return;
-
-                var textObject = heroFirstName;
-                var index = (int)AccessTools.Method(typeof(NameGenerator), "SelectNameIndex")
-                    .Invoke(NameGenerator.Current, new object[] { hero, GangLeaderNames(NameGenerator.Current), 0u, false });
-                NameGenerator.Current.AddName(GangLeaderNames(NameGenerator.Current)[index]);
-                textObject = GangLeaderNames(NameGenerator.Current)[index].CopyTextObject();
-                textObject.SetTextVariable("FEMALE", hero.IsFemale ? 1 : 0);
-                textObject.SetTextVariable("IMPERIAL", (hero.Culture.StringId == "empire") ? 1 : 0);
-                textObject.SetTextVariable("COASTAL", (hero.Culture.StringId == "empire" || hero.Culture.StringId == "vlandia") ? 1 : 0);
-                textObject.SetTextVariable("NORTHERN", (hero.Culture.StringId == "battania" || hero.Culture.StringId == "sturgia") ? 1 : 0);
-                StringHelpers.SetCharacterProperties("HERO", hero.CharacterObject, textObject).SetTextVariable("FIRSTNAME", heroFirstName);
-                __result = textObject;
-            }
-        }
-
         [HarmonyPatch(typeof(StoryModeAgentDecideKilledOrUnconsciousModel), "GetAgentStateProbability")]
         public class StoryModeAgentDecideKilledOrUnconsciousModelGetAgentStateProbability
         {
@@ -358,41 +330,13 @@ namespace BanditMilitias.Patches
             }
         }
 
-        [HarmonyPatch(typeof(SandboxAgentDecideKilledOrUnconsciousModel), "GetAgentStateProbability")]
+        [HarmonyPatch(typeof(DefaultAgentDecideKilledOrUnconsciousModel), "GetAgentStateProbability")]
         public class SandboxAgentDecideKilledOrUnconsciousModelGetAgentStateProbability
         {
             public static void Postfix(Agent effectedAgent, ref float __result)
             {
                 if (effectedAgent.Character is CharacterObject co && Heroes.Contains(co.HeroObject))
                     __result = 1;
-            }
-        }
-
-        // copied from assembly since there is no BanditPartyComponent in BMs
-        [HarmonyPatch(typeof(MobileParty), "CalculateContinueChasingScore")]
-        public class MobilePartyBanditPartyComponent
-        {
-            public static bool Prefix(MobileParty __instance, MobileParty enemyParty, ref float __result)
-            {
-                if (!__instance.IsBM())
-                    return true;
-                var num = __instance.Army != null && __instance.Army.LeaderParty == __instance ? __instance.Army.TotalStrength : __instance.Party.TotalStrength;
-                var num2 = (enemyParty.Army != null && enemyParty.Army.LeaderParty == __instance ? enemyParty.Army.TotalStrength : enemyParty.Party.TotalStrength) / (num + 0.01f);
-                var num3 = 1f + 0.01f * numberOfRecentFleeingFromAParty(enemyParty);
-                var num4 = Math.Min(1f, (__instance.Position2D - enemyParty.Position2D).Length / 3f);
-                var settlement = __instance.GetBM().HomeSettlement;
-                var num5 = Campaign.AverageDistanceBetweenTwoFortifications * 3f;
-                num5 = Campaign.Current.Models.MapDistanceModel.GetDistance(__instance, settlement);
-                var num6 = num5 / (Campaign.AverageDistanceBetweenTwoFortifications * 3f);
-                var input = 1f + (float)Math.Pow(enemyParty.Speed / (__instance.Speed - 0.25f), 3.0);
-                input = MBMath.Map(input, 0f, 5.2f, 0f, 2f);
-                var num7 = 60000f;
-                var num8 = 10000f;
-                var num9 = (enemyParty.LeaderHero != null ? enemyParty.PartyTradeGold + enemyParty.LeaderHero.Gold : enemyParty.PartyTradeGold) / (enemyParty.IsCaravan ? num8 : num7);
-                var num10 = enemyParty.LeaderHero == null ? 0.75f : enemyParty.LeaderHero.IsFactionLeader ? 1.5f : 1f;
-                var num11 = num2 * num6 * input * num3 * num4;
-                __result = MBMath.ClampFloat(num9 * num10 / (num11 + 0.001f), 0.005f, 3f);
-                return false;
             }
         }
 

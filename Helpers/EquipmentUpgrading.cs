@@ -284,7 +284,7 @@ namespace BanditMilitias.Helpers
             if (troop.Name.Contains("Hero") || troop.StringId.StartsWith("lord_"))
                 Debugger.Break();
             // goal here is only generate one custom CharacterObject, if receiving an already customized one it can be further customized as-is
-            var tempCharacter = CharacterObject.CreateFrom(troop);
+            var tempCharacter = CharacterObject.CreateFrom(troop, false);
             // throws TypeLoadException if assigned at declaration
             setName ??= AccessTools.Method(typeof(CharacterObject), "SetName");
             setName.Invoke(tempCharacter, new object[] { new TextObject($"Upgraded {tempCharacter.Name}") });

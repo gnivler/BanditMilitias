@@ -10,7 +10,6 @@ using TaleWorlds.CampaignSystem.Party.PartyComponents;
 using TaleWorlds.CampaignSystem.Roster;
 using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
-using TaleWorlds.Library;
 using TaleWorlds.LinQuick;
 using TaleWorlds.Localization;
 using TaleWorlds.ObjectSystem;
