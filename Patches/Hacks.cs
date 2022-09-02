@@ -50,7 +50,9 @@ namespace BanditMilitias.Patches
         {
             public static bool Prefix(MobileParty __instance, ref float __result)
             {
-                if (__instance.Party.MobileParty.TargetParty == null)
+                if (!__instance.IsBandit
+                    && __instance.Party.MobileParty.TargetParty == null
+                    && __instance.Party.MobileParty.ShortTermBehavior is AiBehavior.EngageParty)
                 {
                     __result = __instance.Party.TotalStrength;
                     return false;

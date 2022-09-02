@@ -10,6 +10,7 @@ using SandBox.View.Map;
 using SandBox.ViewModelCollection.Map;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Party;
+using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
 using TaleWorlds.InputSystem;
 using TaleWorlds.Library;
@@ -38,10 +39,7 @@ namespace BanditMilitias
         protected override void OnSubModuleLoad()
         {
             if (MEOWMEOW)
-            {
                 AccessTools.Field(typeof(Module), "_splashScreenPlayed").SetValue(Module.CurrentModule, true);
-            }
-
             RunManualPatches();
             harmony.PatchAll(Assembly.GetExecutingAssembly());
         }
@@ -61,7 +59,6 @@ namespace BanditMilitias
         {
             Globals.Settings = Settings.Instance;
             if (File.Exists(logFilename))
-            {
                 try
                 {
                     File.Copy(logFilename, $"{logFilename}.old", true);
@@ -71,7 +68,6 @@ namespace BanditMilitias
                 {
                     System.Diagnostics.Debug.Print(ex.ToString());
                 }
-            }
 
             DeferringLogger.Instance.Debug?.Log($"{Globals.Settings?.DisplayName} starting up...");
         }
@@ -83,12 +79,8 @@ namespace BanditMilitias
             var BM = assemblies.First(a => a.FullName.StartsWith("BanditMilitias"));
             var CEK = assemblies.FirstOrDefaultQ(x => x.FullName.StartsWith("CalradiaExpandedKingdoms"));
             if (CEK is not null)
-            {
                 if (assemblies.FindIndex(a => a == BM) > assemblies.FindIndex(a => a == CEK))
-                {
                     Globals.Settings.RandomBanners = false;
-                }
-            }
         }
 
         protected override void OnApplicationTick(float dt)
@@ -98,14 +90,10 @@ namespace BanditMilitias
                            && (Input.IsKeyDown(InputKey.LeftAlt) || Input.IsKeyDown(InputKey.RightAlt))
                            && (Input.IsKeyDown(InputKey.LeftShift) || Input.IsKeyDown(InputKey.RightShift));
 
+            // debug to show all parties on map
             if (MEOWMEOW && superKey && Input.IsKeyPressed(InputKey.F9))
-            {
-                // debug to show all parties on map
                 foreach (var m in MobileParty.All)
-                {
                     Globals.MapMobilePartyTrackerVM.Trackers.Add(new MobilePartyTrackItemVM(m, MapScreen.Instance.MapCamera, null));
-                }
-            }
 
             if (MEOWMEOW && Input.IsKeyPressed(InputKey.F1))
             {
@@ -113,25 +101,36 @@ namespace BanditMilitias
                 var party = MobileParty.All.WhereQ(m => m.Army != null).GetRandomElementInefficiently();
                 if (party is not null)
                     MobileParty.MainParty.Position2D = party.Position2D;
-
-
                 //party.Position2D = MobileParty.MainParty.Position2D;
             }
 
             if (MEOWMEOW && Input.IsKeyPressed(InputKey.F2))
             {
+                foreach (var mobileParty in MobileParty.AllBanditParties)
+                {
+                    if (mobileParty.StringId.StartsWith("Bandit_Militia"))
+                        continue;
+                    mobileParty.Position2D = MobileParty.MainParty.Position2D;
+                }
+
                 Hacks.PurgeBadTroops();
             }
 
             if (MEOWMEOW && Input.IsKeyPressed(InputKey.F3))
             {
+                //try
+                //{
+                //    MobileParty.MainParty.Position2D = Settlement.All.WhereQ(s => s.IsHideout && s.Hideout.IsInfested).GetRandomElementInefficiently().GatePosition;
+                //}
+                //catch
+                //{
+                //    //ignore
+                //}
                 MobileParty.MainParty.Position2D = Hero.AllAliveHeroes.FirstOrDefaultQ(h => h.IsWanderer && h.CurrentSettlement is not null).CurrentSettlement.GatePosition;
             }
 
             if (MEOWMEOW && Input.IsKeyPressed(InputKey.Tilde))
-            {
                 Debugger.Break();
-            }
 
             if (superKey && Input.IsKeyPressed(InputKey.F11))
             {
@@ -140,9 +139,7 @@ namespace BanditMilitias
             }
 
             if (MEOWMEOW && superKey && Input.IsKeyPressed(InputKey.F10))
-            {
                 MobileParty.MainParty.ItemRoster.AddToCounts(MBObjectManager.Instance.GetObject<ItemObject>("grain"), 10000);
-            }
 
             if (superKey && Input.IsKeyPressed(InputKey.F12))
             {

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using BanditMilitias.Helpers;
 using HarmonyLib;
 using Helpers;
@@ -18,6 +19,7 @@ using TaleWorlds.CampaignSystem.GameComponents;
 using TaleWorlds.CampaignSystem.GameMenus;
 using TaleWorlds.CampaignSystem.MapEvents;
 using TaleWorlds.CampaignSystem.Party;
+using TaleWorlds.CampaignSystem.Party.PartyComponents;
 using TaleWorlds.CampaignSystem.Roster;
 using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
@@ -46,22 +48,12 @@ namespace BanditMilitias.Patches
         {
             public static void Postfix(MobileParty __instance, ref float __result)
             {
-                if (__instance is null)
-                {
-                    Meow();
-                    throw new NullReferenceException("MobileParty is null at CalculateSpeed");
-                }
-
+                // make them move faster towards a merge, or slow them down generally
                 if (__instance.IsBandit
-                    && __instance.TargetParty is not null
-                    && __instance.TargetParty.IsBandit)
-                {
+                    && __instance.TargetParty is { IsBandit: true })
                     __result *= 1.15f;
-                }
                 else if (__instance.IsBM())
-                {
                     __result = Math.Max(1, __result * 0.85f);
-                }
             }
         }
 
@@ -236,11 +228,11 @@ namespace BanditMilitias.Patches
         }
 
         [HarmonyPatch(typeof(MapEventParty), "OnTroopKilled")]
-        public static class TroopRosterRemoveTroop
+        public static class MapEventPartyOnTroopKilled
         {
             public static void Prefix(UniqueTroopDescriptor troopSeed, FlattenedTroopRoster ____roster, ref CharacterObject __state)
             {
-                __state= ____roster[troopSeed].Troop;
+                __state = ____roster[troopSeed].Troop;
             }
 
             public static void Postfix(UniqueTroopDescriptor troopSeed, FlattenedTroopRoster ____roster, CharacterObject __state)
@@ -250,20 +242,40 @@ namespace BanditMilitias.Patches
             }
         }
 
+        // TODO TroopRoster.Clear patch for more performance
+
         [HarmonyPatch(typeof(TroopRoster), "AddToCountsAtIndex")]
         public static class TroopRosterAddToCountsAtIndex
         {
             public static void Prefix(TroopRoster __instance, int index, int countChange, ref CharacterObject __state)
             {
+                if (!SubModule.MEOWMEOW || !Globals.Settings.UpgradeTroops)
+                    return;
                 __state = __instance.GetCharacterAtIndex(index);
+                switch (__instance.GetElementCopyAtIndex(index).Number)
+                {
+                    // the CO will be removed in the method and throw in the Postfix unless we remove it here
+                    case 0:
+                        Troops.Remove(__state);
+                        EquipmentMap.Remove(__state.StringId);
+                        break;
+                    default:
+                        __state = null;
+                        break;
+                }
             }
+
 
             public static void Postfix(TroopRoster __instance, int index, int countChange, CharacterObject __state)
             {
+                // this correctly assumes there will never be Number > 1
                 if (countChange < 0 && Troops.Contains(__state))
                 {
+                    if (!SubModule.MEOWMEOW || !Globals.Settings.UpgradeTroops)
+                        return;
                     Troops.Remove(__state);
-                    //MBObjectManager.Instance.UnregisterObject(troop);
+                    EquipmentMap.Remove(__state.StringId);
+                    MBObjectManager.Instance.UnregisterObject(__state);
                 }
             }
 
@@ -273,13 +285,8 @@ namespace BanditMilitias.Patches
                 {
                     case null:
                         return null;
-                    // throws with Heroes Must Die (old)
                     case IndexOutOfRangeException:
                         DeferringLogger.Instance.Debug?.Log("HACK Squelching IndexOutOfRangeException at TroopRoster.AddToCountsAtIndex");
-                        return null;
-                    // throws during nuke of poor state (old)
-                    case NullReferenceException:
-                        DeferringLogger.Instance.Debug?.Log(__exception);
                         return null;
                     default:
                         DeferringLogger.Instance.Debug?.Log(__exception);
@@ -305,10 +312,7 @@ namespace BanditMilitias.Patches
         [HarmonyPatch(typeof(AiBanditPatrollingBehavior), "AiHourlyTick")]
         public static class AiBanditPatrollingBehaviorAiHourlyTickPatch
         {
-            public static bool Prefix(MobileParty mobileParty)
-            {
-                return mobileParty.IsCurrentlyUsedByAQuest || mobileParty.CurrentSettlement?.Hideout != null;
-            }
+            public static bool Prefix(MobileParty mobileParty) => !mobileParty.IsBM();
         }
 
         [HarmonyPatch(typeof(DefaultMobilePartyFoodConsumptionModel), "DoesPartyConsumeFood")]
@@ -328,8 +332,8 @@ namespace BanditMilitias.Patches
             public static void Postfix(Hero hero, TextObject heroFirstName, ref TextObject __result)
             {
                 if (hero.CharacterObject.Occupation is not Occupation.Bandit
-                    && hero.PartyBelongedTo is not null
-                    && !hero.PartyBelongedTo.IsBM())
+                    || (hero.PartyBelongedTo is not null
+                        && !hero.PartyBelongedTo.IsBM()))
                     return;
 
                 var textObject = heroFirstName;
@@ -346,22 +350,12 @@ namespace BanditMilitias.Patches
             }
         }
 
-        [HarmonyPatch(typeof(DefaultAgentDecideKilledOrUnconsciousModel), "GetAgentStateProbability")]
-        public class DefaultAgentDecideKilledOrUnconsciousModelGetAgentStateProbability
-        {
-            public static void Postfix(Agent effectedAgent, ref float __result)
-            {
-                if (effectedAgent.Character.StringId.EndsWith("Bandit_Militia"))
-                    __result = 1;
-            }
-        }
-
         [HarmonyPatch(typeof(StoryModeAgentDecideKilledOrUnconsciousModel), "GetAgentStateProbability")]
         public class StoryModeAgentDecideKilledOrUnconsciousModelGetAgentStateProbability
         {
             public static void Postfix(Agent effectedAgent, ref float __result)
             {
-                if (effectedAgent.Character.StringId.EndsWith("Bandit_Militia"))
+                if (effectedAgent.Character is CharacterObject co && Heroes.Contains(co.HeroObject))
                     __result = 1;
             }
         }
@@ -371,7 +365,7 @@ namespace BanditMilitias.Patches
         {
             public static void Postfix(Agent effectedAgent, ref float __result)
             {
-                if (effectedAgent.Character.StringId.EndsWith("Bandit_Militia"))
+                if (effectedAgent.Character is CharacterObject co && Heroes.Contains(co.HeroObject))
                     __result = 1;
             }
         }
@@ -382,26 +376,15 @@ namespace BanditMilitias.Patches
         {
             public static bool Prefix(MobileParty __instance, MobileParty enemyParty, ref float __result)
             {
+                if (!__instance.IsBM())
+                    return true;
                 var num = __instance.Army != null && __instance.Army.LeaderParty == __instance ? __instance.Army.TotalStrength : __instance.Party.TotalStrength;
                 var num2 = (enemyParty.Army != null && enemyParty.Army.LeaderParty == __instance ? enemyParty.Army.TotalStrength : enemyParty.Party.TotalStrength) / (num + 0.01f);
                 var num3 = 1f + 0.01f * numberOfRecentFleeingFromAParty(enemyParty);
                 var num4 = Math.Min(1f, (__instance.Position2D - enemyParty.Position2D).Length / 3f);
-                Settlement settlement = null;
-                if (__instance.IsBM())
-                {
-                    settlement = __instance.GetBM().HomeSettlement;
-                }
-                else
-                {
-                    settlement = __instance.IsBandit ? __instance.BanditPartyComponent.Hideout?.Settlement : !__instance.IsLordParty || __instance.LeaderHero == null || !__instance.LeaderHero.IsMinorFactionHero ? SettlementHelper.FindNearestFortification(x => x.MapFaction == __instance.MapFaction) : __instance.MapFaction.FactionMidSettlement;
-                }
-
+                var settlement = __instance.GetBM().HomeSettlement;
                 var num5 = Campaign.AverageDistanceBetweenTwoFortifications * 3f;
-                if (settlement != null)
-                {
-                    num5 = Campaign.Current.Models.MapDistanceModel.GetDistance(__instance, settlement);
-                }
-
+                num5 = Campaign.Current.Models.MapDistanceModel.GetDistance(__instance, settlement);
                 var num6 = num5 / (Campaign.AverageDistanceBetweenTwoFortifications * 3f);
                 var input = 1f + (float)Math.Pow(enemyParty.Speed / (__instance.Speed - 0.25f), 3.0);
                 input = MBMath.Map(input, 0f, 5.2f, 0f, 2f);
@@ -423,6 +406,27 @@ namespace BanditMilitias.Patches
             {
                 if (!__instance.IsBandit && __instance.IsBM())
                     IsBandit(__instance) = true;
+            }
+        }
+
+        [HarmonyPatch(typeof(Clan), "AddWarPartyInternal")]
+        public static class ClanAddWarPartyInternal
+        {
+            public static bool Prefix(WarPartyComponent warPartyComponent) => warPartyComponent is not ModBanditMilitiaPartyComponent;
+        }
+
+        // Trash() removes the party, which nulls out the clan, which throws harmlessly here
+        [HarmonyPatch(typeof(WarPartyComponent), "OnFinalize")]
+        public static class WarPartyComponentOnFinalize
+        {
+            public static Exception Finalizer(Exception __exception, WarPartyComponent __instance)
+            {
+                if (__exception is not null && __instance is ModBanditMilitiaPartyComponent)
+                {
+                    return null;
+                }
+
+                return __exception;
             }
         }
     }

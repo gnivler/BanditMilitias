@@ -10,6 +10,7 @@ using SandBox.ViewModelCollection.Map;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.CampaignBehaviors;
 using TaleWorlds.CampaignSystem.Extensions;
+using TaleWorlds.CampaignSystem.Issues;
 using TaleWorlds.CampaignSystem.MapEvents;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Roster;
@@ -39,8 +40,11 @@ namespace BanditMilitias.Patches
         {
             public static void Postfix(MapEventSide __instance, CharacterObject ____selectedSimulationTroop)
             {
-                if (!Globals.Settings.UpgradeTroops || MapEvent.PlayerMapEvent is not null && ____selectedSimulationTroop is null)
+                if (!SubModule.MEOWMEOW || !Globals.Settings.UpgradeTroops || MapEvent.PlayerMapEvent is not null && ____selectedSimulationTroop is null)
                     return;
+                // troop is removed at AddToCounts / RemoveTroop
+                //if (Troops.Contains(____selectedSimulationTroop))
+                //    MBObjectManager.Instance.UnregisterObject(____selectedSimulationTroop);
                 EquipmentMap.Remove(____selectedSimulationTroop.StringId);
                 // makes loot drop in any BM-involved fight which isn't with the main party
                 var BMs = __instance.Parties.WhereQ(p =>
@@ -68,7 +72,7 @@ namespace BanditMilitias.Patches
         {
             public static void Prefix(MapEvent mapEvent, PartyBase winnerParty, ref Dictionary<PartyBase, ItemRoster> lootedItems)
             {
-                if (!Globals.Settings.UpgradeTroops || !mapEvent.HasWinner || !winnerParty.IsMobile || !winnerParty.MobileParty.IsBM())
+                if (!SubModule.MEOWMEOW || !Globals.Settings.UpgradeTroops || !mapEvent.HasWinner || !winnerParty.IsMobile || !winnerParty.MobileParty.IsBM())
                     return;
                 if (LootRecord.TryGetValue(winnerParty.MapEventSide, out var equipment))
                 {
@@ -144,17 +148,14 @@ namespace BanditMilitias.Patches
 
                 DoPowerCalculations(true);
                 var bmCount = MobileParty.All.CountQ(m => m.IsBM());
-                DeferringLogger.Instance.Debug?.Log($"Militias: {bmCount}."); //  Upgraded BM troops: {MobileParty.All.SelectMany(m => m.MemberRoster.ToFlattenedRoster()).CountQ(e => e.Troop.StringId.Contains("Bandit_Militia"))}.  Troop prisoners: {MobileParty.All.SelectMany(m => m.PrisonRoster.ToFlattenedRoster()).CountQ(e => e.Troop.StringId.Contains("Bandit_Militia"))}.");
+                DeferringLogger.Instance.Debug?.Log($"Militias: {bmCount}.  Upgraded BM troops: {MobileParty.All.SelectMany(m => m.MemberRoster.ToFlattenedRoster()).CountQ(e => e.Troop.StringId.Contains("Bandit_Militia"))}.  Troop prisoners: {MobileParty.All.SelectMany(m => m.PrisonRoster.ToFlattenedRoster()).CountQ(e => e.Troop.StringId.Contains("Bandit_Militia"))}.");
             }
         }
 
         [HarmonyPatch(typeof(MapMobilePartyTrackerVM), MethodType.Constructor, typeof(Camera), typeof(Action<Vec2>))]
         public static class MapMobilePartyTrackerVMCtorPatch
         {
-            public static void Postfix(MapMobilePartyTrackerVM __instance)
-            {
-                Globals.MapMobilePartyTrackerVM = __instance;
-            }
+            public static void Postfix(MapMobilePartyTrackerVM __instance) => Globals.MapMobilePartyTrackerVM = __instance;
         }
 
         [HarmonyPatch(typeof(SaveableCampaignTypeDefiner), "DefineContainerDefinitions")]
@@ -169,62 +170,85 @@ namespace BanditMilitias.Patches
             }
         }
 
+        [HarmonyPatch(typeof(MerchantNeedsHelpWithOutlawsIssueQuestBehavior.MerchantNeedsHelpWithOutlawsIssueQuest), "HourlyTickParty")]
+        public static class MerchantNeedsHelpWithOutlawsIssueQuestHourlyTickParty
+        {
+            public static bool Prefix(MobileParty mobileParty) => !mobileParty.IsBM();
+        }
+
         // stops vanilla from removing all COs without a Hero (like, every custom troop)
-        //[HarmonyPatch(typeof(SandBoxManager), "InitializeCharactersAfterLoad")]
-        //public static class SandBoxManagerInitializeCharactersAfterLoad
-        //{
-        //    public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
-        //    {
-        //        // just stop the Add
-        //        var listAddMethod = AccessTools.Method(typeof(List<CharacterObject>), "Add");
-        //        var codes = instructions.ToList();
-        //        for (var i = 0; i < codes.Count; i++)
-        //            if (codes[i].opcode == OpCodes.Callvirt && codes[i].OperandIs(listAddMethod))
-        //                for (var j = -2; j < 1; j++)
-        //                    codes[i + j].opcode = OpCodes.Nop;
-        //        return codes.AsEnumerable();
-        //    }
-        //}
-        //
-        //// TickPartialHourlyAiEvent
-        //// MapEventLootDefeatedPartiesPatch.Postfix
-        //// MapEventFinishBattlePatch.Prefix
-        //[HarmonyPatch(typeof(MBObjectManager), "UnregisterObject")]
-        //public static class MBObjectManagerUnregisterObject
-        //{
-        //    public static void Postfix(MBObjectManager __instance, MBObjectBase obj)
-        //    {
-        //        if (!Globals.Settings.UpgradeTroops)
-        //            return;
-        //        DeferringLogger.Instance.Debug?.Log($"UnregisterObject: {obj.StringId} {obj.GetName()}");
-        //    }
-        //}
-        //
-        //// TODO
-        //// troops which aren't in their original BM become unready and get unregistered - prevent this
-        //[HarmonyPatch(typeof(MBObjectManager), "UnregisterNonReadyObjects")]
-        //public class MBObjectManagerUnregisterNonReadyObjects
-        //{
-        //    private static readonly MethodInfo from = AccessTools.Method(typeof(MBObjectManager), "UnregisterObject");
-        //    private static readonly MethodInfo to = AccessTools.Method(typeof(MBObjectManagerUnregisterNonReadyObjects), "UnregisterObject");
-        //
-        //    public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
-        //    {
-        //        return instructions.MethodReplacer(from, to);
-        //    }
-        //
-        //    // ReSharper disable once UnusedParameter.Local
-        //    private static void UnregisterObject(MBObjectManager manager, MBObjectBase obj)
-        //    {
-        //        if (obj is CharacterObject troop && troop.GetName() == null)
-        //        {
-        //            MilitiaBehavior.RehydrateCharacterObject(troop);
-        //            if (!Globals.EquipmentMap.TryGetValue(troop.StringId, out _))
-        //                EquipmentMap.Add(troop.StringId, troop.Equipment);
-        //        }
-        //        else
-        //            MBObjectManager.Instance.UnregisterObject(obj);
-        //    }
-        //}
+        [HarmonyPatch(typeof(SandBoxManager), "InitializeCharactersAfterLoad")]
+        public static class SandBoxManagerInitializeCharactersAfterLoad
+        {
+            public static bool Prepare()
+            {
+                return SubModule.MEOWMEOW;
+            }
+
+            public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+            {
+                // just stop the Add
+                var listAddMethod = AccessTools.Method(typeof(List<CharacterObject>), "Add");
+                var codes = instructions.ToList();
+                for (var i = 0; i < codes.Count; i++)
+                    if (codes[i].opcode == OpCodes.Callvirt && codes[i].OperandIs(listAddMethod))
+                        for (var j = -2; j < 1; j++)
+                            codes[i + j].opcode = OpCodes.Nop;
+                return codes.AsEnumerable();
+            }
+        }
+
+        // TickPartialHourlyAiEvent
+        // MapEventLootDefeatedPartiesPatch.Postfix
+        // MapEventFinishBattlePatch.Prefix
+        [HarmonyPatch(typeof(MBObjectManager), "UnregisterObject")]
+        public static class MBObjectManagerUnregisterObject
+        {
+            public static bool Prepare()
+            {
+                return SubModule.MEOWMEOW;
+            }
+
+            public static void Postfix(MBObjectManager __instance, MBObjectBase obj)
+            {
+                if (!SubModule.MEOWMEOW || !Globals.Settings.UpgradeTroops)
+                    return;
+                if (obj.GetName().Contains("Upgraded"))
+                    DeferringLogger.Instance.Debug?.Log($"UnregisterObject: {obj.StringId} {obj.GetName()}");
+            }
+        }
+
+        // TODO
+        // troops which aren't in their original BM become unready and get unregistered - prevent this
+        [HarmonyPatch(typeof(MBObjectManager), "UnregisterNonReadyObjects")]
+        public class MBObjectManagerUnregisterNonReadyObjects
+        {
+            private static readonly MethodInfo from = AccessTools.Method(typeof(MBObjectManager), "UnregisterObject");
+            private static readonly MethodInfo to = AccessTools.Method(typeof(MBObjectManagerUnregisterNonReadyObjects), "UnregisterObject");
+
+            public static bool Prepare()
+            {
+                return SubModule.MEOWMEOW;
+            }
+
+            public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+            {
+                return instructions.MethodReplacer(from, to);
+            }
+
+            // ReSharper disable once UnusedParameter.Local
+            private static void UnregisterObject(MBObjectManager manager, MBObjectBase obj)
+            {
+                // a "dehydrated" custom CharacterObject
+                if (obj is CharacterObject troop && troop.GetName() == null)
+                {
+                    MilitiaBehavior.RehydrateCharacterObject(troop);
+                    if (!Globals.EquipmentMap.TryGetValue(troop.StringId, out _))
+                        EquipmentMap.Add(troop.StringId, troop.Equipment);
+                }
+                else
+                    MBObjectManager.Instance.UnregisterObject(obj);
+            }
+        }
     }
 }

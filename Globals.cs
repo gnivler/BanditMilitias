@@ -45,7 +45,7 @@ namespace BanditMilitias
         }
 
         // merge/split criteria
-        internal const float MergeDistance = 2;
+        internal const float MergeDistance = 1.5f;
         internal const float FindRadius = 20;
         internal const float MinDistanceFromHideout = 8;
 

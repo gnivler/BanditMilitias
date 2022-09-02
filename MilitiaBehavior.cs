@@ -5,7 +5,6 @@ using BanditMilitias.Helpers;
 using HarmonyLib;
 using Helpers;
 using TaleWorlds.CampaignSystem;
-using TaleWorlds.CampaignSystem.MapEvents;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Party.PartyComponents;
 using TaleWorlds.CampaignSystem.Roster;
@@ -26,7 +25,7 @@ namespace BanditMilitias
     public class MilitiaBehavior : CampaignBehaviorBase
     {
         private const double SmallChance = 0.0005;
-        public const float Increment = 5;
+        internal const float Increment = 5;
         private const float EffectRadius = 100;
         private const int AdjustRadius = 50;
         private const int settlementFindRange = 200;
@@ -92,10 +91,6 @@ namespace BanditMilitias
 
         private static void MobilePartyDestroyed(MobileParty mobileParty, PartyBase destroyer)
         {
-            var c = Traverse.Create(Campaign.Current.MapEventManager).Field<List<MapEvent>>("_mapEvents").Value.WhereQ(e => e.EventType is MapEvent.BattleTypes.Siege or MapEvent.BattleTypes.SiegeOutside).Count();
-
-            if (c > 0)
-                DeferringLogger.Instance.Debug?.Log(c);
             // Avoidance-bomb all BMs in the area
             int AvoidanceIncrease() => Rng.Next(15, 35);
             if (!mobileParty.IsBM() || destroyer?.LeaderHero is null)
@@ -117,7 +112,16 @@ namespace BanditMilitias
             if (mobileParty.PartyComponent is not (BanditPartyComponent or ModBanditMilitiaPartyComponent))
                 return;
 
-            if (mobileParty.MapEvent != null)
+            // they will evacuate hideouts and not chase caravans
+            if (mobileParty.PartyComponent is BanditPartyComponent)
+            {
+                if ((mobileParty.CurrentSettlement is not null
+                     && mobileParty.AiBehaviorMapEntity is Settlement { IsHideout: true })
+                    || mobileParty.AiBehaviorMapEntity is MobileParty { IsCaravan: true })
+                    return;
+            }
+
+            if (mobileParty.MapEvent is not null)
                 return;
 
             // near any Hideouts?
@@ -138,7 +142,7 @@ namespace BanditMilitias
 
             var nearbyBandits = MobileParty.FindPartiesAroundPosition(mobileParty.Position2D, FindRadius).WhereQ(m =>
                 m.IsBandit
-                && m.MapEvent == null
+                && m.MapEvent is null
                 && m.MemberRoster.TotalManCount > Globals.Settings.MergeableSize
                 && m.MemberRoster.TotalManCount + mobileParty.MemberRoster.TotalManCount >= Globals.Settings.MinPartySize
                 && IsAvailableBanditParty(m)).ToListQ();
@@ -153,25 +157,18 @@ namespace BanditMilitias
             foreach (var target in nearbyBandits.OrderByQ(m => m.Position2D.Distance(mobileParty.Position2D)))
             {
                 var militiaTotalCount = mobileParty.MemberRoster.TotalManCount + target.MemberRoster.TotalManCount;
-                if (militiaTotalCount < Globals.Settings.MinPartySize
-                    || militiaTotalCount > Globals.CalculatedMaxPartySize)
-                {
+                if (militiaTotalCount < Globals.Settings.MinPartySize || militiaTotalCount > CalculatedMaxPartySize)
                     continue;
-                }
 
                 if (target.IsBM())
                 {
                     CampaignTime? targetLastChangeDate = target.GetBM().LastMergedOrSplitDate;
                     if (CampaignTime.Now < targetLastChangeDate + CampaignTime.Hours(Globals.Settings.CooldownHours))
-                    {
                         continue;
-                    }
                 }
 
                 if (NumMountedTroops(mobileParty.MemberRoster) + NumMountedTroops(target.MemberRoster) > militiaTotalCount / 2)
-                {
                     continue;
-                }
 
                 mergeTarget = target;
                 break;
@@ -204,28 +201,20 @@ namespace BanditMilitias
             void CalcAverageAvoidance(ModBanditMilitiaPartyComponent BM)
             {
                 foreach (var entry in BM.Avoidance)
-                {
                     if (!calculatedAvoidance.TryGetValue(entry.Key, out _))
-                    {
                         calculatedAvoidance.Add(entry.Key, entry.Value);
-                    }
                     else
                     {
                         calculatedAvoidance[entry.Key] += entry.Value;
                         calculatedAvoidance[entry.Key] /= 2;
                     }
-                }
             }
 
             if (mobileParty.PartyComponent is ModBanditMilitiaPartyComponent BM1)
-            {
                 CalcAverageAvoidance(BM1);
-            }
 
             if (mergeTarget.PartyComponent is ModBanditMilitiaPartyComponent BM2)
-            {
                 CalcAverageAvoidance(BM2);
-            }
 
             bm.GetBM().Avoidance = calculatedAvoidance;
             // teleport new militias near the player
@@ -239,10 +228,6 @@ namespace BanditMilitias
             bm.Party.Visuals.SetMapIconAsDirty();
             try
             {
-                if (mobileParty.MemberRoster.GetTroopRoster().AnyQ(t => t.Character.Name.Contains("Upgraded"))
-                    || mergeTarget.MemberRoster.GetTroopRoster().AnyQ(t => t.Character.Name.Contains("Upgraded")))
-                    Meow();
-
                 // can throw if Clan is null (doesn't happen in 3.9 apparently)
                 Trash(mobileParty);
                 Trash(mergeTarget);
@@ -295,17 +280,9 @@ namespace BanditMilitias
                             return true;
                         }, mobileParty);
 
-                        if (target is null)
-                        {
-                            Meow();
-                            return;
-                        }
-
                         var BM = mobileParty.GetBM();
                         if (BM is null)
-                        {
                             return;
-                        }
 
                         if (BM.Avoidance.ContainsKey(target.Owner)
                             && Rng.NextDouble() * 100 <= BM.Avoidance[target.Owner])
@@ -315,9 +292,7 @@ namespace BanditMilitias
                         }
 
                         if (target.OwnerClan == Hero.MainHero.Clan)
-                        {
                             InformationManager.DisplayMessage(new InformationMessage($"{mobileParty.Name} is raiding your village {target.Name} near {target.Town?.Name}!"));
-                        }
 
                         //DeferringLogger.Instance.Debug?.Log($"{new string('=', 100)} {target.Village.VillageState}");
                         mobileParty.SetMoveRaidSettlement(target);
@@ -329,7 +304,6 @@ namespace BanditMilitias
 
         public static void DailyTickPartyEvent(MobileParty mobileParty)
         {
-
             if (mobileParty.IsBM())
             {
                 if ((int)CampaignTime.Now.ToWeeks % CampaignTime.DaysInWeek == 0
@@ -369,7 +343,6 @@ namespace BanditMilitias
                     }
                 }
             }
-            //DeferringLogger.Instance.Debug?.Log($"{mobileParty.Name} finished Avoidance {mobileParty.BM().Avoidance}");
         }
 
         public static void TryGrowing(MobileParty mobileParty)
@@ -440,6 +413,9 @@ namespace BanditMilitias
                     var clan = settlement.OwnerClan;
                     var min = Convert.ToInt32(Globals.Settings.MinPartySize);
                     var max = Convert.ToInt32(CalculatedMaxPartySize);
+                    // if the MinPartySize is cranked it will throw ArgumentOutOfRangeException
+                    if (max < min)
+                        max = min;
                     var roster = TroopRoster.CreateDummyTroopRoster();
                     var size = Convert.ToInt32(Rng.Next(min, max + 1) / 2f);
                     if (!IsRegistered(clan.BasicTroop) || !IsRegistered(Looters.BasicTroop))
@@ -470,15 +446,18 @@ namespace BanditMilitias
         public override void SyncData(IDataStore dataStore)
         {
             dataStore.SyncData("Heroes", ref Globals.Heroes);
-            if (!Globals.Settings.UpgradeTroops)
+            if (!SubModule.MEOWMEOW || !Globals.Settings.UpgradeTroops)
                 return;
 
-            dataStore.SyncData("Troops", ref Globals.Troops);
-            dataStore.SyncData("EquipmentMap", ref Globals.EquipmentMap);
+            if (!dataStore.SyncData("Troops", ref Globals.Troops))
+                Troops.Clear();
+            if (!dataStore.SyncData("EquipmentMap", ref Globals.EquipmentMap))
+                EquipmentMap.Clear();
             if (dataStore.IsLoading)
             {
                 var tempList = new List<CharacterObject>(Troops);
                 Troops.Clear();
+                DeferringLogger.Instance.Debug?.Log($"Rehydrating {tempList.Count} troops");
                 foreach (var troop in tempList)
                     RehydrateCharacterObject(troop);
             }

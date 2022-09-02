@@ -69,12 +69,16 @@ namespace BanditMilitias.Helpers
                 for (var i = 0; i < troops.Count; i++)
                 {
                     var troop = troops[i];
-                    if (usableEquipment.Count == 0)
+                    if (!IsRegistered(troop))
+                    {
+                    }
+
+                    if (!usableEquipment.Any())
                         break;
                     bool wasUpgraded = default;
-                    DeferringLogger.Instance.Debug?.Log($"{troop.Name} is up for upgrades.  Current equipment:");
-                    for (var index = 0; index < Equipment.EquipmentSlotLength; index++)
-                        DeferringLogger.Instance.Debug?.Log($"{index}: {troop.Equipment[index].Item?.Name} {(troop.Equipment[index].Item?.Value is not null ? "$" : "")}{troop.Equipment[index].Item?.Value}");
+                    //DeferringLogger.Instance.Debug?.Log($"{troop.Name} is up for upgrades.  Current equipment:");
+                    //for (var index = 0; index < Equipment.EquipmentSlotLength; index++)
+                    //    DeferringLogger.Instance.Debug?.Log($"{index}: {troop.Equipment[index].Item?.Name} {(troop.Equipment[index].Item?.Value is not null ? "$" : "")}{troop.Equipment[index].Item?.Value}");
 
                     for (var index = 0; index < usableEquipment.Count; index++)
                     {
@@ -92,7 +96,7 @@ namespace BanditMilitias.Helpers
                         if (troop.Equipment.Contains(possibleUpgrade.EquipmentElement))
                             continue;
 
-                        DeferringLogger.Instance.Debug?.Log($"{troop.HeroObject?.Name.ToString() ?? troop.Name.ToString()} considering... {possibleUpgrade.EquipmentElement.Item?.Name}, worth {possibleUpgrade.EquipmentElement.ItemValue}");
+                        //DeferringLogger.Instance.Debug?.Log($"{troop.HeroObject?.Name.ToString() ?? troop.Name.ToString()} considering... {possibleUpgrade.EquipmentElement.Item?.Name}, worth {possibleUpgrade.EquipmentElement.ItemValue}");
                         // TODO shields
                         var rangedSlot = -1;
                         // assume that sane builds are coming in (no double bows, missing ammo)
@@ -163,12 +167,21 @@ namespace BanditMilitias.Helpers
                                 {
                                     if (!troop.IsHero)
                                     {
-                                        Troops.Add(troop);
                                         if (!Globals.EquipmentMap.TryGetValue(troop.StringId, out _))
                                         {
+                                            // TODO does UpgradeReadyTroops fuck with data?
+                                            // BUG why do we reach this point if the roster already has the custom CO?
+                                            if (party.MemberRoster.GetTroopRoster().AnyQ(e => e.Character.StringId == troop.StringId))
+                                                Debugger.Break();
                                             Globals.EquipmentMap.Add(troop.StringId, troop.Equipment);
+                                            //if (party.MemberRoster.GetTroopRoster().WhereQ(e => !e.Character.IsHero).AnyQ(e => e.Number <= 1))
+                                            //    Debugger.Break();
                                             party.MemberRoster.RemoveTroop(troop.OriginalCharacter);
+                                            // collection is modified
+                                            troops = party.MemberRoster.ToFlattenedRoster().Troops.OrderByDescending(e => e.Level)
+                                                .ThenByDescending(e => e.Equipment.GetTotalWeightOfArmor(true) + e.Equipment.GetTotalWeightOfWeapons()).ToListQ();
                                             party.MemberRoster.Add(new TroopRosterElement(troop) { Number = 1 });
+                                            Troops.Add(troop);
                                         }
                                         else
                                             Globals.EquipmentMap[troop.StringId] = troop.Equipment;
@@ -228,7 +241,11 @@ namespace BanditMilitias.Helpers
             if (troop.Equipment.Contains(possibleUpgrade.EquipmentElement) || replacedItem.ItemValue >= possibleUpgrade.EquipmentElement.ItemValue)
                 return false;
             if (!Troops.Contains(troop) && troop.OriginalCharacter is null)
+            {
                 troop = CreateCustomCharacter(troop);
+                if (!IsRegistered(troop))
+                    Debugger.Break();
+            }
 
             DeferringLogger.Instance.Debug?.Log($"### Upgrading {troop.HeroObject?.Name ?? troop.Name} ({troop.StringId}): {replacedItem.Item?.Name.ToString() ?? "empty slot"} with {possibleUpgrade.EquipmentElement.Item.Name}");
             // assign the upgrade
@@ -263,6 +280,7 @@ namespace BanditMilitias.Helpers
 
         private static CharacterObject CreateCustomCharacter(CharacterObject troop)
         {
+            //DeferringLogger.Instance.Debug?.Log("### Creating custom character for " + troop.Name);
             if (troop.Name.Contains("Hero") || troop.StringId.StartsWith("lord_"))
                 Debugger.Break();
             // goal here is only generate one custom CharacterObject, if receiving an already customized one it can be further customized as-is
@@ -271,7 +289,6 @@ namespace BanditMilitias.Helpers
             setName ??= AccessTools.Method(typeof(CharacterObject), "SetName");
             setName.Invoke(tempCharacter, new object[] { new TextObject($"Upgraded {tempCharacter.Name}") });
             IsSoldier(tempCharacter) = true;
-            DeferringLogger.Instance.Debug?.Log($"Created {tempCharacter.StringId}");
             HiddenInEncyclopedia(tempCharacter) = true;
             var mbEquipmentRoster = new MBEquipmentRoster();
             Equipments(mbEquipmentRoster) = new List<Equipment> { new(troop.Equipment) };

@@ -34,15 +34,11 @@ namespace BanditMilitias.Helpers
             KillCharacterAction.ApplyByRemove(hero);
             DeadOrDisabledHeroes(Campaign.Current.CampaignObjectManager).Remove(hero);
             Globals.Heroes.Remove(hero);
-            //Globals.BanditMilitiaCharacters.Remove(hero.CharacterObject);
             MBObjectManager.Instance.UnregisterObject(hero.CharacterObject);
         }
 
         // ReSharper disable once InconsistentNaming
-        public static bool IsBM(this MobileParty mobileParty)
-        {
-            return mobileParty?.PartyComponent is ModBanditMilitiaPartyComponent;
-        }
+        public static bool IsBM(this MobileParty mobileParty) => mobileParty?.PartyComponent is ModBanditMilitiaPartyComponent;
 
         // ReSharper disable once InconsistentNaming
         public static ModBanditMilitiaPartyComponent GetBM(this MobileParty mobileParty)

@@ -13,8 +13,7 @@ using MCM.Abstractions.Settings.Base.Global;
 // ReSharper disable UnusedAutoPropertyAccessor.Local
 // ReSharper disable FieldCanBeMadeReadOnly.Local
 // ReSharper disable ConvertToAutoProperty
-// ReSharper disable InconsistentNaming
-
+// ReSharper disable InconsistentNaming    
 // ReSharper disable PropertyCanBeMadeInitOnly.Global
 // ReSharper disable AutoPropertyCanBeMadeGetOnly.Local
 // ReSharper disable PropertyCanBeMadeInitOnly.Local
@@ -57,7 +56,8 @@ namespace BanditMilitias
         [SettingPropertyGroup("Primary Settings", GroupOrder = 0)]
         public bool CanTrain { get; private set; } = true;
 
-        //[SettingPropertyBool("Upgrade BM Troops Gear (!! EXPERIMENTAL ALPHA !!)", HintText = "\nAll BM troops will upgrade their gear from loot won.  BM is the first mod to try this.", Order = 0, RequireRestart = false)]
+        //[SettingPropertyBool("Upgrade BM Troops Gear (!! DISABLED, EXPERIMENTAL!!)", HintText = "\nAll BM troops will upgrade their gear from loot won.  BM is the first mod to try this.  Not yet available.", Order = 0, RequireRestart = false)]
+        [SettingPropertyBool("(Future feature)", HintText = "Not yet available.", Order = 8, RequireRestart = false)]
         //[SettingPropertyGroup("Primary Settings", GroupOrder = 1)]
         public bool UpgradeTroops { get; private set; } = false;
 
