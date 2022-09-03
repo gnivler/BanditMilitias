@@ -24,13 +24,12 @@ namespace BanditMilitias
         [SaveableField(4)] public Dictionary<Hero, float> Avoidance = new();
         [SaveableField(5)] private Hero leader;
         [SaveableField(6)] private Settlement homeSettlement;
-        [CachedData] public TextObject cachedName;
+        [CachedData] private TextObject cachedName;
 
         public override Hero Leader => leader;
         public override Hero PartyOwner => MobileParty?.ActualClan?.Leader; // clan is null during nuke  
         public override Settlement HomeSettlement => homeSettlement;
         private static readonly MethodInfo GetLocalizedText = AccessTools.Method(typeof(MBTextManager), "GetLocalizedText");
-
 
         public override TextObject Name
         {

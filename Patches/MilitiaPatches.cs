@@ -342,9 +342,9 @@ namespace BanditMilitias.Patches
                 NameGenerator.Current.AddName(GangLeaderNames(NameGenerator.Current)[index]);
                 textObject = GangLeaderNames(NameGenerator.Current)[index].CopyTextObject();
                 textObject.SetTextVariable("FEMALE", hero.IsFemale ? 1 : 0);
-                textObject.SetTextVariable("IMPERIAL", (hero.Culture.StringId == "empire") ? 1 : 0);
-                textObject.SetTextVariable("COASTAL", (hero.Culture.StringId == "empire" || hero.Culture.StringId == "vlandia") ? 1 : 0);
-                textObject.SetTextVariable("NORTHERN", (hero.Culture.StringId == "battania" || hero.Culture.StringId == "sturgia") ? 1 : 0);
+                textObject.SetTextVariable("IMPERIAL", hero.Culture.StringId == "empire" ? 1 : 0);
+                textObject.SetTextVariable("COASTAL", hero.Culture.StringId is "empire" or "vlandia" ? 1 : 0);
+                textObject.SetTextVariable("NORTHERN", hero.Culture.StringId is "battania" or "sturgia" ? 1 : 0);
                 StringHelpers.SetCharacterProperties("HERO", hero.CharacterObject, textObject).SetTextVariable("FIRSTNAME", heroFirstName);
                 __result = textObject;
             }

@@ -153,14 +153,6 @@ namespace BanditMilitias.Patches
             }
         }
 
-        private static void ReHome()
-        {
-            foreach (var BM in GetCachedBMs(true))
-            {
-                _homeSettlement(BM.Leader) = BM.Leader.BornSettlement;
-            }
-        }
-
         [HarmonyPatch(typeof(MapMobilePartyTrackerVM), MethodType.Constructor, typeof(Camera), typeof(Action<Vec2>))]
         public static class MapMobilePartyTrackerVMCtorPatch
         {

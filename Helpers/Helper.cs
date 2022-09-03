@@ -53,7 +53,7 @@ namespace BanditMilitias.Helpers
 
         internal static readonly AccessTools.FieldRef<Hero, Settlement> _homeSettlement =
             AccessTools.FieldRefAccess<Hero, Settlement>("_homeSettlement");
-        
+
         // ReSharper disable once StringLiteralTypo
         internal static readonly AccessTools.FieldRef<CharacterObject, bool> HiddenInEncyclopedia =
             AccessTools.FieldRefAccess<CharacterObject, bool>("<HiddenInEncylopedia>k__BackingField");
@@ -68,6 +68,12 @@ namespace BanditMilitias.Helpers
             AccessTools.FieldRefAccess<MBObjectBase, bool>("<IsRegistered>k__BackingField");
 
         private static PartyUpgraderCampaignBehavior UpgraderCampaignBehavior;
+
+        internal static void ReHome()
+        {
+            foreach (var BM in GetCachedBMs(true))
+                _homeSettlement(BM.Leader) = BM.HomeSettlement;
+        }
 
         public static bool TrySplitParty(MobileParty mobileParty)
         {
@@ -706,7 +712,7 @@ namespace BanditMilitias.Helpers
             catch (Exception ex)
             {
                 DeferringLogger.Instance.Debug?.Log(ex);
-                DeferringLogger.Instance.Debug?.Log($"Armour loaded: {ItemTypes.Select(k=>k.Value).Sum(v => v.Count)}\n\tNon-armour loaded: {Globals.EquipmentItems.Count}\n\tArrows:{Globals.Arrows.Count}\n\tBolts:{Globals.Bolts.Count}\n\tMounts: {Globals.Mounts.Count}\n\tSaddles: {Globals.Saddles.Count}");
+                DeferringLogger.Instance.Debug?.Log($"Armour loaded: {ItemTypes.Select(k => k.Value).Sum(v => v.Count)}\n\tNon-armour loaded: {Globals.EquipmentItems.Count}\n\tArrows:{Globals.Arrows.Count}\n\tBolts:{Globals.Bolts.Count}\n\tMounts: {Globals.Mounts.Count}\n\tSaddles: {Globals.Saddles.Count}");
             }
 
             //DeferringLogger.Instance.Debug?.Log($"GEAR ==> {T.ElapsedTicks / 10000F:F3}ms");
@@ -856,7 +862,6 @@ namespace BanditMilitias.Helpers
 
         private static void ConfigureMilitia(MobileParty mobileParty)
         {
-
             mobileParty.LeaderHero.Gold = Convert.ToInt32(mobileParty.Party.TotalStrength * GoldMap[Globals.Settings.GoldReward.SelectedValue]);
             mobileParty.MemberRoster.AddToCounts(mobileParty.GetBM().Leader.CharacterObject, 1, false, 0, 0, true, 0);
             actualClan(mobileParty) = Clan.BanditFactions.First(c => c.Culture == mobileParty.HomeSettlement.Culture);
