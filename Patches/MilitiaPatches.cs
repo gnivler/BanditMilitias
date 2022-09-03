@@ -372,7 +372,7 @@ namespace BanditMilitias.Patches
 
         // copied from assembly since there is no BanditPartyComponent in BMs
         [HarmonyPatch(typeof(MobileParty), "CalculateContinueChasingScore")]
-        public class MobilePartyBanditPartyComponent
+        public class MobilePartyCalculateContinueChasingScore
         {
             public static bool Prefix(MobileParty __instance, MobileParty enemyParty, ref float __result)
             {
@@ -422,9 +422,7 @@ namespace BanditMilitias.Patches
             public static Exception Finalizer(Exception __exception, WarPartyComponent __instance)
             {
                 if (__exception is not null && __instance is ModBanditMilitiaPartyComponent)
-                {
                     return null;
-                }
 
                 return __exception;
             }

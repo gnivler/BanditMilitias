@@ -182,9 +182,9 @@ namespace BanditMilitias.Patches
         {
             public static bool Prepare()
             {
-                return SubModule.MEOWMEOW;
+                return !SubModule.MEOWMEOW;
             }
-
+        
             public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
             {
                 // just stop the Add
@@ -197,7 +197,7 @@ namespace BanditMilitias.Patches
                 return codes.AsEnumerable();
             }
         }
-
+        
         // TickPartialHourlyAiEvent
         // MapEventLootDefeatedPartiesPatch.Postfix
         // MapEventFinishBattlePatch.Prefix
@@ -206,9 +206,9 @@ namespace BanditMilitias.Patches
         {
             public static bool Prepare()
             {
-                return SubModule.MEOWMEOW;
+                return !SubModule.MEOWMEOW;
             }
-
+        
             public static void Postfix(MBObjectManager __instance, MBObjectBase obj)
             {
                 if (!SubModule.MEOWMEOW || !Globals.Settings.UpgradeTroops)
@@ -217,7 +217,7 @@ namespace BanditMilitias.Patches
                     DeferringLogger.Instance.Debug?.Log($"UnregisterObject: {obj.StringId} {obj.GetName()}");
             }
         }
-
+        
         // TODO
         // troops which aren't in their original BM become unready and get unregistered - prevent this
         [HarmonyPatch(typeof(MBObjectManager), "UnregisterNonReadyObjects")]
@@ -225,17 +225,17 @@ namespace BanditMilitias.Patches
         {
             private static readonly MethodInfo from = AccessTools.Method(typeof(MBObjectManager), "UnregisterObject");
             private static readonly MethodInfo to = AccessTools.Method(typeof(MBObjectManagerUnregisterNonReadyObjects), "UnregisterObject");
-
+        
             public static bool Prepare()
             {
-                return SubModule.MEOWMEOW;
+                return !SubModule.MEOWMEOW;
             }
-
+        
             public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
             {
                 return instructions.MethodReplacer(from, to);
             }
-
+        
             // ReSharper disable once UnusedParameter.Local
             private static void UnregisterObject(MBObjectManager manager, MBObjectBase obj)
             {
