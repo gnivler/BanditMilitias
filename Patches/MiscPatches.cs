@@ -147,8 +147,17 @@ namespace BanditMilitias.Patches
                     BanditEquipment.Add(BuildViableEquipmentSet());
 
                 DoPowerCalculations(true);
+                ReHome();
                 var bmCount = MobileParty.All.CountQ(m => m.IsBM());
                 DeferringLogger.Instance.Debug?.Log($"Militias: {bmCount}.  Upgraded BM troops: {MobileParty.All.SelectMany(m => m.MemberRoster.ToFlattenedRoster()).CountQ(e => e.Troop.StringId.Contains("Bandit_Militia"))}.  Troop prisoners: {MobileParty.All.SelectMany(m => m.PrisonRoster.ToFlattenedRoster()).CountQ(e => e.Troop.StringId.Contains("Bandit_Militia"))}.");
+            }
+        }
+
+        private static void ReHome()
+        {
+            foreach (var BM in GetCachedBMs(true))
+            {
+                _homeSettlement(BM.Leader) = BM.Leader.BornSettlement;
             }
         }
 

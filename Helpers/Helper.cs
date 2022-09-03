@@ -39,8 +39,6 @@ namespace BanditMilitias.Helpers
         internal static readonly AccessTools.FieldRef<NameGenerator, TextObject[]> GangLeaderNames =
             AccessTools.FieldRefAccess<NameGenerator, TextObject[]>("_gangLeaderNames");
 
-        internal static readonly AccessTools.FieldRef<Hero, Settlement> _homeSettlement = AccessTools.FieldRefAccess<Hero, Settlement>("_homeSettlement");
-
         private static readonly AccessTools.StructFieldRef<EquipmentElement, ItemModifier> ItemModifier =
             AccessTools.StructFieldRefAccess<EquipmentElement, ItemModifier>("<ItemModifier>k__BackingField");
 
@@ -53,6 +51,9 @@ namespace BanditMilitias.Helpers
         internal static readonly AccessTools.FieldRef<MBEquipmentRoster, List<Equipment>> Equipments =
             AccessTools.FieldRefAccess<MBEquipmentRoster, List<Equipment>>("_equipments");
 
+        internal static readonly AccessTools.FieldRef<Hero, Settlement> _homeSettlement =
+            AccessTools.FieldRefAccess<Hero, Settlement>("_homeSettlement");
+        
         // ReSharper disable once StringLiteralTypo
         internal static readonly AccessTools.FieldRef<CharacterObject, bool> HiddenInEncyclopedia =
             AccessTools.FieldRefAccess<CharacterObject, bool>("<HiddenInEncylopedia>k__BackingField");
@@ -99,12 +100,22 @@ namespace BanditMilitias.Helpers
         private static void SplitRosters(MobileParty original, TroopRoster troops1, TroopRoster troops2,
             TroopRoster prisoners1, TroopRoster prisoners2, ItemRoster inventory1, ItemRoster inventory2)
         {
+            //DeferringLogger.Instance.Debug?.Log($"Processing troops: {original.MemberRoster.Count} types, {original.MemberRoster.TotalManCount} in total");
             foreach (var rosterElement in original.MemberRoster.GetTroopRoster().WhereQ(x => x.Character.HeroObject is null))
+            {
+                //if (!IsRegistered(rosterElement.Character))
+                //    Meow();
                 SplitRosters(troops1, troops2, rosterElement);
+            }
 
             if (original.PrisonRoster.TotalManCount > 0)
+            {
+                //DeferringLogger.Instance.Debug?.Log($"Processing prisoners: {original.PrisonRoster.Count} types, {original.PrisonRoster.TotalManCount} in total");
                 foreach (var rosterElement in original.PrisonRoster.GetTroopRoster())
+                {
                     SplitRosters(prisoners1, prisoners2, rosterElement);
+                }
+            }
 
             foreach (var item in original.ItemRoster)
             {
@@ -125,10 +136,16 @@ namespace BanditMilitias.Helpers
         {
             // toss a coin (to your Witcher)
             if (rosterElement.Number == 1)
+            {
                 if (Rng.Next(0, 2) == 0)
+                {
                     roster1.AddToCounts(rosterElement.Character, 1);
+                }
                 else
+                {
                     roster2.AddToCounts(rosterElement.Character, 1);
+                }
+            }
             else
             {
                 var half = Math.Max(1, rosterElement.Number / 2);
@@ -689,7 +706,7 @@ namespace BanditMilitias.Helpers
             catch (Exception ex)
             {
                 DeferringLogger.Instance.Debug?.Log(ex);
-                DeferringLogger.Instance.Debug?.Log($"Armour loaded: {ItemTypes.Select(k => k.Value).Sum(v => v.Count)}\n\tNon-armour loaded: {Globals.EquipmentItems.Count}\n\tArrows:{Globals.Arrows.Count}\n\tBolts:{Globals.Bolts.Count}\n\tMounts: {Globals.Mounts.Count}\n\tSaddles: {Globals.Saddles.Count}");
+                DeferringLogger.Instance.Debug?.Log($"Armour loaded: {ItemTypes.Select(k=>k.Value).Sum(v => v.Count)}\n\tNon-armour loaded: {Globals.EquipmentItems.Count}\n\tArrows:{Globals.Arrows.Count}\n\tBolts:{Globals.Bolts.Count}\n\tMounts: {Globals.Mounts.Count}\n\tSaddles: {Globals.Saddles.Count}");
             }
 
             //DeferringLogger.Instance.Debug?.Log($"GEAR ==> {T.ElapsedTicks / 10000F:F3}ms");
@@ -837,10 +854,9 @@ namespace BanditMilitias.Helpers
             }
         }
 
-        private static AccessTools.FieldRef<MobileParty, CampaignTime> ignoredUntilTime = AccessTools.FieldRefAccess<MobileParty, CampaignTime>("_ignoredUntilTime");
-
         private static void ConfigureMilitia(MobileParty mobileParty)
         {
+
             mobileParty.LeaderHero.Gold = Convert.ToInt32(mobileParty.Party.TotalStrength * GoldMap[Globals.Settings.GoldReward.SelectedValue]);
             mobileParty.MemberRoster.AddToCounts(mobileParty.GetBM().Leader.CharacterObject, 1, false, 0, 0, true, 0);
             actualClan(mobileParty) = Clan.BanditFactions.First(c => c.Culture == mobileParty.HomeSettlement.Culture);
@@ -873,6 +889,14 @@ namespace BanditMilitias.Helpers
         {
             try
             {
+                if (mobileParty.MemberRoster.TotalManCount == 0)
+                {
+                    Meow();
+                    DeferringLogger.Instance.Debug?.Log("Trying to configure militia with no troops, trashing");
+                    Trash(mobileParty);
+                    return;
+                }
+
                 if (!Globals.Settings.CanTrain || MilitiaPowerPercent > Globals.Settings.GlobalPowerPercent)
                     return;
 
