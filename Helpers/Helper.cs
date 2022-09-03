@@ -44,7 +44,7 @@ namespace BanditMilitias.Helpers
         private static readonly AccessTools.StructFieldRef<EquipmentElement, ItemModifier> ItemModifier =
             AccessTools.StructFieldRefAccess<EquipmentElement, ItemModifier>("<ItemModifier>k__BackingField");
 
-        internal static readonly AccessTools.FieldRef<PartyBase, ItemRoster> ItemRoster =
+        private static readonly AccessTools.FieldRef<PartyBase, ItemRoster> ItemRoster =
             AccessTools.FieldRefAccess<PartyBase, ItemRoster>("<ItemRoster>k__BackingField");
 
         internal static readonly AccessTools.FieldRef<BasicCharacterObject, MBEquipmentRoster> EquipmentRoster =
@@ -57,7 +57,7 @@ namespace BanditMilitias.Helpers
         internal static readonly AccessTools.FieldRef<CharacterObject, bool> HiddenInEncyclopedia =
             AccessTools.FieldRefAccess<CharacterObject, bool>("<HiddenInEncylopedia>k__BackingField");
 
-        internal static readonly AccessTools.FieldRef<CampaignObjectManager, MBReadOnlyList<MobileParty>> PartiesWithoutPartyComponent =
+        private static readonly AccessTools.FieldRef<CampaignObjectManager, MBReadOnlyList<MobileParty>> PartiesWithoutPartyComponent =
             AccessTools.FieldRefAccess<CampaignObjectManager, MBReadOnlyList<MobileParty>>("<PartiesWithoutPartyComponent>k__BackingField");
 
         private static readonly AccessTools.FieldRef<MobileParty, Clan> actualClan =
@@ -66,7 +66,7 @@ namespace BanditMilitias.Helpers
         internal static readonly AccessTools.FieldRef<MBObjectBase, bool> IsRegistered =
             AccessTools.FieldRefAccess<MBObjectBase, bool>("<IsRegistered>k__BackingField");
 
-        internal static PartyUpgraderCampaignBehavior UpgraderCampaignBehavior;
+        private static PartyUpgraderCampaignBehavior UpgraderCampaignBehavior;
 
         public static bool TrySplitParty(MobileParty mobileParty)
         {

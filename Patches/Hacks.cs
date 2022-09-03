@@ -39,11 +39,11 @@ namespace BanditMilitias.Patches
                     __instance.Ai.RethinkAtNextHourlyTick = true;
                     return false;
                 }
-
+        
                 return true;
             }
         }
-
+        
         // game seems to dislike me removing parties on tick 3.9
         [HarmonyPatch(typeof(MobileParty), "GetTotalStrengthWithFollowers")]
         public static class MobilePartyGetTotalStrengthWithFollowers
@@ -57,11 +57,11 @@ namespace BanditMilitias.Patches
                     __result = __instance.Party.TotalStrength;
                     return false;
                 }
-
+        
                 return true;
             }
         }
-
+        
         // troops with missing data causing lots of NREs elsewhere
         // just a temporary patch
         public static void PurgeBadTroops()
@@ -82,7 +82,7 @@ namespace BanditMilitias.Patches
                                 MBObjectManager.Instance.UnregisterObject(troop.Character);
                             }
             }
-
+        
             foreach (var settlement in Settlement.All)
             {
                 var rosters = new[] { settlement.Party.MemberRoster, settlement.Party.PrisonRoster };
