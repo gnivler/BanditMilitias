@@ -39,8 +39,6 @@ namespace BanditMilitias.Helpers
         internal static readonly AccessTools.FieldRef<NameGenerator, TextObject[]> GangLeaderNames =
             AccessTools.FieldRefAccess<NameGenerator, TextObject[]>("_gangLeaderNames");
 
-        internal static readonly AccessTools.FieldRef<Hero, Settlement> _homeSettlement = AccessTools.FieldRefAccess<Hero, Settlement>("_homeSettlement");
-
         private static readonly AccessTools.StructFieldRef<EquipmentElement, ItemModifier> ItemModifier =
             AccessTools.StructFieldRefAccess<EquipmentElement, ItemModifier>("<ItemModifier>k__BackingField");
 
@@ -53,6 +51,9 @@ namespace BanditMilitias.Helpers
         internal static readonly AccessTools.FieldRef<MBEquipmentRoster, List<Equipment>> Equipments =
             AccessTools.FieldRefAccess<MBEquipmentRoster, List<Equipment>>("_equipments");
 
+        internal static readonly AccessTools.FieldRef<Hero, Settlement> _homeSettlement =
+            AccessTools.FieldRefAccess<Hero, Settlement>("_homeSettlement");
+        
         // ReSharper disable once StringLiteralTypo
         internal static readonly AccessTools.FieldRef<CharacterObject, bool> HiddenInEncyclopedia =
             AccessTools.FieldRefAccess<CharacterObject, bool>("<HiddenInEncylopedia>k__BackingField");
@@ -853,12 +854,9 @@ namespace BanditMilitias.Helpers
             }
         }
 
-        private static AccessTools.FieldRef<MobileParty, CampaignTime> ignoredUntilTime = AccessTools.FieldRefAccess<MobileParty, CampaignTime>("_ignoredUntilTime");
-
         private static void ConfigureMilitia(MobileParty mobileParty)
         {
-            // this is a workaround because MobileParty.GetBestInitiativeBehavior checks a radius for all parties (saw up to 4 parties in range during testing)
-            ignoredUntilTime(mobileParty) = CampaignTime.Never;
+
             mobileParty.LeaderHero.Gold = Convert.ToInt32(mobileParty.Party.TotalStrength * GoldMap[Globals.Settings.GoldReward.SelectedValue]);
             mobileParty.MemberRoster.AddToCounts(mobileParty.GetBM().Leader.CharacterObject, 1, false, 0, 0, true, 0);
             actualClan(mobileParty) = Clan.BanditFactions.First(c => c.Culture == mobileParty.HomeSettlement.Culture);

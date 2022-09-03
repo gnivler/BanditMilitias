@@ -147,8 +147,17 @@ namespace BanditMilitias.Patches
                     BanditEquipment.Add(BuildViableEquipmentSet());
 
                 DoPowerCalculations(true);
+                ReHome();
                 var bmCount = MobileParty.All.CountQ(m => m.IsBM());
                 DeferringLogger.Instance.Debug?.Log($"Militias: {bmCount}.  Upgraded BM troops: {MobileParty.All.SelectMany(m => m.MemberRoster.ToFlattenedRoster()).CountQ(e => e.Troop.StringId.Contains("Bandit_Militia"))}.  Troop prisoners: {MobileParty.All.SelectMany(m => m.PrisonRoster.ToFlattenedRoster()).CountQ(e => e.Troop.StringId.Contains("Bandit_Militia"))}.");
+            }
+        }
+
+        private static void ReHome()
+        {
+            foreach (var BM in GetCachedBMs(true))
+            {
+                _homeSettlement(BM.Leader) = BM.Leader.BornSettlement;
             }
         }
 
@@ -184,7 +193,7 @@ namespace BanditMilitias.Patches
             {
                 return !SubModule.MEOWMEOW;
             }
-        
+
             public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
             {
                 // just stop the Add
@@ -197,7 +206,7 @@ namespace BanditMilitias.Patches
                 return codes.AsEnumerable();
             }
         }
-        
+
         // TickPartialHourlyAiEvent
         // MapEventLootDefeatedPartiesPatch.Postfix
         // MapEventFinishBattlePatch.Prefix
@@ -208,7 +217,7 @@ namespace BanditMilitias.Patches
             {
                 return !SubModule.MEOWMEOW;
             }
-        
+
             public static void Postfix(MBObjectManager __instance, MBObjectBase obj)
             {
                 if (!SubModule.MEOWMEOW || !Globals.Settings.UpgradeTroops)
@@ -217,7 +226,7 @@ namespace BanditMilitias.Patches
                     DeferringLogger.Instance.Debug?.Log($"UnregisterObject: {obj.StringId} {obj.GetName()}");
             }
         }
-        
+
         // TODO
         // troops which aren't in their original BM become unready and get unregistered - prevent this
         [HarmonyPatch(typeof(MBObjectManager), "UnregisterNonReadyObjects")]
@@ -225,17 +234,17 @@ namespace BanditMilitias.Patches
         {
             private static readonly MethodInfo from = AccessTools.Method(typeof(MBObjectManager), "UnregisterObject");
             private static readonly MethodInfo to = AccessTools.Method(typeof(MBObjectManagerUnregisterNonReadyObjects), "UnregisterObject");
-        
+
             public static bool Prepare()
             {
                 return !SubModule.MEOWMEOW;
             }
-        
+
             public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
             {
                 return instructions.MethodReplacer(from, to);
             }
-        
+
             // ReSharper disable once UnusedParameter.Local
             private static void UnregisterObject(MBObjectManager manager, MBObjectBase obj)
             {
