@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using BanditMilitias.Helpers;
 using SandBox.ViewModelCollection.Map;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.MapEvents;
@@ -29,7 +30,7 @@ namespace BanditMilitias
             LastCalculated = 0;
             PartyCacheInterval = 0;
             RaidCap = 0;
-            foreach (var BM in Helpers.Helper.GetCachedBMs(true).SelectQ(bm => bm.Party))
+            foreach (var BM in Helper.GetCachedBMs(true).SelectQ(bm => bm.Party))
             {
                 var index = MapMobilePartyTrackerVM.Trackers.FindIndexQ(t =>
                     t.TrackedParty == BM.MobileParty);
@@ -81,12 +82,14 @@ namespace BanditMilitias
         internal static double PartyCacheInterval;
         internal static int RaidCap;
         internal static Clan Looters;
+        internal static Clan Wights; // ROT
         internal static List<ItemObject> Mounts;
         internal static List<ItemObject> Saddles;
         internal static List<Settlement> Hideouts;
         internal static IEnumerable<ModBanditMilitiaPartyComponent> AllBMs;
         internal static CampaignPeriodicEventManager CampaignPeriodicEventManager;
         internal static object Ticker;
+        internal static List<CharacterObject> TakenPrisoner = new();
 
         // ReSharper disable once InconsistentNaming
         internal static MapMobilePartyTrackerVM MapMobilePartyTrackerVM;

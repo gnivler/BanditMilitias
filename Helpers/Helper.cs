@@ -306,9 +306,7 @@ namespace BanditMilitias.Helpers
             mobileParty.LeaderHero?.RemoveMilitiaHero();
             var parties = PartiesWithoutPartyComponent(Campaign.Current.CampaignObjectManager).ToListQ();
             if (parties.Remove(mobileParty))
-            {
                 PartiesWithoutPartyComponent(Campaign.Current.CampaignObjectManager) = new MBReadOnlyList<MobileParty>(parties);
-            }
         }
 
         public static void Nuke()
@@ -317,9 +315,7 @@ namespace BanditMilitias.Helpers
             {
                 LegacyFlushBanditMilitias();
                 foreach (var BM in GetCachedBMs(true))
-                {
                     Trash(BM.MobileParty);
-                }
 
                 for (var index = 0; index < Troops.Count; index++)
                 {
@@ -328,7 +324,7 @@ namespace BanditMilitias.Helpers
                     {
                         troop.IsReady = false;
                         MBObjectManager.Instance.UnregisterObject(troop);
-                        var party = troop.FindParty(out _); // TODO use bool
+                        var party = troop.FindParty();
                         if (party is null)
                             continue;
                         if (party.MemberRoster.Contains(troop))
@@ -342,8 +338,7 @@ namespace BanditMilitias.Helpers
                     }
                 }
 
-                var characters = MBObjectManager.Instance.GetObjectTypeList<CharacterObject>()
-                    .WhereQ(c => c.Name.ToString().StartsWith("Upgraded")).ToListQ();
+                var characters = MBObjectManager.Instance.GetObjectTypeList<CharacterObject>().WhereQ(c => c.Name == null).ToListQ();
                 for (var index = 0; index < characters.Count; index++)
                 {
                     var troop = characters[index];
@@ -351,7 +346,7 @@ namespace BanditMilitias.Helpers
                     {
                         troop.IsReady = false;
                         MBObjectManager.Instance.UnregisterObject(troop);
-                        var party = troop.FindParty(out _); // TODO use bool
+                        var party = troop.FindParty();
                         if (party is null)
                             continue;
                         if (party.MemberRoster.Contains(troop))
@@ -373,12 +368,13 @@ namespace BanditMilitias.Helpers
                 _listField.Value = new MBReadOnlyList<MobileParty>(replacement.ToListQ());
                 Traverse.Create(Ticker).Field<IReadOnlyList<MobileParty>>("_list").Value = new MBReadOnlyList<MobileParty>(new List<MobileParty>());
                 PartyImageMap.Clear();
-                // move these out of try?
                 LootRecord.Clear();
                 EquipmentMap.Clear();
                 Troops.Clear();
-                //BanditMilitiaCharacters.Clear();
                 Heroes.Clear();
+                InformationManager.DisplayMessage(new InformationMessage("BANDIT MILITIAS CLEARED"));
+                var bmCount = MobileParty.All.CountQ(m => m.IsBM());
+                DeferringLogger.Instance.Debug?.Log($"Militias: {bmCount}.  Upgraded BM troops: {MobileParty.All.SelectMany(m => m.MemberRoster.ToFlattenedRoster()).CountQ(e => e.Troop.StringId.StartsWith("Upgraded"))}.  Troop prisoners: {MobileParty.All.SelectMany(m => m.PrisonRoster.ToFlattenedRoster()).CountQ(e => e.Troop.StringId.StartsWith("Upgraded"))}.");
             }
             catch (Exception ex)
             {
@@ -507,6 +503,8 @@ namespace BanditMilitias.Helpers
                     DeferringLogger.Instance.Debug?.Log(">>> FLUSH MapEvent.");
                     Traverse.Create(mapEvent).Field<MapEventState>("_state").Value = MapEventState.Wait;
                     mapEvent.FinalizeEvent();
+                    foreach (var BM in mapEvent.InvolvedParties.WhereQ(p => p.IsMobile && p.MobileParty.IsBM()))
+                        Trash(BM.MobileParty);
                 }
             }
         }
@@ -712,7 +710,7 @@ namespace BanditMilitias.Helpers
             catch (Exception ex)
             {
                 DeferringLogger.Instance.Debug?.Log(ex);
-                DeferringLogger.Instance.Debug?.Log($"Armour loaded: {ItemTypes.Select(k => k.Value).Sum(v => v.Count)}\n\tNon-armour loaded: {Globals.EquipmentItems.Count}\n\tArrows:{Globals.Arrows.Count}\n\tBolts:{Globals.Bolts.Count}\n\tMounts: {Globals.Mounts.Count}\n\tSaddles: {Globals.Saddles.Count}");
+                DeferringLogger.Instance.Debug?.Log($"Armour loaded: {ItemTypes.Select(k => k.Value).Sum(v => v.Count)}\n\tNon-armour loaded: {EquipmentItems.Count}\n\tArrows:{Arrows.Count}\n\tBolts:{Bolts.Count}\n\tMounts: {Mounts.Count}\n\tSaddles: {Saddles.Count}");
             }
 
             //DeferringLogger.Instance.Debug?.Log($"GEAR ==> {T.ElapsedTicks / 10000F:F3}ms");
@@ -727,13 +725,13 @@ namespace BanditMilitias.Helpers
                 var parties = MobileParty.All.WhereQ(p => p.LeaderHero is not null && !p.IsBM()).ToListQ();
                 var medianSize = (float)parties.OrderBy(p => p.MemberRoster.TotalManCount)
                     .ElementAt(parties.CountQ() / 2).MemberRoster.TotalManCount;
-                Globals.CalculatedMaxPartySize = Math.Max(medianSize, Math.Max(1, MobileParty.MainParty.MemberRoster.TotalManCount) * Variance);
+                CalculatedMaxPartySize = Math.Max(medianSize, Math.Max(1, MobileParty.MainParty.MemberRoster.TotalManCount) * Variance);
                 //Globals.CalculatedMaxPartySize = Math.Max(Globals.CalculatedMaxPartySize, Globals.Settings.MinPartySize);
-                Globals.LastCalculated = CampaignTime.Now.ToHours;
-                Globals.CalculatedGlobalPowerLimit = parties.SumQ(p => p.Party.TotalStrength) * Variance;
-                Globals.GlobalMilitiaPower = GetCachedBMs(true).SumQ(m => m.Party.TotalStrength);
-                Globals.MilitiaPowerPercent = Globals.GlobalMilitiaPower / Globals.CalculatedGlobalPowerLimit * 100;
-                Globals.MilitiaPartyAveragePower = Globals.GlobalMilitiaPower / GetCachedBMs().CountQ();
+                LastCalculated = CampaignTime.Now.ToHours;
+                CalculatedGlobalPowerLimit = parties.SumQ(p => p.Party.TotalStrength) * Variance;
+                GlobalMilitiaPower = GetCachedBMs(true).SumQ(m => m.Party.TotalStrength);
+                MilitiaPowerPercent = GlobalMilitiaPower / CalculatedGlobalPowerLimit * 100;
+                MilitiaPartyAveragePower = GlobalMilitiaPower / GetCachedBMs().CountQ();
             }
         }
 
@@ -843,10 +841,11 @@ namespace BanditMilitias.Helpers
                 while (NumMountedTroops(troopRoster) - Convert.ToInt32(troopRoster.TotalManCount / 2) is var delta && delta > 0)
                 {
                     var mountedTroops = troopRoster.GetTroopRoster().WhereQ(c =>
-                            !c.Character.Equipment[10].IsEmpty
-                            && !c.Character.IsHero)
-                        .WhereQ(c => !c.Character.Name.Contains("Upgraded"))
-                        .ToListQ();
+                        !c.Character.Equipment[10].IsEmpty
+                        && !c.Character.IsHero
+                        && !c.Character.Name.Contains("Upgraded")).ToListQ();
+                    if (mountedTroops.Count == 0)
+                        break;
                     var element = mountedTroops.GetRandomElement();
                     var count = Rng.Next(1, delta + 1);
                     count = Math.Min(element.Number, count);
@@ -941,7 +940,7 @@ namespace BanditMilitias.Helpers
                             if (!IsRegistered(Looters.BasicTroop))
                                 Meow();
                             mobileParty.MemberRoster.AddToCounts(Looters.BasicTroop, -numberToUpgrade);
-                            var recruit = Globals.Recruits[culture][Rng.Next(0, Recruits[culture].Count)];
+                            var recruit = Recruits[culture][Rng.Next(0, Recruits[culture].Count)];
                             if (!IsRegistered(recruit))
                                 Meow();
                             mobileParty.MemberRoster.AddToCounts(recruit, numberToUpgrade);
@@ -990,7 +989,7 @@ namespace BanditMilitias.Helpers
             if (forceRefresh || PartyCacheInterval < CampaignTime.Now.ToHours - 1)
             {
                 PartyCacheInterval = CampaignTime.Now.ToHours;
-                AllBMs = MobileParty.All.WhereQ(m => m.IsBM())
+                AllBMs = MobileParty.AllBanditParties.WhereQ(m => m.IsBM())
                     .SelectQ(m => m.PartyComponent as ModBanditMilitiaPartyComponent).ToListQ();
             }
 
@@ -1039,7 +1038,7 @@ namespace BanditMilitias.Helpers
                 if (mep.Party.MobileParty.GetBM().Avoidance.TryGetValue(loserHero, out _))
                     mep.Party.MobileParty.GetBM().Avoidance[loserHero] -= MilitiaBehavior.Increment;
                 else
-                    mep.Party.MobileParty.GetBM().Avoidance.Add(loserHero, Globals.Rng.Next(15, 35));
+                    mep.Party.MobileParty.GetBM().Avoidance.Add(loserHero, Rng.Next(15, 35));
             }
         }
 

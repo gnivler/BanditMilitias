@@ -10,7 +10,6 @@ using SandBox.View.Map;
 using SandBox.ViewModelCollection.Map;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Party;
-using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
 using TaleWorlds.InputSystem;
 using TaleWorlds.Library;
@@ -19,6 +18,7 @@ using TaleWorlds.MountAndBlade;
 using TaleWorlds.ObjectSystem;
 using static BanditMilitias.Helpers.Helper;
 using static BanditMilitias.Globals;
+using Debug = System.Diagnostics.Debug;
 using Module = TaleWorlds.MountAndBlade.Module;
 
 // ReSharper disable ConditionIsAlwaysTrueOrFalse
@@ -66,7 +66,7 @@ namespace BanditMilitias
                 }
                 catch (Exception ex)
                 {
-                    System.Diagnostics.Debug.Print(ex.ToString());
+                    Debug.Print(ex.ToString());
                 }
 
             DeferringLogger.Instance.Debug?.Log($"{Globals.Settings?.DisplayName} starting up...");
@@ -181,9 +181,6 @@ namespace BanditMilitias
                     }
 
                     DoPowerCalculations(true);
-                    InformationManager.DisplayMessage(new InformationMessage("BANDIT MILITIAS CLEARED"));
-                    var bmCount = MobileParty.All.CountQ(m => m.IsBM());
-                    DeferringLogger.Instance.Debug?.Log($"Militias: {bmCount}.  Upgraded BM troops: {MobileParty.All.SelectMany(m => m.MemberRoster.ToFlattenedRoster()).CountQ(e => e.Troop.StringId.StartsWith("Upgraded"))}.  Troop prisoners: {MobileParty.All.SelectMany(m => m.PrisonRoster.ToFlattenedRoster()).CountQ(e => e.Troop.StringId.StartsWith("Upgraded"))}.");
                 }
                 catch (Exception ex)
                 {

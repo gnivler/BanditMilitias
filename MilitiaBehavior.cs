@@ -42,6 +42,9 @@ namespace BanditMilitias
         private static readonly AccessTools.FieldRef<CharacterObject, CharacterObject[]> upgradeTargets =
             AccessTools.FieldRefAccess<CharacterObject, CharacterObject[]>("<UpgradeTargets>k__BackingField");
 
+        private static readonly AccessTools.FieldRef<BasicCharacterObject, bool> IsSoldier =
+            AccessTools.FieldRefAccess<BasicCharacterObject, bool>("<IsSoldier>k__BackingField");
+
         public override void RegisterEvents()
         {
             CampaignEvents.VillageBeingRaided.AddNonSerializedListener(this, v =>
@@ -410,12 +413,17 @@ namespace BanditMilitias
                         continue;
                     }
 
-                    var clan = settlement.OwnerClan;
+                    Clan clan;
+                    // ROT
+                    if (settlement.OwnerClan == Wights)
+                        clan = Clan.BanditFactions.Except(new[] { Wights }).GetRandomElementInefficiently();
+                    else
+                        clan = settlement.OwnerClan;
                     var min = Convert.ToInt32(Globals.Settings.MinPartySize);
                     var max = Convert.ToInt32(CalculatedMaxPartySize);
                     // if the MinPartySize is cranked it will throw ArgumentOutOfRangeException
                     if (max < min)
-                        max = min;
+                        min = max;
                     var roster = TroopRoster.CreateDummyTroopRoster();
                     var size = Convert.ToInt32(Rng.Next(min, max + 1) / 2f);
                     if (!IsRegistered(clan.BasicTroop) || !IsRegistered(Looters.BasicTroop))
@@ -445,14 +453,16 @@ namespace BanditMilitias
 
         public override void SyncData(IDataStore dataStore)
         {
-            dataStore.SyncData("Heroes", ref Globals.Heroes);
+            dataStore.SyncData("Heroes", ref Heroes);
             if (!SubModule.MEOWMEOW || !Globals.Settings.UpgradeTroops)
                 return;
 
-            if (!dataStore.SyncData("Troops", ref Globals.Troops))
+            if (!dataStore.SyncData("Troops", ref Troops))
                 Troops.Clear();
-            if (!dataStore.SyncData("EquipmentMap", ref Globals.EquipmentMap))
+            if (!dataStore.SyncData("EquipmentMap", ref EquipmentMap))
                 EquipmentMap.Clear();
+            if (!dataStore.SyncData("TakenPrisoner", ref TakenPrisoner))
+                TakenPrisoner.Clear();
             if (dataStore.IsLoading)
             {
                 var tempList = new List<CharacterObject>(Troops);
@@ -478,10 +488,10 @@ namespace BanditMilitias
                 bodyProps.Init(troop.OriginalCharacter.GetBodyPropertiesMin(), troop.OriginalCharacter.GetBodyPropertiesMax());
                 bodyPropertyRange(troop) = bodyProps;
                 var mbEquipmentRoster = new MBEquipmentRoster();
-                Equipments(mbEquipmentRoster) = new List<Equipment> { Globals.EquipmentMap[troop.StringId] };
+                Equipments(mbEquipmentRoster) = new List<Equipment> { EquipmentMap[troop.StringId] };
                 EquipmentRoster(troop) = mbEquipmentRoster;
                 upgradeTargets(troop) = upgradeTargets(troop.OriginalCharacter);
-                AccessTools.Property("BasicCharacterObject:IsSoldier").SetValue(troop, true);
+                IsSoldier(troop) = true;
                 MBObjectManager.Instance.RegisterObject(troop);
                 Troops.Add(troop);
             }

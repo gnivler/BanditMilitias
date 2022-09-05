@@ -49,24 +49,19 @@ namespace BanditMilitias.Helpers
             return null;
         }
 
-        public static MobileParty FindParty(this CharacterObject characterObject, out bool prisoner)
+        public static MobileParty FindParty(this CharacterObject characterObject)
         {
             foreach (var party in MobileParty.All)
             {
-                if (party.MemberRoster.GetTroopRoster().WhereQ(t => t.Character.OriginalCharacter is not null).AnyQ(t => t.Character.StringId == characterObject.StringId))
-                {
-                    prisoner = false;
+                if (party.MemberRoster.GetTroopRoster().WhereQ(t => t.Character.OriginalCharacter is not null)
+                    .AnyQ(t => t.Character == characterObject))
                     return party;
-                }
 
-                if (party.PrisonRoster.GetTroopRoster().WhereQ(t => t.Character.OriginalCharacter is not null).AnyQ(t => t.Character.StringId == characterObject.StringId))
-                {
-                    prisoner = true;
+                if (party.PrisonRoster.GetTroopRoster().WhereQ(t => t.Character.OriginalCharacter is not null)
+                    .AnyQ(t => t.Character == characterObject))
                     return party;
-                }
             }
 
-            prisoner = false;
             return null;
         }
 

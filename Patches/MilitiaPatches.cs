@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using BanditMilitias.Helpers;
 using HarmonyLib;
 using Helpers;
@@ -17,7 +16,6 @@ using TaleWorlds.CampaignSystem.CampaignBehaviors.AiBehaviors;
 using TaleWorlds.CampaignSystem.Encounters;
 using TaleWorlds.CampaignSystem.GameComponents;
 using TaleWorlds.CampaignSystem.GameMenus;
-using TaleWorlds.CampaignSystem.MapEvents;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Party.PartyComponents;
 using TaleWorlds.CampaignSystem.Roster;
@@ -227,20 +225,20 @@ namespace BanditMilitias.Patches
             }
         }
 
-        [HarmonyPatch(typeof(MapEventParty), "OnTroopKilled")]
-        public static class MapEventPartyOnTroopKilled
-        {
-            public static void Prefix(UniqueTroopDescriptor troopSeed, FlattenedTroopRoster ____roster, ref CharacterObject __state)
-            {
-                __state = ____roster[troopSeed].Troop;
-            }
-
-            public static void Postfix(UniqueTroopDescriptor troopSeed, FlattenedTroopRoster ____roster, CharacterObject __state)
-            {
-                if (Troops.Contains(__state))
-                    MBObjectManager.Instance.UnregisterObject(__state);
-            }
-        }
+        //[HarmonyPatch(typeof(MapEventParty), "OnTroopKilled")]
+        //public static class MapEventPartyOnTroopKilled
+        //{
+        //    public static void Prefix(UniqueTroopDescriptor troopSeed, FlattenedTroopRoster ____roster, ref CharacterObject __state)
+        //    {
+        //        __state = ____roster[troopSeed].Troop;
+        //    }
+        //
+        //    public static void Postfix(UniqueTroopDescriptor troopSeed, FlattenedTroopRoster ____roster, CharacterObject __state)
+        //    {
+        //        if (Troops.Contains(__state))
+        //            MBObjectManager.Instance.UnregisterObject(__state);
+        //    }
+        //}
 
         // TODO TroopRoster.Clear patch for more performance
 
@@ -251,47 +249,43 @@ namespace BanditMilitias.Patches
             {
                 if (!SubModule.MEOWMEOW || !Globals.Settings.UpgradeTroops)
                     return;
-                __state = __instance.GetCharacterAtIndex(index);
-                switch (__instance.GetElementCopyAtIndex(index).Number)
-                {
-                    // the CO will be removed in the method and throw in the Postfix unless we remove it here
-                    case 0:
-                        Troops.Remove(__state);
-                        EquipmentMap.Remove(__state.StringId);
-                        break;
-                    default:
-                        __state = null;
-                        break;
-                }
-            }
 
+                __state = __instance.GetCharacterAtIndex(index);
+                // the CO will be removed in the method and throw in the Postfix if we remove it here
+                // so pass the CO to the Postfix for removal after the method
+                //if (countChange == -1 && __instance.GetElementCopyAtIndex(index).Number == 1)
+                //{
+                //    __state = __instance.GetCharacterAtIndex(index);
+                //    Troops.Remove(__state);
+                //    EquipmentMap.Remove(__state.StringId);
+                //}
+            }
 
             public static void Postfix(TroopRoster __instance, int index, int countChange, CharacterObject __state)
             {
+                if (!SubModule.MEOWMEOW || !Globals.Settings.UpgradeTroops)
+                    return;
                 // this correctly assumes there will never be Number > 1
-                if (countChange < 0 && Troops.Contains(__state))
-                {
-                    if (!SubModule.MEOWMEOW || !Globals.Settings.UpgradeTroops)
-                        return;
-                    Troops.Remove(__state);
-                    EquipmentMap.Remove(__state.StringId);
+                // FindParty is because the CO may have moved rosters with -1 countChange
+                // must be a better way to do it
+                //if (countChange < 0 && Troops.Contains(__state) && __state.FindParty() == null)
+                if (countChange < 0 && Troops.Contains(__state) && !TakenPrisoner.Contains(__state))
                     MBObjectManager.Instance.UnregisterObject(__state);
-                }
             }
+        }
 
-            public static Exception Finalizer(TroopRoster __instance, int index, Exception __exception)
+        public static Exception Finalizer(TroopRoster __instance, int index, Exception __exception)
+        {
+            switch (__exception)
             {
-                switch (__exception)
-                {
-                    case null:
-                        return null;
-                    case IndexOutOfRangeException:
-                        DeferringLogger.Instance.Debug?.Log("HACK Squelching IndexOutOfRangeException at TroopRoster.AddToCountsAtIndex");
-                        return null;
-                    default:
-                        DeferringLogger.Instance.Debug?.Log(__exception);
-                        return __exception;
-                }
+                case null:
+                    return null;
+                case IndexOutOfRangeException:
+                    DeferringLogger.Instance.Debug?.Log("HACK Squelching IndexOutOfRangeException at TroopRoster.AddToCountsAtIndex");
+                    return null;
+                default:
+                    DeferringLogger.Instance.Debug?.Log(__exception);
+                    return __exception;
             }
         }
 
@@ -301,7 +295,8 @@ namespace BanditMilitias.Patches
         {
             public static void Postfix(MobilePartyTrackItemVM __instance, ref ImageIdentifierVM ____factionVisualBind)
             {
-                if (__instance.TrackedParty is null) return;
+                if (__instance.TrackedParty is null)
+                    return;
                 if (PartyImageMap.TryGetValue(__instance.TrackedParty, out var image))
                     ____factionVisualBind = image;
             }
