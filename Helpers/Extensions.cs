@@ -1,26 +1,28 @@
 using System.Collections.Generic;
+using System.Linq;
 using HarmonyLib;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Roster;
+using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
 using TaleWorlds.LinQuick;
 using TaleWorlds.ObjectSystem;
 
 namespace BanditMilitias.Helpers
 {
-    public static class Extensions
+    internal static class Extensions
     {
         private static readonly AccessTools.FieldRef<CampaignObjectManager, List<Hero>> DeadOrDisabledHeroes =
             AccessTools.FieldRefAccess<CampaignObjectManager, List<Hero>>("_deadOrDisabledHeroes");
 
-        public static bool IsUsedByAQuest(this MobileParty mobileParty)
+        internal static bool IsUsedByAQuest(this MobileParty mobileParty)
         {
             return Campaign.Current.VisualTrackerManager.CheckTracked(mobileParty);
         }
 
-        public static bool IsTooBusyToMerge(this MobileParty mobileParty)
+        internal static bool IsTooBusyToMerge(this MobileParty mobileParty)
         {
             return mobileParty.TargetParty is not null
                    || mobileParty.ShortTermTargetParty is not null
@@ -29,19 +31,19 @@ namespace BanditMilitias.Helpers
                        or AiBehavior.RaidSettlement;
         }
 
-        public static void RemoveMilitiaHero(this Hero hero)
+        internal static void RemoveMilitiaHero(this Hero hero)
         {
+            MBObjectManager.Instance.UnregisterObject(hero.CharacterObject);
             KillCharacterAction.ApplyByRemove(hero);
             DeadOrDisabledHeroes(Campaign.Current.CampaignObjectManager).Remove(hero);
             Globals.Heroes.Remove(hero);
-            MBObjectManager.Instance.UnregisterObject(hero.CharacterObject);
         }
 
         // ReSharper disable once InconsistentNaming
-        public static bool IsBM(this MobileParty mobileParty) => mobileParty?.PartyComponent is ModBanditMilitiaPartyComponent;
+        internal static bool IsBM(this MobileParty mobileParty) => mobileParty?.PartyComponent is ModBanditMilitiaPartyComponent;
 
         // ReSharper disable once InconsistentNaming
-        public static ModBanditMilitiaPartyComponent GetBM(this MobileParty mobileParty)
+        internal static ModBanditMilitiaPartyComponent GetBM(this MobileParty mobileParty)
         {
             if (mobileParty.PartyComponent is ModBanditMilitiaPartyComponent bm)
                 return bm;
@@ -49,9 +51,10 @@ namespace BanditMilitias.Helpers
             return null;
         }
 
-        public static MobileParty FindParty(this CharacterObject characterObject)
+        internal static MobileParty FindParty(this CharacterObject characterObject)
         {
-            foreach (var party in MobileParty.All)
+            var mobileParties = MobileParty.All.Concat(Settlement.All.Select(s => s.Party.MobileParty));
+            foreach (var party in mobileParties)
             {
                 if (party.MemberRoster.GetTroopRoster().WhereQ(t => t.Character.OriginalCharacter is not null)
                     .AnyQ(t => t.Character == characterObject))
@@ -65,12 +68,17 @@ namespace BanditMilitias.Helpers
             return null;
         }
 
-        public static int CountMounted(this TroopRoster troopRoster)
+        internal static TroopRoster FindRoster(this CharacterObject characterObject)
+        {
+            return FindParty(characterObject).MemberRoster;
+        }
+
+        internal static int CountMounted(this TroopRoster troopRoster)
         {
             return troopRoster.GetTroopRoster().WhereQ(t => !t.Character.FirstBattleEquipment[10].IsEmpty).SumQ(t => t.Number);
         }
 
-        public static bool Contains(this Equipment equipment, EquipmentElement element)
+        internal static bool Contains(this Equipment equipment, EquipmentElement element)
         {
             for (var index = 0; index < Equipment.EquipmentSlotLength; index++)
             {

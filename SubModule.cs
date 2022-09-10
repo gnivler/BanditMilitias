@@ -4,12 +4,12 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using BanditMilitias.Helpers;
-using BanditMilitias.Patches;
 using HarmonyLib;
 using SandBox.View.Map;
 using SandBox.ViewModelCollection.Map;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Party;
+using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
 using TaleWorlds.InputSystem;
 using TaleWorlds.Library;
@@ -30,7 +30,7 @@ namespace BanditMilitias
 {
     public class SubModule : MBSubModuleBase
     {
-        public static bool MEOWMEOW = Environment.MachineName == "MEOWMEOW";
+        public static readonly bool MEOWMEOW = Environment.MachineName == "MEOWMEOW";
         public static readonly Harmony harmony = new("ca.gnivler.bannerlord.BanditMilitias");
 
         // ReSharper disable once AssignNullToNotNullAttribute
@@ -69,7 +69,7 @@ namespace BanditMilitias
                     Debug.Print(ex.ToString());
                 }
 
-            DeferringLogger.Instance.Debug?.Log($"{Globals.Settings?.DisplayName} starting up...");
+            Log.Debug?.Log($"{Globals.Settings?.DisplayName} starting up...");
         }
 
         // Calradia Expanded: Kingdoms
@@ -113,11 +113,17 @@ namespace BanditMilitias
                     mobileParty.Position2D = MobileParty.MainParty.Position2D;
                 }
 
-                Hacks.PurgeBadTroops();
+                EquipmentUpgrading.PurgeUpgradedTroops();
             }
 
             if (MEOWMEOW && Input.IsKeyPressed(InputKey.F3))
             {
+                var count = MobileParty.All.SelectMany(m => m.PrisonRoster.ToFlattenedRoster()).WhereQ(e => e.Troop.Name.Contains("Upgraded")).CountQ();
+                count += MobileParty.All.SelectMany(m => m.MemberRoster.ToFlattenedRoster()).WhereQ(e => e.Troop.Name.Contains("Upgraded")).CountQ();
+                count += Settlement.All.SelectMany(m => m.Party.MemberRoster.ToFlattenedRoster()).WhereQ(e => e.Troop.Name.Contains("Upgraded")).CountQ();
+                count += Settlement.All.SelectMany(m => m.Party.PrisonRoster.ToFlattenedRoster()).WhereQ(e => e.Troop.Name.Contains("Upgraded")).CountQ();
+
+                Log.Debug?.Log($"Total count: {count} Troops list: {Troops.Count}");
                 //try
                 //{
                 //    MobileParty.MainParty.Position2D = Settlement.All.WhereQ(s => s.IsHideout && s.Hideout.IsInfested).GetRandomElementInefficiently().GatePosition;
@@ -126,7 +132,7 @@ namespace BanditMilitias
                 //{
                 //    //ignore
                 //}
-                MobileParty.MainParty.Position2D = Hero.AllAliveHeroes.FirstOrDefaultQ(h => h.IsWanderer && h.CurrentSettlement is not null).CurrentSettlement.GatePosition;
+                //MobileParty.MainParty.Position2D = Hero.AllAliveHeroes.FirstOrDefaultQ(h => h.IsWanderer && h.CurrentSettlement is not null).CurrentSettlement.GatePosition;
             }
 
             if (MEOWMEOW && Input.IsKeyPressed(InputKey.Tilde))
@@ -145,26 +151,26 @@ namespace BanditMilitias
             {
                 foreach (var militia in MobileParty.All.WhereQ(m => m.IsBM()).OrderBy(x => x.MemberRoster.TotalManCount))
                 {
-                    DeferringLogger.Instance.Debug?.Log($">> {militia.LeaderHero.Name,-30}: {militia.MemberRoster.TotalManCount:F1}/{militia.Party.TotalStrength:0}");
+                    Log.Debug?.Log($">> {militia.LeaderHero.Name,-30}: {militia.MemberRoster.TotalManCount:F1}/{militia.Party.TotalStrength:0}");
                     for (var tier = 1; tier <= 6; tier++)
                     {
                         // ReSharper disable once AccessToModifiedClosure
                         var count = militia.MemberRoster.GetTroopRoster().WhereQ(x => x.Character.Tier == tier).SumQ(x => x.Number);
                         if (count > 0)
                         {
-                            DeferringLogger.Instance.Debug?.Log($"  Tier {tier}: {count}");
+                            Log.Debug?.Log($"  Tier {tier}: {count}");
                         }
                     }
 
-                    DeferringLogger.Instance.Debug?.Log($"Cavalry: {NumMountedTroops(militia.MemberRoster)} ({(float)NumMountedTroops(militia.MemberRoster) / militia.MemberRoster.TotalManCount * 100}%)");
+                    Log.Debug?.Log($"Cavalry: {NumMountedTroops(militia.MemberRoster)} ({(float)NumMountedTroops(militia.MemberRoster) / militia.MemberRoster.TotalManCount * 100}%)");
                     if ((float)NumMountedTroops(militia.MemberRoster) / (militia.MemberRoster.TotalManCount * 100) > militia.MemberRoster.TotalManCount / 2f)
                     {
-                        DeferringLogger.Instance.Debug?.Log(new string('*', 80));
-                        DeferringLogger.Instance.Debug?.Log(new string('*', 80));
+                        Log.Debug?.Log(new string('*', 80));
+                        Log.Debug?.Log(new string('*', 80));
                     }
                 }
 
-                DeferringLogger.Instance.Debug?.Log($">>> Total {MobileParty.All.CountQ(m => m.IsBM())} = {MobileParty.All.WhereQ(m => m.IsBM()).SelectQ(x => x.MemberRoster.TotalManCount).Sum()} ({MilitiaPowerPercent}%)");
+                Log.Debug?.Log($">>> Total {MobileParty.All.CountQ(m => m.IsBM())} = {MobileParty.All.WhereQ(m => m.IsBM()).SelectQ(x => x.MemberRoster.TotalManCount).Sum()} ({MilitiaPowerPercent}%)");
             }
 
             if ((Input.IsKeyDown(InputKey.LeftControl) || Input.IsKeyDown(InputKey.RightControl)) &&
@@ -173,7 +179,7 @@ namespace BanditMilitias
             {
                 try
                 {
-                    DeferringLogger.Instance.Debug?.Log("Clearing mod data.");
+                    Log.Debug?.Log("Clearing mod data.");
                     // no idea why it takes several iterations to clean up certain situations but it does
                     for (var index = 0; index < 1; index++)
                     {
@@ -184,7 +190,7 @@ namespace BanditMilitias
                 }
                 catch (Exception ex)
                 {
-                    DeferringLogger.Instance.Debug?.Log(ex);
+                    Log.Debug?.Log(ex);
                 }
             }
         }
@@ -208,11 +214,11 @@ namespace BanditMilitias
         {
             try
             {
-                Dev.RunDevPatches();
+                //Dev.RunDevPatches();
             }
             catch (Exception ex)
             {
-                DeferringLogger.Instance.Debug?.Log(ex);
+                Log.Debug?.Log(ex);
             }
         }
     }

@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection.Emit;
 using BanditMilitias.Helpers;
 using HarmonyLib;
 using Helpers;
@@ -12,6 +14,7 @@ using StoryMode.GameComponents;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.AgentOrigins;
+using TaleWorlds.CampaignSystem.CampaignBehaviors;
 using TaleWorlds.CampaignSystem.CampaignBehaviors.AiBehaviors;
 using TaleWorlds.CampaignSystem.Encounters;
 using TaleWorlds.CampaignSystem.GameComponents;
@@ -22,9 +25,9 @@ using TaleWorlds.CampaignSystem.Roster;
 using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
+using TaleWorlds.LinQuick;
 using TaleWorlds.Localization;
 using TaleWorlds.MountAndBlade;
-using TaleWorlds.ObjectSystem;
 using static BanditMilitias.Helpers.Helper;
 using static BanditMilitias.Globals;
 
@@ -36,7 +39,7 @@ using static BanditMilitias.Globals;
 
 namespace BanditMilitias.Patches
 {
-    public static class MilitiaPatches
+    internal static class MilitiaPatches
     {
         private static readonly AccessTools.FieldRef<MobileParty, int> numberOfRecentFleeingFromAParty =
             AccessTools.FieldRefAccess<MobileParty, int>("_numberOfRecentFleeingFromAParty");
@@ -109,7 +112,7 @@ namespace BanditMilitias.Patches
             {
                 if (mobileParty.IsBM())
                 {
-                    DeferringLogger.Instance.Debug?.Log($"Preventing {mobileParty} from entering {settlement.Name}");
+                    Log.Debug?.Log($"Preventing {mobileParty} from entering {settlement.Name}");
                     MilitiaBehavior.BMThink(mobileParty);
                     return false;
                 }
@@ -240,54 +243,6 @@ namespace BanditMilitias.Patches
         //    }
         //}
 
-        // TODO TroopRoster.Clear patch for more performance
-
-        [HarmonyPatch(typeof(TroopRoster), "AddToCountsAtIndex")]
-        public static class TroopRosterAddToCountsAtIndex
-        {
-            public static void Prefix(TroopRoster __instance, int index, int countChange, ref CharacterObject __state)
-            {
-                if (!SubModule.MEOWMEOW || !Globals.Settings.UpgradeTroops)
-                    return;
-
-                __state = __instance.GetCharacterAtIndex(index);
-                // the CO will be removed in the method and throw in the Postfix if we remove it here
-                // so pass the CO to the Postfix for removal after the method
-                //if (countChange == -1 && __instance.GetElementCopyAtIndex(index).Number == 1)
-                //{
-                //    __state = __instance.GetCharacterAtIndex(index);
-                //    Troops.Remove(__state);
-                //    EquipmentMap.Remove(__state.StringId);
-                //}
-            }
-
-            public static void Postfix(TroopRoster __instance, int index, int countChange, CharacterObject __state)
-            {
-                if (!SubModule.MEOWMEOW || !Globals.Settings.UpgradeTroops)
-                    return;
-                // this correctly assumes there will never be Number > 1
-                // FindParty is because the CO may have moved rosters with -1 countChange
-                // must be a better way to do it
-                //if (countChange < 0 && Troops.Contains(__state) && __state.FindParty() == null)
-                if (countChange < 0 && Troops.Contains(__state) && !TakenPrisoner.Contains(__state))
-                    MBObjectManager.Instance.UnregisterObject(__state);
-            }
-        }
-
-        public static Exception Finalizer(TroopRoster __instance, int index, Exception __exception)
-        {
-            switch (__exception)
-            {
-                case null:
-                    return null;
-                case IndexOutOfRangeException:
-                    DeferringLogger.Instance.Debug?.Log("HACK Squelching IndexOutOfRangeException at TroopRoster.AddToCountsAtIndex");
-                    return null;
-                default:
-                    DeferringLogger.Instance.Debug?.Log(__exception);
-                    return __exception;
-            }
-        }
 
         // changes the optional Tracker icons to match banners
         [HarmonyPatch(typeof(MobilePartyTrackItemVM), "UpdateProperties")]
@@ -420,6 +375,119 @@ namespace BanditMilitias.Patches
                     return null;
 
                 return __exception;
+            }
+        }
+
+        // TODO TroopRoster.Clear patch for more performance 
+        [HarmonyPatch(typeof(TroopRoster), "AddToCountsAtIndex")]
+        public static class TroopRosterAddToCountsAtIndex
+        {
+            public static Exception Finalizer(TroopRoster __instance, int index, Exception __exception)
+            {
+                switch (__exception)
+                {
+                    case null:
+                        return null;
+                    case IndexOutOfRangeException:
+                        Log.Debug?.Log("HACK Squelching IndexOutOfRangeException at TroopRoster.AddToCountsAtIndex");
+                        return null;
+                    default:
+                        Log.Debug?.Log(__exception);
+                        return __exception;
+                }
+            }
+        }
+
+        // final gate rejects bandit troops from being upgraded to non-bandit troops
+        // put an if-BM-jump at the start to bypass the vanilla blockage
+        [HarmonyPatch(typeof(PartyUpgraderCampaignBehavior), "GetPossibleUpgradeTargets")]
+        public static class PartyUpgraderCampaignBehaviorGetPossibleUpgradeTargets
+        {
+            public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator ilGenerator)
+            {
+                var codes = instructions.ToListQ();
+                var insertion = 0;
+                var jumpLabel = ilGenerator.DefineLabel();
+                var method = AccessTools.Method("PartyUpgraderCampaignBehaviorGetPossibleUpgradeTargets:IsBM");
+                for (var index = 0; index < codes.Count; index++)
+                {
+                    if (codes[index].opcode == OpCodes.Ldarg_1
+                        && codes[index + 1].opcode == OpCodes.Callvirt
+                        && codes[index + 2].opcode == OpCodes.Callvirt
+                        && codes[index + 3].opcode == OpCodes.Brfalse_S)
+                        insertion = index;
+                    if (codes[index].opcode == OpCodes.Call
+                        && codes[index + 1].opcode == OpCodes.Callvirt
+                        && codes[index + 2].opcode == OpCodes.Callvirt
+                        && codes[index + 3].opcode == OpCodes.Ldarg_1)
+                        codes[index].labels.Add(jumpLabel);
+                }
+
+                var stack = new List<CodeInstruction>
+                {
+                    new(OpCodes.Ldarg_1),
+                    new(OpCodes.Ldloc_2),
+                    new(OpCodes.Ldloc_S, 6),
+                    new(OpCodes.Call, method),
+                    new(OpCodes.Brtrue_S, jumpLabel)
+                };
+
+                codes.InsertRange(insertion, stack);
+                return codes.AsEnumerable();
+            }
+
+            private static bool IsBM(PartyBase party, CharacterObject character, CharacterObject target)
+            {
+                var upgradeable = Campaign.Current.Models.PartyTroopUpgradeModel.CanPartyUpgradeTroopToTarget(party, character, target);
+                return upgradeable && party.IsMobile && party.MobileParty.IsBM();
+            }
+        }
+
+        // rewrite of broken original in 1.8.0
+        [HarmonyPatch(typeof(Hideout), "MapFaction", MethodType.Getter)]
+        public static class HideoutMapFactionGetter
+        {
+            // ReSharper disable once RedundantAssignment
+            public static bool Prefix(Hideout __instance, ref IFaction __result)
+            {
+                __result = Clan.BanditFactions.First(c => c.Culture == __instance.Settlement.Culture);
+                return false;
+            }
+        }
+
+        // game seems to dislike me removing parties on tick 3.9
+        [HarmonyPatch(typeof(MobileParty), "GetFollowBehavior")]
+        public static class MobilePartyGetFollowBehavior
+        {
+            public static bool Prefix(MobileParty __instance, MobileParty followedParty)
+            {
+                if (__instance.Army == null &&
+                    followedParty is null)
+                {
+                    __instance.Ai.DisableForHours(1);
+                    __instance.Ai.RethinkAtNextHourlyTick = true;
+                    return false;
+                }
+
+                return true;
+            }
+        }
+
+        // game seems to dislike me removing parties on tick 3.9
+        [HarmonyPatch(typeof(MobileParty), "GetTotalStrengthWithFollowers")]
+        public static class MobilePartyGetTotalStrengthWithFollowers
+        {
+            public static bool Prefix(MobileParty __instance, ref float __result)
+            {
+                if (!__instance.IsBandit
+                    && __instance.Party.MobileParty.TargetParty == null
+                    && __instance.Party.MobileParty.ShortTermBehavior is AiBehavior.EngageParty)
+                {
+                    __result = __instance.Party.TotalStrength;
+                    return false;
+                }
+
+                return true;
             }
         }
     }

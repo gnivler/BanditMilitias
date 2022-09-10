@@ -7,10 +7,8 @@ namespace BanditMilitias
     internal class DeferringLogger
     {
         private readonly LogWriter logWriter;
-        private static DeferringLogger instance;
-        internal static DeferringLogger Instance => instance ??= new DeferringLogger();
 
-        private DeferringLogger()
+        internal DeferringLogger()
         {
             logWriter = new LogWriter(new StreamWriter(SubModule.logFilename, true));
         }

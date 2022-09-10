@@ -15,9 +15,9 @@ using TaleWorlds.ObjectSystem;
 
 namespace BanditMilitias
 {
-    public static class Globals
+    public struct Globals
     {
-        internal static void ClearGlobals()
+        public static void ClearGlobals()
         {
             PartyImageMap = new();
             ItemTypes = new();
@@ -45,6 +45,8 @@ namespace BanditMilitias
             AllBMs = new ModBanditMilitiaPartyComponent[] { };
         }
 
+        internal static DeferringLogger Log = new();
+
         // merge/split criteria
         internal const float MergeDistance = 1.5f;
         internal const float FindRadius = 20;
@@ -61,7 +63,7 @@ namespace BanditMilitias
         internal static Dictionary<MobileParty, ImageIdentifierVM> PartyImageMap = new();
         internal static Dictionary<ItemObject.ItemTypeEnum, List<ItemObject>> ItemTypes = new();
         internal static Dictionary<CultureObject, List<CharacterObject>> Recruits = new();
-        internal static Dictionary<MapEventSide, List<EquipmentElement>> LootRecord = new();
+        internal static Dictionary<PartyBase, List<EquipmentElement>> LootRecord = new();
 
         // object tracking
         internal static List<Hero> Heroes = new();
@@ -88,8 +90,6 @@ namespace BanditMilitias
         internal static List<Settlement> Hideouts;
         internal static IEnumerable<ModBanditMilitiaPartyComponent> AllBMs;
         internal static CampaignPeriodicEventManager CampaignPeriodicEventManager;
-        internal static object Ticker;
-        internal static List<CharacterObject> TakenPrisoner = new();
 
         // ReSharper disable once InconsistentNaming
         internal static MapMobilePartyTrackerVM MapMobilePartyTrackerVM;

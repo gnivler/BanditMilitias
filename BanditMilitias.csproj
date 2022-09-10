@@ -73,6 +73,7 @@
             <HintPath>%(Identity)</HintPath>
             <Private>False</Private>
         </Reference>
+        <Reference Include="Microsoft.CSharp" />
     </ItemGroup>
     <Target Name="PostBuild" AfterTargets="PostBuildEvent">
     <Exec Command="xcopy /y &quot;$(TargetDir)&quot;BanditMilitias.??? &quot;M:\SteamLibrary\steamapps\common\Mount %26 Blade II Bannerlord\Modules\BanditMilitias\bin\Win64_Shipping_Client&quot;" />

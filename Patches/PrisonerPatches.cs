@@ -5,6 +5,7 @@ using TaleWorlds.CampaignSystem.MapEvents;
 using TaleWorlds.LinQuick;
 using TaleWorlds.Localization;
 using static BanditMilitias.Helpers.Helper;
+using static BanditMilitias.Globals;
 
 // ReSharper disable UnusedType.Global
 // ReSharper disable InconsistentNaming
@@ -28,7 +29,7 @@ namespace BanditMilitias.Patches
                     var heroes = party.Party.MemberRoster.RemoveIf(t => t.Character.IsHero).ToListQ();
                     for (var i = 0; i < heroes.Count; i++)
                     {
-                        DeferringLogger.Instance.Debug?.Log($"<<< RemoveMilitiaHero {heroes[i].Character.Name} ({heroes[i].Character.StringId}) at FinishBattle");
+                        //Log.Debug?.Log($"<<< RemoveMilitiaHero {heroes[i].Character.Name} ({heroes[i].Character.StringId}) at FinishBattle");
                         heroes[i].Character.HeroObject.RemoveMilitiaHero();
                     }
 
@@ -63,7 +64,7 @@ namespace BanditMilitias.Patches
                     {
                         if (!IsRegistered(heroes[i].Character))
                             Meow();
-                        DeferringLogger.Instance.Debug?.Log($"<<< Killing {heroes[i].Character.Name} at LootDefeatedParties.");
+                        Log.Debug?.Log($"<<< Killing {heroes[i].Character.Name} at LootDefeatedParties.");
                         heroes[i].Character.HeroObject.RemoveMilitiaHero();
                     }
 
