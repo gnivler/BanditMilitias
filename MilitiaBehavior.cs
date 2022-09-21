@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using BanditMilitias.Helpers;
-using HarmonyLib;
 using Helpers;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Party;
@@ -12,8 +11,6 @@ using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
 using TaleWorlds.LinQuick;
-using TaleWorlds.Localization;
-using TaleWorlds.ObjectSystem;
 using TaleWorlds.TwoDimension;
 using static BanditMilitias.Helpers.Helper;
 using static BanditMilitias.Globals;
@@ -29,21 +26,6 @@ namespace BanditMilitias
         private const float EffectRadius = 100;
         private const int AdjustRadius = 50;
         private const int settlementFindRange = 200;
-
-        private static readonly AccessTools.FieldRef<BasicCharacterObject, TextObject> basicName =
-            AccessTools.FieldRefAccess<BasicCharacterObject, TextObject>("_basicName");
-
-        private static readonly AccessTools.FieldRef<BasicCharacterObject, MBBodyProperty> bodyPropertyRange =
-            AccessTools.FieldRefAccess<BasicCharacterObject, MBBodyProperty>("<BodyPropertyRange>k__BackingField");
-
-        private static readonly AccessTools.FieldRef<BasicCharacterObject, MBCharacterSkills> skills =
-            AccessTools.FieldRefAccess<BasicCharacterObject, MBCharacterSkills>("CharacterSkills");
-
-        private static readonly AccessTools.FieldRef<CharacterObject, CharacterObject[]> upgradeTargets =
-            AccessTools.FieldRefAccess<CharacterObject, CharacterObject[]>("<UpgradeTargets>k__BackingField");
-
-        private static readonly AccessTools.FieldRef<BasicCharacterObject, bool> IsSoldier =
-            AccessTools.FieldRefAccess<BasicCharacterObject, bool>("<IsSoldier>k__BackingField");
 
         public override void RegisterEvents()
         {
@@ -75,22 +57,7 @@ namespace BanditMilitias
             CampaignEvents.DailyTickPartyEvent.AddNonSerializedListener(this, DailyTickPartyEvent);
             CampaignEvents.HourlyTickEvent.AddNonSerializedListener(this, SpawnBM);
             CampaignEvents.MobilePartyDestroyed.AddNonSerializedListener(this, MobilePartyDestroyed);
-            //CampaignEvents.MapEventEnded.AddNonSerializedListener(this, MapEventEnded);
         }
-
-        //public static void MapEventEnded(MapEvent mapEvent)
-        //{
-        //    MapEventSide Loser()
-        //    {
-        //        return mapEvent.BattleState == BattleState.DefenderVictory
-        //            ? mapEvent.AttackerSide
-        //            : mapEvent.DefenderSide;
-        //    }
-        //
-        //
-        //    if (!mapEvent.HasWinner) return;
-        //    Globals.LootRecord.Remove(Loser());
-        //}
 
         private static void MobilePartyDestroyed(MobileParty mobileParty, PartyBase destroyer)
         {
@@ -455,39 +422,6 @@ namespace BanditMilitias
         public override void SyncData(IDataStore dataStore)
         {
             dataStore.SyncData("Heroes", ref Heroes);
-            if (!SubModule.MEOWMEOW || !Globals.Settings.UpgradeTroops)
-                return;
-
-            if (!dataStore.SyncData("Troops", ref Globals.Troops))
-                Troops.Clear();
-            if (!dataStore.SyncData("EquipmentMap", ref Globals.EquipmentMap))
-                EquipmentMap.Clear();
-            if (dataStore.IsLoading)
-            {
-                var tempList = new List<CharacterObject>(Troops);
-                Troops.Clear();
-                foreach (var troop in tempList)
-                    RehydrateCharacterObject(troop);
-                Log.Debug?.Log($"Rehydrated {tempList.Count} troops");
-            }
-        }
-
-        internal static void RehydrateCharacterObject(CharacterObject troop)
-        {
-            try
-            {
-                if (troop.OriginalCharacter == null)
-                    return;
-                Log.Debug?.Log($"Rehydrating {troop.OriginalCharacter.Name} - {troop.StringId}");
-                troop.InitializeHeroCharacterOnAfterLoad();
-                basicName(troop) = new TextObject(@"{=BMTroops}Upgraded " + troop.OriginalCharacter.Name);
-                MBObjectManager.Instance.RegisterObject(troop);
-                Troops.Add(troop);
-            }
-            catch (Exception ex)
-            {
-                Log.Debug?.Log(ex);
-            }
         }
     }
 }

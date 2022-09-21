@@ -174,12 +174,6 @@ namespace BanditMilitias.Patches
         {
             public static void Postfix(MobileParty __instance, MobileParty targetParty, ref bool __result)
             {
-                if (SubModule.MEOWMEOW && targetParty == MobileParty.MainParty)
-                {
-                    __result = false;
-                    return;
-                }
-
                 if (__result && targetParty.Party.IsMobile && __instance.IsBM())
                 {
                     if (Globals.Settings.IgnoreVillagersCaravans
@@ -227,22 +221,6 @@ namespace BanditMilitias.Patches
                 }
             }
         }
-
-        //[HarmonyPatch(typeof(MapEventParty), "OnTroopKilled")]
-        //public static class MapEventPartyOnTroopKilled
-        //{
-        //    public static void Prefix(UniqueTroopDescriptor troopSeed, FlattenedTroopRoster ____roster, ref CharacterObject __state)
-        //    {
-        //        __state = ____roster[troopSeed].Troop;
-        //    }
-        //
-        //    public static void Postfix(UniqueTroopDescriptor troopSeed, FlattenedTroopRoster ____roster, CharacterObject __state)
-        //    {
-        //        if (Troops.Contains(__state))
-        //            MBObjectManager.Instance.UnregisterObject(__state);
-        //    }
-        //}
-
 
         // changes the optional Tracker icons to match banners
         [HarmonyPatch(typeof(MobilePartyTrackItemVM), "UpdateProperties")]
@@ -378,10 +356,22 @@ namespace BanditMilitias.Patches
             }
         }
 
-        // TODO TroopRoster.Clear patch for more performance 
         [HarmonyPatch(typeof(TroopRoster), "AddToCountsAtIndex")]
         public static class TroopRosterAddToCountsAtIndex
         {
+            public static void Prefix(TroopRoster __instance, int index, ref int countChange, int woundedCountChange)
+            {
+                //var troop = __instance.GetElementCopyAtIndex(index);
+                //if (!troop.Character.IsHero && troop.Character.OriginalCharacter != null)
+                //{
+                //    var sb = new StringBuilder();
+                //    new StackTrace().GetFrames()?.Skip(2).Take(6).Do(s => sb.AppendLine(s.GetMethod().Name));
+                //    Log.Debug?.Log($"Registered: {IsRegistered(troop.Character)} Match: {troop.Character.FindRoster()?.GetTroopRoster().FirstOrDefault(c => c.Character.StringId == troop.Character.StringId).Character?.StringId}");
+                //    Log.Debug?.Log($"AddToCountsAtIndex: {troop.Character.Name} {troop.Character.StringId} {countChange} {woundedCountChange}");
+                //    Log.Debug?.Log($"{sb}");
+                //}
+            }
+
             public static Exception Finalizer(TroopRoster __instance, int index, Exception __exception)
             {
                 switch (__exception)
@@ -389,7 +379,7 @@ namespace BanditMilitias.Patches
                     case null:
                         return null;
                     case IndexOutOfRangeException:
-                        Log.Debug?.Log("HACK Squelching IndexOutOfRangeException at TroopRoster.AddToCountsAtIndex");
+                        //Log.Debug?.Log("HACK Squelching IndexOutOfRangeException at TroopRoster.AddToCountsAtIndex");
                         return null;
                     default:
                         Log.Debug?.Log(__exception);
@@ -408,7 +398,7 @@ namespace BanditMilitias.Patches
                 var codes = instructions.ToListQ();
                 var insertion = 0;
                 var jumpLabel = ilGenerator.DefineLabel();
-                var method = AccessTools.Method("PartyUpgraderCampaignBehaviorGetPossibleUpgradeTargets:IsBM");
+                var method = AccessTools.Method(typeof(PartyUpgraderCampaignBehaviorGetPossibleUpgradeTargets), nameof(IsBM));
                 for (var index = 0; index < codes.Count; index++)
                 {
                     if (codes[index].opcode == OpCodes.Ldarg_1
@@ -438,8 +428,12 @@ namespace BanditMilitias.Patches
 
             private static bool IsBM(PartyBase party, CharacterObject character, CharacterObject target)
             {
-                var upgradeable = Campaign.Current.Models.PartyTroopUpgradeModel.CanPartyUpgradeTroopToTarget(party, character, target);
-                return upgradeable && party.IsMobile && party.MobileParty.IsBM();
+                if (party.IsMobile && party.MobileParty.IsBM())
+                {
+                    return Campaign.Current.Models.PartyTroopUpgradeModel.CanPartyUpgradeTroopToTarget(party, character, target);
+                }
+
+                return false;
             }
         }
 

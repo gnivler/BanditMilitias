@@ -4,7 +4,6 @@ using System.Diagnostics;
 using BanditMilitias.Helpers;
 using SandBox.ViewModelCollection.Map;
 using TaleWorlds.CampaignSystem;
-using TaleWorlds.CampaignSystem.MapEvents;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
@@ -22,11 +21,9 @@ namespace BanditMilitias
             PartyImageMap = new();
             ItemTypes = new();
             Recruits = new();
-            LootRecord = new();
             EquipmentItems = new();
             Arrows = new();
             Bolts = new();
-            BanditEquipment = new();
             LastCalculated = 0;
             PartyCacheInterval = 0;
             RaidCap = 0;
@@ -63,13 +60,9 @@ namespace BanditMilitias
         internal static Dictionary<MobileParty, ImageIdentifierVM> PartyImageMap = new();
         internal static Dictionary<ItemObject.ItemTypeEnum, List<ItemObject>> ItemTypes = new();
         internal static Dictionary<CultureObject, List<CharacterObject>> Recruits = new();
-        internal static Dictionary<PartyBase, List<EquipmentElement>> LootRecord = new();
 
         // object tracking
         internal static List<Hero> Heroes = new();
-        internal static List<Hero> Dummies = new();
-        internal static List<CharacterObject> Troops = new();
-        internal static Dictionary<string, Equipment> EquipmentMap = new();
 
         // misc
         internal static readonly Random Rng = new();
@@ -89,7 +82,7 @@ namespace BanditMilitias
         internal static List<ItemObject> Saddles;
         internal static List<Settlement> Hideouts;
         internal static IEnumerable<ModBanditMilitiaPartyComponent> AllBMs;
-        internal static CampaignPeriodicEventManager CampaignPeriodicEventManager;
+        internal static CharacterObject Giant;
 
         // ReSharper disable once InconsistentNaming
         internal static MapMobilePartyTrackerVM MapMobilePartyTrackerVM;

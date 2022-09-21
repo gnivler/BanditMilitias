@@ -1,15 +1,16 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using BanditMilitias.Helpers;
+using BanditMilitias.Patches;
 using HarmonyLib;
 using SandBox.View.Map;
 using SandBox.ViewModelCollection.Map;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Party;
-using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
 using TaleWorlds.InputSystem;
 using TaleWorlds.Library;
@@ -112,18 +113,17 @@ namespace BanditMilitias
                         continue;
                     mobileParty.Position2D = MobileParty.MainParty.Position2D;
                 }
-
-                EquipmentUpgrading.PurgeUpgradedTroops();
             }
 
             if (MEOWMEOW && Input.IsKeyPressed(InputKey.F3))
             {
-                var count = MobileParty.All.SelectMany(m => m.PrisonRoster.ToFlattenedRoster()).WhereQ(e => e.Troop.Name.Contains("Upgraded")).CountQ();
-                count += MobileParty.All.SelectMany(m => m.MemberRoster.ToFlattenedRoster()).WhereQ(e => e.Troop.Name.Contains("Upgraded")).CountQ();
-                count += Settlement.All.SelectMany(m => m.Party.MemberRoster.ToFlattenedRoster()).WhereQ(e => e.Troop.Name.Contains("Upgraded")).CountQ();
-                count += Settlement.All.SelectMany(m => m.Party.PrisonRoster.ToFlattenedRoster()).WhereQ(e => e.Troop.Name.Contains("Upgraded")).CountQ();
-
-                Log.Debug?.Log($"Total count: {count} Troops list: {Troops.Count}");
+                var hideout = Hideouts.WhereQ(h => h.StringId.StartsWith("hideout_seaside") && h.Hideout.IsInfested).GetRandomElementInefficiently();
+                if (hideout is null)
+                    return;
+                InformationManager.DisplayMessage(new InformationMessage($"Hideout: {hideout.StringId}"));
+                MobileParty.MainParty.Position2D = hideout.GatePosition;
+                MapScreen.Instance.TeleportCameraToMainParty();
+                //Campaign.Current!.TimeControlMode = CampaignTimeControlMode.Stop;
                 //try
                 //{
                 //    MobileParty.MainParty.Position2D = Settlement.All.WhereQ(s => s.IsHideout && s.Hideout.IsInfested).GetRandomElementInefficiently().GatePosition;
@@ -135,8 +135,30 @@ namespace BanditMilitias
                 //MobileParty.MainParty.Position2D = Hero.AllAliveHeroes.FirstOrDefaultQ(h => h.IsWanderer && h.CurrentSettlement is not null).CurrentSettlement.GatePosition;
             }
 
+            if (MEOWMEOW && Input.IsKeyPressed(InputKey.D0))
+            {
+            }
+
             if (MEOWMEOW && Input.IsKeyPressed(InputKey.Tilde))
+            {
+                //helm = MBObjectManager.Instance.GetObject<ItemObject>("northern_heavy_helmet");
+                //foreach (var hero in Globals.Heroes)
+                //{
+                //    if (hero.BattleEquipment[5].Item != null && hero.BattleEquipment[5].Item == helm)
+                //    {
+                //        for (var index = 0; index < Equipment.EquipmentSlotLength; index++)
+                //            Log.Debug?.Log($"{index}: {hero.BattleEquipment[index].Item?.Name} {(hero.BattleEquipment[index].Item?.Value is not null ? "$" : "")}{hero.BattleEquipment[index].Item?.Value}");
+                //        Log.Debug?.Log("==============");
+                //    }
+                //}
+                //
+                //foreach (var hero in Globals.Heroes)
+                //{
+                //    Traverse.Create(hero).Property<Equipment>("BattleEquipment").Value = BadGear;
+                //}
+
                 Debugger.Break();
+            }
 
             if (superKey && Input.IsKeyPressed(InputKey.F11))
             {
@@ -198,23 +220,30 @@ namespace BanditMilitias
         protected override void OnGameStart(Game game, IGameStarter gameStarterObject)
         {
             if (gameStarterObject is CampaignGameStarter gameStarter)
-            {
                 gameStarter.AddBehavior(new MilitiaBehavior());
-                //gameStarter.AddModel(new ModBanditMilitiaKillModel());
-            }
         }
 
         public override void OnGameInitializationFinished(Game game)
         {
             base.OnGameInitializationFinished(game);
             CacheBanners();
+            if (MEOWMEOW)
+            {
+                CampaignCheats.SetMainPartyAttackable(new List<string> { "0" });
+                CampaignCheats.SetCampaignSpeed(new List<string> { "100" });
+            }
         }
 
         private static void RunManualPatches()
         {
             try
             {
-                //Dev.RunDevPatches();
+                // fix issue in ServeAsSoldier where a Deserters Party is created without being a quest party
+                var original = AccessTools.Method("ServeAsSoldier.ExtortionByDesertersEvent:CreateDeserterParty");
+                if (original is not null)
+                    harmony.Patch(original, postfix: new HarmonyMethod(typeof(MiscPatches), nameof(MiscPatches.PatchSaSDeserters)));
+                if (MEOWMEOW)
+                    Dev.RunDevPatches();
             }
             catch (Exception ex)
             {

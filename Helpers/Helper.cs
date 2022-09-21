@@ -320,31 +320,14 @@ namespace BanditMilitias.Helpers
                     GameMenu.ExitToLast();
                 Campaign.Current.TimeControlMode = CampaignTimeControlMode.Stop;
                 PartyImageMap.Clear();
-                LootRecord.Clear();
-                EquipmentMap.Clear();
-                Troops.Do(c =>
-                {
-                    var party = c.FindParty();
-                    if (party is not null)
-                    {
-                        party.MemberRoster.RemoveTroop(c);
-                        party.PrisonRoster.RemoveTroop(c);
-                    }
-
-                    MBObjectManager.Instance.UnregisterObject(c);
-                });
-                Troops.Clear();
                 Heroes.Clear();
-                EquipmentUpgrading.PurgeUpgradedTroops();
                 FlushMapEvents();
                 LegacyFlushBanditMilitias();
                 GetCachedBMs(true).Do(bm => Trash(bm.MobileParty));
                 InformationManager.DisplayMessage(new InformationMessage("BANDIT MILITIAS CLEARED"));
                 var bmCount = MobileParty.All.CountQ(m => m.IsBM());
-                var upgraded = MobileParty.All.SelectMany(m => m.MemberRoster.ToFlattenedRoster()).CountQ(e => e.Troop.StringId.StartsWith("Upgraded"));
-                upgraded += MobileParty.All.SelectMany(m => m.PrisonRoster.ToFlattenedRoster()).CountQ(e => e.Troop.StringId.StartsWith("Upgraded"));
-                // should be zeroes
-                Log.Debug?.Log($"Militias: {bmCount}.  Upgraded BM troops: {upgraded}.");
+                // should be zero
+                Log.Debug?.Log($"Militias: {bmCount}.");
             }
             catch (Exception ex)
             {
@@ -521,19 +504,19 @@ namespace BanditMilitias.Helpers
                                             && !verbotenSaddles.Contains(i.StringId)).WhereQ(i => i.Value <= Globals.Settings.MaxItemValue).ToList();
             var all = Items.All.WhereQ(i =>
                     !i.IsCraftedByPlayer
-                    && i.ItemType is not ItemObject.ItemTypeEnum.Goods
-                    && i.ItemType is not ItemObject.ItemTypeEnum.Horse
-                    && i.ItemType is not ItemObject.ItemTypeEnum.HorseHarness
-                    && i.ItemType is not ItemObject.ItemTypeEnum.Animal
-                    && i.ItemType is not ItemObject.ItemTypeEnum.Banner
-                    && i.ItemType is not ItemObject.ItemTypeEnum.Book
-                    && i.ItemType is not ItemObject.ItemTypeEnum.Invalid
+                    && i.ItemType is not (ItemObject.ItemTypeEnum.Goods
+                        or ItemObject.ItemTypeEnum.Horse
+                        or ItemObject.ItemTypeEnum.HorseHarness
+                        or ItemObject.ItemTypeEnum.Animal
+                        or ItemObject.ItemTypeEnum.Banner
+                        or ItemObject.ItemTypeEnum.Book
+                        or ItemObject.ItemTypeEnum.Invalid)
                     && i.ItemCategory.StringId != "garment")
                 .WhereQ(i => i.Value <= Globals.Settings.MaxItemValue).ToList();
             var runningCivilizedMod = AppDomain.CurrentDomain.GetAssemblies().AnyQ(a => a.FullName.Contains("Civilized"));
             if (!runningCivilizedMod)
             {
-                all = Items.All.WhereQ(i => !i.IsCivilian).ToList();
+                all.RemoveAll(i => !i.IsCivilian);
             }
 
             all.RemoveAll(item => verbotenItemsStringIds.Contains(item.StringId));
@@ -550,7 +533,7 @@ namespace BanditMilitias.Helpers
         }
 
         // builds a set of 4 weapons that won't include more than 1 bow or shield, nor any lack of ammo
-        internal static Equipment BuildViableEquipmentSet()
+        private static Equipment BuildViableEquipmentSet()
         {
             //T.Restart();
             var gear = new Equipment();
@@ -772,12 +755,12 @@ namespace BanditMilitias.Helpers
                     var mountedTroops = troopRoster.GetTroopRoster().WhereQ(c =>
                         !c.Character.Equipment[10].IsEmpty
                         && !c.Character.IsHero
-                        && !c.Character.Name.Contains("Upgraded")).ToListQ();
+                        && c.Character.OriginalCharacter is null).ToListQ();
                     if (mountedTroops.Count == 0)
                         break;
                     if (safety == 200)
                     {
-                        InformationManager.DisplayMessage(new InformationMessage("Bandit Militias error.  Please open a bug report and include the file cavalry.txt from the mod folder.", new Color(1, 0, 0, 1)));
+                        InformationManager.DisplayMessage(new InformationMessage("Bandit Militias error.  Please open a bug report and include the file cavalry.txt from the mod folder.", new Color(1, 0, 0)));
                         var output = new StringBuilder();
                         output.AppendLine($"NumMountedTroops(troopRoster) {NumMountedTroops(troopRoster)} - Convert.ToInt32(troopRoster.TotalManCount / 2) {Convert.ToInt32(troopRoster.TotalManCount / 2)}");
                         mountedTroops.Do(t => output.AppendLine($"{t.Character}: {t.Number} ({t.WoundedNumber})"));
@@ -968,7 +951,7 @@ namespace BanditMilitias.Helpers
             }
         }
 
-        internal static Hero CustomizedCreateHeroAtOccupation(Settlement settlement, Clan clan)
+        private static Hero CustomizedCreateHeroAtOccupation(Settlement settlement, Clan clan)
         {
             var max = 0;
             foreach (var characterObject in HeroTemplates)
@@ -998,6 +981,60 @@ namespace BanditMilitias.Helpers
             specialHero.SupporterOf = specialHero.Clan;
             Traverse.Create(typeof(HeroCreator)).Method("AddRandomVarianceToTraits", specialHero);
             return specialHero;
+        }
+
+        internal static void InitMap()
+        {
+            Log.Debug?.Log("MapScreen.OnInitialize");
+            ClearGlobals();
+            PopulateItems();
+            Looters = Clan.BanditFactions.First(c => c.StringId == "looters");
+            Wights = Clan.BanditFactions.FirstOrDefaultQ(c => c.StringId == "wights"); // ROT
+            Hideouts = Settlement.All.WhereQ(s => s.IsHideout).ToListQ();
+            RaidCap = Convert.ToInt32(Settlement.FindAll(s => s.IsVillage).CountQ() / 10f);
+            HeroTemplates = CharacterObject.All.WhereQ(c =>
+                c.Occupation is Occupation.Bandit && c.StringId.StartsWith("lord_")).ToListQ();
+            Giant = MBObjectManager.Instance.GetObject<CharacterObject>("giant");
+            var filter = new List<string>
+            {
+                "regular_fighter",
+                "veteran_borrowed_troop",
+                "_basic_root", // MyLittleWarband StringIds
+                "_elite_root"
+            };
+
+            var allRecruits = CharacterObject.All.WhereQ(c =>
+                c.Level == 11
+                && c.Occupation == Occupation.Soldier
+                && filter.All(s => !c.StringId.Contains(s))
+                && !c.StringId.EndsWith("_tier_1"));
+
+            foreach (var recruit in allRecruits)
+            {
+                if (Recruits.ContainsKey(recruit.Culture))
+                    Recruits[recruit.Culture].Add(recruit);
+                else
+                    Recruits.Add(recruit.Culture, new List<CharacterObject> { recruit });
+            }
+
+            // used for armour
+            foreach (ItemObject.ItemTypeEnum itemType in Enum.GetValues(typeof(ItemObject.ItemTypeEnum)))
+            {
+                ItemTypes[itemType] = Items.All.WhereQ(i =>
+                    i.Type == itemType
+                    && i.Value >= 1000
+                    && i.Value <= Globals.Settings.MaxItemValue).ToList();
+            }
+
+            // front-load
+            for (var i = 0; i < 3000; i++)
+                BanditEquipment.Add(BuildViableEquipmentSet());
+
+            DoPowerCalculations(true);
+            ReHome();
+            var bmCount = MobileParty.All.CountQ(m => m.IsBM());
+            var upgradedTroopCount = MBObjectManager.Instance.GetObjectTypeList<CharacterObject>().WhereQ(c => !c.IsHero && c.OriginalCharacter is not null).Count();
+            Log.Debug?.Log($"Militias: {bmCount}.  Upgraded BM troops: {upgradedTroopCount}.");
         }
     }
 }

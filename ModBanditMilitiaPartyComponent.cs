@@ -11,7 +11,7 @@ using TaleWorlds.Localization;
 using TaleWorlds.SaveSystem;
 using static BanditMilitias.Globals;
 using static BanditMilitias.Helpers.Helper;
-
+// ReSharper disable ConvertToAutoProperty  
 // ReSharper disable InconsistentNaming
 
 namespace BanditMilitias

@@ -1,7 +1,3 @@
-// ReSharper disable UnusedMember.Global   
-// ReSharper disable FieldCanBeMadeReadOnly.Global 
-// ReSharper disable ConvertToConstant.Global
-
 using System;
 using System.Collections.Generic;
 using MCM.Abstractions.Attributes;
@@ -17,6 +13,9 @@ using MCM.Abstractions.Settings.Base.Global;
 // ReSharper disable PropertyCanBeMadeInitOnly.Global
 // ReSharper disable AutoPropertyCanBeMadeGetOnly.Local
 // ReSharper disable PropertyCanBeMadeInitOnly.Local
+// ReSharper disable UnusedMember.Global   
+// ReSharper disable FieldCanBeMadeReadOnly.Global 
+// ReSharper disable ConvertToConstant.Global
 
 namespace BanditMilitias
 {
@@ -55,11 +54,6 @@ namespace BanditMilitias
         [SettingPropertyBool("Train Militias", HintText = "\nBandit heroes will train their militias.", Order = 0, RequireRestart = false)]
         [SettingPropertyGroup("Primary Settings", GroupOrder = 0)]
         public bool CanTrain { get; private set; } = true;
-
-        //[SettingPropertyBool("Upgrade BM Troops Gear (!! DISABLED, EXPERIMENTAL!!)", HintText = "\nAll BM troops will upgrade their gear from loot won.  BM is the first mod to try this.  Not yet available.", Order = 0, RequireRestart = false)]
-        [SettingPropertyBool("(Future feature)", HintText = "Not yet available.", Order = 8, RequireRestart = false)]
-        //[SettingPropertyGroup("Primary Settings", GroupOrder = 1)]
-        public bool UpgradeTroops { get; private set; } = false;
 
         [SettingPropertyInteger("Daily Training Chance", 0, 100, HintText = "\nEach day they might train further.", Order = 1, RequireRestart = false)]
         [SettingPropertyGroup("Primary Settings", GroupOrder = 2)]
@@ -115,7 +109,7 @@ namespace BanditMilitias
 
         [SettingPropertyInteger("Max Item Value", 1000, 1000000, HintText = "\nLimit the per-piece value of equipment given to the Heroes.\nMostly for when other mods give you Hero loot.", Order = 7, RequireRestart = false)]
         [SettingPropertyGroup("Militia Adjustments")]
-        public int MaxItemValue { get; private set; } = 3000;
+        public int MaxItemValue { get; private set; } = 5000;
 
         [SettingPropertyInteger("Looter Conversions", 0, 100, HintText = "\nHow many looters get made into better units when training.", Order = 8, RequireRestart = false)]
         [SettingPropertyGroup("Militia Adjustments")]
