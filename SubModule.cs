@@ -232,6 +232,8 @@ namespace BanditMilitias
                 CampaignCheats.SetMainPartyAttackable(new List<string> { "0" });
                 CampaignCheats.SetCampaignSpeed(new List<string> { "100" });
             }
+            if (MEOWMEOW)
+                Dev.RunDevPatches();
         }
 
         private static void RunManualPatches()
@@ -242,8 +244,6 @@ namespace BanditMilitias
                 var original = AccessTools.Method("ServeAsSoldier.ExtortionByDesertersEvent:CreateDeserterParty");
                 if (original is not null)
                     harmony.Patch(original, postfix: new HarmonyMethod(typeof(MiscPatches), nameof(MiscPatches.PatchSaSDeserters)));
-                if (MEOWMEOW)
-                    Dev.RunDevPatches();
             }
             catch (Exception ex)
             {

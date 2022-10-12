@@ -636,7 +636,6 @@ namespace BanditMilitias.Helpers
                 var medianSize = (float)parties.OrderBy(p => p.MemberRoster.TotalManCount)
                     .ElementAt(parties.CountQ() / 2).MemberRoster.TotalManCount;
                 CalculatedMaxPartySize = Math.Max(medianSize, Math.Max(1, MobileParty.MainParty.MemberRoster.TotalManCount) * Variance);
-                //Globals.CalculatedMaxPartySize = Math.Max(Globals.CalculatedMaxPartySize, Globals.Settings.MinPartySize);
                 LastCalculated = CampaignTime.Now.ToHours;
                 CalculatedGlobalPowerLimit = parties.SumQ(p => p.Party.TotalStrength) * Variance;
                 GlobalMilitiaPower = GetCachedBMs(true).SumQ(m => m.Party.TotalStrength);
@@ -1016,6 +1015,12 @@ namespace BanditMilitias.Helpers
                 else
                     Recruits.Add(recruit.Culture, new List<CharacterObject> { recruit });
             }
+
+            var availableBandits = CharacterObject.All.WhereQ(c => c.Occupation is Occupation.Bandit && c.Level <= 11 && !c.HiddenInEncylopedia).ToListQ();
+            Globals.BasicRanged = availableBandits.WhereQ(c => c.DefaultFormationClass is FormationClass.Ranged).ToListQ();
+            Globals.BasicInfantry = availableBandits.WhereQ(c => c.DefaultFormationClass is FormationClass.Infantry).ToListQ();
+            Globals.BasicCavalry = availableBandits.WhereQ(c => c.DefaultFormationClass is FormationClass.Cavalry).ToListQ();
+                
 
             // used for armour
             foreach (ItemObject.ItemTypeEnum itemType in Enum.GetValues(typeof(ItemObject.ItemTypeEnum)))

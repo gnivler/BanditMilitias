@@ -380,6 +380,7 @@ namespace BanditMilitias
                         continue;
                     }
 
+
                     Clan clan;
                     // ROT
                     if (settlement.OwnerClan == Wights)
@@ -393,11 +394,42 @@ namespace BanditMilitias
                         max = min;
                     var roster = TroopRoster.CreateDummyTroopRoster();
                     var size = Convert.ToInt32(Rng.Next(min, max + 1) / 2f);
-                    if (!IsRegistered(clan.BasicTroop) || !IsRegistered(Looters.BasicTroop))
-                        Meow();
-                    roster.AddToCounts(clan.BasicTroop, size);
-                    roster.AddToCounts(Looters.BasicTroop, size);
-                    AdjustCavalryCount(roster);
+                    var foot = Rng.Next(40, 61);
+                    var range = Rng.Next(20, Rng.Next(35, 100 - foot) + 1);
+                    var horse = 100 - foot - range;
+                    // DRM has no cavalry
+                    if (Globals.BasicCavalry.Count == 0)
+                    {
+                        foot += horse % 2 == 0
+                            ? horse / 2
+                            : horse / 2 + 1;
+                        range += horse / 2;
+                        horse = 0;
+                    }
+
+                    var formation = new List<int>
+                    {
+                        foot, range, horse
+                    };
+                    for (var index = 0; index < formation.Count; index++)
+                    {
+                        for (var c = 0; c < formation[index] * size / 100f; c++)
+                        {
+                            switch (index)
+                            {
+                                case 0:
+                                    roster.AddToCounts(Globals.BasicInfantry.GetRandomElement(), 1);
+                                    break;
+                                case 1:
+                                    roster.AddToCounts(Globals.BasicRanged.GetRandomElement(), 1);
+                                    break;
+                                case 2:
+                                    roster.AddToCounts(Globals.BasicCavalry.GetRandomElement(), 1);
+                                    break;
+                            }
+                        }
+                    }
+
                     var bm = MobileParty.CreateParty("Bandit_Militia", new ModBanditMilitiaPartyComponent(clan), m => m.ActualClan = clan);
                     InitMilitia(bm, new[] { roster, TroopRoster.CreateDummyTroopRoster() }, settlement.GatePosition);
                     DoPowerCalculations();

@@ -83,7 +83,11 @@ namespace BanditMilitias
         internal static List<Settlement> Hideouts;
         internal static IEnumerable<ModBanditMilitiaPartyComponent> AllBMs;
         internal static CharacterObject Giant;
-
+        internal static List<CharacterObject> BasicRanged = new();
+        internal static List<CharacterObject> BasicInfantry = new();
+        internal static List<CharacterObject> BasicCavalry = new();
+        
+        
         // ReSharper disable once InconsistentNaming
         internal static MapMobilePartyTrackerVM MapMobilePartyTrackerVM;
 
