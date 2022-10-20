@@ -54,8 +54,8 @@ namespace BanditMilitias.Helpers
         internal static readonly AccessTools.FieldRef<MBEquipmentRoster, List<Equipment>> Equipments =
             AccessTools.FieldRefAccess<MBEquipmentRoster, List<Equipment>>("_equipments");
 
-        internal static readonly AccessTools.FieldRef<Hero, Settlement> _homeSettlement =
-            AccessTools.FieldRefAccess<Hero, Settlement>("_homeSettlement");
+        internal static readonly AccessTools.FieldRef<Hero, Settlement> _bornSettlement =
+            AccessTools.FieldRefAccess<Hero, Settlement>("_bornSettlement");
 
         // ReSharper disable once StringLiteralTypo
         internal static readonly AccessTools.FieldRef<CharacterObject, bool> HiddenInEncyclopedia =
@@ -75,7 +75,7 @@ namespace BanditMilitias.Helpers
         internal static void ReHome()
         {
             foreach (var BM in GetCachedBMs(true))
-                _homeSettlement(BM.Leader) = BM.HomeSettlement;
+                _bornSettlement(BM.Leader) = BM.HomeSettlement;
         }
 
         internal static bool TrySplitParty(MobileParty mobileParty)
@@ -836,9 +836,7 @@ namespace BanditMilitias.Helpers
                 if (Globals.Settings.LooterUpgradePercent > 0)
                 {
                     // upgrade any looters first, then go back over and iterate further upgrades
-                    var allLooters = mobileParty.MemberRoster.GetTroopRoster().WhereQ(e =>
-                        e.Character == Looters.BasicTroop
-                        || e.Character.OriginalCharacter == Looters.BasicTroop).ToList();
+                    var allLooters = mobileParty.MemberRoster.GetTroopRoster().WhereQ(e => e.Character == Looters.BasicTroop).ToList();
                     if (allLooters.Any())
                     {
                         var culture = GetMostPrevalentFromNearbySettlements(mobileParty.Position2D);
@@ -1018,10 +1016,8 @@ namespace BanditMilitias.Helpers
 
             var availableBandits = CharacterObject.All.WhereQ(c => c.Occupation is Occupation.Bandit && c.Level <= 11 && !c.HiddenInEncylopedia).ToListQ();
             Globals.BasicRanged = availableBandits.WhereQ(c => c.DefaultFormationClass is FormationClass.Ranged).ToListQ();
-            Globals.BasicInfantry = availableBandits.WhereQ(c => c.DefaultFormationClass is FormationClass.Infantry).ToListQ();
+            Globals.BasicInfantry = availableBandits.WhereQ(c => c.DefaultFormationClass is FormationClass.Infantry && c.StringId != "storymode_quest_raider").ToListQ();
             Globals.BasicCavalry = availableBandits.WhereQ(c => c.DefaultFormationClass is FormationClass.Cavalry).ToListQ();
-                
-
             // used for armour
             foreach (ItemObject.ItemTypeEnum itemType in Enum.GetValues(typeof(ItemObject.ItemTypeEnum)))
             {
@@ -1038,8 +1034,7 @@ namespace BanditMilitias.Helpers
             DoPowerCalculations(true);
             ReHome();
             var bmCount = MobileParty.All.CountQ(m => m.IsBM());
-            var upgradedTroopCount = MBObjectManager.Instance.GetObjectTypeList<CharacterObject>().WhereQ(c => !c.IsHero && c.OriginalCharacter is not null).Count();
-            Log.Debug?.Log($"Militias: {bmCount}.  Upgraded BM troops: {upgradedTroopCount}.");
+            Log.Debug?.Log($"Militias: {bmCount}.");
         }
     }
 }
