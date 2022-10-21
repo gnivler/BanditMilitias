@@ -26,9 +26,9 @@ namespace BanditMilitias
         [SaveableField(6)] private Settlement homeSettlement;
         [CachedData] private TextObject cachedName;
 
+        public override Settlement HomeSettlement => homeSettlement;
         public override Hero Leader => leader;
         public override Hero PartyOwner => MobileParty?.ActualClan?.Leader; // clan is null during nuke  
-        public override Settlement HomeSettlement => homeSettlement;
         private static readonly MethodInfo GetLocalizedText = AccessTools.Method(typeof(MBTextManager), "GetLocalizedText");
 
         public override TextObject Name
@@ -62,7 +62,8 @@ namespace BanditMilitias
             BannerKey = Banner.Serialize();
             var hero = CreateHero(heroClan);
             if (hero.HomeSettlement is null)
-                _homeSettlement(hero) = hero.BornSettlement;
+                _bornSettlement(hero) = Hideouts.GetRandomElement();
+            hero.UpdateHomeSettlement();
             HiddenInEncyclopedia(hero.CharacterObject) = true;
             homeSettlement = hero.BornSettlement;
             leader = hero;
