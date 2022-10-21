@@ -329,7 +329,8 @@ namespace BanditMilitias
                         && !rosterElement.Character.IsHero
                         && mobileParty.ShortTermBehavior != AiBehavior.FleeToPoint
                         && !mobileParty.IsVisible
-                        && !Heroes.Contains(rosterElement.Character.HeroObject))
+                        && !rosterElement.Character.IsHero
+                        && rosterElement.Character.OriginalCharacter is null)
                     .ToListQ();
                 if (eligibleToGrow.Any())
                 {
@@ -345,7 +346,7 @@ namespace BanditMilitias
                         var troop = eligibleToGrow.GetRandomElement().Character;
                         if (GlobalMilitiaPower + troop.GetPower() < CalculatedGlobalPowerLimit)
                         {
-                            mobileParty.MemberRoster.AddToCounts(troop.OriginalCharacter ?? troop, 1);
+                            mobileParty.MemberRoster.AddToCounts(troop, 1);
                         }
                     }
 
