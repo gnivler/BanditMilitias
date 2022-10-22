@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using BanditMilitias.Helpers;
 using HarmonyLib;
@@ -7,6 +8,7 @@ using TaleWorlds.CampaignSystem.Party.PartyComponents;
 using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
+using TaleWorlds.LinQuick;
 using TaleWorlds.Localization;
 using TaleWorlds.SaveSystem;
 using static BanditMilitias.Globals;
@@ -30,6 +32,7 @@ namespace BanditMilitias
         public override Hero Leader => leader;
         public override Hero PartyOwner => MobileParty?.ActualClan?.Leader; // clan is null during nuke  
         private static readonly MethodInfo GetLocalizedText = AccessTools.Method(typeof(MBTextManager), "GetLocalizedText");
+        private static readonly AccessTools.FieldRef<Clan, MBReadOnlyList<WarPartyComponent>> warPartyComponents = AccessTools.FieldRefAccess<Clan, MBReadOnlyList<WarPartyComponent>>("<WarPartyComponents>k__BackingField");
 
         public override TextObject Name
         {
@@ -67,6 +70,8 @@ namespace BanditMilitias
             HiddenInEncyclopedia(hero.CharacterObject) = true;
             homeSettlement = hero.BornSettlement;
             leader = hero;
+            var components = hero.Clan.WarPartyComponents.Except(new[] { this });
+            warPartyComponents(hero.Clan) = new MBReadOnlyList<WarPartyComponent>(components.ToListQ());
         }
     }
 }
