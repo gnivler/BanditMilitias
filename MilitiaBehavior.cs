@@ -82,6 +82,9 @@ namespace BanditMilitias
             if (mobileParty.PartyComponent is not (BanditPartyComponent or ModBanditMilitiaPartyComponent))
                 return;
 
+            if (mobileParty.MemberRoster.TotalManCount < Globals.Settings.MergeableSize)
+                return;
+
             // they will evacuate hideouts and not chase caravans
             if (mobileParty.PartyComponent is BanditPartyComponent)
             {
