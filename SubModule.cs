@@ -232,6 +232,7 @@ namespace BanditMilitias
                 CampaignCheats.SetMainPartyAttackable(new List<string> { "0" });
                 CampaignCheats.SetCampaignSpeed(new List<string> { "100" });
             }
+
             if (MEOWMEOW)
                 Dev.RunDevPatches();
         }
@@ -243,7 +244,7 @@ namespace BanditMilitias
                 // fix issue in ServeAsSoldier where a Deserters Party is created without being a quest party
                 var original = AccessTools.Method("ServeAsSoldier.ExtortionByDesertersEvent:CreateDeserterParty");
                 if (original is not null)
-                    harmony.Patch(original, postfix: new HarmonyMethod(typeof(MiscPatches), nameof(MiscPatches.PatchSaSDeserters)));
+                    harmony.Patch(original, postfix: new HarmonyMethod(AccessTools.Method(typeof(MiscPatches), nameof(MiscPatches.PatchSaSDeserters))));
             }
             catch (Exception ex)
             {
