@@ -141,6 +141,7 @@ namespace BanditMilitias
 
             if (MEOWMEOW && Input.IsKeyPressed(InputKey.Tilde))
             {
+
                 //helm = MBObjectManager.Instance.GetObject<ItemObject>("northern_heavy_helmet");
                 //foreach (var hero in Globals.Heroes)
                 //{
@@ -243,7 +244,7 @@ namespace BanditMilitias
                 // fix issue in ServeAsSoldier where a Deserters Party is created without being a quest party
                 var original = AccessTools.Method("ServeAsSoldier.ExtortionByDesertersEvent:CreateDeserterParty");
                 if (original is not null)
-                    harmony.Patch(original, postfix: new HarmonyMethod(typeof(MiscPatches), nameof(MiscPatches.PatchSaSDeserters)));
+                    harmony.Patch(original, postfix: new HarmonyMethod(AccessTools.Method(typeof(MiscPatches), nameof(MiscPatches.PatchSaSDeserters))));
                 var heroRelations = AccessTools.TypeByName("HeroRelations");
                 original = AccessTools.Method(heroRelations, "GetHashCodes");
                 var prefix = AccessTools.Method(typeof(MilitiaPatches.CharacterRelationsManagerGetRelation), nameof(MilitiaPatches.CharacterRelationsManagerGetRelation.Prefix));

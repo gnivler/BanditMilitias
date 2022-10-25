@@ -48,12 +48,6 @@ namespace BanditMilitias.Helpers
         private static readonly AccessTools.FieldRef<PartyBase, ItemRoster> ItemRoster =
             AccessTools.FieldRefAccess<PartyBase, ItemRoster>("<ItemRoster>k__BackingField");
 
-        internal static readonly AccessTools.FieldRef<BasicCharacterObject, MBEquipmentRoster> EquipmentRoster =
-            AccessTools.FieldRefAccess<BasicCharacterObject, MBEquipmentRoster>("_equipmentRoster");
-
-        internal static readonly AccessTools.FieldRef<MBEquipmentRoster, List<Equipment>> Equipments =
-            AccessTools.FieldRefAccess<MBEquipmentRoster, List<Equipment>>("_equipments");
-
         internal static readonly AccessTools.FieldRef<Hero, Settlement> _bornSettlement =
             AccessTools.FieldRefAccess<Hero, Settlement>("_bornSettlement");
 
@@ -109,17 +103,13 @@ namespace BanditMilitias.Helpers
         private static void SplitRosters(MobileParty original, TroopRoster troops1, TroopRoster troops2,
             TroopRoster prisoners1, TroopRoster prisoners2, ItemRoster inventory1, ItemRoster inventory2)
         {
-            //Log.Debug?.Log($"Processing troops: {original.MemberRoster.Count} types, {original.MemberRoster.TotalManCount} in total");
             foreach (var rosterElement in original.MemberRoster.GetTroopRoster().WhereQ(x => x.Character.HeroObject is null))
             {
-                //if (!IsRegistered(rosterElement.Character))
-                //    Meow();
                 SplitRosters(troops1, troops2, rosterElement);
             }
 
             if (original.PrisonRoster.TotalManCount > 0)
             {
-                //Log.Debug?.Log($"Processing prisoners: {original.PrisonRoster.Count} types, {original.PrisonRoster.TotalManCount} in total");
                 foreach (var rosterElement in original.PrisonRoster.GetTroopRoster())
                 {
                     SplitRosters(prisoners1, prisoners2, rosterElement);
@@ -265,14 +255,7 @@ namespace BanditMilitias.Helpers
             {
                 foreach (var element in roster.GetTroopRoster().WhereQ(e => !e.Character.IsHero))
                 {
-                    if (!IsRegistered(element.Character))
-                        Meow();
-                    outMembers.AddToCounts(element.Character, element.Number,
-                        woundedCount: element.WoundedNumber, xpChange: element.Xp);
-                    if (!IsRegistered(element.Character))
-                        Meow();
-                    if (outMembers.GetTroopRoster().AnyQ(r => !IsRegistered(r.Character)))
-                        Meow();
+                    outMembers.AddToCounts(element.Character, element.Number, woundedCount: element.WoundedNumber, xpChange: element.Xp);
                 }
             }
 
@@ -280,10 +263,7 @@ namespace BanditMilitias.Helpers
             {
                 foreach (var element in roster.GetTroopRoster().WhereQ(e => e.Character?.HeroObject is null))
                 {
-                    if (!IsRegistered(element.Character))
-                        Meow();
-                    outPrisoners.AddToCounts(element.Character, element.Number,
-                        woundedCount: element.WoundedNumber, xpChange: element.Xp);
+                    outPrisoners.AddToCounts(element.Character, element.Number, woundedCount: element.WoundedNumber, xpChange: element.Xp);
                 }
             }
 
@@ -847,8 +827,8 @@ namespace BanditMilitias.Helpers
                             if (numberToUpgrade == 0)
                                 continue;
 
-                            mobileParty.MemberRoster.AddToCounts(Looters.BasicTroop, -numberToUpgrade);
-                            var recruit = Recruits[culture][Rng.Next(0, Globals.Recruits[culture].Count)];
+                            mobileParty.MemberRoster.AddToCounts(Globals.Looters.BasicTroop, -numberToUpgrade);
+                            var recruit = Globals.Recruits[culture][Rng.Next(0, Globals.Recruits[culture].Count)];
                             mobileParty.MemberRoster.AddToCounts(recruit, numberToUpgrade);
                         }
                     }
@@ -857,10 +837,11 @@ namespace BanditMilitias.Helpers
                 var troopUpgradeModel = Campaign.Current.Models.PartyTroopUpgradeModel;
                 for (var i = 0; i < iterations && Globals.MilitiaPowerPercent <= Globals.Settings.GlobalPowerPercent; i++)
                 {
-                    var validTroops = mobileParty.MemberRoster.GetTroopRoster().WhereQ(x =>
-                        x.Character.Tier < Globals.Settings.MaxTrainingTier
-                        && !x.Character.IsHero
-                        && troopUpgradeModel.IsTroopUpgradeable(mobileParty.Party, x.Character));
+                    var validTroops = mobileParty.MemberRoster.GetTroopRoster().WhereQ(e =>
+                        e.Character.Tier < Globals.Settings.MaxTrainingTier
+                        && !e.Character.IsHero
+                        && !e.Character.Name.ToString().StartsWith("Glorious")
+                        && troopUpgradeModel.IsTroopUpgradeable(mobileParty.Party, e.Character));
                     var troopToTrain = validTroops.ToList().GetRandomElement();
                     number = troopToTrain.Number;
                     if (number < 1)
@@ -951,7 +932,7 @@ namespace BanditMilitias.Helpers
         private static Hero CustomizedCreateHeroAtOccupation(Settlement settlement, Clan clan)
         {
             var max = 0;
-            foreach (var characterObject in HeroTemplates)
+            foreach (var characterObject in Globals.HeroTemplates)
             {
                 var num = characterObject.GetTraitLevel(DefaultTraits.Frequency) * 10;
                 max += num > 0 ? num : 100;
@@ -1004,7 +985,8 @@ namespace BanditMilitias.Helpers
                 c.Level == 11
                 && c.Occupation == Occupation.Soldier
                 && filter.All(s => !c.StringId.Contains(s))
-                && !c.StringId.EndsWith("_tier_1"));
+                && !c.StringId.EndsWith("_tier_1")
+                && !c.Name.ToString().StartsWith("Glorious"));
 
             foreach (var recruit in allRecruits)
             {
