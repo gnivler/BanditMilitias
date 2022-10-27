@@ -13,9 +13,12 @@ namespace BanditMilitias.Helpers
         private static readonly AccessTools.FieldRef<CampaignObjectManager, List<Hero>> DeadOrDisabledHeroes =
             AccessTools.FieldRefAccess<CampaignObjectManager, List<Hero>>("_deadOrDisabledHeroes");
 
+        private static readonly AccessTools.FieldRef<MobileParty, bool> IsCurrentlyUsedByAQuest =
+            AccessTools.FieldRefAccess<MobileParty, bool>("_isCurrentlyUsedByAQuest");
+
         internal static bool IsUsedByAQuest(this MobileParty mobileParty)
         {
-            return Campaign.Current.VisualTrackerManager.CheckTracked(mobileParty);
+            return IsCurrentlyUsedByAQuest(mobileParty);
         }
 
         internal static bool IsTooBusyToMerge(this MobileParty mobileParty)

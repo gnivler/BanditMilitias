@@ -10,6 +10,7 @@ using HarmonyLib;
 using SandBox.View.Map;
 using SandBox.ViewModelCollection.Map;
 using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.Issues;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.Core;
 using TaleWorlds.InputSystem;
@@ -141,23 +142,6 @@ namespace BanditMilitias
 
             if (MEOWMEOW && Input.IsKeyPressed(InputKey.Tilde))
             {
-
-                //helm = MBObjectManager.Instance.GetObject<ItemObject>("northern_heavy_helmet");
-                //foreach (var hero in Globals.Heroes)
-                //{
-                //    if (hero.BattleEquipment[5].Item != null && hero.BattleEquipment[5].Item == helm)
-                //    {
-                //        for (var index = 0; index < Equipment.EquipmentSlotLength; index++)
-                //            Log.Debug?.Log($"{index}: {hero.BattleEquipment[index].Item?.Name} {(hero.BattleEquipment[index].Item?.Value is not null ? "$" : "")}{hero.BattleEquipment[index].Item?.Value}");
-                //        Log.Debug?.Log("==============");
-                //    }
-                //}
-                //
-                //foreach (var hero in Globals.Heroes)
-                //{
-                //    Traverse.Create(hero).Property<Equipment>("BattleEquipment").Value = BadGear;
-                //}
-
                 Debugger.Break();
             }
 
