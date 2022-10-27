@@ -16,6 +16,7 @@ using TaleWorlds.CampaignSystem.Extensions;
 using TaleWorlds.CampaignSystem.GameMenus;
 using TaleWorlds.CampaignSystem.MapEvents;
 using TaleWorlds.CampaignSystem.Party;
+using TaleWorlds.CampaignSystem.Party.PartyComponents;
 using TaleWorlds.CampaignSystem.Roster;
 using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
@@ -63,6 +64,10 @@ namespace BanditMilitias.Helpers
 
         internal static readonly AccessTools.FieldRef<MBObjectBase, bool> IsRegistered =
             AccessTools.FieldRefAccess<MBObjectBase, bool>("<IsRegistered>k__BackingField");
+
+        internal static readonly AccessTools.FieldRef<Clan, MBReadOnlyList<WarPartyComponent>> warPartyComponents =
+            AccessTools.FieldRefAccess<Clan, MBReadOnlyList<WarPartyComponent>>("<WarPartyComponents>k__BackingField");
+
 
         private static PartyUpgraderCampaignBehavior UpgraderCampaignBehavior;
 
@@ -653,10 +658,6 @@ namespace BanditMilitias.Helpers
             return result ?? MBObjectManager.Instance.GetObject<CultureObject>("empire");
         }
 
-        internal static void ConvertLootersToRecruits(TroopRoster troopRoster, CultureObject culture, int numberToUpgrade)
-        {
-        }
-
         internal static void PrintInstructionsAroundInsertion(List<CodeInstruction> codes, int insertPoint, int insertSize, int adjacentNum = 5)
         {
             Log.Debug?.Log($"Inserting {insertSize} at {insertPoint}.");
@@ -1010,12 +1011,17 @@ namespace BanditMilitias.Helpers
             }
 
             // front-load
-            for (var i = 0; i < 3000; i++)
+            for (var i = 0; i < 10000; i++)
                 BanditEquipment.Add(BuildViableEquipmentSet());
 
             DoPowerCalculations(true);
             ReHome();
             var bmCount = MobileParty.All.CountQ(m => m.IsBM());
+
+            var staleWarPartyComponents = MobileParty.AllBanditParties.WhereQ(p =>
+                p.WarPartyComponent is ModBanditMilitiaPartyComponent).SelectQ(p => p.WarPartyComponent).ToList();
+            foreach (var clan in Clan.BanditFactions)
+                warPartyComponents(clan) = new MBReadOnlyList<WarPartyComponent>(warPartyComponents(clan).Except(staleWarPartyComponents).ToList());
             Log.Debug?.Log($"Militias: {bmCount}.");
         }
     }

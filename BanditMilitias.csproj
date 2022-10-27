@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <Version>3.13.0</Version>
+        <Version>3.14.0</Version>
         <TargetFramework>net48</TargetFramework>
         <Nullable>disable</Nullable>
         <BaseOutputPath>$(BANNERLORD_GAME_DIR)/Modules/BanditMilitias/bin/Win64_Shipping_Client/</BaseOutputPath>
@@ -61,5 +61,18 @@
             <PrivateAssets>all</PrivateAssets>
             <ExcludeAssets>runtime</ExcludeAssets>
         </PackageReference>
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Remove="global.json" />
+      <None Remove="bin\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Compile Remove="bin\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <EmbeddedResource Remove="bin\**" />
     </ItemGroup>
 </Project>
