@@ -16,6 +16,7 @@ using TaleWorlds.CampaignSystem.Extensions;
 using TaleWorlds.CampaignSystem.GameMenus;
 using TaleWorlds.CampaignSystem.MapEvents;
 using TaleWorlds.CampaignSystem.Party;
+using TaleWorlds.CampaignSystem.Party.PartyComponents;
 using TaleWorlds.CampaignSystem.Roster;
 using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
@@ -48,14 +49,8 @@ namespace BanditMilitias.Helpers
         private static readonly AccessTools.FieldRef<PartyBase, ItemRoster> ItemRoster =
             AccessTools.FieldRefAccess<PartyBase, ItemRoster>("<ItemRoster>k__BackingField");
 
-        internal static readonly AccessTools.FieldRef<BasicCharacterObject, MBEquipmentRoster> EquipmentRoster =
-            AccessTools.FieldRefAccess<BasicCharacterObject, MBEquipmentRoster>("_equipmentRoster");
-
-        internal static readonly AccessTools.FieldRef<MBEquipmentRoster, List<Equipment>> Equipments =
-            AccessTools.FieldRefAccess<MBEquipmentRoster, List<Equipment>>("_equipments");
-
-        internal static readonly AccessTools.FieldRef<Hero, Settlement> _homeSettlement =
-            AccessTools.FieldRefAccess<Hero, Settlement>("_homeSettlement");
+        internal static readonly AccessTools.FieldRef<Hero, Settlement> _bornSettlement =
+            AccessTools.FieldRefAccess<Hero, Settlement>("_bornSettlement");
 
         // ReSharper disable once StringLiteralTypo
         internal static readonly AccessTools.FieldRef<CharacterObject, bool> HiddenInEncyclopedia =
@@ -70,12 +65,16 @@ namespace BanditMilitias.Helpers
         internal static readonly AccessTools.FieldRef<MBObjectBase, bool> IsRegistered =
             AccessTools.FieldRefAccess<MBObjectBase, bool>("<IsRegistered>k__BackingField");
 
+        internal static readonly AccessTools.FieldRef<Clan, MBReadOnlyList<WarPartyComponent>> warPartyComponents =
+            AccessTools.FieldRefAccess<Clan, MBReadOnlyList<WarPartyComponent>>("<WarPartyComponents>k__BackingField");
+
+
         private static PartyUpgraderCampaignBehavior UpgraderCampaignBehavior;
 
         internal static void ReHome()
         {
             foreach (var BM in GetCachedBMs(true))
-                _homeSettlement(BM.Leader) = BM.HomeSettlement;
+                _bornSettlement(BM.Leader) = BM.HomeSettlement;
         }
 
         internal static bool TrySplitParty(MobileParty mobileParty)
@@ -109,17 +108,13 @@ namespace BanditMilitias.Helpers
         private static void SplitRosters(MobileParty original, TroopRoster troops1, TroopRoster troops2,
             TroopRoster prisoners1, TroopRoster prisoners2, ItemRoster inventory1, ItemRoster inventory2)
         {
-            //Log.Debug?.Log($"Processing troops: {original.MemberRoster.Count} types, {original.MemberRoster.TotalManCount} in total");
             foreach (var rosterElement in original.MemberRoster.GetTroopRoster().WhereQ(x => x.Character.HeroObject is null))
             {
-                //if (!IsRegistered(rosterElement.Character))
-                //    Meow();
                 SplitRosters(troops1, troops2, rosterElement);
             }
 
             if (original.PrisonRoster.TotalManCount > 0)
             {
-                //Log.Debug?.Log($"Processing prisoners: {original.PrisonRoster.Count} types, {original.PrisonRoster.TotalManCount} in total");
                 foreach (var rosterElement in original.PrisonRoster.GetTroopRoster())
                 {
                     SplitRosters(prisoners1, prisoners2, rosterElement);
@@ -265,14 +260,7 @@ namespace BanditMilitias.Helpers
             {
                 foreach (var element in roster.GetTroopRoster().WhereQ(e => !e.Character.IsHero))
                 {
-                    if (!IsRegistered(element.Character))
-                        Meow();
-                    outMembers.AddToCounts(element.Character, element.Number,
-                        woundedCount: element.WoundedNumber, xpChange: element.Xp);
-                    if (!IsRegistered(element.Character))
-                        Meow();
-                    if (outMembers.GetTroopRoster().AnyQ(r => !IsRegistered(r.Character)))
-                        Meow();
+                    outMembers.AddToCounts(element.Character, element.Number, woundedCount: element.WoundedNumber, xpChange: element.Xp);
                 }
             }
 
@@ -280,10 +268,7 @@ namespace BanditMilitias.Helpers
             {
                 foreach (var element in roster.GetTroopRoster().WhereQ(e => e.Character?.HeroObject is null))
                 {
-                    if (!IsRegistered(element.Character))
-                        Meow();
-                    outPrisoners.AddToCounts(element.Character, element.Number,
-                        woundedCount: element.WoundedNumber, xpChange: element.Xp);
+                    outPrisoners.AddToCounts(element.Character, element.Number, woundedCount: element.WoundedNumber, xpChange: element.Xp);
                 }
             }
 
@@ -673,10 +658,6 @@ namespace BanditMilitias.Helpers
             return result ?? MBObjectManager.Instance.GetObject<CultureObject>("empire");
         }
 
-        internal static void ConvertLootersToRecruits(TroopRoster troopRoster, CultureObject culture, int numberToUpgrade)
-        {
-        }
-
         internal static void PrintInstructionsAroundInsertion(List<CodeInstruction> codes, int insertPoint, int insertSize, int adjacentNum = 5)
         {
             Log.Debug?.Log($"Inserting {insertSize} at {insertPoint}.");
@@ -836,9 +817,7 @@ namespace BanditMilitias.Helpers
                 if (Globals.Settings.LooterUpgradePercent > 0)
                 {
                     // upgrade any looters first, then go back over and iterate further upgrades
-                    var allLooters = mobileParty.MemberRoster.GetTroopRoster().WhereQ(e =>
-                        e.Character == Looters.BasicTroop
-                        || e.Character.OriginalCharacter == Looters.BasicTroop).ToList();
+                    var allLooters = mobileParty.MemberRoster.GetTroopRoster().WhereQ(e => e.Character == Looters.BasicTroop).ToList();
                     if (allLooters.Any())
                     {
                         var culture = GetMostPrevalentFromNearbySettlements(mobileParty.Position2D);
@@ -849,8 +828,8 @@ namespace BanditMilitias.Helpers
                             if (numberToUpgrade == 0)
                                 continue;
 
-                            mobileParty.MemberRoster.AddToCounts(Looters.BasicTroop, -numberToUpgrade);
-                            var recruit = Recruits[culture][Rng.Next(0, Globals.Recruits[culture].Count)];
+                            mobileParty.MemberRoster.AddToCounts(Globals.Looters.BasicTroop, -numberToUpgrade);
+                            var recruit = Globals.Recruits[culture][Rng.Next(0, Globals.Recruits[culture].Count)];
                             mobileParty.MemberRoster.AddToCounts(recruit, numberToUpgrade);
                         }
                     }
@@ -859,10 +838,11 @@ namespace BanditMilitias.Helpers
                 var troopUpgradeModel = Campaign.Current.Models.PartyTroopUpgradeModel;
                 for (var i = 0; i < iterations && Globals.MilitiaPowerPercent <= Globals.Settings.GlobalPowerPercent; i++)
                 {
-                    var validTroops = mobileParty.MemberRoster.GetTroopRoster().WhereQ(x =>
-                        x.Character.Tier < Globals.Settings.MaxTrainingTier
-                        && !x.Character.IsHero
-                        && troopUpgradeModel.IsTroopUpgradeable(mobileParty.Party, x.Character));
+                    var validTroops = mobileParty.MemberRoster.GetTroopRoster().WhereQ(e =>
+                        e.Character.Tier < Globals.Settings.MaxTrainingTier
+                        && !e.Character.IsHero
+                        && !e.Character.Name.ToString().StartsWith("Glorious")
+                        && troopUpgradeModel.IsTroopUpgradeable(mobileParty.Party, e.Character));
                     var troopToTrain = validTroops.ToList().GetRandomElement();
                     number = troopToTrain.Number;
                     if (number < 1)
@@ -953,7 +933,7 @@ namespace BanditMilitias.Helpers
         private static Hero CustomizedCreateHeroAtOccupation(Settlement settlement, Clan clan)
         {
             var max = 0;
-            foreach (var characterObject in HeroTemplates)
+            foreach (var characterObject in Globals.HeroTemplates)
             {
                 var num = characterObject.GetTraitLevel(DefaultTraits.Frequency) * 10;
                 max += num > 0 ? num : 100;
@@ -1006,7 +986,8 @@ namespace BanditMilitias.Helpers
                 c.Level == 11
                 && c.Occupation == Occupation.Soldier
                 && filter.All(s => !c.StringId.Contains(s))
-                && !c.StringId.EndsWith("_tier_1"));
+                && !c.StringId.EndsWith("_tier_1")
+                && !c.Name.ToString().StartsWith("Glorious"));
 
             foreach (var recruit in allRecruits)
             {
@@ -1018,10 +999,8 @@ namespace BanditMilitias.Helpers
 
             var availableBandits = CharacterObject.All.WhereQ(c => c.Occupation is Occupation.Bandit && c.Level <= 11 && !c.HiddenInEncylopedia).ToListQ();
             Globals.BasicRanged = availableBandits.WhereQ(c => c.DefaultFormationClass is FormationClass.Ranged).ToListQ();
-            Globals.BasicInfantry = availableBandits.WhereQ(c => c.DefaultFormationClass is FormationClass.Infantry).ToListQ();
+            Globals.BasicInfantry = availableBandits.WhereQ(c => c.DefaultFormationClass is FormationClass.Infantry && c.StringId != "storymode_quest_raider").ToListQ();
             Globals.BasicCavalry = availableBandits.WhereQ(c => c.DefaultFormationClass is FormationClass.Cavalry).ToListQ();
-                
-
             // used for armour
             foreach (ItemObject.ItemTypeEnum itemType in Enum.GetValues(typeof(ItemObject.ItemTypeEnum)))
             {
@@ -1032,14 +1011,18 @@ namespace BanditMilitias.Helpers
             }
 
             // front-load
-            for (var i = 0; i < 3000; i++)
+            for (var i = 0; i < 10000; i++)
                 BanditEquipment.Add(BuildViableEquipmentSet());
 
             DoPowerCalculations(true);
             ReHome();
             var bmCount = MobileParty.All.CountQ(m => m.IsBM());
-            var upgradedTroopCount = MBObjectManager.Instance.GetObjectTypeList<CharacterObject>().WhereQ(c => !c.IsHero && c.OriginalCharacter is not null).Count();
-            Log.Debug?.Log($"Militias: {bmCount}.  Upgraded BM troops: {upgradedTroopCount}.");
+
+            var staleWarPartyComponents = MobileParty.AllBanditParties.WhereQ(p =>
+                p.WarPartyComponent is ModBanditMilitiaPartyComponent).SelectQ(p => p.WarPartyComponent).ToList();
+            foreach (var clan in Clan.BanditFactions)
+                warPartyComponents(clan) = new MBReadOnlyList<WarPartyComponent>(warPartyComponents(clan).Except(staleWarPartyComponents).ToList());
+            Log.Debug?.Log($"Militias: {bmCount}.");
         }
     }
 }

@@ -141,6 +141,7 @@ namespace BanditMilitias
 
             if (MEOWMEOW && Input.IsKeyPressed(InputKey.Tilde))
             {
+
                 //helm = MBObjectManager.Instance.GetObject<ItemObject>("northern_heavy_helmet");
                 //foreach (var hero in Globals.Heroes)
                 //{
@@ -232,9 +233,8 @@ namespace BanditMilitias
                 CampaignCheats.SetMainPartyAttackable(new List<string> { "0" });
                 CampaignCheats.SetCampaignSpeed(new List<string> { "100" });
             }
-
-            if (MEOWMEOW)
-                Dev.RunDevPatches();
+            // if (MEOWMEOW)
+            //     Dev.RunDevPatches();
         }
 
         private static void RunManualPatches()
@@ -245,6 +245,10 @@ namespace BanditMilitias
                 var original = AccessTools.Method("ServeAsSoldier.ExtortionByDesertersEvent:CreateDeserterParty");
                 if (original is not null)
                     harmony.Patch(original, postfix: new HarmonyMethod(AccessTools.Method(typeof(MiscPatches), nameof(MiscPatches.PatchSaSDeserters))));
+                var heroRelations = AccessTools.TypeByName("HeroRelations");
+                original = AccessTools.Method(heroRelations, "GetHashCodes");
+                var prefix = AccessTools.Method(typeof(MilitiaPatches.CharacterRelationsManagerGetRelation), nameof(MilitiaPatches.CharacterRelationsManagerGetRelation.Prefix));
+                harmony.Patch(original, prefix: new HarmonyMethod(prefix));
             }
             catch (Exception ex)
             {

@@ -332,7 +332,7 @@ namespace BanditMilitias
                         && !rosterElement.Character.IsHero
                         && mobileParty.ShortTermBehavior != AiBehavior.FleeToPoint
                         && !mobileParty.IsVisible
-                        && !Heroes.Contains(rosterElement.Character.HeroObject))
+                        && !rosterElement.Character.Name.ToString().StartsWith("Glorious"))
                     .ToListQ();
                 if (eligibleToGrow.Any())
                 {
@@ -348,7 +348,7 @@ namespace BanditMilitias
                         var troop = eligibleToGrow.GetRandomElement().Character;
                         if (GlobalMilitiaPower + troop.GetPower() < CalculatedGlobalPowerLimit)
                         {
-                            mobileParty.MemberRoster.AddToCounts(troop.OriginalCharacter ?? troop, 1);
+                            mobileParty.MemberRoster.AddToCounts(troop, 1);
                         }
                     }
 
@@ -365,9 +365,7 @@ namespace BanditMilitias
         private static void SpawnBM()
         {
             if (!Globals.Settings.MilitiaSpawn)
-            {
                 return;
-            }
 
             try
             {
@@ -379,10 +377,7 @@ namespace BanditMilitias
                      i++)
                 {
                     if (Rng.Next(0, 101) > Globals.Settings.SpawnChance)
-                    {
                         continue;
-                    }
-
 
                     Clan clan;
                     // ROT
@@ -417,7 +412,6 @@ namespace BanditMilitias
                     for (var index = 0; index < formation.Count; index++)
                     {
                         for (var c = 0; c < formation[index] * size / 100f; c++)
-                        {
                             switch (index)
                             {
                                 case 0:
@@ -430,7 +424,6 @@ namespace BanditMilitias
                                     roster.AddToCounts(Globals.BasicCavalry.GetRandomElement(), 1);
                                     break;
                             }
-                        }
                     }
 
                     var bm = MobileParty.CreateParty("Bandit_Militia", new ModBanditMilitiaPartyComponent(clan), m => m.ActualClan = clan);

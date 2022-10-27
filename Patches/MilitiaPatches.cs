@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection.Emit;
 using BanditMilitias.Helpers;
@@ -20,7 +21,6 @@ using TaleWorlds.CampaignSystem.Encounters;
 using TaleWorlds.CampaignSystem.GameComponents;
 using TaleWorlds.CampaignSystem.GameMenus;
 using TaleWorlds.CampaignSystem.Party;
-using TaleWorlds.CampaignSystem.Party.PartyComponents;
 using TaleWorlds.CampaignSystem.Roster;
 using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
@@ -298,7 +298,7 @@ namespace BanditMilitias.Patches
             }
         }
 
-        // copied from assembly since there is no BanditPartyComponent in BMs
+        // copied from 1.9 assembly since there is no BanditPartyComponent in BMs
         [HarmonyPatch(typeof(MobileParty), "CalculateContinueChasingScore")]
         public class MobilePartyCalculateContinueChasingScore
         {
@@ -334,25 +334,6 @@ namespace BanditMilitias.Patches
             {
                 if (!__instance.IsBandit && __instance.IsBM())
                     IsBandit(__instance) = true;
-            }
-        }
-
-        [HarmonyPatch(typeof(Clan), "AddWarPartyInternal")]
-        public static class ClanAddWarPartyInternal
-        {
-            public static bool Prefix(WarPartyComponent warPartyComponent) => warPartyComponent is not ModBanditMilitiaPartyComponent;
-        }
-
-        // Trash() removes the party, which nulls out the clan, which throws harmlessly here
-        [HarmonyPatch(typeof(WarPartyComponent), "OnFinalize")]
-        public static class WarPartyComponentOnFinalize
-        {
-            public static Exception Finalizer(Exception __exception, WarPartyComponent __instance)
-            {
-                if (__exception is not null && __instance is ModBanditMilitiaPartyComponent)
-                    return null;
-
-                return __exception;
             }
         }
 
@@ -483,6 +464,24 @@ namespace BanditMilitias.Patches
 
                 return true;
             }
+        }
+
+        // 1.9 broke this
+        [HarmonyPatch(typeof(MobileParty), "IsBanditBossParty", MethodType.Getter)]
+        public class MobilePartyIsBanditBossParty
+        {
+            public static bool Prefix(MobileParty __instance) => !__instance.IsBM();
+        }
+
+        public class CharacterRelationsManagerGetRelation
+        {
+            public static bool Prefix(Hero hero1, Hero hero2) => hero1 is not null && hero2 is not null;
+        }
+
+        [HarmonyPatch(typeof(ChangeRelationAction), "ApplyInternal")]
+        public class ChangeRelationActionApplyInternal
+        {
+            public static Exception Finalizer() => null;
         }
     }
 }
