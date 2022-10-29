@@ -1,10 +1,13 @@
 using System;
 using System.Collections.Generic;
+using MCM.Abstractions;
 using MCM.Abstractions.Attributes;
 using MCM.Abstractions.Attributes.v2;
-using MCM.Abstractions.Dropdown;
-using MCM.Abstractions.Settings.Base;
-using MCM.Abstractions.Settings.Base.Global;
+using MCM.Abstractions.Base;
+using MCM.Abstractions.Base.Global;
+using MCM.Common;
+using MCM.Implementation;
+using TaleWorlds.LinQuick;
 
 // ReSharper disable UnusedAutoPropertyAccessor.Local
 // ReSharper disable FieldCanBeMadeReadOnly.Local
@@ -21,32 +24,40 @@ namespace BanditMilitias
 {
     public class Settings : AttributeGlobalSettings<Settings>
     {
-        public override IDictionary<string, Func<BaseSettings>> GetAvailablePresets()
-        {
-            var basePresets = base.GetAvailablePresets();
-            basePresets.Add("Hard Mode", () => new Settings
-            {
-                Debug = false,
-                CanTrain = true,
-                RandomBanners = true,
-                XpGift = new DropdownDefault<string>(Globals.DifficultyXpMap.Keys, 3),
-                GoldReward = new DropdownDefault<string>(Globals.GoldMap.Keys, 2),
-                CooldownHours = 8,
-                DisperseSize = 30,
-                RandomSplitChance = 50,
-                MergeableSize = 10,
-                GrowthChance = 100,
-                GrowthPercent = 3,
-                MilitiaSpawn = true,
-                SpawnChance = 50,
-                MaxItemValue = 10000,
-                LooterUpgradePercent = 66,
-                UpgradeUnitsPercent = 33,
-                GlobalPowerPercent = 33,
-                MaxTrainingTier = 5,
-            });
-            return basePresets;
-        }
+        // public override IEnumerable<ISettingsPreset> GetBuiltInPresets()
+        // {
+        //     var basePresets = base.GetBuiltInPresets().ToListQ();
+        //     var hardMode = new JsonSettingsPreset("Hard Mode", "Hard Mode","Hard Mode",null, () =>
+        //     {
+        //         Debug = false;
+        //         CanTrain = true;
+        //         return this;
+        //     basePresets.Add(hardMode);
+        //     return basePresets;
+        // }
+        // var hardMode = new JsonSettingsPreset("Hard Mode", "Hard Mode","Hard Mode",null, () =>
+        // {
+        //     Debug = false;
+        //     CanTrain = true;
+        //     RandomBanners = true;
+        //     XpGift = new Dropdown<string>(Globals.DifficultyXpMap.Keys, 3);
+        //     GoldReward = new Dropdown<string>(Globals.GoldMap.Keys, 2);
+        //     CooldownHours = 8;
+        //     DisperseSize = 30;
+        //     RandomSplitChance = 50;
+        //     MergeableSize = 10;
+        //     GrowthChance = 100;
+        //     GrowthPercent = 3;
+        //     MilitiaSpawn = true;
+        //     SpawnChance = 50;
+        //     MaxItemValue = 10000;
+        //     LooterUpgradePercent = 66;
+        //     UpgradeUnitsPercent = 33;
+        //     GlobalPowerPercent = 33;
+        //     MaxTrainingTier = 5;
+        //     return this;
+        // });
+
 
         public override string FormatType => "json";
         public override string FolderName => "BanditMilitias";
@@ -61,7 +72,7 @@ namespace BanditMilitias
 
         [SettingPropertyDropdown("Militia XP Boost", HintText = "\nHardest grants enough XP to significantly upgrade troops.  Off grants no bonus XP.", Order = 2, RequireRestart = false)]
         [SettingPropertyGroup("Primary Settings")]
-        public DropdownDefault<string> XpGift { get; private set; } = new(Globals.DifficultyXpMap.Keys, 1);
+        public Dropdown<string> XpGift { get; private set; } = new(Globals.DifficultyXpMap.Keys, 1);
 
         [SettingPropertyInteger("Growth Chance Percent", 0, 100, HintText = "\nChance per day that the militia will gain more troops (0 for off).", Order = 3, RequireRestart = false)]
         [SettingPropertyGroup("Primary Settings")]
@@ -89,7 +100,7 @@ namespace BanditMilitias
 
         [SettingPropertyDropdown("Bandit Hero Gold Reward", Order = 9, RequireRestart = false)]
         [SettingPropertyGroup("Primary Settings")]
-        public DropdownDefault<string> GoldReward { get; private set; } = new(Globals.GoldMap.Keys, 1);
+        public Dropdown<string> GoldReward { get; private set; } = new(Globals.GoldMap.Keys, 1);
 
         [SettingPropertyInteger("Disperse Militia Size", 10, 100, HintText = "\nMilitias defeated with fewer than this many remaining troops will be dispersed.", Order = 0, RequireRestart = false)]
         [SettingPropertyGroup("Size Adjustments", GroupOrder = 2)]

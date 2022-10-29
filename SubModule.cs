@@ -153,7 +153,7 @@ namespace BanditMilitias
 
             if (MEOWMEOW && superKey && Input.IsKeyPressed(InputKey.F10))
                 MobileParty.MainParty.ItemRoster.AddToCounts(MBObjectManager.Instance.GetObject<ItemObject>("grain"), 10000);
-
+            
             if (superKey && Input.IsKeyPressed(InputKey.F12))
             {
                 foreach (var militia in MobileParty.All.WhereQ(m => m.IsBM()).OrderBy(x => x.MemberRoster.TotalManCount))

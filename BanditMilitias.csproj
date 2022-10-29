@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <Version>3.14.0</Version>
+        <Version>3.15.0</Version>
         <TargetFramework>net48</TargetFramework>
         <Nullable>disable</Nullable>
         <BaseOutputPath>$(BANNERLORD_GAME_DIR)/Modules/BanditMilitias/bin/Win64_Shipping_Client/</BaseOutputPath>
@@ -45,17 +45,20 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Bannerlord.ButterLib" Version="2.2.6">
+        <PackageReference Include="Bannerlord.ButterLib" Version="2.3.1">
             <PrivateAssets>all</PrivateAssets>
             <ExcludeAssets>runtime</ExcludeAssets>
+            <IncludeAssets>compile; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="Bannerlord.MCM" Version="4.7.10">
+        <PackageReference Include="Bannerlord.MCM" Version="5.0.0">
             <PrivateAssets>all</PrivateAssets>
             <ExcludeAssets>runtime</ExcludeAssets>
+            <IncludeAssets>compile; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="Bannerlord.UIExtenderEx" Version="2.2.12">
+        <PackageReference Include="Bannerlord.UIExtenderEx" Version="2.3.0">
             <PrivateAssets>all</PrivateAssets>
             <ExcludeAssets>runtime</ExcludeAssets>
+            <IncludeAssets>compile; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
         <PackageReference Include="Lib.Harmony" Version="2.2.2">
             <PrivateAssets>all</PrivateAssets>
