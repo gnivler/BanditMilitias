@@ -8,6 +8,7 @@ using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
 using TaleWorlds.LinQuick;
+using TaleWorlds.Localization;
 using TaleWorlds.ObjectSystem;
 
 // ReSharper disable InconsistentNaming
@@ -86,8 +87,7 @@ namespace BanditMilitias
         internal static List<CharacterObject> BasicRanged = new();
         internal static List<CharacterObject> BasicInfantry = new();
         internal static List<CharacterObject> BasicCavalry = new();
-        
-        
+
         // ReSharper disable once InconsistentNaming
         internal static MapMobilePartyTrackerVM MapMobilePartyTrackerVM;
 
@@ -97,20 +97,23 @@ namespace BanditMilitias
         // ArmsDealer compatibility
         internal static CultureObject BlackFlag => MBObjectManager.Instance.GetObject<CultureObject>("ad_bandit_blackflag");
 
-        internal static readonly Dictionary<string, int> DifficultyXpMap = new()
+        internal static readonly Dictionary<TextObject, int> DifficultyXpMap = new()
         {
-            { "Off", 0 },
-            { "Normal", 300 },
-            { "Hard", 600 },
-            { "Hardest", 900 },
+            { new TextObject("{=BMXpOff}Off"), 0 },
+            { new TextObject("{=BMXpNormal}Normal"), 300 },
+            { new TextObject("{=BMXpHard}Hard"), 600 },
+            { new TextObject("{=BMXpHardest}Hardest"), 900 },
         };
 
-        internal static readonly Dictionary<string, int> GoldMap = new()
+        internal static readonly Dictionary<TextObject, int> GoldMap = new()
         {
-            { "Low", 250 },
-            { "Normal", 500 },
-            { "Rich", 900 },
-            { "Richest", 2000 },
+            { new TextObject("{=BMGoldLow}Low"), 250 },
+            { new TextObject("{=BMGoldNormal}Normal"), 500 },
+            { new TextObject("{=BMGoldRich}Rich"), 900 },
+            { new TextObject("{=BMGoldRichest}Richest"), 2000 },
         };
+
+        internal static readonly TextObject BanditMilitiaString = new("{=BMString}Bandit Militia");
+        internal static readonly TextObject LeaderlessBanditMilitiaString = new("{=BMLeaderlessString}Leaderless Bandit Militia");
     }
 }
