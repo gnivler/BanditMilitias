@@ -67,15 +67,19 @@
     </ItemGroup>
 
     <ItemGroup>
-      <None Remove="global.json" />
-      <None Remove="bin\**" />
+        <None Remove="global.json" />
+        <None Remove="bin\**" />
     </ItemGroup>
 
     <ItemGroup>
-      <Compile Remove="bin\**" />
+        <Compile Remove="bin\**" />
     </ItemGroup>
 
     <ItemGroup>
-      <EmbeddedResource Remove="bin\**" />
+        <EmbeddedResource Remove="bin\**" />
     </ItemGroup>
+
+    <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+      <Exec Command="xcopy /e /y $(ProjectDir)ModuleData\ &quot;M:\SteamLibrary\steamapps\common\Mount &amp; Blade II Bannerlord\Modules\BanditMilitias\ModuleData&quot;" />
+    </Target>
 </Project>

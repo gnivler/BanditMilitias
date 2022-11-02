@@ -1,0 +1,4 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<LanguageData id="Русский" name="Русский" subtitle_extension="ru" supported_iso="ru,rus,ru-ru,ru-md" under_development="false">
+    <LanguageFile xml_path="RU/strings.xml"/>
+</LanguageData>

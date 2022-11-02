@@ -1,0 +1,78 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<base xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" type="string">
+    <tags>
+        <tag language="Français"/>
+    </tags>
+    <strings>
+        <string id="BMPrimary" text="Paramètres principaux"/>
+        <string id="BMSizeAdjustments" text="Ajustement de la taille"/>
+        <string id="BMAdjustments" text="Ajustement des milices"/>
+        <string id="BMXpOff" text="Off"/>
+        <string id="BMXpNormal" text="Normal"/>
+        <string id="BMXpHard" text="Difficile"/>
+        <string id="BMXpHardest" text="Le plus dur"/>
+        <string id="BMGoldLow" text="Pauvre"/>
+        <string id="BMGoldNormal" text="Normal"/>
+        <string id="BMGoldRich" text="Riche"/>
+        <string id="BMGoldRichest" text="Très riche"/>
+        <string id="BMString" text="Milice de bandits"/>
+        <string id="BMLeaderlessString" text="Milice de bandits sans leader"/>
+        <string id="BMTrain" text="Former les milices"/>
+        <string id="BMTrainDesc" text="Les héros bandits entraîneront leurs milices."/>
+        <string id="BMDailyTrain" text="Chance d'entraînement quotidien"/>
+        <string id="BMDailyTrainDesc" text="Chaque jour, ils peuvent s'entraîner davantage."/>
+        <string id="BMXpBoost" text="Boost d'XP des milives"/>
+        <string id="BMXpBoostDesc" text="Le plus haut donne assez d'XP pour améliorer significativement les troupes. Off ne donne aucun bonus d'XP."/>
+        <string id="BMGrowChance" text="Pourcentage de chance de croissance"/>
+        <string id="BMGrowChanceDesc" text="Chance par jour que la milice gagne plus de troupes (0 pour la désactivation)."/>
+        <string id="BMGrowPercent" text="Pourcentage de croissance"/>
+        <string id="BMGrowPercentDesc" text="Augmentez chaque type de troupe de ce pourcentage."/>
+        <string id="BMIgnore" text="Ignorer les villageois/caravanes"/>
+        <string id="BMIgnoreDesc" text="Ils ne seront pas attaqués par les milices."/>
+        <string id="BMSpawn" text="Spawn des milices"/>
+        <string id="BMSpawnDesc" text="De nouvelles milices se formeront spontanément ainsi qu'en fusionnant normalement."/>
+        <string id="BMSpawnChance" text="Chances de Spawn de nouvelles milices"/>
+        <string id="BMSpawnChanceDesc" text="Les milices vont Spawn toutes les heures à cette probabilité."/>
+        <string id="BMCooldown" text="Modifier le délai d'attente"/>
+        <string id="BMCooldownDesc" text="Les milices ne fusionneront ou ne se sépareront pas une seconde fois avant que ce nombre d'heures ne soit écoulé."/>
+        <string id="BMGoldReward" text="Récompenses en Or des héros bandit"/>
+        <string id="BMDisperse" text="Taille avant dispersion de la milice"/>
+        <string id="BMDisperseDesc" text="Les milices vaincues avec moins de ce nombre de troupes restantes seront dispersées."/>
+        <string id="BMMinSize" text="Taille minimale"/>
+        <string id="BMMinSizeDesc" text="Aucune milice plus petite que celle-ci ne se formera."/>
+        <string id="BMMergeSize" text="Taille du groupe fusionnable"/>
+        <string id="BMMergeSizeDesc" text="Les petits groupes de pillards et de bandits ne fusionneront pas."/>
+        <string id="BMSplit" text="Chances de division d'une milice"/>
+        <string id="BMSplitDesc" text="La probabilité qu'une milice se divise lorsqu'elle est suffisamment grande."/>
+        <string id="BMMaxValue" text="Valeur maximale des objets"/>
+        <string id="BMMaxValueDesc" text="Limite la valeur par pièce de l'équipement donné aux héros. Principalement pour les cas où d'autres mods vous donnent du butin pour les héros."/>
+        <string id="BMLooter" text="Conversions de pillards"/>
+        <string id="BMLooterDesc" text="Combien de pillards sont transformés en meilleures unités lors de l'entraînement."/>
+        <string id="BMUpgrade" text="Amélioration d'unités"/>
+        <string id="BMUpgradeDesc" text="Mettre à niveau (au maximum) ce pourcentage de troupes lors de l'entraînement."/>
+        <string id="BMPower" text="Puissance globale"/>
+        <string id="BMPowerDesc" text="Réglage majeur.  Un réglage plus élevé signifie des milices plus nombreuses et plus grande."/>
+        <string id="BMTier" text="Tier d'unités Max"/>
+        <string id="BMTierDesc" text="Les milices ne formeront pas d'unités au-delà de ce Tier."/>
+        <string id="BMWeaker" text="Ignore les groupe les plus faibles"/>
+        <string id="BMWeakerDesc" text="10 signifie que tout groupe 10% plus faible sera ignorée. 100 attaque sans restriction."/>
+        <string id="BMPillage" text="Autoriser les pillages"/>
+        <string id="BMPillageDesc" text="Autorise les PILLAGES!"/>
+        <string id="BMStringSetting" text="Nom d'une milice de bandit"/>
+        <string id="BMStringSettingDesc" text="Comment appeler une milice de bandits."/>
+        <string id="BMLeaderlessStringSetting" text="Nom des milices sans chef"/>
+        <string id="BMLeaderlessStringSettingDesc" text="Comment nommer une milice de bandits sans chef."/>
+        <string id="BMMarkers" text="Marqueurs de carte de la milice"/>
+        <string id="BMMarkersDesc" text="Avoir une vue omnisciente des milices."/>
+        <string id="BMTrackSize" text="Taille minimale de la milice pour l'afficher sur la carte"/>
+        <string id="BMTrackSizeDesc" text="Toute milice plus petite ne sera pas affiché."/>
+        <string id="BMBanners" text="Bannières aléatoires"/>
+        <string id="BMBannersDesc" text="Les milices auront des bannières uniques, ou des bannières basiques de clan de bandit."/>
+        <string id="BMRaidNotices" text="Avis de raid sur les villages"/>
+        <string id="BMRaidNoticesDesc" text="Lorsque vos fiefs sont pillés, vous verrez un message"/>
+        <string id="BMDebug" text="Journalisation de débogage"/>
+        <string id="BMDebugDesc" text="Crée un fichier journal dans le dossier du module."/>
+        <string id="BMTesting" text="Mode de test"/>
+        <string id="BMTestingDesc" text="Téléporte les milices vers vous."/>
+    </strings>
+</base>

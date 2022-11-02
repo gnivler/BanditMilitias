@@ -1,0 +1,78 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<base xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" type="string">
+    <tags>
+        <tag language="English"/>
+    </tags>
+    <strings>
+        <string id="BMPrimary" text="Primary Settings"/>
+        <string id="BMSizeAdjustments" text="Size Adjustments"/>
+        <string id="BMAdjustments" text="Militia Adjustments"/>
+        <string id="BMXpOff" text="Off"/>
+        <string id="BMXpNormal" text="Normal"/>
+        <string id="BMXpHard" text="Hard"/>
+        <string id="BMXpHardest" text="Hardest"/>
+        <string id="BMGoldLow" text="Low"/>
+        <string id="BMGoldNormal" text="Normal"/>
+        <string id="BMGoldRich" text="Rich"/>
+        <string id="BMGoldRichest" text="Richest"/>
+        <string id="BMString" text="Bandit Militia"/>
+        <string id="BMLeaderlessString" text="Leaderless Bandit Militia"/>
+        <string id="BMTrain" text="Train Militias"/>
+        <string id="BMTrainDesc" text="Bandit heroes will train their militias."/>
+        <string id="BMDailyTrain" text="Daily Training Chance"/>
+        <string id="BMDailyTrainDesc" text="Each day they might train further."/>
+        <string id="BMXpBoost" text="Militia XP Boost"/>
+        <string id="BMXpBoostDesc" text="Hardest grants enough XP to significantly upgrade troops.  Off grants no bonus XP."/>
+        <string id="BMGrowChance" text="Growth Chance Percent"/>
+        <string id="BMGrowChanceDesc" text="Chance per day that the militia will gain more troops (0 for off)."/>
+        <string id="BMGrowPercent" text="Growth Percent"/>
+        <string id="BMGrowPercentDesc" text="Grow each troop type by this percent."/>
+        <string id="BMIgnore" text="Ignore Villagers/Caravans"/>
+        <string id="BMIgnoreDesc" text="They won't be attacked by BMs."/>
+        <string id="BMSpawn" text="BM Spawn"/>
+        <string id="BMSpawnDesc" text="New BM will form spontaneously as well as by merging together normally."/>
+        <string id="BMSpawnChance" text="Spawn Chance Percent"/>
+        <string id="BMSpawnChanceDesc" text="BM will spawn hourly at this likelihood."/>
+        <string id="BMCooldown" text="Change Cooldown"/>
+        <string id="BMCooldownDesc" text="BM won't merge or split a second time until this many hours go by."/>
+        <string id="BMGoldReward" text="Bandit Hero Gold Reward"/>
+        <string id="BMDisperse" text="Disperse Militia Size"/>
+        <string id="BMDisperseDesc" text="Militias defeated with fewer than this many remaining troops will be dispersed."/>
+        <string id="BMMinSize" text="Minimum Size"/>
+        <string id="BMMinSizeDesc" text="No BMs smaller than this will form."/>
+        <string id="BMMergeSize" text="Mergeable party size"/>
+        <string id="BMMergeSizeDesc" text="Small looter and bandit parties won't merge."/>
+        <string id="BMSplit" text="Random Split Chance"/>
+        <string id="BMSplitDesc" text="How likely BM is to split when large enough."/>
+        <string id="BMMaxValue" text="Max Item Value"/>
+        <string id="BMMaxValueDesc" text="Limit the per-piece value of equipment given to the Heroes.\nMostly for when other mods give you Hero loot."/>
+        <string id="BMLooter" text="Looter Conversions"/>
+        <string id="BMLooterDesc" text="How many looters get made into better units when training."/>
+        <string id="BMUpgrade" text="Upgrade Units"/>
+        <string id="BMUpgradeDesc" text="Upgrade (at most) this percentage of troops when training occurs."/>
+        <string id="BMPower" text="Global Power"/>
+        <string id="BMPowerDesc" text="Major setting.  Setting higher means more, bigger BMs."/>
+        <string id="BMTier" text="Max Training Tier"/>
+        <string id="BMTierDesc" text="BM won't train any units past this tier."/>
+        <string id="BMWeaker" text="Ignore Weaker Parties"/>
+        <string id="BMWeakerDesc" text="10 means any party 10% weaker will be ignored.\n100 attacks without restriction."/>
+        <string id="BMPillage" text="Allow Pillaging"/>
+        <string id="BMPillageDesc" text="Allow PILLAGING!."/>
+        <string id="BMStringSetting" text="Bandit Militia String"/>
+        <string id="BMStringSettingDesc" text="What to name a Bandit Militia."/>
+        <string id="BMLeaderlessStringSetting" text="Leaderless Bandit Militia String"/>
+        <string id="BMLeaderlessStringSettingDesc" text="What to name a Bandit Militia with no leader."/>
+        <string id="BMMarkers" text="Militia Map Markers"/>
+        <string id="BMMarkersDesc" text="Have omniscient view of BMs."/>
+        <string id="BMTrackSize" text="Minimum BM Size To Track"/>
+        <string id="BMTrackSizeDesc" text="Any smaller BMs won't be tracked."/>
+        <string id="BMBanners" text="Random Banners"/>
+        <string id="BMBannersDesc" text="BMs will have unique banners, or basic bandit clan ones."/>
+        <string id="BMRaidNotices" text="Village raid notices"/>
+        <string id="BMRaidNoticesDesc" text="When your fiefs are raided you'll see a banner message."/>
+        <string id="BMDebug" text="Debug Logging"/>
+        <string id="BMDebugDesc" text="Creates logfile output in the mod folder."/>
+        <string id="BMTesting" text="Testing Mode"/>
+        <string id="BMTestingDesc" text="Teleports BMs to you."/>
+    </strings>
+</base>

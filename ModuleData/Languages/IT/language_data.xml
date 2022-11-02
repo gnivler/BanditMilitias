@@ -1,0 +1,4 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<LanguageData id="Italiano" name="Italiano" subtitle_extension="it" supported_iso="it,ita,it-it,it-ch" under_development="false">
+    <LanguageFile xml_path="IT/strings.xml"/>
+</LanguageData>
