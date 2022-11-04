@@ -417,7 +417,7 @@ namespace BanditMilitias.Patches
         [HarmonyPatch(typeof(DefaultPartyTroopUpgradeModel), "CanPartyUpgradeTroopToTarget")]
         public class DefaultPartyTroopUpgradeModelCanPartyUpgradeTroopToTarget
         {
-            public static void Prefix(PartyBase upgradingParty, ref bool __result)
+            public static void Postfix(PartyBase upgradingParty, ref bool __result)
             {
                 if (upgradingParty.IsMobile && upgradingParty.MobileParty.IsBM())
                     __result = true;
