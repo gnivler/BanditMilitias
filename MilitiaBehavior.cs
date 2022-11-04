@@ -57,6 +57,14 @@ namespace BanditMilitias
             CampaignEvents.DailyTickPartyEvent.AddNonSerializedListener(this, DailyTickPartyEvent);
             CampaignEvents.HourlyTickEvent.AddNonSerializedListener(this, SpawnBM);
             CampaignEvents.MobilePartyDestroyed.AddNonSerializedListener(this, MobilePartyDestroyed);
+            CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, DailyTick);
+        }
+
+        private void DailyTick()
+        {
+            var bandits = MobileParty.AllBanditParties.WhereQ(p => !p.IsBM());
+            Log.Debug?.Log($"Total regular bandit parties: {bandits.Count()}");
+            Log.Debug?.Log($"Total Bandit Militia parties: {AllBMs.Count()}");
         }
 
         private static void MobilePartyDestroyed(MobileParty mobileParty, PartyBase destroyer)
