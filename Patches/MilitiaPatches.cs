@@ -406,14 +406,21 @@ namespace BanditMilitias.Patches
                 return codes.AsEnumerable();
             }
 
+            // ReSharper disable once UnusedParameter.Local
             private static bool IsBM(PartyBase party, CharacterObject character, CharacterObject target)
             {
-                if (party.IsMobile && party.MobileParty.IsBM())
-                {
-                    return Campaign.Current.Models.PartyTroopUpgradeModel.CanPartyUpgradeTroopToTarget(party, character, target);
-                }
+                return party.IsMobile && party.MobileParty.IsBM();
+            }
+        }
 
-                return false;
+        // allow BMs to upgrade to whatever, mostly so more cavalry are created
+        [HarmonyPatch(typeof(DefaultPartyTroopUpgradeModel), "CanPartyUpgradeTroopToTarget")]
+        public class DefaultPartyTroopUpgradeModelCanPartyUpgradeTroopToTarget
+        {
+            public static void Prefix(PartyBase upgradingParty, ref bool __result)
+            {
+                if (upgradingParty.IsMobile && upgradingParty.MobileParty.IsBM())
+                    __result = true;
             }
         }
 
