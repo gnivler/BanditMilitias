@@ -93,18 +93,18 @@ namespace BanditMilitias
         [SettingPropertyGroup("{=BMPrimary}Primary Settings")]
         public int CooldownHours { get; private set; } = 24;
 
-        [SettingPropertyInteger("{=BMIdealBoost}Ideal Vanilla Bandit Party Count", 0, 1000, HintText = "{=BMIdealBoostDesc}Increase the vanilla party count by this percentage.", Order = 9, RequireRestart = false)]
-        [SettingPropertyGroup("{=BMPrimary}Primary Settings")]
-        public int IdealCountBoost
-        {
-            get => idealCountBoost;
-            set
-            {
-                idealCountBoost = value;
-                // convert once here since it's a hot getter being patched
-                idealBoostFactor = Convert.ToInt32(value / 100f);
-            }
-        }
+        // [SettingPropertyInteger("{=BMIdealBoost}Vanilla Bandit Count Boost Percent", 0, 1000, HintText = "{=BMIdealBoostDesc}Increase the vanilla party count by this percentage.", Order = 9, RequireRestart = false)]
+        // [SettingPropertyGroup("{=BMPrimary}Primary Settings")]
+        // public int IdealCountBoost
+        // {
+        //     get => idealCountBoost;
+        //     set
+        //     {
+        //         idealCountBoost = value;
+        //         // convert once here since it's a hot getter being patched
+        //         idealBoostFactor = Convert.ToInt32(value / 100f);
+        //     }
+        // }
 
         [SettingPropertyDropdown("{=BMGoldReward}Bandit Hero Gold Reward", Order = 9, RequireRestart = false)]
         [SettingPropertyGroup("{=BMPrimary}Primary Settings")]
@@ -180,8 +180,8 @@ namespace BanditMilitias
 
         private const string id = "BanditMilitias";
         private string displayName = $"BanditMilitias {typeof(Settings).Assembly.GetName().Version.ToString(3)}";
-        private int idealCountBoost = 5;
-        internal int idealBoostFactor;
+        // private int idealCountBoost = 5;
+        // internal int idealBoostFactor;
 
         public override string Id => id;
         public override string DisplayName => displayName;

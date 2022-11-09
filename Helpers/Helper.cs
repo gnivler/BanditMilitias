@@ -65,10 +65,6 @@ namespace BanditMilitias.Helpers
         internal static readonly AccessTools.FieldRef<MBObjectBase, bool> IsRegistered =
             AccessTools.FieldRefAccess<MBObjectBase, bool>("<IsRegistered>k__BackingField");
 
-        internal static readonly AccessTools.FieldRef<Clan, MBReadOnlyList<WarPartyComponent>> warPartyComponents =
-            AccessTools.FieldRefAccess<Clan, MBReadOnlyList<WarPartyComponent>>("<WarPartyComponents>k__BackingField");
-
-
         private static PartyUpgraderCampaignBehavior UpgraderCampaignBehavior;
 
         internal static void ReHome()

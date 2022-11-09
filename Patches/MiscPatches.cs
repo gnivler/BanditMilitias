@@ -5,7 +5,6 @@ using HarmonyLib;
 using SandBox.View.Map;
 using SandBox.ViewModelCollection.Map;
 using TaleWorlds.CampaignSystem;
-using TaleWorlds.CampaignSystem.CampaignBehaviors;
 using TaleWorlds.CampaignSystem.Issues;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.Core;
@@ -69,12 +68,48 @@ namespace BanditMilitias.Patches
             Traverse.Create(__result).Field<bool>("IsCurrentlyUsedByAQuest").Value = true;
         }
 
-        // the people, they want more bandits!
-        // quick graphing indicates BM drops the average count by about 5% so I set the default to this
-        [HarmonyPatch(typeof(BanditsCampaignBehavior), "IdealBanditPartyCount", MethodType.Getter)]
-        public static class BanditsCampaignBehaviorIdealPartyCountGet
-        {
-            public static void Postfix(ref int __result) => __result *= Globals.Settings.idealBoostFactor;
-        }
+        // // the people, they want more bandits!
+        // // quick graphing indicates BM drops the average count by about 5% so I set the default to this
+        // [HarmonyPatch(typeof(BanditsCampaignBehavior), "IdealBanditPartyCount", MethodType.Getter)]
+        // public static class BanditsCampaignBehaviorIdealPartyCountGet
+        // {
+        //     public static void Postfix(ref int __result)
+        //     {
+        //         __result *= Globals.Settings.idealBoostFactor;
+        //     }
+        // }
+        //
+        // [HarmonyPatch(typeof(BanditsCampaignBehavior), "SpawnBanditOrLooterPartiesAroundAHideoutOrSettlement")]
+        // public static class BanditsCampaignBehaviorSpawnBanditOrLooterPartiesAroundAHideoutOrSettlement
+        // {
+        //     public static void Prefix(ref int numberOfBanditsWillBeSpawned)
+        //     {
+        //         numberOfBanditsWillBeSpawned *= Globals.Settings.idealBoostFactor;
+        //     }
+        //
+        //     public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        //     {
+        //         var codes = new List<CodeInstruction>(instructions);
+        //         int target = -1;
+        //         for (var index = 0; index < codes.Count; index++)
+        //         {
+        //             if (codes[index].opcode == OpCodes.Starg_S
+        //                 && codes[index + 1].opcode == OpCodes.Ldc_I4_0
+        //                 && codes[index + 2].opcode == OpCodes.Stloc_S
+        //                 && codes[index + 3].opcode == OpCodes.Br
+        //                 && codes[index + 4].opcode == OpCodes.Ldnull)
+        //                 target = index;
+        //         }
+        //
+        //         var stack = new List<CodeInstruction>
+        //         {
+        //             new(OpCodes.Ldsfld, AccessTools.Field(typeof(Globals), nameof(Globals.Settings))),
+        //             new(OpCodes.Ldfld, AccessTools.Field(typeof(Settings), nameof(Settings.idealBoostFactor))),
+        //             new(OpCodes.Mul)
+        //         };
+        //         codes.InsertRange(target, stack);
+        //         return codes;
+        //     }
+        // }
     }
 }
