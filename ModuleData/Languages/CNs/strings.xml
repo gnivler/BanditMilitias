@@ -1,0 +1,76 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<base xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" type="string">
+    <tags>
+        <tag language="简体中文"/>
+    </tags>
+    <strings>
+        <string id="BMPrimary" text="基础设置"/>
+        <string id="BMSizeAdjustments" text="规模调整"/>
+        <string id="BMAdjustments" text="强盗团设置"/>
+        <string id="BMXpOff" text="关闭"/>
+        <string id="BMXpNormal" text="一般"/>
+        <string id="BMXpHard" text="困难"/>
+        <string id="BMXpHardest" text="极难"/>
+        <string id="BMGoldLow" text="微薄"/>
+        <string id="BMGoldNormal" text="一般"/>
+        <string id="BMGoldRich" text="充裕"/>
+        <string id="BMGoldRichest" text="极富"/>
+        <string id="BMTrain" text="强盗团训练"/>
+        <string id="BMTrainDesc" text="强盗团头目会训练强盗团的士兵。"/>
+        <string id="BMDailyTrain" text="强盗团训练概率"/>
+        <string id="BMDailyTrainDesc" text="强盗团每天可能会训练的更强。"/>
+        <string id="BMXpBoost" text="强盗团训练加成"/>
+        <string id="BMXpBoostDesc" text="选择非常困难，将给予足够的经验以显著提升强盗团的士兵等级。若禁用强盗团训练，训练加成则无任何影响。"/>
+        <string id="BMGrowChance" text="强盗团扩招"/>
+        <string id="BMGrowChanceDesc" text="强盗团每天获得更多士兵的几率。"/>
+        <string id="BMGrowPercent" text="强盗团扩招比例"/>
+        <string id="BMGrowPercentDesc" text="当强盗团扩招时，将按照该比例增长。"/>
+        <string id="BMIgnore" text="无视村民/商队"/>
+        <string id="BMIgnoreDesc" text="强盗团不会攻击村民或商队。"/>
+        <string id="BMSpawn" text="强盗团再生"/>
+        <string id="BMSpawnDesc" text="新的强盗团会自动生成，也会通过两股盗匪兼并生成。"/>
+        <string id="BMSpawnChance" text="强盗团再生几率"/>
+        <string id="BMSpawnChanceDesc" text="强盗团每小时的再生几率。"/>
+        <string id="BMCooldown" text="强盗团变化间隔"/>
+        <string id="BMCooldownDesc" text="兼并或分裂后，强盗团将在这段时间内不再发生变化。"/>
+        <string id="BMGoldReward" text="强盗团头目赏金"/>
+        <string id="BMDisperse" text="强盗团解散条件"/>
+        <string id="BMDisperseDesc" text="人数少于该数量的强盗团将被迫解散。"/>
+        <string id="BMMinSize" text="强盗团再生条件"/>
+        <string id="BMMinSizeDesc" text="人数少于该数量的强盗团将不会再生。"/>
+        <string id="BMMergeSize" text="强盗团兼并条件"/>
+        <string id="BMMergeSizeDesc" text="人数少于该数量的盗匪和强盗团不会发生兼并。"/>
+        <string id="BMSplit" text="强盗团分裂几率"/>
+        <string id="BMSplitDesc" text="当强盗团足够庞大时，每天分裂的几率。"/>
+        <string id="BMMaxValue" text="强盗团头目装备"/>
+        <string id="BMMaxValueDesc" text="限制强盗团头目每件装备的价值。\n主要是为了配合一些给予玩家战利品的模组。"/>
+        <string id="BMLooter" text="强盗团盗匪升级"/>
+        <string id="BMLooterDesc" text="强盗团训练时，该比例的所有盗匪都将升级为更强的兵种。"/>
+        <string id="BMUpgrade" text="强盗团升级比例"/>
+        <string id="BMUpgradeDesc" text="强盗团训练时，不超过该比例的任意类型士兵都将得到升级。"/>
+        <string id="BMPower" text="强盗团总体强度"/>
+        <string id="BMPowerDesc" text="重要设置。数字越大意味着强盗团越强大，数量也越多！"/>
+        <string id="BMTier" text="强盗团士兵等阶"/>
+        <string id="BMTierDesc" text="强盗团不会产生超过该等阶的士兵。"/>
+        <string id="BMWeaker" text="强盗团攻击限制"/>
+        <string id="BMWeakerDesc" text="10意味着强盗团会忽略强度不足10%的队伍。\n100意味着强盗团会攻击任何队伍。"/>
+        <string id="BMPillage" text="强盗团掠夺村庄"/>
+        <string id="BMPillageDesc" text="允许强盗团掠夺村庄！"/>
+        <string id="BMStringSetting" text="强盗团命名"/>
+        <string id="BMStringSettingDesc" text="如何命名强盗团。"/>
+        <string id="BMLeaderlessStringSetting" text="无主强盗团命名"/>
+        <string id="BMLeaderlessStringSettingDesc" text="如何命名无主强盗团。"/>
+        <string id="BMMarkers" text="强盗团地图标记"/>
+        <string id="BMMarkersDesc" text="在地图上标记出所有的强盗团。"/>
+        <string id="BMTrackSize" text="强盗团踪迹"/>
+        <string id="BMTrackSizeDesc" text="少于该人数的强盗团将不会产生踪迹。"/>
+        <string id="BMBanners" text="强盗团旗帜"/>
+        <string id="BMBannersDesc" text="强盗团将随机生成独特的旗帜。"/>
+        <string id="BMRaidNotices" text="强盗团掠夺信息"/>
+        <string id="BMRaidNoticesDesc" text="当你的封地被强盗团掠夺时，你会收到一条信息。"/>
+        <string id="BMDebug" text="调试日志"/>
+        <string id="BMDebugDesc" text="在模组文件夹创建日志文件。"/>
+        <string id="BMTesting" text="测试模式"/>
+        <string id="BMTestingDesc" text="传送强盗团到你身边。"/>
+    </strings>
+</base>

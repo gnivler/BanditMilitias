@@ -1,0 +1,76 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<base xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" type="string">
+    <tags>
+        <tag language="Português (BR)"/>
+    </tags>
+    <strings>
+        <string id="BMPrimary" text="Configurações primárias"/>
+        <string id="BMSizeAdjustments" text="Ajustes de tamanho"/>
+        <string id="BMAdjustments" text="Ajustes da milícia"/>
+        <string id="BMXpOff" text="Desligado"/>
+        <string id="BMXpNormal" text="Normal"/>
+        <string id="BMXpHard" text="Díficil"/>
+        <string id="BMXpHardest" text="Muito Díficil"/>
+        <string id="BMGoldLow" text="Baixo"/>
+        <string id="BMGoldNormal" text="Normal"/>
+        <string id="BMGoldRich" text="Rico"/>
+        <string id="BMGoldRichest" text="Muito rico"/>
+        <string id="BMTrain" text="Treinar Milícias"/>
+        <string id="BMTrainDesc" text="Heróis Criminosos vão treinar suas milícias."/>
+        <string id="BMDailyTrain" text="Chance de treinamento diário"/>
+        <string id="BMDailyTrainDesc" text="Todos os dias eles podem treinar mais."/>
+        <string id="BMXpBoost" text="Boost de XP para Milícia"/>
+        <string id="BMXpBoostDesc" text="O muito difícil concede o XP suficiente para aprimorar significativamente as tropas.  Desligado não concede nenhum bônus de xp."/>
+        <string id="BMGrowChance" text="Chance de crescimento em porcentagem"/>
+        <string id="BMGrowChanceDesc" text="Chance por dia de que a milícia ganhará mais tropas(0 para desativar)."/>
+        <string id="BMGrowPercent" text="Percentual de crescimento"/>
+        <string id="BMGrowPercentDesc" text="Aumente cada tipo de tropa por esse percentual."/>
+        <string id="BMIgnore" text="Ignore os aldeões/caravanas"/>
+        <string id="BMIgnoreDesc" text="Eles não serão atacados pelas MCs."/>
+        <string id="BMSpawn" text="Surgimento de MC"/>
+        <string id="BMSpawnDesc" text="Nova MC se formará espontaneamente e também se fundindo normalmente."/>
+        <string id="BMSpawnChance" text="Chance de formação"/>
+        <string id="BMSpawnChanceDesc" text="MC vai surgir por hora nesta probabilidade."/>
+        <string id="BMCooldown" text="Mudar o 'tempo de cooldown' "/>
+        <string id="BMCooldownDesc" text="MC não se fundirá ou dividirá uma segunda vez até que muitas horas se passem."/>
+        <string id="BMGoldReward" text="Recompensa em ouro de Herói Criminoso"/>
+        <string id="BMDisperse" text="Tamanho de Milícia para Dispersar"/>
+        <string id="BMDisperseDesc" text="Milícias derrotadas com menos do que essas tropas restantes serão dispersadas."/>
+        <string id="BMMinSize" text="Tamanho mínimo"/>
+        <string id="BMMinSizeDesc" text="Sem MCs menor que isso formará."/>
+        <string id="BMMergeSize" text="Tamanho de MC para fundir"/>
+        <string id="BMMergeSizeDesc" text="Pequenos grupos de saqueadores e bandidos não se fundem."/>
+        <string id="BMSplit" text="Chance aleatória de dividir"/>
+        <string id="BMSplitDesc" text="Qual a probabilidade de MC se separar quando grande o suficiente."/>
+        <string id="BMMaxValue" text="Valor máximo do item"/>
+        <string id="BMMaxValueDesc" text="Limitar o valor por peça do equipamento dado aos heróis.\nPrincipalmente para quando outros mods lhe dão saques de herói."/>
+        <string id="BMLooter" text="Conversões de Saqueadores"/>
+        <string id="BMLooterDesc" text="Quantos saqueadores são transformados em unidades melhores ao treinar."/>
+        <string id="BMUpgrade" text="Melhorar Tropas de MC"/>
+        <string id="BMUpgradeDesc" text="Atualizar (no máximo) por essa porcentagem de tropas quando ocorre o treinamento."/>
+        <string id="BMPower" text="Poder Global"/>
+        <string id="BMPowerDesc" text="Configuração Importante. Definir mais alto significa mais e maiores MCs."/>
+        <string id="BMTier" text="Catehoria de treinamento máximo"/>
+        <string id="BMTierDesc" text="O MC não treinará nenhuma unidade além desta categoria."/>
+        <string id="BMWeaker" text="Ignore os grupos mais fracos"/>
+        <string id="BMWeakerDesc" text="10 significa que qualquer grupo 10% mais fraca será ignorada.\nJá 100 os ataques serão sem restrição."/>
+        <string id="BMPillage" text="Permitir pilhagem"/>
+        <string id="BMPillageDesc" text="Permiti PILHAGEM!."/>
+        <string id="BMStringSetting" text="Milícia Criminosa"/>
+        <string id="BMStringSettingDesc" text="Como nomear uma milícia de criminosos."/>
+        <string id="BMLeaderlessStringSetting" text="Milícia Criminosa sem Líder"/>
+        <string id="BMLeaderlessStringSettingDesc" text="Como nomear uma milícia sem líder."/>
+        <string id="BMMarkers" text="Marcadores de Mapa de Milícias"/>
+        <string id="BMMarkersDesc" text="Tenha uma visão onisciente do MCs."/>
+        <string id="BMTrackSize" text="Tamanho mínimo de MC para rastrear"/>
+        <string id="BMTrackSizeDesc" text="Qualquer MCs menor que tal não será rastreado."/>
+        <string id="BMBanners" text="Banners Aleatórios"/>
+        <string id="BMBannersDesc" text="MCs teram banners exclusivos ou banner clássicos para bandidos."/>
+        <string id="BMRaidNotices" text="Avisos de Invasão"/>
+        <string id="BMRaidNoticesDesc" text="Quando seus feudos forem invadidos, você verá uma mensagem de banner."/>
+        <string id="BMDebug" text="Debug Logging"/>
+        <string id="BMDebugDesc" text="Cria saída de log na pasta Mod."/>
+        <string id="BMTesting" text="Modo Teste"/>
+        <string id="BMTestingDesc" text="Teleports MCs para você."/>
+    </strings>
+</base>

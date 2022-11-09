@@ -12,8 +12,8 @@
         <string id="BMGoldNormal" text="Normal"/>
         <string id="BMGoldRich" text="Reich"/>
         <string id="BMGoldRichest" text="Reichste"/>
-        <string id="BMString" text="Banditen Miliz"/>
-        <string id="BMLeaderlessString" text="Führerlose Banditen Miliz"/>
+        <string id="BMStringSetting" text="Banditen Miliz"/>
+        <string id="BMLeaderlessStringSetting" text="Führerlose Banditen Miliz"/>
         <string id="BMTrain" text="Milizen ausbilden"/>
         <string id="BMTrainDesc" text="Banditenhelden werden ihre Milizen ausbilden"/>
     </strings>

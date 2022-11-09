@@ -1,0 +1,76 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<base xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" type="string">
+    <tags>
+        <tag language="Russian"/>
+    </tags>
+    <strings>
+        <string id="BMPrimary" text="Основные настройки"/>
+        <string id="BMSizeAdjustments" text="Регулировка размера"/>
+        <string id="BMAdjustments" text="Корректировки повстанцев"/>
+        <string id="BMXpOff" text="Отключено"/>
+        <string id="BMXpNormal" text="Средне"/>
+        <string id="BMXpHard" text="Тяжко"/>
+        <string id="BMXpHardest" text="Невыносимо"/>
+        <string id="BMGoldLow" text="Низко"/>
+        <string id="BMGoldNormal" text="Норм"/>
+        <string id="BMGoldRich" text="Богато"/>
+        <string id="BMGoldRichest" text="Сверхбогато"/>
+        <string id="BMTrain" text="Тренировка бандосов"/>
+        <string id="BMTrainDesc" text="Герои-бандиты будут обучать своих ополченцев."/>
+        <string id="BMDailyTrain" text="Ежедневный шанс на тренировку"/>
+        <string id="BMDailyTrainDesc" text="Каждый день они могли бы тренироваться дальше."/>
+        <string id="BMXpBoost" text="Повышение опыта ополчения"/>
+        <string id="BMXpBoostDesc" text="Невыносимо дает достаточно опыта, чтобы значительно модернизировать войска. Выкл не дает бонусного опыта."/>
+        <string id="BMGrowChance" text="Процент вероятности роста"/>
+        <string id="BMGrowChanceDesc" text="Шанс в день, что ополчение наберет больше войск (0 для выкл.)."/>
+        <string id="BMGrowPercent" text="Процент роста"/>
+        <string id="BMGrowPercentDesc" text="Увеличьте каждый тип войск на этот процент."/>
+        <string id="BMIgnore" text="Игнорировать жителей деревни/Караваны"/>
+        <string id="BMIgnoreDesc" text="Они не будут атакованы BMS."/>
+        <string id="BMSpawn" text="Порождение отряда"/>
+        <string id="BMSpawnDesc" text="Новые БМ будут формироваться как спонтанно, так и путем обычного слияния."/>
+        <string id="BMSpawnChance" text="Процент вероятности появления"/>
+        <string id="BMSpawnChanceDesc" text="БМ будет появляться ежечасно с такой вероятностью."/>
+        <string id="BMCooldown" text="Изменить время перезарядки"/>
+        <string id="BMCooldownDesc" text="BM не будет сливаться или разделяться во второй раз, пока не пройдет столько часов."/>
+        <string id="BMGoldReward" text="Награда для героя-бандита"/>
+        <string id="BMDisperse" text="Рассредоточить численность ополчения"/>
+        <string id="BMDisperseDesc" text="Ополченцы, разгромленные с меньшим количеством оставшихся войск, будут рассеяны."/>
+        <string id="BMMinSize" text="Минимальный размер"/>
+        <string id="BMMinSizeDesc" text="Никакие БМС меньшего размера, чем это, не сформируются."/>
+        <string id="BMMergeSize" text="Объединяемый размер отряда"/>
+        <string id="BMMergeSizeDesc" text="Мелкие мародерские и бандитские группировки не объединятся."/>
+        <string id="BMSplit" text="Случайный шанс разделения"/>
+        <string id="BMSplitDesc" text="Насколько вероятно, что BM разделится, когда он будет достаточно большим."/>
+        <string id="BMMaxValue" text="Максимальная стоимость товара"/>
+        <string id="BMMaxValueDesc" text="Ограничьте стоимость снаряжения, выдаваемого героям за единицу.\ в основном для случаев, когда другие моды дают вам добычу героя."/>
+        <string id="BMLooter" text="Преобразования мародеров"/>
+        <string id="BMLooterDesc" text="Сколько мародеров превращаются в лучшие подразделения при обучении."/>
+        <string id="BMUpgrade" text="Улучшайте юнитов"/>
+        <string id="BMUpgradeDesc" text="Улучшайте (самое большее) этот процент войск, когда происходит обучение."/>
+        <string id="BMPower" text="Глобальная власть"/>
+        <string id="BMPowerDesc" text="Основная обстановка. Установка выше означает больше, больше отрядов BMS."/>
+        <string id="BMTier" text="Максимальный уровень подготовки"/>
+        <string id="BMTierDesc" text="БМ не будет обучать никаких юнитов выше этого уровня."/>
+        <string id="BMWeaker" text="Игнорируйте более слабые стороны"/>
+        <string id="BMWeakerDesc" text="10 означает, что любая сторона, которая на 10% слабее, будет проигнорирована.\n100 атакует без ограничений."/>
+        <string id="BMPillage" text="Разрешить мародерство"/>
+        <string id="BMPillageDesc" text="Разрешить МАРОДЕРСТВО!."/>
+        <string id="BMStringSetting" text="Бандитская строка"/>
+        <string id="BMStringSettingDesc" text="Как назвать бандитскую шайку."/>
+        <string id="BMLeaderlessStringSetting" text="Строка бандосов без вождя"/>
+        <string id="BMLeaderlessStringSettingDesc" text="Как назвать бандитское ополчение без лидера."/>
+        <string id="BMMarkers" text="Маркеры на карте ополчения"/>
+        <string id="BMMarkersDesc" text="Имейте всеведущий взгляд на BMS."/>
+        <string id="BMTrackSize" text="Минимальный размер BM для отслеживания"/>
+        <string id="BMTrackSizeDesc" text="Любые меньшие BMS не будут отслеживаться."/>
+        <string id="BMBanners" text="Случайные флаги"/>
+        <string id="BMBannersDesc" text="У BMS будут уникальные баннеры или баннеры базового бандитского клана."/>
+        <string id="BMRaidNotices" text="Уведомления о набеге на деревню"/>
+        <string id="BMRaidNoticesDesc" text="Когда на ваши владения совершат набег, вы увидите сообщение на баннере."/>
+        <string id="BMDebug" text="Запись ошибок"/>
+        <string id="BMDebugDesc" text="Создает выходные данные файла журнала в папке мода."/>
+        <string id="BMTesting" text="Испытательный режим"/>
+        <string id="BMTestingDesc" text="Перемещает BMs к тебе."/>
+    </strings>
+</base>
