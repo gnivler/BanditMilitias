@@ -48,12 +48,9 @@ namespace BanditMilitias.Patches
         {
             public static void Postfix(MobileParty __instance, ref float __result)
             {
-                // make them move faster towards a merge, or slow them down generally
-                if (__instance.IsBandit
-                    && __instance.TargetParty is { IsBandit: true })
+                // make them move faster towards a merge
+                if (__instance.IsBandit && __instance.TargetParty is { IsBandit: true })
                     __result *= 1.15f;
-                else if (__instance.IsBM())
-                    __result = Math.Max(1, __result * 0.85f);
             }
         }
 
@@ -111,7 +108,7 @@ namespace BanditMilitias.Patches
             {
                 if (mobileParty.IsBM())
                 {
-                    Log.Debug?.Log($"Preventing {mobileParty} from entering {settlement.Name}");
+                    //Log.Debug?.Log($"Preventing {mobileParty} from entering {settlement.Name}");
                     MilitiaBehavior.BMThink(mobileParty);
                     return false;
                 }
@@ -424,7 +421,7 @@ namespace BanditMilitias.Patches
             }
         }
 
-        // rewrite of broken original in 1.8.0
+        // rewrite of broken original in 1.0.0
         [HarmonyPatch(typeof(Hideout), "MapFaction", MethodType.Getter)]
         public static class HideoutMapFactionGetter
         {
