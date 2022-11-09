@@ -1017,11 +1017,6 @@ namespace BanditMilitias.Helpers
             DoPowerCalculations(true);
             ReHome();
             var bmCount = MobileParty.All.CountQ(m => m.IsBM());
-
-            var staleWarPartyComponents = MobileParty.AllBanditParties.WhereQ(p =>
-                p.WarPartyComponent is ModBanditMilitiaPartyComponent).SelectQ(p => p.WarPartyComponent).ToList();
-            foreach (var clan in Clan.BanditFactions)
-                warPartyComponents(clan) = new MBReadOnlyList<WarPartyComponent>(warPartyComponents(clan).Except(staleWarPartyComponents).ToList());
             Log.Debug?.Log($"Militias: {bmCount}.");
         }
     }
