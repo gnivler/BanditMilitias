@@ -5,6 +5,7 @@ using HarmonyLib;
 using SandBox.View.Map;
 using SandBox.ViewModelCollection.Map;
 using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.CampaignBehaviors;
 using TaleWorlds.CampaignSystem.Issues;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.Core;
@@ -66,6 +67,14 @@ namespace BanditMilitias.Patches
         internal static void PatchSaSDeserters(ref MobileParty __result)
         {
             Traverse.Create(__result).Field<bool>("IsCurrentlyUsedByAQuest").Value = true;
+        }
+
+        // the people, they want more bandits!
+        // quick graphing indicates BM drops the average count by about 5% so I set the default to this
+        [HarmonyPatch(typeof(BanditsCampaignBehavior), "IdealBanditPartyCount", MethodType.Getter)]
+        public static class BanditsCampaignBehaviorIdealPartyCountGet
+        {
+            public static void Postfix(ref int __result) => __result *= Globals.Settings.idealBoostFactor;
         }
     }
 }

@@ -1,9 +1,9 @@
+using System;
 using MCM.Abstractions.Attributes;
 using MCM.Abstractions.Attributes.v2;
 using MCM.Abstractions.Base.Global;
 using MCM.Common;
 using TaleWorlds.LinQuick;
-using TaleWorlds.Localization;
 
 // ReSharper disable UnusedAutoPropertyAccessor.Local
 // ReSharper disable FieldCanBeMadeReadOnly.Local
@@ -93,6 +93,19 @@ namespace BanditMilitias
         [SettingPropertyGroup("{=BMPrimary}Primary Settings")]
         public int CooldownHours { get; private set; } = 24;
 
+        [SettingPropertyInteger("{=BMIdealBoost}Ideal Vanilla Bandit Party Count", 0, 1000, HintText = "{=BMIdealBoostDesc}Increase the vanilla party count by this percentage.", Order = 9, RequireRestart = false)]
+        [SettingPropertyGroup("{=BMPrimary}Primary Settings")]
+        public int IdealCountBoost
+        {
+            get => idealCountBoost;
+            set
+            {
+                idealCountBoost = value;
+                // convert once here since it's a hot getter being patched
+                idealBoostFactor = Convert.ToInt32(value / 100f);
+            }
+        }
+
         [SettingPropertyDropdown("{=BMGoldReward}Bandit Hero Gold Reward", Order = 9, RequireRestart = false)]
         [SettingPropertyGroup("{=BMPrimary}Primary Settings")]
         public Dropdown<string> GoldReward { get; internal set; } = new(Globals.GoldMap.Keys.SelectQ(k => k.ToString()), 1);
@@ -141,11 +154,11 @@ namespace BanditMilitias
         [SettingPropertyGroup("{=BMAdjustments}Militia Adjustments")]
         public bool AllowPillaging { get; private set; } = true;
 
-        [SettingPropertyText("{=BMStringSetting}Bandit Militia String", Order = 0, HintText = "{=BMStringSettingDesc}What to name a Bandit Militia.", RequireRestart = false)]
-        public string BanditMilitiaString { get; set; } = Globals.BanditMilitiaString.ToString();
+        [SettingPropertyText("{=BMStringSetting}Bandit Militia", Order = 0, HintText = "{=BMStringSettingDesc}What to name a Bandit Militia.", RequireRestart = false)]
+        public string BanditMilitiaString { get; set; }
 
-        [SettingPropertyText("{=BMLeaderlessStringSetting}Leaderless Bandit Militia String", Order = 1, HintText = "{=BMLeaderlessStringSettingDesc}What to name a Bandit Militia with no leader.", RequireRestart = false)]
-        public string LeaderlessBanditMilitiaString { get; set; } = Globals.LeaderlessBanditMilitiaString.ToString();
+        [SettingPropertyText("{=BMLeaderlessStringSetting}Leaderless Bandit Militia", Order = 1, HintText = "{=BMLeaderlessStringSettingDesc}What to name a Bandit Militia with no leader.", RequireRestart = false)]
+        public string LeaderlessBanditMilitiaString { get; set; }
 
         [SettingPropertyBool("{=BMMarkers}Militia Map Markers", HintText = "{=BMMarkersDesc}Have omniscient view of BMs.", Order = 2, RequireRestart = false)]
         public bool Trackers { get; private set; } = false;
@@ -167,6 +180,8 @@ namespace BanditMilitias
 
         private const string id = "BanditMilitias";
         private string displayName = $"BanditMilitias {typeof(Settings).Assembly.GetName().Version.ToString(3)}";
+        private int idealCountBoost = 5;
+        internal int idealBoostFactor;
 
         public override string Id => id;
         public override string DisplayName => displayName;
