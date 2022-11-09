@@ -97,7 +97,7 @@ namespace BanditMilitias
         // ArmsDealer compatibility
         internal static CultureObject BlackFlag => MBObjectManager.Instance.GetObject<CultureObject>("ad_bandit_blackflag");
 
-        internal static readonly Dictionary<TextObject, int> DifficultyXpMap = new()
+        internal static Dictionary<TextObject, int> DifficultyXpMap = new()
         {
             { new TextObject("{=BMXpOff}Off"), 0 },
             { new TextObject("{=BMXpNormal}Normal"), 300 },
@@ -105,15 +105,12 @@ namespace BanditMilitias
             { new TextObject("{=BMXpHardest}Hardest"), 900 },
         };
 
-        internal static readonly Dictionary<TextObject, int> GoldMap = new()
+        internal static Dictionary<TextObject, int> GoldMap = new()
         {
             { new TextObject("{=BMGoldLow}Low"), 250 },
             { new TextObject("{=BMGoldNormal}Normal"), 500 },
             { new TextObject("{=BMGoldRich}Rich"), 900 },
             { new TextObject("{=BMGoldRichest}Richest"), 2000 },
         };
-
-        internal static readonly TextObject BanditMilitiaString = new("{=BMString}Bandit Militia");
-        internal static readonly TextObject LeaderlessBanditMilitiaString = new("{=BMLeaderlessString}Leaderless Bandit Militia");
     }
 }
