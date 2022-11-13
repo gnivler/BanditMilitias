@@ -304,6 +304,7 @@ namespace BanditMilitias.Helpers
                 Heroes.Clear();
                 FlushMapEvents();
                 LegacyFlushBanditMilitias();
+                RemoveBadItems(); // haven't determined if BM is causing these
                 GetCachedBMs(true).Do(bm => Trash(bm.MobileParty));
                 InformationManager.DisplayMessage(new InformationMessage("BANDIT MILITIAS CLEARED"));
                 var bmCount = MobileParty.All.CountQ(m => m.IsBM());
@@ -422,24 +423,10 @@ namespace BanditMilitias.Helpers
                 "bound_adarga",
                 "old_kite_sparring_shield_shoulder",
                 "old_horsemans_kite_shield_shoulder",
-                "western_riders_kite_sparring_shield_shoulder",
                 "old_horsemans_kite_shield",
                 "banner_mid",
                 "banner_big",
                 "campaign_banner_small",
-                "battania_targe_b_sparring",
-                "eastern_spear_1_t2_blunt",
-                "khuzait_polearm_1_t4_blunt",
-                "eastern_javelin_1_t2_blunt",
-                "aserai_axe_2_t2_blunt",
-                "battania_2haxe_1_t2_blunt",
-                "western_javelin_1_t2_blunt",
-                "empire_lance_1_t3_blunt",
-                "billhook_polearm_t2_blunt",
-                "vlandia_lance_1_t3_blunt",
-                "sturgia_axe_2_t2_blunt",
-                "northern_throwing_axe_1_t1_blunt",
-                "northern_spear_1_t2_blunt",
                 "torch",
                 "wooden_sword_t1",
                 "wooden_sword_t2",
@@ -459,13 +446,7 @@ namespace BanditMilitias.Helpers
                 "grapeshot_fire_stack",
                 "grapeshot_projectile",
                 "grapeshot_fire_projectile",
-                "bound_desert_round_sparring_shield",
-                "northern_round_sparring_shield",
-                "western_riders_kite_sparring_shield",
-                "western_kite_sparring_shield",
                 "oval_shield",
-                "old_kite_sparring_shield ",
-                "western_kite_sparring_shield_shoulder"
             };
 
             var verbotenSaddles = new List<string>
@@ -492,7 +473,9 @@ namespace BanditMilitias.Helpers
                         or ItemObject.ItemTypeEnum.Banner
                         or ItemObject.ItemTypeEnum.Book
                         or ItemObject.ItemTypeEnum.Invalid)
-                    && i.ItemCategory.StringId != "garment")
+                    && i.ItemCategory.StringId != "garment"
+                    && !i.StringId.EndsWith("blunt")
+                    && !i.StringId.Contains("sparring"))
                 .WhereQ(i => i.Value <= Globals.Settings.MaxItemValue).ToList();
             var runningCivilizedMod = AppDomain.CurrentDomain.GetAssemblies().AnyQ(a => a.FullName.Contains("Civilized"));
             if (!runningCivilizedMod)
@@ -511,6 +494,19 @@ namespace BanditMilitias.Helpers
             var bows = all.WhereQ(i => i.ItemType is ItemObject.ItemTypeEnum.Bow or ItemObject.ItemTypeEnum.Crossbow);
             var any = new List<ItemObject>(oneHanded.Concat(twoHanded).Concat(polearm).Concat(thrown).Concat(shields).Concat(bows).WhereQ(i => i.Value <= Globals.Settings.MaxItemValue).ToList());
             any.Do(i => EquipmentItems.Add(new EquipmentElement(i)));
+
+            // used for armour
+            foreach (ItemObject.ItemTypeEnum itemType in Enum.GetValues(typeof(ItemObject.ItemTypeEnum)))
+            {
+                ItemTypes[itemType] = Items.All.WhereQ(i =>
+                    i.Type == itemType
+                    && i.Value >= 1000
+                    && i.Value <= Globals.Settings.MaxItemValue).ToList();
+            }
+
+            // front-load
+            for (var i = 0; i < 10000; i++)
+                BanditEquipment.Add(BuildViableEquipmentSet());
         }
 
         // builds a set of 4 weapons that won't include more than 1 bow or shield, nor any lack of ammo
@@ -997,23 +993,31 @@ namespace BanditMilitias.Helpers
             Globals.BasicRanged = availableBandits.WhereQ(c => c.DefaultFormationClass is FormationClass.Ranged).ToListQ();
             Globals.BasicInfantry = availableBandits.WhereQ(c => c.DefaultFormationClass is FormationClass.Infantry && c.StringId != "storymode_quest_raider").ToListQ();
             Globals.BasicCavalry = availableBandits.WhereQ(c => c.DefaultFormationClass is FormationClass.Cavalry).ToListQ();
-            // used for armour
-            foreach (ItemObject.ItemTypeEnum itemType in Enum.GetValues(typeof(ItemObject.ItemTypeEnum)))
-            {
-                ItemTypes[itemType] = Items.All.WhereQ(i =>
-                    i.Type == itemType
-                    && i.Value >= 1000
-                    && i.Value <= Globals.Settings.MaxItemValue).ToList();
-            }
-
-            // front-load
-            for (var i = 0; i < 10000; i++)
-                BanditEquipment.Add(BuildViableEquipmentSet());
 
             DoPowerCalculations(true);
             ReHome();
             var bmCount = MobileParty.All.CountQ(m => m.IsBM());
             Log.Debug?.Log($"Militias: {bmCount}.");
+        }
+
+        internal static void RemoveBadItems()
+        {
+            var logged = false;
+            var badItems = MobileParty.MainParty.ItemRoster.WhereQ(i => !i.IsEmpty && i.EquipmentElement.Item?.Name is null).ToListQ();
+            foreach (var item in badItems)
+            {
+                if (!logged)
+                {
+                    logged = true;
+                    InformationManager.DisplayMessage(new("Bandit Militias found bad item(s) in player inventory:"));
+                }
+
+                InformationManager.DisplayMessage(new($"removing {item.EquipmentElement.Item.StringId}"));
+                MobileParty.MainParty.ItemRoster.Remove(item);
+            }
+
+            if (logged)
+                InformationManager.DisplayMessage(new("Please save to a new spot then reload it."));
         }
     }
 }

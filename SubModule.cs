@@ -59,6 +59,8 @@ namespace BanditMilitias
         protected override void OnBeforeInitialModuleScreenSetAsRoot()
         {
             Globals.Settings = Settings.Instance;
+            Globals.Settings!.XpGift = new(Globals.DifficultyXpMap.Keys.SelectQ(k => k.ToString()), 1);
+            Globals.Settings!.GoldReward = new(Globals.GoldMap.Keys.SelectQ(k => k.ToString()), 1);
             if (File.Exists(logFilename))
                 try
                 {
@@ -98,11 +100,11 @@ namespace BanditMilitias
 
             if (MEOWMEOW && Input.IsKeyPressed(InputKey.F1))
             {
-                //var party = GetCachedBMs(true)?.GetRandomElementInefficiently()?.MobileParty;
-                var party = MobileParty.All.WhereQ(m => m.Army != null).GetRandomElementInefficiently();
-                if (party is not null)
-                    MobileParty.MainParty.Position2D = party.Position2D;
-                //party.Position2D = MobileParty.MainParty.Position2D;
+                // //var party = GetCachedBMs(true)?.GetRandomElementInefficiently()?.MobileParty;
+                // var party = MobileParty.All.WhereQ(m => m.Army != null).GetRandomElementInefficiently();
+                // if (party is not null)
+                //     MobileParty.MainParty.Position2D = party.Position2D;
+                // //party.Position2D = MobileParty.MainParty.Position2D;
             }
 
             if (MEOWMEOW && Input.IsKeyPressed(InputKey.F2))
@@ -152,7 +154,7 @@ namespace BanditMilitias
 
             if (MEOWMEOW && superKey && Input.IsKeyPressed(InputKey.F10))
                 MobileParty.MainParty.ItemRoster.AddToCounts(MBObjectManager.Instance.GetObject<ItemObject>("grain"), 10000);
-            
+
             if (superKey && Input.IsKeyPressed(InputKey.F12))
             {
                 foreach (var militia in MobileParty.All.WhereQ(m => m.IsBM()).OrderBy(x => x.MemberRoster.TotalManCount))

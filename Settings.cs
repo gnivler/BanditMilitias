@@ -67,7 +67,7 @@ namespace BanditMilitias
 
         [SettingPropertyDropdown("{=BMXpBoost}Militia XP Boost", HintText = "{=BMXpBoostDesc}Hardest grants enough XP to significantly upgrade troops.  Off grants no bonus XP.", Order = 2, RequireRestart = false)]
         [SettingPropertyGroup("{=BMPrimary}Primary Settings")]
-        public Dropdown<string> XpGift { get; internal set; } = new(Globals.DifficultyXpMap.Keys.SelectQ(k => k.ToString()), 1);
+        public Dropdown<string> XpGift { get; internal set; } = new(new[] { "{=BMXpOff}Off", "{=BMXpNormal}Normal", "{=BMXpHard}Hard", "{=BMXpHardest}Hardest" }, 1);
 
         [SettingPropertyInteger("{=BMGrowChance}Growth Chance Percent", 0, 100, HintText = "{=BMGrowChanceDesc}Chance per day that the militia will gain more troops (0 for off).", Order = 3, RequireRestart = false)]
         [SettingPropertyGroup("{=BMPrimary}Primary Settings")]
@@ -108,7 +108,7 @@ namespace BanditMilitias
 
         [SettingPropertyDropdown("{=BMGoldReward}Bandit Hero Gold Reward", Order = 9, RequireRestart = false)]
         [SettingPropertyGroup("{=BMPrimary}Primary Settings")]
-        public Dropdown<string> GoldReward { get; internal set; } = new(Globals.GoldMap.Keys.SelectQ(k => k.ToString()), 1);
+        public Dropdown<string> GoldReward { get; internal set; } = new(new[] { "{=BMGoldLow}Low", "{=BMGoldNormal}Normal", "{=BMGoldRich}Rich", "{=BMGoldRichest}Richest" }, 1);
 
         [SettingPropertyInteger("{=BMDisperse}Disperse Militia Size", 10, 100, HintText = "{=BMDisperseDesc}Militias defeated with fewer than this many remaining troops will be dispersed.", Order = 0, RequireRestart = false)]
         [SettingPropertyGroup("{=BMSizeAdjustments}Size Adjustments", GroupOrder = 2)]
@@ -128,7 +128,7 @@ namespace BanditMilitias
 
         [SettingPropertyInteger("{=BMMaxValue}Max Item Value", 1000, 1000000, HintText = "{=BMMaxValueDesc}Limit the per-piece value of equipment given to the Heroes.  Mostly for when other mods give you Hero loot.", Order = 7, RequireRestart = false)]
         [SettingPropertyGroup("{=BMAdjustments}Militia Adjustments")]
-        public int MaxItemValue { get; private set; } = 5000;
+        public int MaxItemValue { get; private set; } = 10_000;
 
         [SettingPropertyInteger("{=BMLooter}Looter Conversions", 0, 100, HintText = "How many looters get made into better units when training.", Order = 8, RequireRestart = false)]
         [SettingPropertyGroup("{=BMAdjustments}Militia Adjustments")]
@@ -179,6 +179,7 @@ namespace BanditMilitias
         public bool TestingMode { get; internal set; }
 
         private const string id = "BanditMilitias";
+
         private string displayName = $"BanditMilitias {typeof(Settings).Assembly.GetName().Version.ToString(3)}";
         // private int idealCountBoost = 5;
         // internal int idealBoostFactor;

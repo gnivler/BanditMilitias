@@ -11,6 +11,7 @@ using TaleWorlds.Core;
 using TaleWorlds.Engine;
 using TaleWorlds.InputSystem;
 using TaleWorlds.Library;
+using TaleWorlds.Localization;
 using static BanditMilitias.Helpers.Helper;
 
 // ReSharper disable UnusedMember.Global
@@ -35,6 +36,7 @@ namespace BanditMilitias.Patches
             public static void Postfix()
             {
                 InitMap();
+                RemoveBadItems();
             }
         }
 
