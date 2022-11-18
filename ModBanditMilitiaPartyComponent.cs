@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.Reflection;
-using BanditMilitias.Helpers;
 using HarmonyLib;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Party.PartyComponents;
@@ -10,7 +9,7 @@ using TaleWorlds.Library;
 using TaleWorlds.Localization;
 using TaleWorlds.SaveSystem;
 using static BanditMilitias.Globals;
-using static BanditMilitias.Helpers.Helper;
+using static BanditMilitias.Helper;
 
 // ReSharper disable ConvertToAutoProperty  
 // ReSharper disable InconsistentNaming

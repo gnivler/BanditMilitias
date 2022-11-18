@@ -1,10 +1,9 @@
 using System.Linq;
-using BanditMilitias.Helpers;
 using HarmonyLib;
 using TaleWorlds.CampaignSystem.MapEvents;
 using TaleWorlds.LinQuick;
 using TaleWorlds.Localization;
-using static BanditMilitias.Helpers.Helper;
+using static BanditMilitias.Helper;
 using static BanditMilitias.Globals;
 
 // ReSharper disable UnusedType.Global
