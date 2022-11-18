@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using BanditMilitias.Helpers;
 using Helpers;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Party;
@@ -12,7 +11,7 @@ using TaleWorlds.Core;
 using TaleWorlds.Library;
 using TaleWorlds.LinQuick;
 using TaleWorlds.TwoDimension;
-using static BanditMilitias.Helpers.Helper;
+using static BanditMilitias.Helper;
 using static BanditMilitias.Globals;
 
 // ReSharper disable InconsistentNaming
@@ -100,6 +99,9 @@ namespace BanditMilitias
                 return;
 
             if (mobileParty.MemberRoster.TotalManCount < Globals.Settings.MergeableSize)
+                return;
+
+            if (mobileParty.IsUsedByAQuest())
                 return;
 
             // they will evacuate hideouts and not chase caravans
@@ -232,22 +234,17 @@ namespace BanditMilitias
 
         internal static void BMThink(MobileParty mobileParty)
         {
-            var target = mobileParty.TargetSettlement;
+            Settlement target;
             switch (mobileParty.Ai.AiState)
             {
                 case AIState.Undefined:
                 case AIState.PatrollingAroundLocation when mobileParty.DefaultBehavior is AiBehavior.Hold or AiBehavior.None:
                     if (mobileParty.TargetSettlement is null)
                     {
-                        while (target is null)
-                        {
-                            target = Settlement.All.GetRandomElementInefficiently();
-                            if (target.Position2D.Distance(mobileParty.Position2D) < settlementFindRange)
-                                break;
-                        }
+                        target = Settlement.All.WhereQ(s => s.Position2D.Distance(mobileParty.Position2D) < settlementFindRange).GetRandomElementInefficiently();
+                        mobileParty.SetMovePatrolAroundSettlement(target);
                     }
 
-                    mobileParty.SetMovePatrolAroundSettlement(target);
                     break;
                 case AIState.PatrollingAroundLocation:
                     // PILLAGE!
