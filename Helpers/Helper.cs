@@ -29,7 +29,7 @@ using static BanditMilitias.Globals;
 
 // ReSharper disable InconsistentNaming  
 
-namespace BanditMilitias.Helpers
+namespace BanditMilitias
 {
     internal static class Helper
     {
@@ -64,6 +64,9 @@ namespace BanditMilitias.Helpers
 
         internal static readonly AccessTools.FieldRef<MBObjectBase, bool> IsRegistered =
             AccessTools.FieldRefAccess<MBObjectBase, bool>("<IsRegistered>k__BackingField");
+
+        private static readonly AccessTools.StructFieldRef<BodyProperties, StaticBodyProperties> StaticBodyProps =
+            AccessTools.StructFieldRefAccess<BodyProperties, StaticBodyProperties>("_staticBodyProperties");
 
         private static PartyUpgraderCampaignBehavior UpgraderCampaignBehavior;
 
@@ -713,6 +716,8 @@ namespace BanditMilitias.Helpers
                 hero.HeroDeveloper.AddSkillXp(DefaultSkills.Leadership, 150);
             }
 
+            var bodyProps = hero.CharacterObject.GetBodyProperties(hero.CharacterObject.Equipment);
+            StaticBodyProps(ref bodyProps) = StaticBodyProperties.GetRandomStaticBodyProperties();
             return hero;
         }
 
@@ -881,7 +886,7 @@ namespace BanditMilitias.Helpers
             var index = Globals.MapMobilePartyTrackerVM.Trackers.FindIndexQ(t => t.TrackedParty == militia);
             if (index >= 0)
                 Globals.MapMobilePartyTrackerVM.Trackers.RemoveAt(index);
-            militia.InitializeMobilePartyAtPosition(rosters[0], rosters[1], position);
+            militia.InitializeMobilePartyAtPosition(rosters[0], rosters[1], MobilePartyHelper.FindReachablePointAroundPosition(position, 1));
             ConfigureMilitia(militia);
             TrainMilitia(militia);
         }
@@ -964,7 +969,7 @@ namespace BanditMilitias.Helpers
             Hideouts = Settlement.All.WhereQ(s => s.IsHideout).ToListQ();
             RaidCap = Convert.ToInt32(Settlement.FindAll(s => s.IsVillage).CountQ() / 10f);
             HeroTemplates = CharacterObject.All.WhereQ(c =>
-                c.Occupation is Occupation.Bandit && c.StringId.StartsWith("lord_")).ToListQ();
+                c.Occupation is Occupation.Bandit && c.StringId.StartsWith("bm_hero_")).ToListQ();
             Giant = MBObjectManager.Instance.GetObject<CharacterObject>("giant");
             var filter = new List<string>
             {

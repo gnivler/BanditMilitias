@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using BanditMilitias.Helpers;
 using SandBox.ViewModelCollection.Map;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Party;
