@@ -6,7 +6,7 @@ using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.Core;
 using TaleWorlds.ObjectSystem;
 
-namespace BanditMilitias.Helpers
+namespace BanditMilitias
 {
     internal static class Extensions
     {
@@ -40,6 +40,12 @@ namespace BanditMilitias.Helpers
 
         // ReSharper disable once InconsistentNaming
         internal static bool IsBM(this MobileParty mobileParty) => mobileParty?.PartyComponent is ModBanditMilitiaPartyComponent;
+
+        // ReSharper disable once InconsistentNaming
+        internal static bool IsBM(this CharacterObject characterObject) => characterObject.Occupation is Occupation.Bandit && characterObject.OriginalCharacter is not null && (characterObject.OriginalCharacter.StringId.StartsWith("bm_hero_") || characterObject.OriginalCharacter.StringId.StartsWith("lord_"));
+
+        // ReSharper disable once InconsistentNaming
+        internal static bool IsBM(this Hero hero) => hero.CharacterObject.IsBM();
 
         // ReSharper disable once InconsistentNaming
         internal static ModBanditMilitiaPartyComponent GetBM(this MobileParty mobileParty)
